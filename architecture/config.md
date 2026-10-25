@@ -200,7 +200,7 @@ Aliases: `[gpio]`, `[grove_digital]`, `[grove_buttons]`; `[grove_encoders]` (`Ap
 
 #### `[recording_indicator]` (aliases `[rec_indicator]`, `[record_led]`, `[recording_led]`, `[tally_led]`, Core)
 
-Same keys as `[trigger_output]` minus `pulse_ms` and `events`. Defaults: disabled, gpio, `line` **−1**, `open_drain` false, PCF 1 / `0x20`, `pcf_pin` **−1** (`Apertar-Core/src/hardware/RecordingIndicatorOutput.hpp:36-49`). If the section is not enabled, the first `pinN=recindicatorled` in `[pcf8574]` or `dN=recindicatorled` in a `[gpio*]` section enables the LED, **even when that section has `enabled=false`** (`RecordingIndicatorOutput.cpp:293-334`, `:382-391`).
+Same keys as `[trigger_output]` minus `pulse_ms` and `events`. Defaults: disabled, gpio, `line` **−1**, `open_drain` false, PCF 1 / `0x20`, `pcf_pin` **−1** (`Apertar-Core/src/hardware/RecordingIndicatorOutput.hpp:36-49`). If the section is not enabled, the first `pinN=recindicatorled` in `[pcf8574]` or `dN=recindicatorled` in a `[gpio*]` section enables the LED, **even when that section has `enabled=false`** (`RecordingIndicatorOutput.cpp:293-334`, `:382-391`). The shorthand copies the parser state at the moment its line is read, so it **inherits `active_high`/`open_drain`/`chip` from a `[recording_indicator]` section earlier in the file, even a disabled one** (default `active_high=false`); it has no polarity key of its own (`:320-326`, confirmed by code reading, fork `main` 2026-10-25).
 
 #### `[imu]` and driver sections (Core and UI)
 
