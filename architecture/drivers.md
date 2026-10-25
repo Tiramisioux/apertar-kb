@@ -1,5 +1,10 @@
 # Sensor drivers (imx585)
 
+> **Read first (2026-10-25):** the mode tables and line numbers on this page are for Apertar-Studio
+> `main` (`70bdb26`). The Pi runs fork branch **`apertar`** (`e5b74d3`: 21-entry `supported_modes[]`
+> with aspect crops). See "Update 2026-10-25" at the bottom, and use `llm/flows.md` A6 and
+> `llm/change-recipes.md` B6 for line refs on the `apertar` branch.
+
 The kernel driver, its dtoverlay, and how Core picks a sensor mode and tuning file.
 
 Paths: `imx585-v4l2-driver/...` is the local clone at `~/Documents/Apertar/imx585-v4l2-driver` (remote `origin` = Apertar-Studio/imx585-v4l2-driver, branch `main`, HEAD `70bdb26`).

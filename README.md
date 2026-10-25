@@ -8,6 +8,7 @@ writes a tutorial. Written for Patrik, who learns Apertar by making the changes 
 
 | Folder | Holds | Rule |
 | --- | --- | --- |
+| `llm/` | **LLM guide**: entry page, chapter maps of the giant files, hop-by-hop flows, change recipes, tutoring + learning path, anchor checker | Models start at `llm/README.md`. Re-run `llm/check-anchors.py` after an upstream merge |
 | `architecture/` | How Core, UI, config, build and drivers work, with `path:line` refs | Source-derived. Re-check refs after an upstream release |
 | `working/` | How to do things: sync, build, deploy, diagnose | Procedures, tested on the Pi |
 | `lessons/hardware-log.md` | Dated findings confirmed on the Pi | Append-only. Operator confirms before an entry goes in |
@@ -22,6 +23,11 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 
 | Question | Open |
 | --- | --- |
+| I'm a model, new here | `llm/README.md` |
+| Where is X in the code (line, function)? | `llm/core-map.md`, `llm/ui-map.md` |
+| What happens, hop by hop, when the operator does Y? | `llm/flows.md` |
+| How do I add or change Z, and what will I forget? | `llm/change-recipes.md` |
+| What should Patrik learn next? How to tutor him? | `llm/tutoring.md` |
 | Which process does X? Who owns a bug? | `architecture/overview.md` |
 | A recording, sensor, format or socket-command problem | `architecture/core.md` |
 | A screen, touch, HDMI or QML problem | `architecture/ui.md` |

@@ -45,4 +45,8 @@ PR from the fork. Status: `open` (only noted), `fixed-in-fork <sha>`, `reported 
 | 38 | core | Hardware-input errors go only to stderr, never `get_state`/WebUI; config edits need a Core restart | `architecture/core.md` | open (desk) |
 | 39 | core | No mount/free-space check before recording; ProRes repair never called; lossy DNG write errors only logged | `architecture/core.md` | open (desk) |
 
+| 40 | core | `discarded_on_stop=` in the recording-stats log is always 0: `discardedOnStopFrames_` is reset (`CameraController.cpp:3304`) and read (`:3509`) but never incremented | grep, upstream-1.6.0; `llm/flows.md` A2 | open (desk) |
+| 41 | web | WebUI preset import allow-list (`WebControlPage.cpp:10526-10606`) omits keys Core saves into presets (`cameraExposureCompensation`, `cameraControlsMode`, `photoFormat`, …; Core writes them at `ApertarCoreApp.cpp:6606-6665`), so a preset loaded from the WebUI silently drops them | `llm/core-map.md` §4 | open (desk) |
+| 42 | core/web | Favourites id list exists 3 times (`ApertarCoreApp.cpp:727`, `WebControlPage.cpp:4091`, `Apertar-UI/qml/SettingsPage.qml:838`); Core silently drops WebUI ids such as `smpteBars`, `autofocus` (`ApertarCoreApp.cpp:10224`, `:1808`) | `llm/core-map.md` §4 | open (desk) |
+
 `open (desk)` = found by reading the code, not yet seen on the Pi. Each one could become a tutorial.
