@@ -28,3 +28,10 @@ So `clear_hdr` (on/off) stays one setting, and `raw_bit_depth` (12 or 16) is the
 ## Open
 
 - Does 12-bit Clear HDR look right with blend 5 and gain adder 1 (Step 5), or is the linearisation table unavoidable? Settle on the bench after Step 5.
+
+## Decisions added 2026-10-25 (during T16 Step 4)
+
+- **16-bit is 4K only.** The only 16-bit sensor mode is 3840x2200. `sanitizeSettingsForSensor` sets the resolution to 3840x2160 whenever an IMX585 runs at 16-bit; `isImx585HighResolutionAlias` counts 3840x2200 as 4K, so the encoders only ever see 3840x2160 (cropped from the 3840x2200 readout). 12-bit Clear HDR keeps every resolution. Core is the authority; the UI pickers should grey out sub-4K sizes at 16-bit (Step 7).
+- **Frame rate.** `maximumSupportedFpsForResolution(..., clearHdr)` returns 25.0 for 4K with Clear HDR on, 30.0 off. 25 is the safe figure, **not yet measured**. The driver's probe table prints `mode 3840x2200 -> VMAX=2250 HMAX=550`; with VMAX doubled in Clear HDR that is 74.25e6 / (4500 x 550) = 30.0 fps. **Unconfirmed**: read the `dmesg` timing line while streaming in 16-bit and raise the clamp if it allows 30.
+- **COMP1 at 16-bit.** `CdngEncoder::preparePispCompressedLayout` and `MlvEncoder::prepareRawLayout` keep Bits16 (unpacked, `width * 2` bytes per row) and decode via `CdngEncoder::decodePispRowToMsb16`. Unpacked 16-bit input already took a memcpy branch.
+- **Open:** black level at 16-bit (3201 from `BlackLevel.hpp:17` vs 3200); lossy cDNG with a 16-bit source (it quantises to 12-bit: refuse or document).
