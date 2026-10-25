@@ -191,3 +191,18 @@ libcamera itself: stock raspberrypi/libcamera has no `cam_helper_imx585`, so the
 | Mode rejected | `journalctl -u apertar-core | grep -E 'rejected|trying IMX585'` |
 | fps lower than expected | Core cap table above; then driver `Framing: VMAX= HMAX= pixel_rate=` in `dmesg` (`imx585.c:1285-1286`) |
 | Mono shows colour options | `ls /sys/class/video4linux/v4l-subdev*/device/of_node/mono-mode`; overlay needs `,mono` |
+
+## Update 2026-10-25: what the Pi actually runs
+
+- `~/drivers/imx585-v4l2-driver` is now on branch **`apertar`** of `Tiramisioux/imx585-v4l2-driver`:
+  will127534 `qbc-pisp-handler` `1644466` + `e5b74d3`.
+- `e5b74d3` is the image's previously uncommitted `imx585.c` edit (582+/41-), committed unchanged. It
+  adds 9 full-width RAW12 crops (3840x2076/2024/1920/1744/1728/1632/1608/1536/1504) and 9 binned crops
+  (1920x1038 … 1920x752), per-mode `base_vmax`, `IMX585_CROP_VMAX(h) = h + 72`, and
+  `imx585_apply_normal_bit_depth_regs()`. This is why Core's crop requests work on this image.
+- The installed module `/lib/modules/6.12.75+rpt-rpi-2712/updates/dkms/imx585.ko.xz` was built
+  2026-08-25 18:18, three minutes after the source edit (18:15): **probable** that it was built from it.
+  Loaded `srcversion` `ED83F0A8968DC6BEF03779D`.
+- Not merged: Apertar-Studio `main` `3680bf4`, `c0f5404`, `11178c8`, `70bdb26` (format-transition
+  hardening, per-mode HMAX table + Clear HDR floor, RAW10 4K, `ccmp` overlay param). Merging them onto
+  the crop edit will conflict in the mode tables. Good tutorial material.

@@ -47,6 +47,6 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | --- | --- | --- | --- |
 | `Apertar-Core` | `~/ApertarCore` (build: `~/ApertarCore-build`) | `Tiramisioux/Apertar-Core` | `Apertar-Studio/Apertar-Core` |
 | `Apertar-UI` | `~/ApertarUI` (build: `~/ApertarUI/build`) | `Tiramisioux/Apertar-UI` | `Apertar-Studio/Apertar-UI` |
-| `imx585-v4l2-driver` | `~/drivers/imx585-v4l2-driver` (separate: will127534 `qbc-pisp-handler`, local edit) | none yet | `Apertar-Studio/imx585-v4l2-driver` |
+| `imx585-v4l2-driver` | `~/drivers/imx585-v4l2-driver` (DKMS) | `Tiramisioux/imx585-v4l2-driver`, branch **`apertar`** | `Apertar-Studio/imx585-v4l2-driver`; `will` = will127534 |
 | `Apertar-Beta` | (the image itself) | reference only | `Apertar-Studio/Apertar-Beta` |
 | `Apertar-D1` | (hardware: STL/print files) | reference only | `Apertar-Studio/Apertar-D1` |

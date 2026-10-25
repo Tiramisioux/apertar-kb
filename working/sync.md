@@ -1,6 +1,6 @@
 # Keeping Mac, Pi and GitHub in sync
 
-Set up 2026-10-25. Branch: `main` only, in every location.
+Set up 2026-10-25. Branch: `main` for Core and UI; `apertar` for the imx585 driver. One branch per repo, in every location.
 
 ## The three locations
 
@@ -9,6 +9,7 @@ Set up 2026-10-25. Branch: `main` only, in every location.
 | GitHub | `Tiramisioux/Apertar-Core`, `Tiramisioux/Apertar-UI` | n/a (the meeting point) | n/a |
 | Mac | `~/Documents/Apertar/Apertar-Core`, `…/Apertar-UI` | HTTPS, auth via `gh` keychain token | Apertar-Studio, push disabled |
 | Pi | `~/ApertarCore`, `~/ApertarUI` | fetch HTTPS, push SSH (`~/.ssh/id_ed25519_github`) | Apertar-Studio, push disabled |
+| Driver (Mac `~/Documents/Apertar/imx585-v4l2-driver`, Pi `~/drivers/imx585-v4l2-driver`) | branch `apertar` | `Tiramisioux/imx585-v4l2-driver` (your Cinemate fork, shared) | Apertar-Studio + `will` (will127534), push disabled |
 
 `upstream` push URL is the literal `NO-PUSH-use-origin`, so a mistaken `git push upstream` fails.
 
@@ -65,3 +66,7 @@ Prints, per repo: GitHub tip, and for Mac and Pi `in sync` / `ahead N (push)` / 
 - Web uploads lost executable bits and symlinks. Fixed from the Pi's real modes (`ed400ba`
   Core, `29ed99b` UI).
 - `upstream-1.6.0` tag in each fork marks the Apertar-Studio commit the fork started from.
+- Driver: the Pi's `imx585.c` was an uncommitted edit on the image (18 crop modes), in no published
+  commit. Committed unchanged as `e5b74d3` on branch `apertar` (base will127534 `qbc-pisp-handler`
+  `1644466`), pushed 2026-10-25. Apertar-Studio `main` has 4 commits on top of `1644466` that are not
+  merged (`apertar_status.sh` reports them). The fork's `cinemate-*` branches belong to Cinemate.
