@@ -58,6 +58,8 @@ For a broad hunt across many files, hand it to an Explore subagent and keep only
 | Apertar-UI | tag `upstream-1.6.0` (`43888e5`); fork HEAD `29ed99b` adds only build files | `git -C ~/Documents/Apertar/Apertar-UI diff --stat upstream-1.6.0 HEAD -- src qml CMakeLists.txt` → empty |
 | imx585 driver | branch `apertar`, `e5b74d3` | `git -C ~/Documents/Apertar/imx585-v4l2-driver log -1 --format=%h` |
 
+- On the Pi the repos are `~/ApertarCore`, `~/ApertarUI`, `~/drivers/imx585-v4l2-driver` and the KB is
+  `~/apertar-kb`; the maps use the Mac names. Same files, same lines when both are in sync.
 - If the diff is not empty, line numbers may be off. The **anchor** column in every map is a literal
   string that survives drift: `grep -nF '<anchor>'`. Run `python3 check-anchors.py` to see which anchors
   still hit exactly once.

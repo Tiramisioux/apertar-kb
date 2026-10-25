@@ -10,7 +10,8 @@ An anchor is OK when at least one file contains it exactly once (anchors are uni
 
 Run after an upstream merge. A BROKEN anchor means the chapter moved or was rewritten: re-grep it
 and fix the row. MULTI is often expected (the row says so, e.g. "3 hits, one per input class").
-Read-only: it never edits a file.
+Works on the Mac (~/Documents/Apertar/<Mac names>) and on the Pi (~/ApertarCore, ~/ApertarUI,
+~/drivers/imx585-v4l2-driver). Read-only: it never edits a file.
 """
 import os
 import re
@@ -20,6 +21,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = Path(os.environ.get("APERTAR_LOCAL_ROOT", Path.home() / "Documents" / "Apertar"))
 REPOS = ["Apertar-Core", "Apertar-UI", "imx585-v4l2-driver"]
+if not (ROOT / REPOS[0]).is_dir() and (Path.home() / "ApertarCore").is_dir():  # on the Pi
+    ROOT = Path.home()
+    REPOS = ["ApertarCore", "ApertarUI", "drivers/imx585-v4l2-driver"]
 SKIP_DIRS = {".git", "build", "mesa-minimal", "third_party", "node_modules"}
 EXTS = {".cpp", ".hpp", ".h", ".c", ".qml", ".js", ".sh", ".txt", ".dts", ".conf", ".qrc"}
 
