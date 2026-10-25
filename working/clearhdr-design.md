@@ -118,3 +118,21 @@ Measured with Core idle (not recording) in Clear HDR **16-bit**, one WebUI clien
 
 - **Open, intermittent 16-bit loss (confirmed upstream of Core's callback):** in lossy takes the IPA's own per-frame line shows the same gaps, so the CFE had no buffer queued. Single-frame gaps every 7-10 frames for the whole take. Not swap (0 major faults), not direct reclaim (`allocstall`/`pgscan_direct` unchanged), not CPU clock or heat (2.4 GHz, 56-59 C), not the camera thread's budget (~22 ms of 40 ms while recording: swap 8, stats 7, Core copy 4, sync 4). 3 of 4 first takes after a (re)configure were lossy, later ones clean, but not reproducible on demand. **Probable** fix: more raw buffers (Cinemate: 8-10).
 - **30 fps is allowed by the sensor (confirmed, dmesg):** 16-bit mode `3840x2200 -> VMAX=4500 HMAX=550` = 74.25 MHz / (4500 x 550) = 30.0 fps at link 891 MHz (`config.txt`: `dtoverlay=imx585,cam0,link-frequency=891000000`, `rp1-clk-333mhz`). Core runs VMAX 5400 (25 fps) because of its own clamp, `maximumSupportedFpsForResolution` (`CameraController.cpp:2730`). At the driver's default 720 MHz link, Clear HDR 4K is 25 fps (README: 50 -> half), so a hard-coded 30 would break that setup: the cadence gate would never open. Fix belongs in `working/sensor-capabilities.md`.
+
+## The intermittent 16-bit drops come from buffered disk writes (2026-10-26 00:40)
+
+- **Change (a), 8 raw + preview buffers in Clear HDR: no effect (confirmed, reverted, not committed).** 5 takes after reconfigures: 3/240, 0/244, 6/237, **27/216, 34/210** missing; the IPA saw 22.4 and 21.6 fps in the bad two, the same pattern as with 4 buffers.
+- **Confirmed: a buffered disk write alone reproduces the drops with Core idle** (16-bit Clear HDR, not recording, frames counted from the IPA's per-frame line):
+
+| Load (3.4 GB to `/media/RAW`) | Throughput | Frames into libcamera |
+| --- | --- | --- |
+| none | - | 25.00 fps, 0 gaps |
+| `dd oflag=direct` | 759 MB/s | 25.00 fps, 0 gaps |
+| `dd conv=fdatasync` (page cache) | 561 MB/s | 21.71 fps, 19 gaps |
+| same, `taskset -c 3` | 572 MB/s | 19.34 fps, 34 gaps |
+| same, `taskset -c 0` | 555 MB/s | 21.71 fps, 18 gaps |
+
+- Gaps start 0.6-1 s into the write with ~800 MB RAM free, so not reclaim; pinning the writer off CPU0 does not help, so not CPU0 contention by the writer. All RP1 IRQs (`rp1-cfe`, `pispbe`, eth0, i2c 4.9 M, usb 7.5 M) sit on CPU0; NVMe queues are per CPU.
+- **Probable:** page-cache writeback (many 4 KB-page I/Os) disturbs the CFE's DMA at 16-bit Clear HDR rates (422 MB/s into RAM; `DPHY Datarate 1782 Mbps out of range` on every start), and the CFE drops the frame. Direct I/O at higher throughput does not. The mechanism (IOMMU, fabric, IRQ latency) is **unconfirmed**.
+- This explains why the loss looked random: it depends on the writeback state, not on the take. 12-bit lossless (~140 MB/s) loses 0-2 frames; SDR (COMP1, 8.3 MB/frame) none seen.
+- **Next fix to try:** Core writes raw frames with `O_DIRECT` (aligned buffers; pad, then `ftruncate` to the real size). Then re-run `takes.sh`-style batches and the `dd` comparison.
