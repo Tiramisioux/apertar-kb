@@ -103,3 +103,18 @@ Measured with Core idle (not recording) in Clear HDR **16-bit**, one WebUI clien
 - **Unexplained:** the `rpicam-raw` bench reached ~22 fps in 16-bit through the same libcamera. Possibly no software stats or no byte swap without an ISP output. Unverified.
 - **12-bit mode:** not measured; expected worse (adds `CcmpUnwrap::process` on the same buffers).
 - **Next, change 1:** let unpacked Clear HDR raw streams use the cached heap too (`:6523`), then re-measure thread CPU, warning rate, and a 10 s take.
+
+## Change 1 result: cached raw buffers for Clear HDR (2026-10-26 00:10, Core `94ac68d`)
+
+**Confirmed.** The unpacked Clear HDR raw stream now uses the `vidbuf_cached` heap (`RAW buffers: CPU-cached heap=... count=4 frame_bytes=16896000`). Idle camera thread: 95 % -> 32 % CPU (16-bit), 38 % (12-bit); delivery 4 -> 25.0 fps (IPA per-frame line, ns timestamps, no interval > 60 ms). libcamera's passes now cost ~7 ms each per frame.
+
+| 10 s take, 25 fps | Written / expected | Notes |
+| --- | --- | --- |
+| 12-bit lossless (C0037, 26-10-26 C0001) | 244/245, 242/244 | encoder peak 1/24 |
+| 16-bit uncompressed (C0040, C0042, C0043) | 246/246, 243/244, 252/255 | clean |
+| 16-bit uncompressed (C0038, C0041) | 209/245, 218/244 | **open**: CFE gaps, IPA sees ~21.5-22.4 fps |
+| 16-bit lossless (C0036) | 186/245 | gaps + `dropped_queue_full=24`; 16-bit lossless encodes at ~21 fps, 13.4 MB/frame (low bits are noise) |
+| SDR 12-bit lossless (26-10-26 C0002) | 245/245 | unchanged |
+
+- **Open, intermittent 16-bit loss (confirmed upstream of Core's callback):** in lossy takes the IPA's own per-frame line shows the same gaps, so the CFE had no buffer queued. Single-frame gaps every 7-10 frames for the whole take. Not swap (0 major faults), not direct reclaim (`allocstall`/`pgscan_direct` unchanged), not CPU clock or heat (2.4 GHz, 56-59 C), not the camera thread's budget (~22 ms of 40 ms while recording: swap 8, stats 7, Core copy 4, sync 4). 3 of 4 first takes after a (re)configure were lossy, later ones clean, but not reproducible on demand. **Probable** fix: more raw buffers (Cinemate: 8-10).
+- **30 fps is allowed by the sensor (confirmed, dmesg):** 16-bit mode `3840x2200 -> VMAX=4500 HMAX=550` = 74.25 MHz / (4500 x 550) = 30.0 fps at link 891 MHz (`config.txt`: `dtoverlay=imx585,cam0,link-frequency=891000000`, `rp1-clk-333mhz`). Core runs VMAX 5400 (25 fps) because of its own clamp, `maximumSupportedFpsForResolution` (`CameraController.cpp:2730`). At the driver's default 720 MHz link, Clear HDR 4K is 25 fps (README: 50 -> half), so a hard-coded 30 would break that setup: the cadence gate would never open. Fix belongs in `working/sensor-capabilities.md`.
