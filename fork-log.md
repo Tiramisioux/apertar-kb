@@ -17,6 +17,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `65ccfa8` | `.gitignore` for build dirs and editor state | fork-only |
 | `ed400ba` | Executable bit back on `scripts/start-apertar-core.sh` (lost in the web upload, #6) | offer |
 | `631721d` | Clear HDR for the IMX585: `clear_hdr`, 16-bit (3840x2200 crop), merge knobs, `<sensor>_clearHDR.json` tuning; 12-bit experimental, needs the tuning file and a LinearizationTable | offer (after the open items) |
+| `e1c10cd` | Clear HDR 12-bit mode stored as linear 16-bit (fixes the purple picture: low-12-bit wrap); lossy refused in all Clear HDR | offer (with `631721d`) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
