@@ -1,6 +1,6 @@
 # Sensor capabilities at startup (design draft)
 
-Status: **draft 2026-10-26**, asked for by Patrik ("load the capabilities of the sensor at startup, like Cinemate", for the fps limits and so the user can turn crop modes on and off). Nothing implemented. Overlaps T19 (`list_sensor_modes`), which is step A below.
+Status: **steps A and B built 2026-10-26, uncommitted in Core** (results at the bottom); step C open. Drafted 2026-10-26, asked for by Patrik ("load the capabilities of the sensor at startup, like Cinemate", for the fps limits and so the user can turn crop modes on and off). Nothing implemented. Overlaps T19 (`list_sensor_modes`), which is step A below.
 
 ## Why
 
@@ -44,3 +44,11 @@ Context: Apertar-Core on Pi 5, IMX585 (`apertar` driver branch, link 891 MHz, `r
 3. `read_driver_mode_metadata` (`core/driver_mode_metadata.hpp`): what does the driver expose per mode, through which interface, from which driver commit? Is it needed to offer crop modes correctly, or is `ScalerCropMaximum` enough?
 4. After the probe sets `wide_dynamic_range` back to 0, did any sensor state left by the probe (WDR, exposure, gain, mode) ever break the next real start?
 5. 16-bit Clear HDR at 25 fps with 4 raw buffers from the system heap: some 10 s takes are clean, others lose ~30 frames as single-frame CFE gaps every 7-10 frames for the whole take. Did CineMate see this pattern? Is that what made you choose 8-10 raw buffers, or was it something else (preview buffer count, IPA latency, BE time)?
+
+## Result of steps A + B (2026-10-26 00:55, uncommitted)
+
+- `probeSensorModes()` (`CameraController.cpp`, next to `applyImx585HdrControls`) runs once from the first `CameraSession::start()`, before WDR is set and the session's CameraManager exists. `APERTAR_SENSOR_PROBE=0` turns it off. `maximumSupportedFpsForResolution` = min(table, probed); with a probe the IMX585 Clear HDR 4K table entry is 30, without one 25. Command `list_sensor_modes` (also in `help`).
+- **Confirmed on the Pi:** 42 modes in **63 ms**. SDR 10/12-bit: 3840x2160 60 fps, 3840 crops 62.85-85.66, 1920x752-1080 60-85.66; Clear HDR 12-bit 3840x2160 30, 16-bit 3840x2200 30. These match the driver README (891 MHz: 60, Clear HDR half) and dmesg.
+- **Crop rectangles are not usable from this driver:** `ScalerCropMaximum` is `(0, 0)/<mode size>` for every mode, the 1920 modes included. Step C needs driver metadata (what Cinemate's `read_driver_mode_metadata` reads) or Core's own knowledge.
+- **30 fps in Clear HDR, idle: confirmed.** `set_fps 30` sticks; driver `VBLANK=2300 -> VMAX=4500`; libcamera gets 30.00 fps, max interval 37 ms.
+- **30 fps recording loses ~20 %:** 12-bit lossless 228/291 (writes only ~130 MB/s, so not the page-cache problem), 16-bit uncompressed 230/291. libcamera sees ~24 fps while recording. Camera thread while recording at 30: 72 % (12-bit), 52 % (16-bit). Cause not isolated; candidates: the copy + 12-bit conversion on the completion thread, buffer cycle (4 buffers = 133 ms at 30 fps), encoder CPU competing.
