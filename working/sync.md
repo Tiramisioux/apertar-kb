@@ -26,8 +26,10 @@ Each Mac repo has a remote `pi` (`ssh://apertar/home/pi/<dir>`), fetch only (pus
 
 1. **Start of a work session, wherever you are:** `git pull`.
 2. **Finish a change on the Mac:** commit, `git push`.
-3. **Finish a change on the Pi:** commit on the Pi. Then on the Mac: `git pull pi <branch>`, `git push`.
-   Then `git pull` on the Pi so its `origin/<branch>` catches up.
+3. **Finish a change on the Pi:** commit on the Pi. Then on the Mac, one command:
+   `~/.claude/skills/apertar-dev/scripts/apertar_publish.sh`. It pulls the Pi's commits into the Mac
+   repo, pushes them to GitHub and fast-forwards the Pi (all three repos, fast-forward only; stops
+   with instructions on a divergence; `--dry-run` to preview). This is the standard procedure.
 4. **Before switching machine:** nothing uncommitted you need.
 
 Uncommitted edits do not travel. Commit them, or keep working on the same machine.
@@ -54,7 +56,7 @@ Prints, per repo: GitHub tip, and for Mac and Pi `in sync` / `ahead N (push)` / 
 | Status says | Do |
 | --- | --- |
 | `ahead N` (mac) | `git push` |
-| `ahead N` (pi) | on the Mac: `git pull pi <branch>`, `git push`; then `git pull` on the Pi |
+| `ahead N` (pi) | on the Mac: `apertar_publish.sh` (or by hand: `git pull pi <branch>`, `git push`, then `git pull` on the Pi) |
 | `behind N` | `git pull` |
 | `DIVERGED` | on the Mac: `git pull`, `git pull pi <branch>`, fix any conflict, `git push`; then `git pull` on the Pi (it fast-forwards to the rebased commits only if the Pi had nothing else; otherwise `git pull` rebases there too) |
 | push rejected `fetch first` | Someone (the other machine) pushed. Same as DIVERGED |
