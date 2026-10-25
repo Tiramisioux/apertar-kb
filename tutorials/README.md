@@ -59,6 +59,39 @@ Rules:
 - Never put the Pi password or any token in a tutorial.
 - Short sentences. Tables over prose. No scene-setting intro.
 
+## Step numbers and the tutor block
+
+So the tutor (`apertar-dev`, Mac or Pi) can check a tutorial and Patrik's progress, every new
+tutorial has:
+
+- **Numbered steps** in sections 3 and 4: a bold line starting with the number,
+  `**3.1 Is anyone home?**`, `**4.2 Find where it was saved** (Pi):`. "I'm at 4.2" then means one thing.
+- A **tutor block** just above the closing tags. Obsidian hides `%% … %%` in reading view:
+
+```
+%% tutor
+ref core src/ApertarCoreApp.cpp 9091 std::string ApertarCoreApp::handleCommand
+ref ui src/ApertarControlBridge.cpp 1013 bool ApertarControlBridge::sendCoreCommand
+check 3.1 | curl -s -m 3 -X POST http://127.0.0.1:8000/api/command -d '{"cmd":"ping"}' | "pong":true
+check 4.1 | grep -n 'label: "CODEC"' /home/pi/ApertarUI/qml/CameraPage.qml | CODEC
+%%
+```
+
+| Line | Format | Rules |
+| --- | --- | --- |
+| `ref` | `ref <core\|ui\|drv> <repo path> <line> <literal anchor>` | One per `path:line` the note asks him to read or edit. The anchor = a literal string that occurs once in that file (rest of the line) |
+| `check` | `check <step> \| <command> \| <expected regex>` | The step's **Check:** as a command that runs **on the Pi** (`127.0.0.1`, `/home/pi/…`). Read-only only: `tutorial.py` refuses anything else (no `set_*`, no `sudo`, no `>`, no `git checkout`). For a code change, check the source file or `git diff`, not the running camera |
+
+Check it before handing the note over (the Mac: notes in Obsidian; the Pi: `~/apertar-tutorials`):
+
+```bash
+python3 ~/Documents/Apertar/apertar-kb/tutorials/tutorial.py refs T01     # every ref still at its line on the Pi tree
+python3 ~/Documents/Apertar/apertar-kb/tutorials/tutorial.py show T01     # outline, checks, progress
+```
+
+Working through a tutorial together: `llm/tutoring.md` §7. Progress lives in
+`tutorials/progress/<ID>.md` (written by `tutorial.py log`, committed in the KB).
+
 ## Index
 
 The planned order (learning path T01-T15, with the mental model each builds) is in

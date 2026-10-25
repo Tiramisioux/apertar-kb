@@ -11,7 +11,7 @@ to this codebase, Qt/QML and C++-at-this-size. Teach the **Apertar-specific** sh
 | Mode | Trigger | You do | You don't |
 | --- | --- | --- | --- |
 | **Write** | a problem, a "how do I…", a wanted change, "next tutorial" | Diagnose read-only, write the note in Obsidian, add the index row, tell him in 2-3 lines (note, first step, risk) | Edit repos, build, restart |
-| **Tutor** | he is working through a note and asks something | Answer with the hint ladder (§2). Check his diff on request (§3) | Paste the finished code unless he asks |
+| **Tutor** | "work with me on T01", or he asks something mid-tutorial | Run the session protocol (§7): `tutorial.py show/refs/check/log`, hint ladder (§2), diff checks (§3) | Paste the finished code unless he asks |
 | **Close** | he says it works | Verify read-only, log the finding, set the status (§4) | Log a finding he did not confirm |
 
 If in doubt between "tutorial" and "fix it", write the tutorial.
@@ -110,9 +110,12 @@ in step. A tutorial written outside this list gets a row here too.
 | 6. Section 4 "Make the change": the target code shown, he types it. One **Check:** per step | recipe |
 | 7. Section 5 build/test: commands from `../working/build-deploy.md` + VS Code task names | |
 | 8. Section 7 "If it went wrong": always the recipe's trap + how to undo (`git -C ~/ApertarCore diff`, then `git checkout -- <file>` **he** runs) | recipe trap |
-| 9. Save to Obsidian, add the index row in `../tutorials/README.md`, update §5 status | |
+| 9. Number the steps (`**4.1 …**`) and write the `%% tutor` block: a `ref` per code location, a `check` per **Check:** (format: `../tutorials/README.md`) | |
+| 10. `python3 ../tutorials/tutorial.py refs <ID>` → all OK; run each `check` once to see it FAIL before the change (a check that already passes proves nothing) | |
+| 11. Save to Obsidian, add the index row in `../tutorials/README.md`, update §5 status | |
 
-Obsidian note skeleton (fill every section; see `../tutorials/README.md` for the rules):
+Obsidian note skeleton (fill every section; see `../tutorials/README.md` for the rules, including
+the tutor block that goes above the tags):
 
 ```markdown
 ---
@@ -145,6 +148,57 @@ Status: written YYYY-MM-DD · Learning path: T<nn> · Builds: M<n>
 ## 8. What you learned, going further
 ## 9. Sources
 
+%% tutor
+ref core src/… <line> <literal anchor>
+check 4.1 | <read-only command, run on the Pi> | <expected regex>
+%%
+
 #CINEMATE
 #APERTAR
 ```
+
+## 7. Working through a tutorial together
+
+Trigger: "work with me on T01", "let's do the talk-to-core tutorial", "I'm at 4.2", "continue T03".
+The helper is `../tutorials/tutorial.py` (Mac: `~/Documents/Apertar/apertar-kb/tutorials/tutorial.py`;
+Pi: `~/apertar-kb/tutorials/tutorial.py`). It reads the note, runs only read-only checks, and
+writes only the progress log.
+
+**Open the session**
+
+| # | Do | Command |
+| --- | --- | --- |
+| 1 | Find the note, its outline, its checks, where he left off | `tutorial.py show T01` (an ID or a name fragment) |
+| 2 | Are the note's code refs still true on the Pi tree? | `tutorial.py refs T01`. MOVED/MISSING → fix the note first (Mac: edit the Obsidian note; Pi: the mirror is read-only, so log `ref-fix` with the new line and tell him) |
+| 3 | Is the Pi tree as the tutorial expects? | `ssh apertar 'git -C ~/ApertarCore status -s; git -C ~/ApertarUI status -s'`. A dirty tree may be **his** work in progress: ask, never clean it |
+| 4 | Tell him in 2-3 lines: where he is, the next step, its risk | e.g. "Last time: 3.4 done. Next: 4.1, one ISO change, harmless. Ready?" |
+| 5 | Log the start the first time | `tutorial.py log T01 - started` |
+
+**Each step**
+
+1. Quote only that step's commands and question. Don't run ahead: the note has the rest.
+2. Ask for his **prediction**. Wait for it.
+3. He runs it. He pastes the output, or says "done".
+4. Verify: `tutorial.py check T01 4.1` (PASS/FAIL + actual value). No check line for that step →
+   verify by hand with a read-only command, and add a `check` line to the note afterwards.
+5. FAIL → don't give the fix. Ask what the output says, then climb the hint ladder (§2).
+6. Discuss the `> [!tip]- Answer` only after he has answered.
+7. Log it: `tutorial.py log T01 4.1 done "<what he saw, in his words>"`. Hints:
+   `… 4.1 hint2 "pointed at applyCoreState"`. Stuck → `stuck`. Skipped → `skipped`.
+
+**Code-change steps**: compare `ssh apertar 'git -C ~/ApertarUI diff'` with the step's target code.
+Point out a missing copy (M5) as a question. A build error: ask him to paste it and read it
+together. Find the line, then the cause.
+
+**Close the session** (he stops, or the tutorial is finished)
+
+| Situation | Do |
+| --- | --- |
+| He stops midway | Log the last step. Commit the progress file: `git -C <KB> add tutorials/progress && git -C <KB> commit -m "kb: T01 progress"`. On the Pi, it reaches the Mac with the next `deploy_to_pi.sh` |
+| Finished | `tutorial.py log T01 - finished "<recap in his words>"`, then §4 (verify, his confirmation, status in the three places) |
+| The note was wrong or unclear | Fix it (Mac) or log `note-fix "<what>"` (Pi). Fix the KB page too if the KB was wrong |
+
+Progress events: `started`, `done`, `hint1`-`hint4`, `stuck`, `skipped`, `ref-fix`, `note-fix`,
+`finished`, `confirmed`. The hint counts show where the tutorial is too hard. Read them before
+writing the next one.
+
