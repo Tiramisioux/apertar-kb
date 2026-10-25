@@ -4,6 +4,26 @@
 it has been done by hand once. Model to copy: Cinemate's `make-release-image.sh` (swap config to stock
 → `dd` → PiShrink → `xz` → restore). See the `cinemate-dev` skill, `references/release-image.md`.
 
+## Two kinds of image
+
+| | Personal image | Distribution image |
+| --- | --- | --- |
+| For | backup of the dev card, or a second card for yourself | other people's cameras |
+| Claude login (`~/.claude`) | **kept**: restore it and Claude is still signed in | **removed** |
+| KB mirror, VS Code Server, SSH keys, Wi-Fi passwords, history | kept | removed (table below) |
+| Who may have it | you only. It holds credentials: private storage, never upload or share | anyone |
+| Order | any time | always make a personal image **first**: restoring it is how the dev card gets its setup back |
+
+Both are a `dd` of the whole card from the Mac with the Pi shut down (procedure in the Obsidian
+manual, section 11). **Draft, not yet run** (2026-10-25).
+
+- Card from a personal image + the original on the network at once: same hostname
+  (`apertar.local`), machine id and SSH host keys. Run one at a time. **probable** conflict, not tested.
+- A restored personal image may hold an expired Claude token. Then the extension asks you to sign in
+  again. **unconfirmed** how long the token lasts.
+- Strip in a plain `ssh apertar` terminal, not a VS Code Remote-SSH window: VS Code would keep its
+  server (and Claude Code) running and recreate files under `~/.vscode-server` and `~/.claude`.
+
 ## Why the Pi has no GitHub credentials
 
 Anything on the card ships in the image. So the Pi only fetches (HTTPS, public forks), and its
@@ -30,6 +50,12 @@ commits are published from the Mac (`working/sync.md`). Keep it that way.
 | Logs | `/var/log/journal` | vacuum |
 | Git identity | `~/.gitconfig` (noreply address) | harmless; remove if the image shouldn't name you |
 | Git checkouts | `~/ApertarCore`, `~/ApertarUI`, `~/drivers/imx585-v4l2-driver` | keep or not; remotes are public HTTPS. Make sure `git status` is clean and on the published commit |
+
+## Check the strip worked
+
+```bash
+ls -a ~ | grep -iE 'claude|vscode|apertar-kb'     # expect no output
+```
 
 ## Before imaging, check
 
