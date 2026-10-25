@@ -35,7 +35,7 @@ HOME = Path.home()
 ON_PI = (HOME / "ApertarCore").is_dir()
 PI_HOST = "apertar"
 OBSIDIAN = HOME / "local anteckningar/obsidian vaults/Patrik Obsidian/02_PROJEKT/CINEMATE/APERTAR/notes"
-NOTE_DIRS = [KB / "tutorials" / "inbox"] + ([HOME / "apertar-tutorials"] if ON_PI else [OBSIDIAN])
+NOTE_DIRS = [KB / "tutorials" / "inbox"] + ([HOME / "apertar-tutorials"] if ON_PI else [OBSIDIAN, OBSIDIAN.parent / "_archive"])  # _archive: finished notes Patrik moved
 PROGRESS = KB / "tutorials" / "progress"
 PI_REPOS = {"core": "ApertarCore", "ui": "ApertarUI", "drv": "drivers/imx585-v4l2-driver"}
 
