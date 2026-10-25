@@ -1,0 +1,52 @@
+# Apertar knowledge base
+
+Local only (git, no remote). Read by the `apertar-dev` skill before it diagnoses a problem or
+writes a tutorial. Written for Patrik, who learns Apertar by making the changes himself.
+
+## What lives where
+
+| Folder | Holds | Rule |
+| --- | --- | --- |
+| `architecture/` | How Core, UI, config, build and drivers work, with `path:line` refs | Source-derived. Re-check refs after an upstream release |
+| `working/` | How to do things: sync, build, deploy, diagnose | Procedures, tested on the Pi |
+| `lessons/hardware-log.md` | Dated findings confirmed on the Pi | Append-only. Operator confirms before an entry goes in |
+| `lessons/upstream-issues.md` | Bugs and rough edges found in Apertar-Studio's code | Candidate issues/PRs for upstream |
+| `tutorials/README.md` | Tutorial format and the index of every tutorial written | Tutorials themselves live in Obsidian |
+| `sources/` | Raw notes and handoffs this KB was built from | Frozen copies. Don't edit; supersede in the pages above |
+
+The human manual (conventions, how to update GitHub) is the Obsidian note
+`02_PROJEKT/CINEMATE/APERTAR/notes/20261025180000 CINEMATE APERTAR manual.md`.
+
+## Routing: where to look first
+
+| Question | Open |
+| --- | --- |
+| Which process does X? Who owns a bug? | `architecture/overview.md` |
+| A recording, sensor, format or socket-command problem | `architecture/core.md` |
+| A screen, touch, HDMI or QML problem | `architecture/ui.md` |
+| What does key K in `apertar-hardware.conf` do? | `architecture/config.md` |
+| How do I rebuild and restart component C? | `architecture/build.md`, `working/build-deploy.md` |
+| Sensor modes, overlays, the imx585 driver | `architecture/drivers.md` |
+| Keep Mac, Pi and GitHub in sync | `working/sync.md` |
+| Merge a new Apertar-Studio release | `working/upstream-sync.md` |
+| Something is broken, where do I start | `working/diagnose.md`, then `lessons/hardware-log.md` |
+| Has this been seen before? | `lessons/hardware-log.md`, `sources/` |
+
+## Writing rules
+
+- Observations and conclusions stay separate. Label claims **confirmed** (seen in code, logs or
+  on the Pi), **probable**, or **unconfirmed** (say which command would settle it).
+- Every code claim carries a `path:line` ref against a named commit or release (`upstream-1.6.0`).
+- Short sentences, tables over prose.
+- A finding only enters `lessons/hardware-log.md` after Patrik confirms the interpretation, not
+  just after a command ran.
+
+## The stack at a glance
+
+| Repo (Mac, `~/Documents/Apertar/`) | Pi path | GitHub (push) | Upstream (fetch only) |
+| --- | --- | --- | --- |
+| `Apertar-Core` | `~/ApertarCore` (build: `~/ApertarCore-build`) | `Tiramisioux/Apertar-Core` | `Apertar-Studio/Apertar-Core` |
+| `Apertar-UI` | `~/ApertarUI` (build: `~/ApertarUI/build`) | `Tiramisioux/Apertar-UI` | `Apertar-Studio/Apertar-UI` |
+| `imx585-v4l2-driver` | `~/drivers/imx585-v4l2-driver` (separate: will127534 `qbc-pisp-handler`, local edit) | none yet | `Apertar-Studio/imx585-v4l2-driver` |
+| `Apertar-Beta` | (the image itself) | reference only | `Apertar-Studio/Apertar-Beta` |
+| `Apertar-D1` | (hardware: STL/print files) | reference only | `Apertar-Studio/Apertar-D1` |
