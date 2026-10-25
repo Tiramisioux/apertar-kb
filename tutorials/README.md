@@ -105,6 +105,7 @@ The planned order (learning path T01-T15, with the mental model each builds) is 
 | 2026-10-25 | `20261025190927 CINEMATE APERTAR clearhdr16-tutorial` | **T16.** 16-bit Clear HDR on the IMX585, Steps 0-8 (WDR switch, 16-bit raw path, HDR knobs, guards, UI). External workbook (Downloads). Checked on the Pi 2026-10-25: Core/UI refs valid; driver refs are Apertar-Studio `main`, and on `e5b74d3` WDR=1 still offers 12-bit (mode [10]); callout + tutor block added | written |
 | 2026-10-25 | `20261025193414 CINEMATE APERTAR tally-gpio21-tutorial` | **T17.** Tally LED on GPIO 21: which definition wins, polarity, wiring test. External workbook (Downloads). Pi-checked: GPIO 21 is the trigger output's pin on this rig; callout + tutor block added | written |
 | 2026-10-25 | `20261025193415 CINEMATE APERTAR media-yank-tutorial` | **T18.** Yanked card/drive: `media_mounted` = alive, record gates, abort on removal, CFE surprise removal, USB remount. External workbook (Downloads). Pi-checked: refs valid, Step 0 and the automounter install corrected in the callout; tutor block added | written |
+| 2026-10-25 | `20261025194053 CINEMATE APERTAR T19 list-sensor-modes` | **T19.** Core reports the sensor's real modes (`list_sensor_modes`, from libcamera's Raw stream formats); first step from hard-coded mode lists to the Cinemate model | written |
 
 Status values: `written` → `in progress` → `done` (Patrik did it) → `confirmed` (result on hardware,
 logged in `lessons/hardware-log.md`).

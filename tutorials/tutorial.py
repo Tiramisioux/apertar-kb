@@ -42,10 +42,11 @@ PI_REPOS = {"core": "ApertarCore", "ui": "ApertarUI", "drv": "drivers/imx585-v4l
 # A check runs only if it is plainly read-only. Anything else is refused, not run.
 SAFE_FIRST = {"curl", "grep", "cat", "ls", "git", "systemctl", "findmnt", "stat", "test", "head",
               "tail", "wc", "pgrep", "i2cdetect", "i2cget", "gpioinfo", "v4l2-ctl", "dmesg", "id", "free", "df", "uname",
-              "pinctrl", "python3"}
+              "pinctrl", "python3", "rpicam-hello"}
 SAFE_GIT = {"diff", "status", "log", "show", "rev-parse", "branch"}
 SAFE_SYSTEMCTL = {"show", "status", "is-active", "cat"}
-SAFE_CORE_CMDS = {"ping", "help", "get_state", "get_media_test_state", "audio_capabilities"}
+SAFE_CORE_CMDS = {"ping", "help", "get_state", "get_media_test_state", "audio_capabilities",
+                  "list_sensor_modes"}
 
 
 def die(msg):
@@ -178,6 +179,8 @@ def unsafe_reason(cmd):
             sub = next((w for w in words[1:] if not w.startswith("-") and "/" not in w and w != "-C"), "")
             if sub not in SAFE_GIT:
                 return f"git {sub} is not read-only"
+        if first == "rpicam-hello" and "--list-cameras" not in words:
+            return "rpicam-hello is allowed only with --list-cameras (anything else opens the camera)"
         if first == "systemctl":
             sub = next((w for w in words[1:] if not w.startswith("-")), "")
             if sub not in SAFE_SYSTEMCTL:
