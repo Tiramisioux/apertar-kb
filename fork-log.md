@@ -16,6 +16,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | --- | --- | --- |
 | `65ccfa8` | `.gitignore` for build dirs and editor state | fork-only |
 | `ed400ba` | Executable bit back on `scripts/start-apertar-core.sh` (lost in the web upload, #6) | offer |
+| `631721d` | Clear HDR for the IMX585: `clear_hdr`, 16-bit (3840x2200 crop), merge knobs, `<sensor>_clearHDR.json` tuning; 12-bit experimental, needs the tuning file and a LinearizationTable | offer (after the open items) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
@@ -37,6 +38,7 @@ Not taken: Apertar-Studio `main` is 4 commits past the base (`3680bf4`, `c0f5404
 
 | What | Where | Status |
 | --- | --- | --- |
+| `imx585_clearHDR.json` (`imx585.json` minus the `rpi.hdr` entry): needed by `631721d`, lives outside the repo | Pi `~/Tuning-Files/defaults-pisp/`, must go into every image | fork-only (stock `rpi.hdr` pins exposure/gain in Clear HDR; worth an upstream issue) |
 | `src/prores/README.md`, `src/prores/ffmpeg/` ship on the 1.6.0 image but are missing from upstream git (#7) | Pi `~/ApertarCore`, untracked | offer (issue) |
 
 ## Pull requests
