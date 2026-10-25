@@ -29,6 +29,7 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | Sensor modes, overlays, the imx585 driver | `architecture/drivers.md` |
 | Keep Mac, Pi and GitHub in sync | `working/sync.md` |
 | Merge a new Apertar-Studio release | `working/upstream-sync.md` |
+| Make a distribution image from the Pi | `working/distribution-image.md` (draft) |
 | Something is broken, where do I start | `working/diagnose.md`, then `lessons/hardware-log.md` |
 | Has this been seen before? | `lessons/hardware-log.md`, `sources/` |
 

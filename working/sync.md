@@ -8,7 +8,7 @@ Set up 2026-10-25. Branch: `main` for Core and UI; `apertar` for the imx585 driv
 | --- | --- | --- | --- |
 | GitHub | `Tiramisioux/Apertar-Core`, `Tiramisioux/Apertar-UI` | n/a (the meeting point) | n/a |
 | Mac | `~/Documents/Apertar/Apertar-Core`, `…/Apertar-UI` | HTTPS, auth via `gh` keychain token | Apertar-Studio, push disabled |
-| Pi | `~/ApertarCore`, `~/ApertarUI` | fetch HTTPS, push SSH (`~/.ssh/id_ed25519_github`) | Apertar-Studio, push disabled |
+| Pi | `~/ApertarCore`, `~/ApertarUI` | fetch HTTPS only. Push URL `NO-PUSH-from-pi-bring-commits-via-the-mac` | Apertar-Studio, push disabled |
 | Driver (Mac `~/Documents/Apertar/imx585-v4l2-driver`, Pi `~/drivers/imx585-v4l2-driver`) | branch `apertar` | `Tiramisioux/imx585-v4l2-driver` (your Cinemate fork, shared) | Apertar-Studio + `will` (will127534), push disabled |
 
 `upstream` push URL is the literal `NO-PUSH-use-origin`, so a mistaken `git push upstream` fails.
@@ -18,11 +18,17 @@ replays them on top of GitHub, so `main` stays a straight line.
 
 ## The rule
 
-GitHub is the exchange point. The Mac and the Pi never talk git to each other.
+GitHub is the exchange point. **Only the Mac pushes.** The Pi holds no GitHub credentials, because
+distribution images are made from it (decided 2026-10-25).
+
+Each Mac repo has a remote `pi` (`ssh://apertar/home/pi/<dir>`), fetch only (push URL
+`NO-PUSH-to-pi-use-git-pull-on-the-pi`).
 
 1. **Start of a work session, wherever you are:** `git pull`.
-2. **Finish a change:** commit, then `git push`.
-3. **Before switching machine:** nothing unpushed, nothing uncommitted you need.
+2. **Finish a change on the Mac:** commit, `git push`.
+3. **Finish a change on the Pi:** commit on the Pi. Then on the Mac: `git pull pi <branch>`, `git push`.
+   Then `git pull` on the Pi so its `origin/<branch>` catches up.
+4. **Before switching machine:** nothing uncommitted you need.
 
 Uncommitted edits do not travel. Commit them, or keep working on the same machine.
 
@@ -47,9 +53,10 @@ Prints, per repo: GitHub tip, and for Mac and Pi `in sync` / `ahead N (push)` / 
 
 | Status says | Do |
 | --- | --- |
-| `ahead N` | `git push` |
+| `ahead N` (mac) | `git push` |
+| `ahead N` (pi) | on the Mac: `git pull pi <branch>`, `git push`; then `git pull` on the Pi |
 | `behind N` | `git pull` |
-| `DIVERGED` | `git pull` (rebases your commits on GitHub's), fix any conflict, `git push` |
+| `DIVERGED` | on the Mac: `git pull`, `git pull pi <branch>`, fix any conflict, `git push`; then `git pull` on the Pi (it fast-forwards to the rebased commits only if the Pi had nothing else; otherwise `git pull` rebases there too) |
 | push rejected `fetch first` | Someone (the other machine) pushed. Same as DIVERGED |
 | modified files on the Pi you didn't mean to change | `git diff` first. Never `git checkout .` blind: the Pi may hold the only copy of a working fix |
 
