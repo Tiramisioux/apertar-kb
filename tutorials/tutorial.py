@@ -41,7 +41,7 @@ PI_REPOS = {"core": "ApertarCore", "ui": "ApertarUI", "drv": "drivers/imx585-v4l
 
 # A check runs only if it is plainly read-only. Anything else is refused, not run.
 SAFE_FIRST = {"curl", "grep", "cat", "ls", "git", "systemctl", "findmnt", "stat", "test", "head",
-              "tail", "wc", "pgrep", "i2cdetect", "v4l2-ctl", "dmesg", "id", "free", "df", "uname",
+              "tail", "wc", "pgrep", "i2cdetect", "i2cget", "gpioinfo", "v4l2-ctl", "dmesg", "id", "free", "df", "uname",
               "pinctrl", "python3"}
 SAFE_GIT = {"diff", "status", "log", "show", "rev-parse", "branch"}
 SAFE_SYSTEMCTL = {"show", "status", "is-active", "cat"}
