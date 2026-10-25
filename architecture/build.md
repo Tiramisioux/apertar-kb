@@ -91,9 +91,9 @@ Build commands: `Apertar-Core/README.md:205-208`. Manual run (stop the service f
 
 **Finding: the `APERTAR_TUNING_FILE` export has no effect.** At every camera open Core calls `applyProcessTuningFile()` (`Apertar-Core/src/camera/CameraController.cpp:5271`), which either `unsetenv`s or overwrites `LIBCAMERA_RPI_TUNING_FILE` (`:1111-1121`). Use the saved custom tuning setting instead.
 
-The live Pi runs `/home/pi/start-apertar-core.sh`, a copy outside the repo. **Unconfirmed** whether it matches `scripts/start-apertar-core.sh`. Diff it before trusting this table.
+The live Pi runs `/home/pi/start-apertar-core.sh`, a copy outside the repo. **Confirmed** (Pi, 2026-10-25, `cmp`): byte-identical to `scripts/start-apertar-core.sh`.
 
-`Apertar-Core/config/apertar-core-capture-priority.conf` is a systemd drop-in: `[Service] LimitNICE=-5` (`:1-3`). It allows the camera callback thread a bounded nice boost. **Unconfirmed** whether it is installed as a drop-in on the Pi (`systemctl cat apertar-core`).
+`Apertar-Core/config/apertar-core-capture-priority.conf` is a systemd drop-in: `[Service] LimitNICE=-5` (`:1-3`). It allows the camera callback thread a bounded nice boost. **Confirmed** installed (Pi, 2026-10-25: `systemctl cat apertar-core` shows `LimitNICE=-5`).
 
 `apertar-core.service` itself is not in either repo. Its contents (User=pi, WorkingDirectory, ExecStartPre gate) come from the live Pi.
 
@@ -137,7 +137,7 @@ Movie plugin lookup: `<app dir>/apertar-video-libav.so`, then `<app dir>/../lib/
 | `apertar-standby-usb` | `/usr/local/libexec/` via `sudo -n` | Core | `Apertar-Core/src/ApertarCoreApp.cpp:1544`; sudoers `Apertar-UI/systemd/apertar-standby-usb.sudoers:1` |
 | `apertar-standby-low-power` | `/usr/local/libexec/` via `sudo -n` | Core | `Apertar-Core/src/ApertarCoreApp.cpp:1549`; sudoers `Apertar-UI/systemd/apertar-standby-low-power.sudoers:1` |
 | `apertar-cfe-automounter` | `/usr/local/libexec/` | `apertar-cfe-automounter.service` (live Pi) | not in repo |
-| `apertar-wait-ui-core-start` | `/usr/local/libexec/` | `ExecStartPre` of `apertar-core` and of the network drop-in | `Apertar-UI/systemd/apertar-network-start-gate.conf:4`; source is `Apertar-UI/wait_for_ui_core_start.sh` (**unconfirmed** it is a plain copy) |
+| `apertar-wait-ui-core-start` | `/usr/local/libexec/` | `ExecStartPre` of `apertar-core` and of the network drop-in | `Apertar-UI/systemd/apertar-network-start-gate.conf:4`; source is `Apertar-UI/wait_for_ui_core_start.sh` (**confirmed** byte-identical, Pi 2026-10-25) |
 
 **Rebuilding the UI does not update anything in `/usr/local/libexec`.** After changing `CfeAutomounter.cpp`, `StandbyUsbPower.cpp`, `StandbyLowPower.cpp` or `wait_for_ui_core_start.sh`, copy by hand. The sudoers rules name the exact path, so the file must stay root-owned there.
 
@@ -161,7 +161,7 @@ After a helper change:
 
 ```bash
 cmake --build build -j2
-sudo install -m 755 build/apertar-cfe-automounter /usr/local/libexec/   # unconfirmed: verify mode/owner first with ls -l
+sudo install -m 755 -o root -g root build/apertar-cfe-automounter /usr/local/libexec/   # installed copies are root:root 755 (Pi, 2026-10-25)
 sudo systemctl restart apertar-cfe-automounter
 sudo systemctl restart apertar-network     # network helper runs from build/, restart is enough
 ```
@@ -216,3 +216,10 @@ Known only from the live Pi. Check them with `systemctl cat <unit>` before relyi
 - `/usr/local/libexec/*` binaries.
 - The environment of `apertar-ui-direct.service`: the UI only writes `core-start-ready` when `APERTAR_CORE_START_READY_FILE` is set (`Apertar-UI/src/main.cpp:405-420`). **Confirmed** (Pi, 2026-10-25): the unit sets `Environment=APERTAR_CORE_START_READY_FILE=/run/apertar-ui/core-start-ready`.
 - Plymouth handoff wiring: `finish_plymouth_handoff.sh` exists (`Apertar-UI/finish_plymouth_handoff.sh`) and nothing in the repos calls it. **Confirmed** (Pi, 2026-10-25): the unit runs it as `ExecStartPost=+/home/pi/ApertarUI/finish_plymouth_handoff.sh /run/apertar-ui/main-ui-ready`.
+
+## Build-dir state on the Pi (2026-10-25, `make -n`)
+
+- `~/ApertarCore-build`: nothing to rebuild; the binary matches the source.
+- `~/ApertarUI/build`: only `StandbyUsbPower.cpp.o` and `StandbyLowPower.cpp.o` would compile. The running
+  copies are separate files in `/usr/local/libexec` (dated 2026-10-14), so the image's helpers were built
+  elsewhere. The UI binary itself is current. Generator is Unix Makefiles (no `build.ninja`), `APERTAR_QML_AOT=ON`.

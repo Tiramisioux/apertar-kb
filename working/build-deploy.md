@@ -7,14 +7,14 @@ This page is the everyday loop.
 
 | Component | Build | Restart | Logs |
 | --- | --- | --- | --- |
-| Core | `cmake --build ~/ApertarCore-build -j3` | `sudo systemctl restart apertar-core` | `sudo journalctl -u apertar-core -f` |
-| UI | `cmake --build ~/ApertarUI/build -j3` | `sudo systemctl restart apertar-ui-direct` | `sudo journalctl -u apertar-ui-direct -f` |
+| Core | `cmake --build ~/ApertarCore-build -j2` | `sudo systemctl restart apertar-core` | `sudo journalctl -u apertar-core -f` |
+| UI | `cmake --build ~/ApertarUI/build -j2` | `sudo systemctl restart apertar-ui-direct` | `sudo journalctl -u apertar-ui-direct -f` |
 
 Same commands exist as VS Code tasks in `~/apertar.code-workspace` (Terminal > Run Task).
 
 - Both build dirs were configured by the image as `Release`, `Unix Makefiles`. Don't reconfigure
   them casually; CMake Tools is told not to (`cmake.configureOnOpen: false`).
-- `-j3`, not `-j4`: a 4 GB Pi 5 with the camera running can run out of memory on the big
+- `-j2`, not `-j4`: a 4 GB Pi 5 with the camera running can run out of memory on the big
   translation units (`ApertarCoreApp.cpp`, `CameraController.cpp`). **Unconfirmed**; drop to `-j2`
   if the build is killed.
 - `sudo` asks for the Pi password (default image: `1`). Claude cannot type it, so restarts are
