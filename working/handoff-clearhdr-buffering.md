@@ -2,6 +2,8 @@
 
 Prompt for the next Claude session on the Pi (apertar-dev skill). Written 2026-10-25. Paste it as the first message, or say "read `~/apertar-kb/working/handoff-clearhdr-buffering.md` and start".
 
+**Status 2026-10-25 22:55:** steps 1-3 done without instrumentation; cause found in libcamera's CPU passes over CPU-uncached raw buffers. See `clearhdr-design.md`, "Frame drops: cause found". The CMA line under "Ruled out" is corrected there.
+
 ---
 
 You are continuing the IMX585 Clear HDR work in Apertar-Core on the Pi (`~/ApertarCore`, branch `main`). Read `~/apertar-kb/llm/README.md`, then `~/apertar-kb/working/clearhdr-design.md` (the whole story, newest sections at the bottom), then this note.

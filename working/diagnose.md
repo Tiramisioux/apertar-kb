@@ -14,7 +14,7 @@ The method, then the first commands. Every diagnosis becomes a tutorial (see `tu
 
 ## First look
 
-User `pi` is not in `systemd-journal`, so `journalctl` needs `sudo` (Pi, 2026-10-25). One-time fix that also lets Claude read logs over SSH: `sudo usermod -aG systemd-journal pi`, then log in again.
+User `pi` is in `systemd-journal` (since 2026-10-25), so `journalctl` works without `sudo`.
 
 ```bash
 systemctl --no-pager status apertar-core apertar-ui-direct apertar-cfe-automounter apertar-network
@@ -33,6 +33,7 @@ free -h; vcgencmd measure_temp; vcgencmd get_throttled
 | Camera won't start / wrong mode | Core journal (`Selected sensor format`), `cam --list-cameras`, `dtoverlay` lines, `architecture/drivers.md` |
 | I2C devices missing (encoder, hat, INA219) | `i2cdetect -l`, `i2cdetect -y <bus>`, `pinctrl get 2,3`. Seesaw probe in `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md` §3.5 |
 | Display wrong size / wrong screen | UI journal line `Apertar display config:`, `[display]` in `apertar-hardware.conf`, connectors in `/sys/class/drm/*/status` |
+| Low frame rate, a busy thread | `top -H -b -n 2 -p $(pgrep -x apertar-core)`, then `python3 -I working/tools/usample.py <pid> <tid> 5` (no perf/gdb on the image; read-only sampler) |
 | Recording drops / storage | `/media/RAW` mount (`findmnt /media/RAW`), automounter journal, write speed of the medium |
 | WebUI | `curl -s http://apertar.local:8000/ | head`; it is served by Core |
 | Core state | the Unix socket `/tmp/apertar-core.sock`, commands in `architecture/core.md` |
