@@ -14,9 +14,8 @@ Same commands exist as VS Code tasks in `~/apertar.code-workspace` (Terminal > R
 
 - Both build dirs were configured by the image as `Release`, `Unix Makefiles`. Don't reconfigure
   them casually; CMake Tools is told not to (`cmake.configureOnOpen: false`).
-- `-j2`, not `-j4`: a 4 GB Pi 5 with the camera running can run out of memory on the big
-  translation units (`ApertarCoreApp.cpp`, `CameraController.cpp`). **Unconfirmed**; drop to `-j2`
-  if the build is killed.
+- `-j2` is upstream's advice (`Apertar-Core/README.md:205-210`, `Apertar-UI/README.md:248-255`); `-j1` if
+  the compiler is killed for lack of memory.
 - `sudo` asks for the Pi password (default image: `1`). Claude cannot type it, so restarts are
   yours to run.
 
