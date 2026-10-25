@@ -39,6 +39,7 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | Make a distribution image from the Pi | `working/distribution-image.md` (draft) |
 | Something is broken, where do I start | `working/diagnose.md`, then `lessons/hardware-log.md` |
 | Has this been seen before? | `lessons/hardware-log.md`, `sources/` |
+| How do my forks differ from Apertar-Studio? What went upstream? | `fork-log.md` |
 
 ## Writing rules
 
