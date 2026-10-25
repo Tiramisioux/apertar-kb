@@ -1,6 +1,7 @@
 # Apertar knowledge base
 
-Local only (git, no remote). Read by the `apertar-dev` skill before it diagnoses a problem or
+Local git, no GitHub remote. Two copies: the Mac (`~/Documents/Apertar/apertar-kb`) and the Pi
+(`~/apertar-kb`), synced by the Mac (`working/sync.md`, "The KB on the Pi"). Read by the `apertar-dev` skill before it diagnoses a problem or
 writes a tutorial. Written for Patrik, who learns Apertar by making the changes himself.
 
 ## What lives where
@@ -51,3 +52,4 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | `imx585-v4l2-driver` | `~/drivers/imx585-v4l2-driver` (DKMS) | `Tiramisioux/imx585-v4l2-driver`, branch **`apertar`** | `Apertar-Studio/imx585-v4l2-driver`; `will` = will127534 |
 | `Apertar-Beta` | (the image itself) | reference only | `Apertar-Studio/Apertar-Beta` |
 | `Apertar-D1` | (hardware: STL/print files) | reference only | `Apertar-Studio/Apertar-D1` |
+| `apertar-kb` | `~/apertar-kb` | none (Mac remote `pi`, push allowed) | |

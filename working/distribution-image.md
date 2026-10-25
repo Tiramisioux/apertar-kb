@@ -20,7 +20,9 @@ commits are published from the Mac (`working/sync.md`). Keep it that way.
 | Hotspot password | `~/.config/CinePi/UI.conf` (`hotspotPassword`, plain text) | reset to the documented default, or set per batch |
 | Login password | user `pi` | back to the documented default, or force change on first boot |
 | Shell history | `~/.bash_history` | remove |
-| VS Code Server | `~/.vscode-server/` (~hundreds of MB) | remove |
+| VS Code Server | `~/.vscode-server/` (~hundreds of MB) | remove (also removes the Claude Code extension and its bundled `claude` binary) |
+| **Claude login** | `~/.claude/.credentials.json`, `~/.claude.json` (signed-in Claude.ai account) | **remove: `rm -rf ~/.claude ~/.claude.json`**. Otherwise every camera ships signed in to your Claude account. Also drops the Pi copy of the `apertar-dev` skill and the chat history |
+| Knowledge base | `~/apertar-kb` (your notes, Pi mirror) | sync to the Mac first (`working/sync.md`), then remove |
 | Debug leftovers | `~/yank-dmesg.log`, `~/apertar-hardware.conf.bak` | remove |
 | Personal hardware config | `~/apertar-hardware.conf` | swap to the stock template for the image, restore after (the Cinemate bracket) |
 | Boot config | `/boot/firmware/config.txt` (DPI overlays disabled on this rig) | decide the image's default display; swap to stock, restore after |

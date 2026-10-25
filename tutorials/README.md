@@ -23,6 +23,10 @@ typ: digital anteckning
 ```
 
 - End the note with the tags `#CINEMATE` and `#APERTAR` on their own lines.
+- **Written on the Pi?** The vault isn't there. Claude saves the note, already named and formatted as
+  above, in `~/apertar-kb/tutorials/inbox/`. After the next KB sync the Mac side moves each inbox file
+  into the vault folder (`git mv` out of `inbox/` is wrong: the vault isn't in the repo; copy, then
+  `git rm` the inbox copy) and adds the index row.
 - Obsidian syntax: callouts `> [!note]`, collapsible answers `> [!tip]- Answer`, wikilinks
   `[[file name|label]]`. Not MkDocs `!!!`.
 - Never rename a folder by case only (Syncthing `_CaseConflict` trap).

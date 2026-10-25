@@ -66,6 +66,28 @@ Prints, per repo: GitHub tip, and for Mac and Pi `in sync` / `ahead N (push)` / 
 | --- | --- | --- |
 | Pi `~/ApertarCore` | `src/prores/README.md`, `src/prores/ffmpeg/` (patch, build script, PROVENANCE) | Shipped on the 1.6.0 image, missing from upstream git. Candidate first commit (tutorial) |
 
+## The KB on the Pi
+
+Set up 2026-10-25 so Claude Code can run on the Pi (VS Code Remote-SSH) with the KB at hand.
+
+| Side | Path | Remote |
+| --- | --- | --- |
+| Mac | `~/Documents/Apertar/apertar-kb` | `pi` = `ssh://apertar/home/pi/apertar-kb` (fetch **and** push) |
+| Pi | `~/apertar-kb` | none. `receive.denyCurrentBranch=updateInstead` |
+
+No GitHub here, so the Mac pushes straight to the Pi. `updateInstead` updates the Pi's checked-out
+files on push, and refuses if the Pi has uncommitted KB edits (commit them on the Pi first).
+
+Sync, always from the Mac (either Claude, or `deploy_to_pi.sh` in the skill):
+
+```bash
+git -C ~/Documents/Apertar/apertar-kb pull pi main
+git -C ~/Documents/Apertar/apertar-kb push pi main
+```
+
+Tutorials Claude writes on the Pi land in `~/apertar-kb/tutorials/inbox/` (no Obsidian there).
+The Mac moves them into the vault after a sync (`tutorials/README.md`).
+
 ## History notes
 
 - Upstream's UI repo commits its whole `build/` tree. The fork untracks it (`66d6d19`), so a Pi
