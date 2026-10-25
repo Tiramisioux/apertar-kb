@@ -49,3 +49,15 @@ So `clear_hdr` (on/off) stays one setting, and `raw_bit_depth` (12 or 16) is the
 **Also seen, unexplained:** only 4 frames (nos. 0, 14, 15, 19) are written per 2 s clip, every time; preview crop height is 2120 where 2160 is expected.
 
 **Next (Mac side, has the Cinemate source):** find how cinepi-raw sets ExposureTime / AnalogueGain / AeEnable in 16-bit Clear HDR (`cinepi_controller.cpp`), and what the libcamera fork's imx585 helper and ClearHDR code do with them; compare with what Core sends in `CameraController.cpp` (search `ExposureTime`, `AnalogueGain`, `AeEnable`). Bench option with Core stopped: `rpicam-raw` at 16-bit with `--shutter` and `--gain` set.
+
+
+## SOLVED 2026-10-25: the black 16-bit frame was Core's tuning file, not Core's code
+
+**Confirmed.** `/home/pi/Tuning-Files/defaults-pisp/imx585.json` (the file Core selects, 3 Oct) contains an `rpi.hdr` algorithm that libcamera's default `/usr/local/share/libcamera/ipa/rpi/pisp/imx585.json` (23 Aug) does not have. With it present, the IPA pins the sensor to exposure 135 / gain 0 in Clear HDR whatever Core sends, giving the flat black-level pedestal.
+
+Evidence chain:
+- Bench with Core stopped: `rpicam-raw --mode 3840:2200:16:U --shutter 20000 --gain 4` gives a real image with libcamera's default tuning (sensor registers follow: 2700 / 40) and a pedestal-only frame with `--tuning-file /home/pi/Tuning-Files/defaults-pisp/imx585.json`.
+- Not the cause (each tried, each left the registers at 135 / 0): thresholds, blend, gain adder, shutter "kick", per-request exposure/gain, and dropping any or all of AWB / metering / EV / frame duration / scaler crop / colour-profile controls.
+- Fix test: a copy of Core's file with the `rpi.hdr` entry removed, selected with `set_tuning_file`: registers 2700 / 60 in Clear HDR 16-bit and raw samples median 6469, p99 16134, ~3280 distinct values (clip C0017).
+
+**Open:** (1) the permanent fix: remove `rpi.hdr` from the shipped tuning, or ship a Clear HDR tuning and let Core pick it when `clear_hdr` is on (SDR effect of removing it is unmeasured); (2) only 4 frames per 2 s clip (nos. 0, 14, 15, 19, `dropped_gap_estimate` 16-18) still unexplained; (3) preview ScalerCrop height 2120 instead of 2160.
