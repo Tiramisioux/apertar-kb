@@ -66,3 +66,11 @@ Evidence chain:
 
 Source: Mac-side answer from the Cinemate source (`cinepi-raw ccmp_lut.hpp`, commit `63a08d5`). Core now attaches a DNG LinearizationTable (4096 entries) to Clear HDR 12-bit frames: `src/cdng/CcmpLut.hpp`, wired in `metadataFromRequest`. **Confirmed on the Pi:** the DNG carries tag 50712 with 4096 entries (t[700]=700, t[1634]=23889, t[4095]=63265), BlackLevel 200 on all channels, WhiteLevel 63265; SDR and 16-bit DNGs carry no table. **Unconfirmed:** that the picture is now neutral (to be judged in a DNG converter). The blend-0 speckle from the Cinemate answer does not apply: Core writes blend 5 at every start.
 Constants are only valid while the driver's gradient-compression controls stay at their defaults (500 / 11500 / 1/64 / 1/16); knee 1 uses Cinemate's measured 500.3389. MLV still has no table; lossy cDNG is refused for all Clear HDR; the live preview is untested.
+
+
+## Correction 2026-10-25 22:05: no LinearizationTable; the 12-bit mode arrives linear
+
+**Confirmed (bench `bench12.sh`, Core stopped, same scene):** the image's libcamera decompands the 12-bit CCMP stream in the CFE and delivers linear 16-bit samples, black ~3200: 12-bit mode median 6222 / p99 15730 / max 16662 vs 16-bit mode 6242 / 15941 / 16930. Its log line `ClearHDR 12-bit CCMP stats linearisation enabled` means exactly this (Cinemate's libcamera fork has no such line).
+**Root cause of the purple 12-bit picture:** Core stored those samples as 12-bit through `Csi2RawConverter::packDng12Row`, which keeps `src & 0x0FFF`: values 3200-16662 wrapped. The LinearizationTable section above is superseded and the table code was removed (it would linearise already-linear data).
+**Fix (uncommitted):** `storageRawBitDepthForSettings` returns 16 for any Clear HDR. Both Clear HDR sensor modes now write 16-bit DNGs: 12-bit mode 3840x2160 (CCMP at the sensor, no OB rows), 16-bit mode 3840x2200 cropped to 3840x2160. Confirmed on the Pi (clips C0030, C0031): 12-bit mode DNG 16 bps, median 6286, p99 ~15700, matching the 16-bit mode (C0028: 6294 / 15943).
+**Still open:** frame drops in Core in both Clear HDR modes (0-4 frames per 2-3 s; one 12-bit clip had 0), while the rpicam-raw bench delivers 33 frames / 1.5 s in 16-bit and 9 in 12-bit, so Core's capture path loses them.
