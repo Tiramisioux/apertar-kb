@@ -63,6 +63,8 @@ ls -a ~ | grep -iE 'claude|vscode|apertar-kb'     # expect no output
   published commit; tag it (`image-<version>`) in each fork.
 - Both components rebuilt from that commit, services restart cleanly.
 - The DKMS imx585 module matches `~/drivers/imx585-v4l2-driver` at the tagged commit.
+- `~/Tuning-Files/defaults-pisp/imx585_clearHDR.json` is present (not in git; 134888 bytes on 2026-10-25).
+  Without it 16-bit Clear HDR records black frames (`working/handoff-clearhdr-buffering.md`).
 
 ## Open questions
 
