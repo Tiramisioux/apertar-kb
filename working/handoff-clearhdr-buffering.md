@@ -59,6 +59,6 @@ Clear HDR 16-bit and 12-bit at 4K record ≥ 98 % of the frames expected at 25 f
 
 ## Housekeeping
 
-- Unpublished commits (publish from the Mac: `git pull pi main && git push`): Core `e1c10cd`, `57c8fb0`, `9fa7918`; UI `4415a55`. Fork log is current.
+- All Clear HDR commits are on GitHub (Core 631721d, e1c10cd, 57c8fb0, 9fa7918; UI 4415a55).
 - `~/Tuning-Files/defaults-pisp/imx585_clearHDR.json` is outside git and must go into every image (without it 16-bit Clear HDR records black).
 - Open, not this phase: preview ScalerCrop at 16-bit is 3840x2120 instead of 3840x2160; ISO cap (1585) and auto-mode refusal in Clear HDR (workbook Step 6); presets do not carry `clear_hdr`.
