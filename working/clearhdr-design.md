@@ -61,3 +61,8 @@ Evidence chain:
 - Fix test: a copy of Core's file with the `rpi.hdr` entry removed, selected with `set_tuning_file`: registers 2700 / 60 in Clear HDR 16-bit and raw samples median 6469, p99 16134, ~3280 distinct values (clip C0017).
 
 **Open:** (1) the permanent fix: remove `rpi.hdr` from the shipped tuning, or ship a Clear HDR tuning and let Core pick it when `clear_hdr` is on (SDR effect of removing it is unmeasured); (2) only 4 frames per 2 s clip (nos. 0, 14, 15, 19, `dropped_gap_estimate` 16-18) still unexplained; (3) preview ScalerCrop height 2120 instead of 2160.
+
+## 12-bit Clear HDR linearisation (2026-10-25, uncommitted in Core)
+
+Source: Mac-side answer from the Cinemate source (`cinepi-raw ccmp_lut.hpp`, commit `63a08d5`). Core now attaches a DNG LinearizationTable (4096 entries) to Clear HDR 12-bit frames: `src/cdng/CcmpLut.hpp`, wired in `metadataFromRequest`. **Confirmed on the Pi:** the DNG carries tag 50712 with 4096 entries (t[700]=700, t[1634]=23889, t[4095]=63265), BlackLevel 200 on all channels, WhiteLevel 63265; SDR and 16-bit DNGs carry no table. **Unconfirmed:** that the picture is now neutral (to be judged in a DNG converter). The blend-0 speckle from the Cinemate answer does not apply: Core writes blend 5 at every start.
+Constants are only valid while the driver's gradient-compression controls stay at their defaults (500 / 11500 / 1/64 / 1/16); knee 1 uses Cinemate's measured 500.3389. MLV still has no table; lossy cDNG is refused for all Clear HDR; the live preview is untested.
