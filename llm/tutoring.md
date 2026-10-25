@@ -89,6 +89,7 @@ Locations come from [flows.md](flows.md) section C research (2026-10-25, desk): 
 | T13 | Advanced | A knob press that opens the clip browser (UI-only action) | M1, M3 | `App:8949-8951` pattern; `Main.qml:285-332` | Core + UI restart | 1.5 h | planned |
 | T14 | Advanced | A toggle shared by touch and WebUI (hide the timecode pill) | M3, M5 | recipe B5 in [change-recipes.md](change-recipes.md) | Core + UI restart | 3 h | planned |
 | T15 | Advanced | A new IMX585 crop mode | M7 | recipe B6; driver `imx585.c:586`, `:794`, `:1376-1440` | **reboot**, DKMS; bad table = no camera | 1 day | planned |
+| T16 | Project | 16-bit Clear HDR on the IMX585 (`clearhdr16-tutorial`, imported workbook, Steps 0-8) | M1-M7 | Core (setting, WDR write, 16-bit path, knobs, guards) + UI + WebUI; Step 1 bench with `v4l2-ctl` | Core stop/restart; WDR writes; no `config.txt`. Pi-checked 2026-10-25: driver refs and the "WDR ⇒ 16-bit only" premise differ on `e5b74d3` (note's callout) | days | written |
 
 Good follow-ups from known bugs (each is a real fix, see `../lessons/upstream-issues.md`): #18 GUI
 freeze on slow commands (advanced, Qt threading), the `discarded_on_stop` stat that is always 0

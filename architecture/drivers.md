@@ -211,3 +211,13 @@ libcamera itself: stock raspberrypi/libcamera has no `cam_helper_imx585`, so the
 - Not merged: Apertar-Studio `main` `3680bf4`, `c0f5404`, `11178c8`, `70bdb26` (format-transition
   hardening, per-mode HMAX table + Clear HDR floor, RAW10 4K, `ccmp` overlay param). Merging them onto
   the crop edit will conflict in the mode tables. Good tutorial material.
+- **Clear HDR on `apertar` `e5b74d3` (code, 2026-10-25).** With `wide_dynamic_range=1`, `get_mode_table`
+  (`imx585.c:1376-1440`) routes a 4K 10/12-bit request to `supported_modes[10]` ("4K 12-bit only",
+  companded Clear HDR) and SRGGB16 to `[20]` (3840x2200 incl. 20 OB rows, `:785`, `:1185`). Binned
+  modes are gone in Clear HDR. There is **no** `ccmp` overlay parameter; the CCMP knobs
+  (`hdr_gradient_compression_*`) are always registered. Defaults: blend 0 (`imx585_cfg_datasel_bk`,
+  `:1812-1818`), gain adder 2 = +12 dB (`:1874-1881`). Subdev `/dev/v4l-subdev2`. **Probable**
+  consequence: Core's 3840x2160 12-bit request succeeds with WDR on (Apertar-Studio `main`'s driver
+  refuses it). Unconfirmed on hardware: Core stopped, `v4l2-ctl -d /dev/v4l-subdev2 --set-ctrl
+  wide_dynamic_range=1`, then `--list-subdev-framesizes pad=0,code=0x3012`. The T16 workbook
+  (`clearhdr16-tutorial`) assumes `main`'s behaviour; its callout lists the differences.

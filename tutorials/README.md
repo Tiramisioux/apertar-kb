@@ -102,7 +102,7 @@ The planned order (learning path T01-T15, with the mental model each builds) is 
 | --- | --- | --- | --- |
 | 2026-10-23 | `20261025152945 CINEMATE APERTAR start-tutorials` | I2C bus 1 missing: DPI overlays, CFE hat Qwiic hub, NeoRotary 4 | Done on hardware, confirmed |
 | 2026-10-25 | `20261025191000 CINEMATE APERTAR T01 talk-to-core` | T01: the command protocol by hand (curl + Python socket) | written |
-| 2026-10-25 | `20261025190927 CINEMATE APERTAR clearhdr16-tutorial` | 16-bit Clear HDR on the IMX585, Steps 0-8 (WDR switch, 16-bit raw path, HDR knobs, guards, UI). External workbook (Downloads), not in the T01-T15 path; line refs from 2026-10-23 clones | written |
+| 2026-10-25 | `20261025190927 CINEMATE APERTAR clearhdr16-tutorial` | **T16.** 16-bit Clear HDR on the IMX585, Steps 0-8 (WDR switch, 16-bit raw path, HDR knobs, guards, UI). External workbook (Downloads). Checked on the Pi 2026-10-25: Core/UI refs valid; driver refs are Apertar-Studio `main`, and on `e5b74d3` WDR=1 still offers 12-bit (mode [10]); callout + tutor block added | written |
 
 Status values: `written` → `in progress` → `done` (Patrik did it) → `confirmed` (result on hardware,
 logged in `lessons/hardware-log.md`).
