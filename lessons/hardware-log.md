@@ -174,3 +174,30 @@ Entry format:
 - Confirmed by: measurements run on the Pi at Patrik's request; interpretation pending.
 - Tutorial: T25 (follow-up).
 
+## 2026-10-26: the 30 fps limit is libcamera's single CameraManager thread: back-end completions wait behind the next frame's swap + stats
+
+- Tested: Pi 5 (4 GB), Apertar-Core `clearhdr-fixes` 351a3ee, Clear HDR 16-bit 4K, uncompressed, 30 fps, Core started with
+  `LIBCAMERA_LOG_LEVELS=RPI:0,RPiStream:0` (drop-in `libcamera-debug.conf`, Patrik). 5 s windows idle and recording, parsed with
+  `working/tools/libcam_stages.py`. 20:50.
+- Results (medians):
+
+  | stage | preview only | recording |
+  | --- | --- | --- |
+  | CFE arrival interval | 33.3 ms (p90 33.3) | 33.3 ms (p90 66.6: skips) |
+  | software raw stats (libcamera's figure) | 5.8 ms | 7.1 ms |
+  | CFE image dequeue handler (swap) | 6.1 ms | 9.9 ms (p90 13.3) |
+  | CFE dequeue -> IPA signalled (incl. queue wait) | 13.0 ms | **217 ms** (6-7 frames waiting) |
+  | back end start -> back end done (as seen by the thread) | 13.4 ms | **34.6 ms** |
+  | back end start interval (pipeline period) | 33.3 ms | **36.2 ms** (= 27.6 fps) |
+  | back-end completions logged right after CFE/stats work | 24 % | **78 %** |
+
+  No libcamera drop lines in either window.
+- Why: **confirmed** the RPi pipeline runs one frame at a time through IPA + back end, and while recording each cycle takes ~36 ms,
+  so frames pile up in the Bayer queue (217 ms), the 8 CFE buffers fill, and the CFE skips one frame whenever it falls a full frame behind
+  (matches the single-frame gaps). **Probable** (78 % of completions arrive straight after a swap/stats run): the back end's completion
+  event is not handled until the CameraManager thread finishes the next frame's synchronous `rev16` swap and software stats (~17 ms while
+  recording), and memory contention makes those passes and the back end itself slower. Core cannot fix this: the fix is in libcamera
+  (move the swap and raw stats off the event thread, or let the next frame start while the back end runs).
+- Confirmed by: measurements run on the Pi at Patrik's request; interpretation pending.
+- Tutorial: T25 follow-up.
+
