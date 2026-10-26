@@ -88,8 +88,8 @@ Things the T22-T25 work changes for these notes:
   (`160898c`, `dc471c1`): CFE pull/re-insert works without reboot. Journal persistent (`50-apertar-persistent.conf`),
   `IPARPI:ERROR` drop-in, PCIe Gen 2 on test. Branches renamed: Core `clearhdr-fixes` and driver `apertar-tiramisioux` are now
   `cinemate-port`; UI got `cinemate-port` too.
-- **Open: a stopped take is lost if the card is pulled within ~30 s** (no sync at stop). Fix: `syncfs` at record stop with
-  WRITING held until it returns.
+- ~~Open: a stopped take is lost if the card is pulled within ~30 s~~ `0586273`: syncfs once a second and at stop (to be tested,
+  also for throughput at Gen 2/Gen 3). T29 `ffb87db` (no direct I/O, helper not installed) and T30 `a99691e` applied, built, untested.
 - **T28 not finished:** 5.1 eject gate, USB-stick pull, 5.3 eject intent; T29/T30 after it.
 
 ## 5. Read first
