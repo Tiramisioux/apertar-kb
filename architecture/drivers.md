@@ -221,3 +221,15 @@ libcamera itself: stock raspberrypi/libcamera has no `cam_helper_imx585`, so the
   refuses it). Unconfirmed on hardware: Core stopped, `v4l2-ctl -d /dev/v4l-subdev2 --set-ctrl
   wide_dynamic_range=1`, then `--list-subdev-framesizes pad=0,code=0x3012`. The T16 workbook
   (`clearhdr16-tutorial`) assumes `main`'s behaviour; its callout lists the differences.
+
+## Update 2026-10-26: each mode's crop is its real sensor window (T26)
+
+- Branch **`cinemate-port`** (`24172e6`, on top of `apertar` `e5b74d3`) sets every `supported_modes[].crop` to the window in
+  native sensor pixels: full width, start row = the mode's `IMX585_WIN_CROP_REGS` VST - 12, height before binning. 4K and
+  16-bit entries unchanged (`(0, 0)/3840x2160`). Register programming does not read `.crop`.
+- **Confirmed** on the Pi (DKMS 21:36, Core `list_sensor_modes`): `ScalerCropMaximum` is now per mode, e.g. 1920x1080
+  `(0, 0)/3840x2160`, 1920x1038 `(0, 42)/3840x2076`, 3840x1504 `(0, 328)/3840x1504`.
+- Core `4ab1057` derives binning from it (crop width / output width; `binning_source` `driver`, or `inferred` from the
+  active area when a driver gives no window): all 1920-wide modes 2, all 3840-wide modes 1.
+- Read the crop with `v4l2-ctl -d <imx585 subdev> --get-subdev-selection pad=0,target=crop` (`--get-selection` fails on subdevs).
+

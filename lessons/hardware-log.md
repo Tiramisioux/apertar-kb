@@ -231,3 +231,15 @@ Entry format:
 - Confirmed by: measurements run on the Pi at Patrik's request.
 - Tutorial: T25 follow-up (libcamera L2).
 
+## 2026-10-26: imx585 crop rectangles per mode (T26) reach libcamera and Core; binning now readable
+
+- Tested: Pi 5 (4 GB), driver `cinemate-port` `24172e6` via DKMS (module 21:36, after reboot), Core `cinemate-port` `4ab1057`
+  (built 21:39), system libcamera `/usr/local` 0.7.1.
+- Seen: all 42 probed modes carry the window the WINMODE registers read (`list_sensor_modes`); binning 2 for every 1920-wide
+  mode, 1 for every 3840-wide one, all `driver`; current mode (16-bit Clear HDR 4K) `sensor_binning 1`, crop `(0, 0)/3840x2160`.
+  Frame-rate limits unchanged in Clear HDR (30). Core started `ready`.
+- Not tested: preview framing and recorded pictures per mode class (T26 step 5's picture check).
+- Why: **confirmed** that libcamera's `ScalerCropMaximum` is the driver's `.crop` copied into the subdev state.
+- Confirmed by: Patrik ("consider T26 finished"), measurements over the socket.
+- Tutorial: T26.
+
