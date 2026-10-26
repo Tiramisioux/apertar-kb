@@ -90,3 +90,44 @@ Entry format:
   (CONFIG_DYNAMIC_DEBUG is not set); block-queue tuning (not tested); 30 fps (not tested). 89 MB of swap was in use.
 - Confirmed by: Patrik, own measurements on the Pi.
 - Tutorial: T22 clearhdr-drops-measure.
+- **Correction (2026-10-26, see next entry):** every take above was `cdng_compression=lossless_jpeg`, whose encoder tops out near 18 fps
+  (Core's own `estimated_capacity_fps` 17.3-18.5). The 25 fps loss is therefore mostly the encoder, not the NVMe or exFAT.
+  The "memory traffic costs frames" and "dirty knobs do nothing" results stand; the 16-40 % figure applies to lossless only.
+
+## 2026-10-26: Clear HDR 16-bit 4K, uncompressed vs lossless JPEG, 25 and 30 fps, after T23 (8 buffers, one request per buffer)
+
+- Tested: Pi 5 (4 GB), IMX585, Apertar-Core fork branch `clearhdr-fixes` db17860 (main f60e301 + T23), /media/RAW exFAT on NVMe,
+  3840x2160 Clear HDR 16-bit, 10 s takes via `working/tools/takes.sh 5 10`, 5 takes per cell (C0050-C0069), 20:06-20:16.
+  Pi otherwise idle: Claude and its VS Code extension removed, no cpptools running, VS Code server up but under 1 % CPU,
+  `get_throttled` 0x0. `workers=5`, lossless queue 24, uncompressed queue 12.
+- Results (frames missing per take, 5 takes each):
+
+  | fps | compression | missing | dropped_queue_full | dropped_gap_estimate | peak_queue | ipa fps |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 25 | none | 0, 0, 0, 0, 0 | 0 | 0 | 1/12 | 24.5-25.0 |
+  | 25 | lossless_jpeg | 43, 38, 37, 45, 43 | 23-45 | 0-15 | 24/24 | 23.1-25.0 |
+  | 30 | none | 49, 40, 35, 37, 52 | 0 | = missing | 1/12 | 24.7-26.3 |
+  | 30 | lossless_jpeg | 90, 88, 89, 89, 91 | 25-50 | 41-65 | 24/24 | 23.2-25.4 |
+
+- Worked: uncompressed 25 fps is clean in 5 of 5 takes (earlier same day: 4 of 5). With T23 the queue never builds when uncompressed.
+- Did not work: lossless at 25 fps (queue fills, 20-35 % lost); anything at 30 fps (libcamera delivers about 24.5 fps with recording on,
+  so about 50 of ~285 frame indices never arrive, before Core's queue).
+- Why: **confirmed** that the 25 fps lossless loss is the queue filling behind the encoder (`dropped_queue_full` large, `peak_queue` 24/24,
+  uncompressed on the same build is clean). **Probable** that the 30 fps capture ceiling is the work done on libcamera's completion thread
+  (dma-buf sync + 16.9 MB memcpy before `requeueRequest`; T25's estimate ~8 of 33 ms); not yet measured on this build (T25 step 3.2).
+  The bimodal 24.5 / 20.6 fps pattern seen after the morning reboot did not recur in these 20 takes; it coincided with `cpptools-srv`
+  (about 1 GB, 0.4 core) on the Pi. **Unconfirmed** that this was the cause: not re-run with cpptools loaded.
+- Confirmed by: measurements run on the Pi at Patrik's request; interpretation of the 30 fps ceiling awaits T25 step 3.2.
+- Tutorial: T22 (correction), T23 (build), T25 (next lever).
+
+## 2026-10-26: unplanned NVMe controller drop at 19:35:32 while idle (`CSTS=0xffffffff`); APST and ASPM disabled
+
+- Tested: Pi 5 (4 GB), NVMe on PCIe, /media/RAW exFAT. Observed during T23, Core idle.
+- Worked: recovery by PCIe re-init (no reboot needed at the time); clips on disk intact (C0001-C0049 present).
+- Did not work: the drive itself, once: controller status read as all ones, i.e. the device stopped answering on the bus.
+- Why: **unconfirmed**. Candidates are NVMe power-state or PCIe ASPM transitions. Boot args added as a precaution:
+  `nvme_core.default_ps_max_latency_us=0 pcie_aspm=off` (backup `/boot/firmware/cmdline.txt.bak-20261026`), present in `/proc/cmdline`
+  since the 19:43 reboot. About 8 minutes of idle watching plus the 20-take run above (20:06-20:16) with no further drop; far too short to
+  call it fixed. exFAT was left marked dirty (fsck.exfat -n by Patrik pending).
+- Confirmed by: Pi kernel log (Patrik); the cause is not confirmed.
+- Tutorial: T23.
