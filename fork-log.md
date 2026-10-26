@@ -56,6 +56,7 @@ GitHub (`origin`) only from the Mac, when Patrik says publish. `apertar_publish.
 | Commit | Change | Status |
 | --- | --- | --- |
 | `e5b74d3` | 18 aspect-ratio crop modes, exactly as shipped on the 1.6.0 image, which is in no published commit (#12) | offer |
+| `24172e6` | branch `apertar-tiramisioux` (on GitHub, Mac, Pi; 2026-10-26): each mode's crop = its real sensor window (T26) | fork-only, not built |
 
 Not taken: Apertar-Studio `main` is 4 commits past the base (`3680bf4`, `c0f5404`, `11178c8`,
 `70bdb26`: format hardening, HMAX table, RAW10 4K, CCMP Clear HDR gate).
