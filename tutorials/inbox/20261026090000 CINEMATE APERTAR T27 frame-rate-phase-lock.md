@@ -73,7 +73,7 @@ Prediction: 21 `[ok]` lines and `ALL CHECKS PASSED (0 failures)`; case 1 ends wi
 **3.1 Which clock stamps the frames, and which clock stamps the audio?** (Pi, read-only)
 
 ```bash
-grep -n 'SensorTimestamp' ~/ApertarCore/src/camera/CameraController.cpp | head -5
+grep -n 'controls::SensorTimestamp\|CLOCK_BOOTTIME' ~/ApertarCore/src/camera/CameraController.cpp | head -8
 grep -n 'SND_PCM_TSTAMP_TYPE_MONOTONIC\|CLOCK_BOOTTIME' ~/ApertarCore/src/audio/TimestampedAudioCapture.cpp
 grep -rn 'FrameWallClock' ~/ApertarCore/src | wc -l
 ```
