@@ -458,3 +458,10 @@ Entry format:
 - Why: **confirmed** that a pulled take now keeps its picture to within a second and its audio as raw PCM, recoverable to WAV.
 - Confirmed by: the card's contents after re-insert.
 
+## 2026-10-27: 3-minute take with per-file fsync: clean
+
+- Core `7a545d9` (writeback per DNG; 1 s sync thread fsyncs each finished DNG, the folder; audio raw fsync), Gen 3, drive
+  38 % full, `takes.sh 1 180`: `cDNG_26-10-27_C0002` 4494 frames, 0 missing, no capture gaps, peak 2/12, stop syncfs 59 ms,
+  audio drift -20 ppm. **Confirmed**: the per-file sync costs no frames; with C0011 / 2026-10-27 C0001 a pulled take keeps all
+  but its last second, audio included.
+

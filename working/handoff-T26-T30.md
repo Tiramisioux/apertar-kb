@@ -49,6 +49,14 @@ Pi state: Core `d9f00d4` running, 25 fps, uncompressed, Clear HDR 16-bit, system
 | T29 | Media profile (tune the writer per medium/filesystem) | Core | T28 | fails only because T28 is missing | root helper for kernel knobs (Patrik) |
 | T30 | Audio writer thread + 1 s capture ring | Core | T29 | applies on `d9f00d4`, but re-check after T29 | touches the same file as `d9f00d4`: re-read `observeVideoFrame` |
 
+**Added to the port (Patrik, 2026-10-27):** two WebUI tutorials from the 2026-10-25 import, notes in the Obsidian APERTAR folder
+(`20261025215321 … webui-false-recording-tutorial`, `20261025215322 … webui-time-left-investigation`):
+
+| ID | What | Repo | State on `cinemate-port` | Left to do |
+| --- | --- | --- | --- | --- |
+| T20 | WebUI "records" with no drive (WebUI half of T18) | Core (WebUI) | Steps 2, 3, 5 **done** by T28 + follow-ups: Core gate, HAT slot bit + pulled latch, `!hasMedia` in the record button's disabled rule, `hasMedia` from `media_alive`, MEDIA REMOVED pill | Step 4: capture strip / Settings media card say "Media removed" from `media_state` (the strip still prints `capture.storage`); Step 6 checklist incl. hardware button and `--simulate`. The note's `media_state` values (`ok/dead/none`) differ from T28's (`mounted/removed/error/none`): use T28's |
+| T21 | WebUI "Time left" vs HDMI | Core (+ UI later) | not started | Port the touch UI's per-frame model into `estimatedRawBytesPerSecond` (bits from `rawBitDepth`, **16 included**: Clear HDR 16-bit over-reports by about a third today), lossless/lossy/MLV/H.264 rules; truthful `time_left_label`; decide the 120-minute bar. T29's media profile does not touch it |
+
 Before each tutorial: `python3 tutorials/tutorial.py refs TNN`. T27-T30 report many MOVED/MISSING refs because their line numbers
 are at the cloud session's patch commits (`9e6df59`, `f2fa35b`, `75e9f57`, `25397cd`), not at `d9f00d4`. Fix the refs in the note
 against the real tree as each step lands; use the search strings, not line numbers. T26's 6 refs are OK.
