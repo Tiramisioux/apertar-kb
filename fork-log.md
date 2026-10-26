@@ -24,6 +24,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `f60e301` | Startup sensor-mode probe (both WDR states, `FrameDurationLimits`), fps limits from it (Clear HDR 4K 30 at 891 MHz), `list_sensor_modes` | offer (after 30 fps recording is clean) |
 | `db17860` | One libcamera request per raw buffer, 8 buffers in Clear HDR (T23); local branch `clearhdr-fixes` | fork-only (local) |
 | `43a54f3` | dma-buf read sync as a free helper, no behaviour change (T25 4.1); local branch `clearhdr-fixes` | fork-only (local) |
+| `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); local branch `clearhdr-fixes` | fork-only (local) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
