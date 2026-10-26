@@ -65,7 +65,7 @@ g++ -std=c++20 -O2 -Wall -I "$S/src/camera" "$KB/working/tools/phase_lock_sim.cp
 After 4.1 the same test runs against your own header: `-I ~/Documents/Apertar/Apertar-Core/src/camera` on the Mac, or on the Pi
 `g++ ... -I ~/ApertarCore/src/camera ~/apertar-kb/working/tools/phase_lock_sim.cpp`.
 
-Prediction: 22 `[ok]` lines; case 1 ends within 10 ppm with 3 distinct requests and settles from a cold arm in a few hundred frames; case 2 (an exactly-on sensor) shows 0 pushes; case 6 prints the qbc lattice table.
+Prediction: 21 `[ok]` lines and `ALL CHECKS PASSED (0 failures)`; case 1 ends within 10 ppm with 3 distinct requests and settles from a cold arm in a few hundred frames; case 2 (an exactly-on sensor) shows 0 pushes; case 6 prints the qbc lattice table.
 
 > [!tip]- Answer
 > `locked: mean 0.00 ppm, max |err| 13.9 us, pushes 4882, distinct requests 3` — the dither toggles every ~4 frames, like Cinemate's "2–3 line dither". `cold arm: |err| stays < 20 us after frame 157 (6.3 s at 25 fps)`: Cinemate's unit test waits 1000 frames before bounding the error, which is conservative. Case 2 prints `pushes 0`: inside the deadband the servo holds and sends nothing. Note the comment in the test: a 24 fps period (41666.667 µs) *must* dither between 41666 and 41667, so exactness is tested at 25 fps. Case 6 is what step 3.3 is about.
