@@ -1,0 +1,390 @@
+From 685389128540526b32242bae565bebd56569bc09 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 08:00:24 +0000
+Subject: [PATCH] camera: copy raw frames on a recorder worker, not on
+ libcamera's completion thread
+
+The completion callback copied every 16.9 MB Clear HDR frame (plus the
+12-bit code mapping) before giving the request back, on the same thread
+that already spends ~15 ms per frame in libcamera's byte swap and stats.
+The callback now hands the request to a copy worker that syncs the
+dma-buf, copies into the page-aligned pool buffer, requeues the request
+through a session callback and only then maps codes and queues the frame
+for writing. At most buffers-2 requests are held so the CFE always has two
+queued; a frame that finds no slot is counted (drop[copy-slot]) and its
+request requeued at once. APERTAR_RAW_COPY_WORKERS (1-2) sizes the pool.
+Not compiled here: build on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/camera/CameraController.cpp | 242 ++++++++++++++++++++++++++------
+ 1 file changed, 196 insertions(+), 46 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 8e52267..3d255b1 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -3054,6 +3054,19 @@ uint8_t *alignedRawData(std::vector<uint8_t> &bytes)
+     return reinterpret_cast<uint8_t *>(aligned);
+ }
+ 
++// CPU-cached dma-bufs need a sync before and after the CPU reads them.
++bool dmabufCpuSync(int fd, bool begin)
++{
++    dma_buf_sync sync{};
++    sync.flags = DMA_BUF_SYNC_READ | (begin ? DMA_BUF_SYNC_START : DMA_BUF_SYNC_END);
++    int ret;
++    do { ret = ::ioctl(fd, DMA_BUF_IOCTL_SYNC, &sync); } while (ret < 0 && errno == EINTR);
++    if (ret < 0)
++        std::cerr << "ApertarCore DMA read sync " << (begin ? "START" : "END")
++                  << " failed: " << std::strerror(errno) << "\n";
++    return ret == 0;
++}
++
+ std::array<float, 4> blackLevelsForSensor(SensorFamily sensorFamily)
+ {
+     float blackLevel = 200.0f;
+@@ -3479,6 +3492,15 @@ public:
+         workers_.reserve(workerCount);
+         for (unsigned int i = 0; i < workerCount; ++i)
+             workers_.emplace_back(&DngRecordingQueue::workerLoop, this);
++        {
++            std::lock_guard<std::mutex> lock(copyMutex_);
++            copyStopping_ = false;
++            heldRequests_ = 0;
++        }
++        droppedNoRequestSlot_.store(0, std::memory_order_relaxed);
++        const unsigned int copyWorkers = unsignedEnvValue("APERTAR_RAW_COPY_WORKERS", 1, 1, 2);
++        for (unsigned int i = 0; i < copyWorkers; ++i)
++            copyThreads_.emplace_back(&DngRecordingQueue::copyLoop, this);
+         active_.store(true, std::memory_order_release);
+ 
+         std::cerr << "ApertarCore recording clip: " << folderPath_.string()
+@@ -3527,6 +3549,7 @@ public:
+         }
+         const auto stopStarted = std::chrono::steady_clock::now();
+         active_.store(false, std::memory_order_release);
++        stopCopyWorkers();
+         {
+             std::lock_guard<std::mutex> lock(mutex_);
+             stopping_ = true;
+@@ -3538,6 +3561,8 @@ public:
+                 worker.join();
+         }
+         workers_.clear();
++        if (const uint64_t dropped = droppedNoRequestSlot_.load(std::memory_order_relaxed); dropped > 0)
++            std::cerr << "ApertarCore recording stats: dropped_copy_slot=" << dropped << "\n";
+         if (recordingFormat_ == RecordingFormat::LossyDng)
+             LossyDngEncoder::drainWrites();
+ 
+@@ -4031,7 +4056,123 @@ public:
+         }
+     }
+ 
++    // A frame handed over by libcamera's completion thread without copying it.
++    // The copy worker syncs the dma-buf, copies, gives the request back to the
++    // camera through the release callback, then queues the frame for writing.
++    struct PendingCopy {
++        libcamera::Request *request = nullptr;
++        int syncFd = -1;                 // CPU-cached dma-buf to sync around the read, -1 if none
++        const uint8_t *source = nullptr; // first active byte of the mapped camera buffer
++        size_t size = 0;                 // active frame bytes
++        bool mapCodes12 = false;         // Clear HDR 12-bit cDNG: map samples back to codes
++        RawFrameView view;               // data/size are filled by the worker
++        CdngEncoder::Metadata metadata;
++    };
++
++    void setRequestRelease(std::function<void(libcamera::Request *)> release, size_t maxHeldRequests)
++    {
++        std::lock_guard<std::mutex> lock(copyMutex_);
++        releaseRequest_ = std::move(release);
++        maxHeldRequests_ = std::max<size_t>(1, maxHeldRequests);
++    }
++
++    // Completion-thread side. Returns false when the request was not taken: the
++    // caller must requeue it itself. Never blocks, never copies.
++    bool enqueueCopy(PendingCopy copy)
++    {
++        std::lock_guard<std::mutex> lock(copyMutex_);
++        if (!active_.load(std::memory_order_acquire) || copyThreads_.empty() || !releaseRequest_)
++            return false;
++        if (heldRequests_ >= maxHeldRequests_) {
++            const uint64_t dropped = droppedNoRequestSlot_.fetch_add(1, std::memory_order_relaxed) + 1;
++            if (dropWarning_) dropWarning_->markDropped();
++            if (dropped == 1 || (dropped % 30) == 0)
++                std::cerr << "ApertarCore drop[copy-slot]: frame=" << copy.metadata.frameIndex
++                          << " held=" << heldRequests_ << "/" << maxHeldRequests_
++                          << " dropped_total=" << dropped << "\n";
++            return false;
++        }
++        ++heldRequests_;
++        copyQueue_.push_back(std::move(copy));
++        copyCv_.notify_one();
++        return true;
++    }
++
+ private:
++    void copyLoop()
++    {
++        while (true) {
++            PendingCopy copy;
++            {
++                std::unique_lock<std::mutex> lock(copyMutex_);
++                copyCv_.wait(lock, [this]() { return copyStopping_ || !copyQueue_.empty(); });
++                if (copyQueue_.empty()) {
++                    if (copyStopping_)
++                        return;
++                    continue;
++                }
++                copy = std::move(copyQueue_.front());
++                copyQueue_.pop_front();
++            }
++
++            std::vector<uint8_t> rawCopy = acquireRawBuffer(copy.size + kRawCopyAlignment);
++            uint8_t *const rawData = alignedRawData(rawCopy);
++            const bool copied = copy.syncFd < 0 || dmabufCpuSync(copy.syncFd, true);
++            if (copied) {
++                std::memcpy(rawData, copy.source, copy.size);
++                if (copy.syncFd >= 0)
++                    dmabufCpuSync(copy.syncFd, false);
++            }
++            // The camera buffer is free from here on; everything below works on the copy.
++            releaseHeldRequest(copy.request);
++            if (!copied) {
++                recycleRawBuffer(std::move(rawCopy));
++                if (dropWarning_) dropWarning_->markDropped();
++                continue;
++            }
++            if (copy.mapCodes12)
++                compressClearHdrFrame(rawData, copy.size, copy.view.width, copy.view.height, copy.view.stride);
++            copy.view.data = rawData;
++            copy.view.size = copy.size;
++            enqueue(std::move(rawCopy), copy.view, std::move(copy.metadata));
++        }
++    }
++
++    void releaseHeldRequest(libcamera::Request *request)
++    {
++        std::function<void(libcamera::Request *)> release;
++        {
++            std::lock_guard<std::mutex> lock(copyMutex_);
++            if (heldRequests_ > 0)
++                --heldRequests_;
++            release = releaseRequest_;
++        }
++        if (release && request)
++            release(request);
++    }
++
++    void stopCopyWorkers()
++    {
++        {
++            std::lock_guard<std::mutex> lock(copyMutex_);
++            copyStopping_ = true;
++        }
++        copyCv_.notify_all();
++        for (std::thread &worker : copyThreads_) {
++            if (worker.joinable())
++                worker.join();
++        }
++        copyThreads_.clear();
++        // Frames still waiting for a copy are lost with the take; their requests go back.
++        std::deque<PendingCopy> leftover;
++        {
++            std::lock_guard<std::mutex> lock(copyMutex_);
++            leftover.swap(copyQueue_);
++        }
++        for (PendingCopy &copy : leftover)
++            releaseHeldRequest(copy.request);
++    }
++
+ 
+     CaptureSettings settings_{};
+     RecordingFormat recordingFormat_ = RecordingFormat::Cdng;
+@@ -4048,6 +4189,16 @@ private:
+     std::atomic<uint64_t> writtenFrames_{0};
+     RecordingFailure failure_;
+     std::atomic<uint64_t> writeFailures_{0};
++    // Copy workers (completion-thread hand-off).
++    std::mutex copyMutex_;
++    std::condition_variable copyCv_;
++    std::deque<PendingCopy> copyQueue_;
++    std::vector<std::thread> copyThreads_;
++    bool copyStopping_ = false;
++    size_t heldRequests_ = 0;
++    size_t maxHeldRequests_ = 1;
++    std::function<void(libcamera::Request *)> releaseRequest_;
++    std::atomic<uint64_t> droppedNoRequestSlot_{0};
+     std::atomic<uint64_t> losslessTimedJobs_{0};
+     std::atomic<uint64_t> losslessWorkerWallUs_{0};
+     std::atomic<uint64_t> losslessWorkerCpuUs_{0};
+@@ -6719,6 +6870,15 @@ private:
+         if (!makeRequests(error))
+             return false;
+ 
++        // Raw frames are copied on a recorder worker; the worker gives the request
++        // back here. Hold at most buffers-2 so the CFE always has two queued.
++        recorder_.setRequestRelease([this](libcamera::Request *request) {
++            std::shared_lock settingsLock(sessionSettingsMutex_);
++            if (!running_.load())
++                return;
++            requeueRequest(request);
++        }, static_cast<size_t>(std::max(1, static_cast<int>(rawCameraBufferCount(settings_.clearHdr)) - 2)));
++
+         libcamera::ControlList initialControls = controlsForSettings(settings_,
+                                                                      sensorFamily_,
+                                                                      camera_->controls(),
+@@ -6802,14 +6962,7 @@ private:
+ 
+     static bool syncCpuReadBuffer(int fd, bool begin)
+     {
+-        dma_buf_sync sync{};
+-        sync.flags = DMA_BUF_SYNC_READ | (begin ? DMA_BUF_SYNC_START : DMA_BUF_SYNC_END);
+-        int ret;
+-        do { ret = ::ioctl(fd, DMA_BUF_IOCTL_SYNC, &sync); } while (ret < 0 && errno == EINTR);
+-        if (ret < 0)
+-            std::cerr << "ApertarCore DMA read sync " << (begin ? "START" : "END")
+-                      << " failed: " << std::strerror(errno) << "\n";
+-        return ret == 0;
++        return dmabufCpuSync(fd, begin);
+     }
+ 
+     const std::vector<std::unique_ptr<libcamera::FrameBuffer>> &rawBuffers()
+@@ -7039,7 +7192,7 @@ private:
+                 }
+                 if (ready) {
+                     if (recordProcessedPreviewFrame(request)) return;
+-                    recordRawFrame(request, whiteBalance);
++                    if (recordRawFrame(request, whiteBalance)) return;
+                 }
+             }
+         }
+@@ -7228,21 +7381,22 @@ private:
+             ? sensorTimestampUs : clockMicroseconds(CLOCK_BOOTTIME));
+     }
+ 
+-    void recordRawFrame(libcamera::Request *request, const WhiteBalanceMeasurement &whiteBalance)
++    // Returns true when the request was handed to a copy worker, which requeues it.
++    bool recordRawFrame(libcamera::Request *request, const WhiteBalanceMeasurement &whiteBalance)
+     {
+         if (!recorder_.active() || !rawStream_)
+-            return;
++            return false;
+         if (!whiteBalance.valid()) {
+             if (!warnedMissingWhiteBalance_) {
+                 std::cerr << "ApertarCore RAW frame missing measured white balance; not writing guessed metadata.\n";
+                 warnedMissingWhiteBalance_ = true;
+             }
+-            return;
++            return false;
+         }
+ 
+         const CachedRawStreamInfo &rawInfo = rawStreamInfo_;
+         if (!rawInfo.valid)
+-            return;
++            return false;
+         if (!rawInfo.supported) {
+             if (!warnedUnsupportedRaw_) {
+                 warnedUnsupportedRaw_ = true;
+@@ -7250,16 +7404,16 @@ private:
+                           << rawInfo.formatName
+                           << ". Expected a supported Bayer or monochrome RAW format.\n";
+             }
+-            return;
++            return false;
+         }
+ 
+         libcamera::FrameBuffer *buffer = request->findBuffer(rawStream_);
+         if (!buffer)
+-            return;
++            return false;
+ 
+         auto mappedIt = mappedRawBuffers_.find(buffer);
+         if (mappedIt == mappedRawBuffers_.end())
+-            return;
++            return false;
+ 
+         const MappedPlane &mapped = mappedIt->second;
+         const size_t bytesUsed = !buffer->metadata().planes().empty()
+@@ -7270,12 +7424,12 @@ private:
+         const size_t activeOffsetBytes = static_cast<size_t>(rawInfo.stride) *
+                                          static_cast<size_t>(rawInfo.activeTopRows) + rawInfo.activeLeftBytes;
+         if (activeOffsetBytes >= candidateRawSize)
+-            return;
++            return false;
+         const size_t rawSize = activeFrameSize > 0
+             ? std::min(candidateRawSize - activeOffsetBytes, activeFrameSize)
+             : candidateRawSize - activeOffsetBytes;
+         if (rawSize == 0 || rawSize > mapped.length)
+-            return;
++            return false;
+ 
+         int64_t timestampUs = 0;
+         if (auto ts = request->metadata().get(libcamera::controls::SensorTimestamp))
+@@ -7303,38 +7457,34 @@ private:
+             dngModel_, whiteBalance, rawInfo.pattern == BayerPattern::Monochrome);
+ 
+         // The completion callback is the only producer. If workers are already
+-        // behind, reject before copying a full RAW frame that cannot be queued.
++        // behind, reject before handing over a frame that cannot be queued.
+         if (!recorder_.hasCapacityForFrame(frameIndex))
+-            return;
+-
+-        std::vector<uint8_t> rawCopy = recorder_.acquireRawBuffer(rawSize + kRawCopyAlignment);
+-        uint8_t *const rawData = alignedRawData(rawCopy);
+-        if (!copyRawBytes(buffer, rawData, mapped.data + activeOffsetBytes, rawSize)) {
+-            dropWarning_.markDropped();
+-            return;
+-        }
+-        if (clearHdrStoresCodes12(settings_) && rawInfo.packing == PixelPacking::Unpacked &&
+-            rawInfo.unpackedBytesPerSample == 2u && rawInfo.bitDepth == RawBitDepth::Bits12)
+-            compressClearHdrFrame(rawData, rawSize, rawInfo.width, rawInfo.height, rawInfo.stride);
++            return false;
+ 
++        DngRecordingQueue::PendingCopy copy;
++        copy.request = request;
++        copy.syncFd = cachedRawBuffers_.empty() ? -1 : buffer->planes().front().fd.get();
++        copy.source = mapped.data + activeOffsetBytes;
++        copy.size = rawSize;
++        copy.mapCodes12 = clearHdrStoresCodes12(settings_) && rawInfo.packing == PixelPacking::Unpacked &&
++            rawInfo.unpackedBytesPerSample == 2u && rawInfo.bitDepth == RawBitDepth::Bits12;
++        copy.view.width = rawInfo.width;
++        copy.view.height = rawInfo.height;
++        copy.view.stride = rawInfo.stride;
++        copy.view.bitDepth = rawInfo.bitDepth;
++        copy.view.unpackedBytesPerSample = rawInfo.unpackedBytesPerSample;
++        copy.view.sampleBits = settings_.rawBitDepth;
++        copy.view.packing = rawInfo.packing;
++        copy.view.bayerPattern = rawInfo.pattern;
++        copy.view.timestampUs = timestampUs;
++        copy.metadata = std::move(metadata);
++
++        if (!recorder_.enqueueCopy(std::move(copy)))
++            return false;
+         if (frameIndex == 0)
+             gyroRecorder_.setVideoStartTimestampUs(static_cast<uint64_t>(std::max<int64_t>(0, timestampUs)), frameIndex);
+-
+-        RawFrameView view;
+-        view.data = rawData;
+-        view.size = rawSize;
+-        view.width = rawInfo.width;
+-        view.height = rawInfo.height;
+-        view.stride = rawInfo.stride;
+-        view.bitDepth = rawInfo.bitDepth;
+-        view.unpackedBytesPerSample = rawInfo.unpackedBytesPerSample;
+-        view.sampleBits = settings_.rawBitDepth;
+-        view.packing = rawInfo.packing;
+-        view.bayerPattern = rawInfo.pattern;
+-        view.timestampUs = timestampUs;
+-
+-        if (recorder_.enqueue(std::move(rawCopy), view, std::move(metadata)))
+-            audioRecorder_.observeVideoFrame(timestampUs, frameDurationUs);
++        audioRecorder_.observeVideoFrame(timestampUs, frameDurationUs);
++        return true;
+     }
+ 
+     void capturePhotoFrame(libcamera::Request *request, const WhiteBalanceMeasurement &whiteBalance)
+-- 
+2.43.0
+

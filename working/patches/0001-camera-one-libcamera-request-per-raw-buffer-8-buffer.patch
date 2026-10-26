@@ -1,0 +1,119 @@
+From 2f5a88089522ad49b71980d91dbde6f1c5491f56 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 07:52:47 +0000
+Subject: [PATCH] camera: one libcamera request per raw buffer, 8 buffers in
+ Clear HDR, raw pool kept warm
+
+Only three requests circulated whatever the buffer count, so extra raw
+buffers never reached the CFE. Requests now follow the configured count
+(APERTAR_RAW_CAMERA_BUFFERS, default 4, 8 in Clear HDR). The raw copy pool
+is pre-filled at session start and kept across takes instead of being
+cleared, so the first frames of a take no longer allocate 16.6 MB each on
+libcamera's completion thread.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/camera/CameraController.cpp | 43 ++++++++++++++++++++++++++++-----
+ 1 file changed, 37 insertions(+), 6 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 3b99735..1b03b67 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -1045,7 +1045,10 @@ constexpr uint32_t kPreviewHeight = 720;
+ constexpr uint32_t kDefaultH264EncodeWidth = 2560;
+ constexpr uint32_t kDefaultH264EncodeHeight = 1440;
+ constexpr unsigned int kConfiguredBufferCount = 4;
+-constexpr unsigned int kActiveRequestCount = 3;
++// Clear HDR raw is unpacked 16-bit (16.9 MB per buffer on the CPU-cached heap).
++// libcamera's thread holds one buffer for its byte swap and stats, the completion
++// callback holds one for the copy, so the CFE needs more than two left to queue.
++constexpr unsigned int kClearHdrBufferCount = 8;
+ constexpr int kPhotoJpegQuality = 92;
+ 
+ unsigned int unsignedEnvValue(const char *name,
+@@ -1157,6 +1160,14 @@ unsigned int proresCameraBufferCount()
+     return unsignedEnvValue("APERTAR_PRORES_CAMERA_BUFFERS", 12, 8, 32);
+ }
+ 
++// Raw (cDNG/MLV) camera buffers. Every buffer is attached to its own libcamera
++// request, so this is also the number of requests in flight.
++unsigned int rawCameraBufferCount(bool clearHdr)
++{
++    return unsignedEnvValue("APERTAR_RAW_CAMERA_BUFFERS",
++                            clearHdr ? kClearHdrBufferCount : kConfiguredBufferCount, 3, 16);
++}
++
+ bool photoFormatWritesDng(PhotoCaptureFormat format)
+ {
+     return format == PhotoCaptureFormat::Dng ||
+@@ -3593,9 +3604,8 @@ public:
+ 
+         std::lock_guard<std::mutex> lock(mutex_);
+         queue_.clear();
+-        rawPool_.clear();
+-        pooledRawBytes_ = 0;
+-        expectedRawBufferSize_ = 0;
++        // The raw copy pool survives the take: the next take's first frames would
++        // otherwise allocate and page in 16.6 MB each on libcamera's completion thread.
+         workerCount_ = 0;
+         stopping_ = false;
+     }
+@@ -3994,6 +4004,24 @@ private:
+         return std::min(maxQueuedFrames_, std::max<size_t>(workerCount_ + 2u, 4u));
+     }
+ 
++public:
++    // Pre-fill the raw copy pool once the frame size is known, so no take starts
++    // with fresh zero-filled allocations on libcamera's completion thread.
++    void reserveRawPool(size_t frameBytes, size_t count)
++    {
++        std::lock_guard<std::mutex> lock(mutex_);
++        if (frameBytes == 0)
++            return;
++        expectedRawBufferSize_ = frameBytes;
++        while (rawPool_.size() < count) {
++            std::vector<uint8_t> buffer(frameBytes);
++            pooledRawBytes_ += buffer.capacity();
++            rawPool_.push_back(std::move(buffer));
++        }
++    }
++
++private:
++
+     CaptureSettings settings_{};
+     RecordingFormat recordingFormat_ = RecordingFormat::Cdng;
+     std::filesystem::path folderPath_;
+@@ -6410,7 +6438,7 @@ private:
+                     : previewSizeForSensorMode(activePreviewReference);
+                 const unsigned int configuredBufferCount = proresMode ? proresCameraBufferCount() : processedYuvMode
+                     ? h264CameraBufferCount()
+-                    : kConfiguredBufferCount;
++                    : rawCameraBufferCount(sanitized.clearHdr);
+ 
+                 previewConfig.pixelFormat = libcamera::formats::YUV420;
+                 previewConfig.size = previewSize;
+@@ -6665,6 +6693,8 @@ private:
+ 
+         if (rawStream_ && !mapRawBuffers(error))
+             return false;
++        if (rawStream_ && !processedYuvMode && rawStreamInfo_.valid)
++            recorder_.reserveRawPool(activeRawFrameBytes(rawStreamInfo_.stride, rawStreamInfo_.height), 6);
+ 
+         if (processedYuvMode) {
+             std::string previewMapError;
+@@ -6793,8 +6823,9 @@ private:
+             ? &processedBuffers(h264Stream_)
+             : nullptr;
+         const bool processedYuvMode = !settings_.photoModeEnabled && isProcessedVideoFormat(settings_.recordingFormat);
++        // One request per buffer: a buffer without a request can never reach the CFE.
+         const size_t activeRequestLimit = processedYuvMode && settings_.recordingFormat == RecordingFormat::Prores ? proresCameraBufferCount()
+-            : processedYuvMode ? h264CameraBufferCount() : kActiveRequestCount;
++            : processedYuvMode ? h264CameraBufferCount() : rawCameraBufferCount(settings_.clearHdr);
+         size_t requestCount = std::min<size_t>(previewBuffers.size(), activeRequestLimit);
+         if (rawBuffers)
+             requestCount = std::min(requestCount, rawBuffers->size());
+-- 
+2.43.0
+

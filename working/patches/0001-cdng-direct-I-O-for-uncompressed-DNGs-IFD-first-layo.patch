@@ -1,0 +1,423 @@
+From d3c1b170721f73607d01cdda8f5b25835fa976f7 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 07:56:49 +0000
+Subject: [PATCH] cdng: direct I/O for uncompressed DNGs, IFD-first layout,
+ page-aligned raw copies
+
+Buffered writes with posix_fadvise(DONTNEED) made every recorded DNG a
+16.6 MB page-cache writeback burst, the load that drops Clear HDR frames
+at the CFE on this Pi (an idle buffered dd reproduces it, dd oflag=direct
+does not). Uncompressed cDNG files are now written with O_DIRECT: the TIFF
+header and IFD fill the first page(s), StripOffsets points at the next
+page boundary, the raw copy is page aligned so 16-bit frames are written
+straight from it, and the zero-padded last page is cut with ftruncate.
+APERTAR_CDNG_DIRECT_IO=0 restores buffered writes; a filesystem that
+refuses O_DIRECT (EINVAL) falls back by itself. Lossless cDNG, MLV and
+stills are unchanged. Not compiled here: build on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/camera/CameraController.cpp |  28 +++--
+ src/cdng/CdngEncoder.cpp        | 178 ++++++++++++++++++++++++++++++--
+ src/cdng/CdngEncoder.hpp        |  18 ++++
+ 3 files changed, 207 insertions(+), 17 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 1b03b67..8e52267 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -3043,6 +3043,17 @@ size_t activeRawFrameBytes(uint32_t stride, uint32_t activeHeight)
+     return static_cast<size_t>(stride) * static_cast<size_t>(activeHeight);
+ }
+ 
++// Raw copies are over-allocated by one page so the frame can start on a page
++// boundary: the cDNG writer then hands the buffer to O_DIRECT writes as it is.
++constexpr size_t kRawCopyAlignment = 4096;
++
++uint8_t *alignedRawData(std::vector<uint8_t> &bytes)
++{
++    const uintptr_t address = reinterpret_cast<uintptr_t>(bytes.data());
++    const uintptr_t aligned = (address + kRawCopyAlignment - 1) & ~(static_cast<uintptr_t>(kRawCopyAlignment) - 1);
++    return reinterpret_cast<uint8_t *>(aligned);
++}
++
+ std::array<float, 4> blackLevelsForSensor(SensorFamily sensorFamily)
+ {
+     float blackLevel = 200.0f;
+@@ -3850,7 +3861,7 @@ private:
+                 queue_.pop_front();
+             }
+ 
+-            job.frame.data = job.rawBytes.data();
++            job.frame.data = alignedRawData(job.rawBytes);
+             const bool timeLossless = settings_.recordingFormat == RecordingFormat::Cdng &&
+                 settings_.cdngCompression == CdngCompression::LosslessJpeg;
+             const auto wallStarted = std::chrono::steady_clock::now();
+@@ -3943,7 +3954,7 @@ private:
+                 queue_.pop_front();
+             }
+ 
+-            job.frame.data = job.rawBytes.data();
++            job.frame.data = alignedRawData(job.rawBytes);
+             try {
+                 std::string mlvError;
+                 if (!encoder.isOpen() &&
+@@ -6694,7 +6705,7 @@ private:
+         if (rawStream_ && !mapRawBuffers(error))
+             return false;
+         if (rawStream_ && !processedYuvMode && rawStreamInfo_.valid)
+-            recorder_.reserveRawPool(activeRawFrameBytes(rawStreamInfo_.stride, rawStreamInfo_.height), 6);
++            recorder_.reserveRawPool(activeRawFrameBytes(rawStreamInfo_.stride, rawStreamInfo_.height) + kRawCopyAlignment, 6);
+ 
+         if (processedYuvMode) {
+             std::string previewMapError;
+@@ -7296,21 +7307,22 @@ private:
+         if (!recorder_.hasCapacityForFrame(frameIndex))
+             return;
+ 
+-        std::vector<uint8_t> rawCopy = recorder_.acquireRawBuffer(rawSize);
+-        if (!copyRawBytes(buffer, rawCopy.data(), mapped.data + activeOffsetBytes, rawSize)) {
++        std::vector<uint8_t> rawCopy = recorder_.acquireRawBuffer(rawSize + kRawCopyAlignment);
++        uint8_t *const rawData = alignedRawData(rawCopy);
++        if (!copyRawBytes(buffer, rawData, mapped.data + activeOffsetBytes, rawSize)) {
+             dropWarning_.markDropped();
+             return;
+         }
+         if (clearHdrStoresCodes12(settings_) && rawInfo.packing == PixelPacking::Unpacked &&
+             rawInfo.unpackedBytesPerSample == 2u && rawInfo.bitDepth == RawBitDepth::Bits12)
+-            compressClearHdrFrame(rawCopy.data(), rawCopy.size(), rawInfo.width, rawInfo.height, rawInfo.stride);
++            compressClearHdrFrame(rawData, rawSize, rawInfo.width, rawInfo.height, rawInfo.stride);
+ 
+         if (frameIndex == 0)
+             gyroRecorder_.setVideoStartTimestampUs(static_cast<uint64_t>(std::max<int64_t>(0, timestampUs)), frameIndex);
+ 
+         RawFrameView view;
+-        view.data = rawCopy.data();
+-        view.size = rawCopy.size();
++        view.data = rawData;
++        view.size = rawSize;
+         view.width = rawInfo.width;
+         view.height = rawInfo.height;
+         view.stride = rawInfo.stride;
+diff --git a/src/cdng/CdngEncoder.cpp b/src/cdng/CdngEncoder.cpp
+index 1cf9c52..0751870 100644
+--- a/src/cdng/CdngEncoder.cpp
++++ b/src/cdng/CdngEncoder.cpp
+@@ -14,6 +14,7 @@
+ #include <cstddef>
+ #include <ctime>
+ #include <cstdlib>
++#include <new>
+ #include <cstring>
+ #include <filesystem>
+ #include <iomanip>
+@@ -459,6 +460,30 @@ void patchFixedAscii(std::vector<uint8_t> &bytes,
+     std::memcpy(bytes.data() + offset, value.data(), bytesToCopy);
+ }
+ 
++// Direct I/O: the kernel requires offset, length and memory aligned to the
++// device's logical block size (512 or 4096); 4096 satisfies every device.
++constexpr size_t kDirectIoPage = 4096;
++
++bool directIoEnabled()
++{
++    static const bool enabled = [] {
++        const char *value = std::getenv("APERTAR_CDNG_DIRECT_IO");
++        return !value || (std::strcmp(value, "0") != 0 && std::strcmp(value, "false") != 0 &&
++                          std::strcmp(value, "off") != 0);
++    }();
++    return enabled;
++}
++
++size_t roundUpToPage(size_t value)
++{
++    return (value + kDirectIoPage - 1) / kDirectIoPage * kDirectIoPage;
++}
++
++bool pageAligned(const void *pointer)
++{
++    return (reinterpret_cast<uintptr_t>(pointer) % kDirectIoPage) == 0;
++}
++
+ bool writeAll(int fd, const void *data, size_t size)
+ {
+     const uint8_t *cursor = static_cast<const uint8_t *>(data);
+@@ -1233,6 +1258,10 @@ void CdngEncoder::writeDngFile(const std::string &path,
+         throw std::runtime_error("Encoded raw layout is empty.");
+ 
+     const bool lossless = metadata.compression == CdngCompression::LosslessJpeg;
++    // Direct I/O layout: header and IFD first, the image strip on the next page
++    // boundary, so every write is page aligned and the page cache stays out of the
++    // way of the CFE (Clear HDR frame drops). Stills (borrowed fd) keep the old layout.
++    const bool ifdFirst = !lossless && destinationFd < 0 && directIoEnabled();
+     const bool profileLosslessDetails = lossless && detailedLosslessProfilingEnabled();
+     const uint32_t rowsPerStrip = lossless ? losslessTileRows() : frame.height;
+     // A padded tile wider than the image is misread by LibRaw. Use two
+@@ -1385,11 +1414,14 @@ void CdngEncoder::writeDngFile(const std::string &path,
+         throw std::runtime_error("DNG payload is too large for classic TIFF.");
+ 
+     constexpr uint32_t tiffHeaderBytes = 8;
+-    const uint32_t stripOffset = tiffHeaderBytes;
++    // IFD-first: the strip offset is known only once the IFD size is (patched below).
++    uint32_t stripOffset = tiffHeaderBytes;
+     const uint32_t stripByteCount = checkedTiffOffset(payloadByteCount);
+-    const uint64_t ifdOffset64 = align4(static_cast<uint64_t>(stripOffset) + payloadByteCount);
++    const uint64_t ifdOffset64 = ifdFirst ? tiffHeaderBytes
++        : align4(static_cast<uint64_t>(stripOffset) + payloadByteCount);
+     const uint32_t ifdOffset = checkedTiffOffset(ifdOffset64);
+-    const size_t paddingSize = static_cast<size_t>(ifdOffset64 - (static_cast<uint64_t>(stripOffset) + payloadByteCount));
++    const size_t paddingSize = ifdFirst ? 0
++        : static_cast<size_t>(ifdOffset64 - (static_cast<uint64_t>(stripOffset) + payloadByteCount));
+ 
+     const uint64_t wallClock = metadata.wallClockTimestampUs
+         ? metadata.wallClockTimestampUs
+@@ -1456,6 +1488,7 @@ void CdngEncoder::writeDngFile(const std::string &path,
+         key.bits = bits;
+         key.compression = compression;
+         key.stripByteCount = stripByteCount;
++        key.ifdFirst = ifdFirst;
+         key.hasClipName = !metadata.clipName.empty();
+         key.hasFrameFileName = !metadata.frameFileName.empty();
+         key.hasMake = !metadata.make.empty();
+@@ -1483,6 +1516,7 @@ void CdngEncoder::writeDngFile(const std::string &path,
+                left.bits == right.bits &&
+                left.compression == right.compression &&
+                left.stripByteCount == right.stripByteCount &&
++               left.ifdFirst == right.ifdFirst &&
+                left.hasClipName == right.hasClipName &&
+                left.hasFrameFileName == right.hasFrameFileName &&
+                left.hasMake == right.hasMake &&
+@@ -1708,8 +1742,20 @@ void CdngEncoder::writeDngFile(const std::string &path,
+             findIfdTagValueOffset(ifdTemplateCache_.bytes, ifdOffset, exifRelativeOffset, 0x8833, true);
+         ifdTemplateCache_.exposureIndexOffset =
+             findIfdTagValueOffset(ifdTemplateCache_.bytes, ifdOffset, exifRelativeOffset, 0xA215, false);
++        ifdTemplateCache_.directStripOffset = 0;
++        if (ifdFirst) {
++            // The IFD is complete, so its size is known: put the image strip on the
++            // next page boundary and patch StripOffsets (tag 273) in the template.
++            const uint32_t strip = checkedTiffOffset(
++                roundUpToPage(static_cast<size_t>(ifdOffset) + ifdTemplateCache_.bytes.size()));
++            const uint32_t at = findIfdTagValueOffset(ifdTemplateCache_.bytes, ifdOffset, 0, 273, true);
++            putLe32(ifdTemplateCache_.bytes.data() + at, strip);
++            ifdTemplateCache_.directStripOffset = strip;
++        }
+         recycleReusableBytes(mainIfdScratch_, std::vector<uint8_t>{});
+     }
++    if (ifdFirst)
++        stripOffset = ifdTemplateCache_.directStripOffset;
+ 
+     std::vector<uint8_t> ifdBytes = takeReusableBytes(mainIfdScratch_, ifdTemplateCache_.bytes.size());
+     ifdBytes.assign(ifdTemplateCache_.bytes.begin(), ifdTemplateCache_.bytes.end());
+@@ -1749,13 +1795,31 @@ void CdngEncoder::writeDngFile(const std::string &path,
+ #ifdef O_CLOEXEC
+     openFlags |= O_CLOEXEC;
+ #endif
+-    if (!lossless)
+-        output.fd = destinationFd >= 0 ? destinationFd : ::open(path.c_str(), openFlags, 0644);
++    bool directFd = false;
++    if (!lossless) {
++        if (destinationFd >= 0) {
++            output.fd = destinationFd;
++        } else {
++            if (ifdFirst && !directIoUnsupported_) {
++                output.fd = ::open(path.c_str(), openFlags | O_DIRECT, 0644);
++                if (output.fd >= 0) {
++                    directFd = true;
++                } else if (errno == EINVAL) {
++                    directIoUnsupported_ = true;
++                    std::cerr << "ApertarCore cDNG direct I/O: not supported on this filesystem, "
++                                 "falling back to buffered writes\n";
++                }
++            }
++            if (output.fd < 0)
++                output.fd = ::open(path.c_str(), openFlags, 0644);
++        }
++    }
+     const int fd = output.fd;
+     if (fd < 0)
+         throw std::system_error(errno, std::generic_category(), "Failed to open DNG for writing: " + path);
+ 
+-    ::posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
++    if (!directFd)
++        ::posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+     bool ok = true;
+     if (lossless) {
+         size_t written = 0;
+@@ -1766,17 +1830,36 @@ void CdngEncoder::writeDngFile(const std::string &path,
+             if (n <= 0) { ok = false; break; }
+             written += static_cast<size_t>(n);
+         }
++    } else if (ifdFirst) {
++        // Page 0..: TIFF header, the IFD, zero padding up to the strip offset.
++        directScratch_.ensure(stripOffset);
++        std::memset(directScratch_.data, 0, stripOffset);
++        std::memcpy(directScratch_.data, header.data(), header.size());
++        std::memcpy(directScratch_.data + tiffHeaderBytes, ifdBytes.data(), ifdBytes.size());
++        ok = writeAll(fd, directScratch_.data, stripOffset);
++        if (ok)
++            ok = writeRawPayloadDirect(fd, frame, layout);
++        // The last page was zero padded: cut the file to its real length.
++        if (ok && ::ftruncate(fd, static_cast<off_t>(stripOffset) + static_cast<off_t>(payloadByteCount)) != 0)
++            ok = false;
+     } else {
+         ok = writeAll(fd, header.data(), header.size());
+     }
+-    if (ok && !lossless)
++    if (ok && !lossless && !ifdFirst)
+         ok = writeRawPayload(fd, frame, layout);
+     if (ok && paddingSize > 0)
+         ok = writeAll(fd, padding.data(), paddingSize);
+-    if (ok)
++    if (ok && !ifdFirst)
+         ok = writeAll(fd, ifdBytes.data(), ifdBytes.size());
+     int writeErrno = ok ? 0 : errno;
+-    ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
++    if (!ok && directFd && writeErrno == EINVAL) {
++        // A filesystem that accepted O_DIRECT at open but refuses the writes (FUSE):
++        // this frame is lost, the following ones go buffered.
++        directIoUnsupported_ = true;
++        std::cerr << "ApertarCore cDNG direct I/O: write rejected (EINVAL), falling back to buffered writes\n";
++    }
++    if (!directFd)
++        ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+     if (!output.borrowed && ::close(fd) != 0 && ok) {
+         ok = false;
+         writeErrno = errno;
+@@ -1801,6 +1884,83 @@ void CdngEncoder::writeDngFile(const std::string &path,
+         throw std::system_error(writeErrno, std::generic_category(), "Failed to write DNG: " + path);
+ }
+ 
++CdngEncoder::AlignedBytes::~AlignedBytes()
++{
++    std::free(data);
++}
++
++void CdngEncoder::AlignedBytes::ensure(size_t bytes)
++{
++    if (size >= bytes)
++        return;
++    void *memory = nullptr;
++    if (::posix_memalign(&memory, kDirectIoPage, roundUpToPage(bytes)) != 0)
++        throw std::bad_alloc();
++    std::free(data);
++    data = static_cast<uint8_t *>(memory);
++    size = roundUpToPage(bytes);
++}
++
++bool CdngEncoder::writeRawPayloadDirect(int fd, const RawFrameView &frame, const EncodedRawLayout &layout) const
++{
++    if (layout.rowBytes == 0 || layout.byteCount == 0) {
++        errno = EINVAL;
++        return false;
++    }
++    const size_t total = static_cast<size_t>(layout.byteCount);
++
++    // Fast path: unpacked 16-bit rows are stored verbatim, so write straight from
++    // the raw copy when it is page aligned (CameraController aligns it). 3840x2160
++    // 16-bit is exactly 4050 pages; other heights leave a tail page.
++    const bool rowsVerbatim = frame.packing == PixelPacking::Unpacked && frame.bitDepth == RawBitDepth::Bits16 &&
++        layout.packing == PixelPacking::Unpacked && layout.bitDepth == RawBitDepth::Bits16 &&
++        layout.rowBytes == frame.stride && frame.size >= total;
++    if (rowsVerbatim && pageAligned(frame.data)) {
++        const size_t whole = total / kDirectIoPage * kDirectIoPage;
++        if (whole > 0 && !writeAll(fd, frame.data, whole))
++            return false;
++        const size_t tail = total - whole;
++        if (tail > 0) {
++            directScratch_.ensure(kDirectIoPage);
++            std::memset(directScratch_.data, 0, kDirectIoPage);
++            std::memcpy(directScratch_.data, frame.data + whole, tail);
++            if (!writeAll(fd, directScratch_.data, kDirectIoPage))
++                return false;
++        }
++        return true;
++    }
++
++    // General path: convert rows into the aligned scratch, flush whole pages, keep
++    // the remainder for the next flush, zero pad the final page.
++    const size_t chunk = roundUpToPage(std::max<size_t>(
++        static_cast<size_t>(layout.rowBytes),
++        std::min<size_t>(4u * 1024u * 1024u,
++                         std::max<size_t>(256u * 1024u, static_cast<size_t>(layout.rowBytes) * 64u))));
++    directScratch_.ensure(chunk);
++    size_t buffered = 0;
++    for (uint32_t y = 0; y < frame.height; ++y) {
++        if (buffered + layout.rowBytes > chunk) {
++            const size_t whole = buffered / kDirectIoPage * kDirectIoPage;
++            if (!writeAll(fd, directScratch_.data, whole))
++                return false;
++            const size_t rest = buffered - whole;
++            if (rest > 0)
++                std::memmove(directScratch_.data, directScratch_.data + whole, rest);
++            buffered = rest;
++        }
++        const uint8_t *src = frame.data + static_cast<size_t>(y) * frame.stride;
++        writeDngRowBytes(frame, layout, src, directScratch_.data + buffered);
++        buffered += layout.rowBytes;
++    }
++    if (buffered > 0) {
++        const size_t padded = roundUpToPage(buffered);
++        std::memset(directScratch_.data + buffered, 0, padded - buffered);
++        if (!writeAll(fd, directScratch_.data, padded))
++            return false;
++    }
++    return true;
++}
++
+ CdngEncoder::EncodedRawLayout CdngEncoder::preparePackedCsi2Layout(const RawFrameView &frame) const
+ {
+     if (frame.bitDepth != RawBitDepth::Bits10 && frame.bitDepth != RawBitDepth::Bits12)
+diff --git a/src/cdng/CdngEncoder.hpp b/src/cdng/CdngEncoder.hpp
+index aa021df..d5766b7 100644
+--- a/src/cdng/CdngEncoder.hpp
++++ b/src/cdng/CdngEncoder.hpp
+@@ -104,6 +104,8 @@ public:
+ 
+     EncodedRawLayout prepareRawLayout(const RawFrameView &frame) const;
+     bool writeRawPayload(int fd, const RawFrameView &frame, const EncodedRawLayout &layout) const;
++    // Direct I/O: every write page aligned in offset, length and memory.
++    bool writeRawPayloadDirect(int fd, const RawFrameView &frame, const EncodedRawLayout &layout) const;
+     void writeDngFile(const std::string &path, const RawFrameView &frame, const Metadata &metadata,
+                       int destinationFd = -1) const;
+     const PerformanceStats &lastPerformanceStats() const { return lastPerformanceStats_; }
+@@ -118,6 +120,7 @@ private:
+         uint16_t bits = 0;
+         uint16_t compression = 1;
+         uint32_t stripByteCount = 0;
++        bool ifdFirst = false;
+         bool hasClipName = false;
+         bool hasFrameFileName = false;
+         bool hasMake = false;
+@@ -181,6 +184,8 @@ private:
+         uint32_t exifIsoLongOffset2 = 0;
+         uint32_t exifIsoLongOffset3 = 0;
+         uint32_t exposureIndexOffset = 0;
++        // IFD-first layout (direct I/O): file offset of the image strip, page aligned.
++        uint32_t directStripOffset = 0;
+     };
+ 
+     std::vector<uint8_t> takePayloadScratch(size_t size) const;
+@@ -197,6 +202,19 @@ private:
+     mutable MainIfdLayoutCache mainIfdLayoutCache_;
+     mutable DynamicMetadataCache dynamicMetadataCache_;
+     mutable IfdTemplateCache ifdTemplateCache_;
++    // Page-aligned scratch for direct I/O (header page and converted rows).
++    struct AlignedBytes {
++        uint8_t *data = nullptr;
++        size_t size = 0;
++        AlignedBytes() = default;
++        AlignedBytes(const AlignedBytes &) = delete;
++        AlignedBytes &operator=(const AlignedBytes &) = delete;
++        ~AlignedBytes();
++        void ensure(size_t bytes);
++    };
++    mutable AlignedBytes directScratch_;
++    // Set when the filesystem refuses O_DIRECT (EINVAL); later frames fall back to buffered writes.
++    mutable bool directIoUnsupported_ = false;
+     mutable PerformanceStats lastPerformanceStats_{};
+ };
+ 
+-- 
+2.43.0
+
