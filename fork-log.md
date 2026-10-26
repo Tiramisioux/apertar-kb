@@ -29,7 +29,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
 | `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
 | `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
-| `4ab1057` | Binning per sensor mode and for the current mode (crop width / output width; inferred from the active area when the driver gives no window); `list_sensor_modes`, `get_state` `sensor_binning*`; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub), not built |
+| `4ab1057` | Binning per sensor mode and for the current mode (crop width / output width; inferred from the active area when the driver gives no window); `list_sensor_modes`, `get_state` `sensor_binning*`; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built and running 21:39, list_sensor_modes + get_state verified |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
@@ -59,7 +59,7 @@ GitHub (`origin`) only from the Mac, when Patrik says publish. `apertar_publish.
 | Commit | Change | Status |
 | --- | --- | --- |
 | `e5b74d3` | 18 aspect-ratio crop modes, exactly as shipped on the 1.6.0 image, which is in no published commit (#12) | offer |
-| `24172e6` | branch `cinemate-port` (on GitHub, Mac, Pi; 2026-10-26): each mode's crop = its real sensor window (T26) | fork-only, not built |
+| `24172e6` | branch `cinemate-port` (on GitHub, Mac, Pi; 2026-10-26): each mode's crop = its real sensor window (T26) | fork-only; DKMS-installed 21:36, crops verified via list_sensor_modes |
 
 Not taken: Apertar-Studio `main` is 4 commits past the base (`3680bf4`, `c0f5404`, `11178c8`,
 `70bdb26`: format hardening, HMAX table, RAW10 4K, CCMP Clear HDR gate).
