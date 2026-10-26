@@ -42,8 +42,13 @@ Reading assignments: `drv/imx585.c:560-578` (macros), `:586-600` (two windowed r
 **3.1 What does the subdev say right now?** (Pi, Core running in a binned Full HD mode, read-only)
 
 ```bash
-for d in /dev/v4l-subdev*; do v4l2-ctl -d $d --get-selection target=crop 2>/dev/null && echo "$d"; done
+for d in /dev/v4l-subdev*; do grep -q imx585 /sys/class/video4linux/${d##*/}/name && v4l2-ctl -d $d --get-subdev-selection pad=0,target=crop && v4l2-ctl -d $d --get-subdev-fmt pad=0 | grep Width; done
 ```
+
+A subdev needs `--get-subdev-selection` (`VIDIOC_SUBDEV_G_SELECTION`); plain `--get-selection` is for video nodes and fails with
+"Inappropriate ioctl for device" on every subdev. The second command prints the mode's output size, so you know which entry you are
+looking at. In the 16-bit Clear HDR mode (`3840/2200`) you get `0, 0, 3840, 2160`: one of the two entries T26 leaves unchanged, so
+the defect only shows in a binned or windowed mode.
 
 Prediction: `Selection: crop, Left 0, Top 0, Width 1920, Height 1080` for the imx585 subdev. What should a 2x2-binned full-field mode report?
 
@@ -156,7 +161,7 @@ After the reboot, with Core running:
 ```bash
 journalctl -u apertar-core -b --no-pager | grep 'ApertarCore sensor mode' | grep -E '1920x1080|1920x1038|3840x1504' | head -3
 journalctl -u apertar-core -b --no-pager | grep 'preview crop: native_max='
-for d in /dev/v4l-subdev*; do v4l2-ctl -d $d --get-selection target=crop 2>/dev/null && echo "$d"; done
+for d in /dev/v4l-subdev*; do grep -q imx585 /sys/class/video4linux/${d##*/}/name && v4l2-ctl -d $d --get-subdev-selection pad=0,target=crop && v4l2-ctl -d $d --get-subdev-fmt pad=0 | grep Width; done
 ```
 
 Expected: `crop=(0, 0)/3840x2160` for 1920x1080, `(0, 42)/3840x2076` for 1920x1038, `(0, 328)/3840x1504` for the 2.55:1 crop; `v4l2-ctl` agrees for the current mode. Then look at the picture: preview framing in a crop mode and in binned Full HD; record one clip per class (binned, 4K crop, 16-bit) and open a frame.
@@ -174,7 +179,7 @@ Core's ScalerCropMaximum could not tell a binned or windowed mode from a
 full-field one. The crop is now the window in native sensor pixels (full
 width, PIX_VST - 12, height before binning); 4K and 16-bit unchanged.
 Register programming does not read .crop.
-Tested: v4l2-ctl --get-selection per mode; Core sensor-mode log; pictures
+Tested: v4l2-ctl --get-subdev-selection per mode; Core sensor-mode log; pictures
 unchanged in binned, cropped and 16-bit modes."
 git -C ~/drivers/imx585-v4l2-driver push -u origin apertar
 ```
@@ -189,7 +194,7 @@ Add a row to `fork-log.md` (driver section) and update `architecture/drivers.md`
 | libcamera rejects a mode (`camera configured:` shows a different `stream=`) | a crop larger than the active area (`top + height > 2160`) | re-check the invariant in 4.2/4.3 |
 | the preview of a crop mode is framed differently than before | expected: libcamera's `ScalerCrop` default now follows the real window | note it in the hardware log; the DNG content is unaffected |
 | 16-bit preview height changes from 2120 | the IPA scale for the 2200-row mode | note it; the table for that entry is unchanged on purpose |
-| `v4l2-ctl --get-selection` still shows the old values | an old module is loaded (`/lib/modules/.../updates/dkms/imx585.ko.xz`) | `modinfo imx585 | grep srcversion` vs the build; reboot again |
+| `v4l2-ctl --get-subdev-selection` still shows the old values | an old module is loaded (`/lib/modules/.../updates/dkms/imx585.ko.xz`) | `modinfo imx585 | grep srcversion` vs the build; reboot again |
 
 ## 8. What you learned, going further
 
