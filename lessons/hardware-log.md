@@ -324,3 +324,20 @@ Entry format:
   a 10-minute take holds with ~3 % margin. `ipa_rate.py` prints nothing since the `IPARPI:ERROR` drop-in (it counts IPA lines).
 - Confirmed by: measurements run on the Pi at Patrik's request.
 
+## 2026-10-26: CFE card pulled with T28 built: record still starts, the take never ends, reboot needed
+
+- Tested: Pi 5 (4 GB), Core `cinemate-port` `e8bb1b7` (T28), PCIe Gen 2, CFE card pulled between 22:34:49 and 22:36:35,
+  then record pressed (Patrik).
+- Seen (Patrik): recording started; it did not stop by itself; Core could not get out of it; Patrik rebooted (boot 22:36:35).
+  Nothing of that take is on the card (newest folder C0104, 22:34:49). Journal lost (volatile).
+- Why: **probable** that T28's probe still saw the medium as alive: on a CFE pull the kernel keeps `nvme0n1p2` and the
+  controller stays `live` until the first I/O times out (NVMe default 30 s), so the gate passed and the watcher had nothing
+  to report; frames went to the page cache. **Probable** that the stop then hung joining writer threads stuck in `write()`
+  on the vanished device. The CFE HAT's status byte (`0x34` bus 1, bit 0 = card out; `0x02` with the card seated) is the
+  immediate signal, and T28 does not read it.
+- Next: T28 follow-up: (1) HAT card-present bit in `MediaProbe` (or a state file written by the automounter, see issue #20);
+  (2) when the medium is gone, stop without joining writers blocked in the kernel. Then repeat the pull with a persistent
+  journal.
+- Confirmed by: Patrik's report; the card's contents.
+- Tutorial: T28 5.2 (CFE variant).
+
