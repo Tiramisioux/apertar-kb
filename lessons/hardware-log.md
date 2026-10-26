@@ -150,3 +150,27 @@ Entry format:
 - Confirmed by: measurements run on the Pi at Patrik's request; interpretation pending.
 - Tutorial: T25.
 
+## 2026-10-26: 30 fps Clear HDR 16-bit loss is a steady single-frame skip from a ~38 ms serial stage, not storage and not libcamera's thread running out of CPU
+
+- Tested: Pi 5 (4 GB), Apertar-Core `clearhdr-fixes` 351a3ee, 3840x2160 Clear HDR 16-bit, 30 fps, uncompressed cDNG, exFAT on NVMe,
+  Pi otherwise idle. New read-only tool `working/tools/hwcount.py` (Cortex-A76 PMU, user-space counts of one thread). 20:41-20:43.
+- Results, libcamera's CameraManager thread:
+
+  | | fps delivered | thread busy | IPC | stall_backend | instructions / frame | cycles / frame | L3 refills / frame |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | preview only | 30.00 | 41 % | 1.87 | 12 % | ~47 M | ~25 M | 0.57 M |
+  | recording | 26.45 | 54 % | 1.30 | 21 % | ~47 M | ~36 M | 0.57 M |
+
+  Cores while recording: 59/44/48/38 % (idle 2/1/2/41). Five other Core threads at 18-20 % each. `nr_writeback` ~3 MB.
+- Gap pattern (C0077-C0079, from the DNG frame indices): every gap is exactly **one** frame, every 5-9 frames, and the first gap comes
+  only after 27-47 frames. No double gaps, no bursts.
+- Why: **confirmed** memory contention slows libcamera's passes: the same instructions and the same cache misses take ~45 % more cycles
+  while recording (IPC 1.87 -> 1.30). **Confirmed** that this thread is not saturated (54 %, ~20 ms of 33). **Probable**: a serial
+  per-frame stage takes ~38 ms (1/26.45 s) while recording; the 8 raw buffers absorb the deficit for the first ~1-1.5 s, then the CFE
+  skips one frame each time it falls a full frame behind. Single regular gaps rule out storage stalls (those come in bursts).
+  **Unconfirmed**: which stage. Candidates: the CameraManager work plus the PiSP back end (preview) and the IPA run strictly one after the
+  other per frame, each slowed by memory traffic. Settles with libcamera's own per-stage timing (`LIBCAMERA_LOG_LEVELS=RPI:0`, needs a
+  Core restart with that variable) or by recording without the preview/BE output.
+- Confirmed by: measurements run on the Pi at Patrik's request; interpretation pending.
+- Tutorial: T25 (follow-up).
+
