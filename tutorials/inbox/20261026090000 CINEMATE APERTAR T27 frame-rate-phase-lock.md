@@ -112,12 +112,13 @@ Apertar's libcamera fork may carry an IMX585 `getBlanking` lattice search (`libc
 ```bash
 git -C ~/libcamera merge-base --is-ancestor 4cff971 7e9fef0 && echo "installed libcamera has the lattice"   # /usr/local is 7e9fef0
 SUB=$(for d in /dev/v4l-subdev*; do grep -q imx585 /sys/class/video4linux/${d##*/}/name && echo $d; done); echo $SUB
-python3 -I ~/apertar-kb/working/tools/core.py set_fps value=25
-v4l2-ctl -d $SUB --get-ctrl=horizontal_blanking,vertical_blanking
-python3 -I ~/apertar-kb/working/tools/core.py set_fps value=24.9993        # 40001 us
-v4l2-ctl -d $SUB --get-ctrl=horizontal_blanking,vertical_blanking
-python3 -I ~/apertar-kb/working/tools/core.py set_fps value=25             # back
+C="python3 -I $HOME/apertar-kb/working/tools/core.py"
+for f in 24.9993 24.99 25; do $C set_fps value=$f >/dev/null; sleep 1; echo "fps $f:"; v4l2-ctl -d $SUB --get-ctrl=horizontal_blanking,vertical_blanking; done
 ```
+
+Wait (`sleep 1`) before reading back: read straight after `set_fps` the subdev still shows the old values (seen 2026-10-26).
+Measured on the Pi, 4K Clear HDR 16-bit: 24.9993 → `217 / 2912` (HMAX 581 x VMAX 5112), 24.99 → `308 / 2802` (HMAX 594 x 5002),
+25 → `0 / 3200` (550 x 5400). The lattice is active.
 
 Core pins `int64_t(1000000.0 / fps)` (truncated, `CC:2086`): 24.9994 gives 40000.96 → 40000, the same pin as 25 fps, so use
 24.9993 (40001.12 → 40001). The first subdev is `csi2`, not the sensor; the loop picks the imx585 one. The control names are

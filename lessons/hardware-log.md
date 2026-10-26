@@ -243,3 +243,17 @@ Entry format:
 - Confirmed by: Patrik ("consider T26 finished"), measurements over the socket.
 - Tutorial: T26.
 
+## 2026-10-26: the installed libcamera's imx585 lattice changes HMAX for a 1 µs frame-duration change (T27 3.3)
+
+- Tested: Pi 5 (4 GB), system libcamera `7e9fef0` (contains `4cff971` "imx585 exact frame-rate getBlanking"), Core `cinemate-port`
+  `4ab1057`, 3840x2160 Clear HDR 16-bit (stream 3840x2200), `set_fps` then `sleep 1`, `v4l2-ctl --get-ctrl=horizontal_blanking,vertical_blanking`.
+- Seen: 25 fps (40000 µs) `0 / 3200` = HMAX 550 x VMAX 5400; 24.9993 fps (40001 µs) `217 / 2912` = HMAX 581 x 5112; 24.99 fps
+  (40016 µs) `308 / 2802` = HMAX 594 x 5002. Exactly as `phase_lock_sim.cpp` case 6 and `cam_helper_imx585.cpp:119-232` predict.
+  Read back without the pause, the subdev still shows the previous values.
+- Why: **confirmed** that a pinned non-standard duration re-chooses the line length (up to +8 % here), not only the frame length.
+  So a phase lock's ±1-2 µs pushes will alternate HMAX between frames: rolling-shutter skew changes by that much on those frames.
+  Exposure is re-fitted by the helper. **Unconfirmed**: whether that is visible (T27's flat-grey and pan check).
+- Also: Core truncates the pin (`int64_t(1e6 / fps)`, `CC:2086`), so 24.9994 fps is the same 40000 µs pin as 25.
+- Confirmed by: Patrik's readback on the Pi.
+- Tutorial: T27 3.3.
+
