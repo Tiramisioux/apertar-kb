@@ -41,13 +41,13 @@ int main()
     auto exfat = writerSettingsFor(MediaFilesystem::Exfat, MediaClass::UsbUas);
     auto fuse = writerSettingsFor(MediaFilesystem::NtfsFuse, MediaClass::PiNvme);
     check(ext4.workers == 4 && ext4.extraRawBuffers == 0 && ext4.directIo, "ext4: 4 workers, no extra buffers, direct");
-    check(exfat.workers == 2 && exfat.extraRawBuffers == 2 && exfat.directIo && exfat.queueFrames > ext4.queueFrames, "exfat: 2 workers, +2 buffers, deeper queue");
+    check(exfat.workers == 4 && exfat.extraRawBuffers == 0 && exfat.queueFrames == 12, "exfat: Core's pre-profile 4 workers, queue 12 (measured C0101/C0106)");
     check(!fuse.directIo, "ntfs-3g: no direct I/O");
     check(!writerSettingsFor(MediaFilesystem::None, MediaClass::Unknown).directIo, "unknown: conservative");
 
     std::printf("5. profile\n");
     const MediaProfile p = deriveMediaProfile(MediaClass::UsbUas, "/dev/sda1", "exfat");
-    check(p.known() && p.rootDisk == "sda" && p.summary() == "class=usb-uas fs=exfat workers=2 queue=16 raw_buffers=+2", "summary string");
+    check(p.known() && p.rootDisk == "sda" && p.summary() == "class=usb-uas fs=exfat workers=4 queue=12 raw_buffers=+0", "summary string");
     MediaSnapshot unmounted;
     check(!detectMediaProfile(unmounted).known(), "unmounted snapshot gives no profile");
     MountTableEntry e{true, "/dev/sda1", "exfat", "rw"};
