@@ -47,7 +47,7 @@ int main()
 
     std::printf("5. profile\n");
     const MediaProfile p = deriveMediaProfile(MediaClass::UsbUas, "/dev/sda1", "exfat");
-    check(p.known() && p.rootDisk == "sda" && p.summary() == "class=usb-uas fs=exfat workers=2 queue=16 raw_buffers=+2 direct_io=1", "summary string");
+    check(p.known() && p.rootDisk == "sda" && p.summary() == "class=usb-uas fs=exfat workers=2 queue=16 raw_buffers=+2", "summary string");
     MediaSnapshot unmounted;
     check(!detectMediaProfile(unmounted).known(), "unmounted snapshot gives no profile");
     MountTableEntry e{true, "/dev/sda1", "exfat", "rw"};
