@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T27. The optional frame-rate phase lock: measure the cadence, simulate the servo, then switch it on
 
-Status: written 2026-10-26 (cloud session; patch `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` is the reference, Core `9e6df59`, not compiled on a Pi; the pure servo header passes `working/tools/phase_lock_sim.cpp` on the host; amended after the critic pass with env gains, saturation detection, state telemetry and a pin that reads no settings). Needs T23–T25 applied (the patch sits on top of them). Line numbers are at `9e6df59`, the tree right after this patch; later patches shift them, the grep anchors do not. Answer: `working/phaselock-answer.md`. Builds **M7** (sensor path), the libcamera control merge, and the audio/video clock story.
+Status: written 2026-10-26 (cloud session; patch `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` is the reference, Core `9e6df59`, not compiled on a Pi; the pure servo header passes `working/tools/phase_lock_sim.cpp` on the host; amended after the critic pass with env gains, saturation detection, state telemetry and a pin that reads no settings). Needs T23–T25 applied (the patch sits on top of them). Line numbers in the text are at `9e6df59`; the `%% tutor` refs are at `80ddac1` (`cinemate-port`, applied 2026-10-26 on top of the binning commit `4ab1057`); later patches shift them, the grep anchors do not. Answer: `working/phaselock-answer.md`. Builds **M7** (sensor path), the libcamera control merge, and the audio/video clock story.
 
 **You will learn**
 - Why a 24.000 fps sensor is never 24.000 fps against the Pi clock, and what that does to Core's frame numbering and WAV length over a long take.
@@ -242,22 +242,22 @@ Undo: `set_fps_phase_lock enabled=false` (persisted). Full undo: `git checkout -
 ref core src/camera/FramePhaseLock.hpp 79 Decision step(bool enabled, bool recording, double fps, int64_t referenceNs)
 ref core src/camera/FramePhaseLock.hpp 90 const bool bigGap = active && sincePrevious > static_cast<int64_t>(1.5 * periodNs);
 ref core src/camera/FramePhaseLock.hpp 129 const int64_t durationUs = std::llround(requestedUs);
-ref core src/camera/CameraController.cpp 7051 void stepFramePhaseLock(libcamera::Request *request)
-ref core src/camera/CameraController.cpp 7078 t.proportional = env("APERTAR_PHASE_LOCK_KP", t.proportional);
-ref core src/camera/CameraController.cpp 7119 std::cerr << "ApertarCore phase-lock: saturated echoed_us=" << echoedUs
-ref core src/camera/CameraController.cpp 7133 PhaseLockStatus phaseLockStatus()
-ref core src/camera/CameraController.cpp 7229 if (phaseLockDurationUs_ && !photoBusy) {
-ref core src/camera/CameraController.cpp 7303 stepFramePhaseLock(request);
-ref core src/camera/CameraController.cpp 6046 if (std::fabs(settings_.fps - sanitized.fps) > 1e-9 || settings_.fpsPhaseLock != sanitized.fpsPhaseLock ||
-ref core src/camera/CameraController.cpp 6210 std::cerr << "ApertarCore phase-lock stats: max_abs_err_us=" << std::lround(phaseLock_.maxAbsErrorUs)
-ref core src/camera/CameraController.cpp 9422 PhaseLockStatus CameraController::phaseLockStatus() const
+ref core src/camera/CameraController.cpp 7089 void stepFramePhaseLock(libcamera::Request *request)
+ref core src/camera/CameraController.cpp 7116 t.proportional = env("APERTAR_PHASE_LOCK_KP", t.proportional);
+ref core src/camera/CameraController.cpp 7157 std::cerr << "ApertarCore phase-lock: saturated echoed_us=" << echoedUs
+ref core src/camera/CameraController.cpp 7171 PhaseLockStatus phaseLockStatus()
+ref core src/camera/CameraController.cpp 7267 if (phaseLockDurationUs_ && !photoBusy) {
+ref core src/camera/CameraController.cpp 7341 stepFramePhaseLock(request);
+ref core src/camera/CameraController.cpp 6075 if (std::fabs(settings_.fps - sanitized.fps) > 1e-9 || settings_.fpsPhaseLock != sanitized.fpsPhaseLock ||
+ref core src/camera/CameraController.cpp 6239 std::cerr << "ApertarCore phase-lock stats: max_abs_err_us=" << std::lround(phaseLock_.maxAbsErrorUs)
+ref core src/camera/CameraController.cpp 9468 PhaseLockStatus CameraController::phaseLockStatus() const
 ref core include/apertar/core/Types.hpp 127 bool fpsPhaseLock = false;
-ref core src/ApertarCoreApp.cpp 7858 << ",\"fps_phase_lock_err_us\":" << jsonNumber(phaseLockStatus.errorUs, 1)
-ref core src/ApertarCoreApp.cpp 9499 if (command.name == "set_fps_phase_lock") {
+ref core src/ApertarCoreApp.cpp 7869 << ",\"fps_phase_lock_err_us\":" << jsonNumber(phaseLockStatus.errorUs, 1)
+ref core src/ApertarCoreApp.cpp 9514 if (command.name == "set_fps_phase_lock") {
 ref core src/audio/TimestampedAudioCapture.cpp 195 SND_PCM_TSTAMP_TYPE_MONOTONIC
 check 3.0 | g++ -std=c++20 -O2 -I /home/pi/ApertarCore/src/camera /home/pi/apertar-kb/working/tools/phase_lock_sim.cpp -o /tmp/phase_lock_sim && /tmp/phase_lock_sim | tail -1 | ALL CHECKS PASSED
 check 3.1 | grep -rc 'FrameWallClock' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^0$
-check 4.1 | test -f /home/pi/ApertarCore/src/camera/FramePhaseLock.hpp && grep -c 'struct FramePhaseLock' /home/pi/ApertarCore/src/camera/FramePhaseLock.hpp | ^1$
+check 4.1 | grep -c 'struct FramePhaseLock' /home/pi/ApertarCore/src/camera/FramePhaseLock.hpp | ^1$
 check 4.2 | grep -c 'bool fpsPhaseLock' /home/pi/ApertarCore/include/apertar/core/Types.hpp | ^1$
 check 4.3 | grep -c 'stepFramePhaseLock' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^2$
 check 4.3b | grep -c 'phase-lock: saturated' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
