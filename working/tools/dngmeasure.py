@@ -54,7 +54,12 @@ def band_mean(path, layout, row0=1040, rows=64, step=4):
 
 
 for clip in sys.argv[1:]:
-    files = sorted(f for f in os.listdir(clip) if f.endswith('.dng'))
+    all_dngs = sorted(f for f in os.listdir(clip) if f.endswith('.dng'))
+    # A pulled take can leave empty entries for its last frames; count them, measure the rest.
+    empty = [f for f in all_dngs if os.path.getsize(os.path.join(clip, f)) == 0]
+    files = [f for f in all_dngs if f not in set(empty)]
+    if empty:
+        print(f"{os.path.basename(clip)}: {len(empty)} empty file(s), from {empty[0]}")
     idx = [int(re.search(r'_(\d{6,})\.dng$', f).group(1)) for f in files]
     holes = [b for a, b in zip(idx, idx[1:]) if b != a + 1]
     layout = raw_layout(os.path.join(clip, files[0]))
