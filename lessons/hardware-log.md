@@ -276,3 +276,19 @@ Entry format:
 - Confirmed by: measurements run on the Pi at Patrik's request.
 - Tutorial: T27 5.1 / measurement.
 
+## 2026-10-26: 60 s takes with and without the phase lock: the lock drops frames and makes the picture flicker (T27)
+
+- Tested: Pi 5 (4 GB), Core `cinemate-port` `114bfb9`, system libcamera `7e9fef0` (imx585 lattice), 4K Clear HDR 16-bit 25 fps,
+  uncompressed cDNG, ISO 800, 20000 µs, 4000 K manual, static scene. C0102 lock off (22:17:12), C0103 lock on (armed 20 s before,
+  22:18:40). Measured with a centre band (rows 1040-1104) of every DNG; script in the session, logic in the T27 note.
+- C0102 (off): 1490 frames, 0 holes, 0 dropped, WAV = 1490 frames; band level frame-to-frame step mean 0.017 %, p99 0.058 %,
+  max 0.28 %, sd 2.0.
+- C0103 (on): 1478 frames, 10 holes = `dropped_gap_estimate=10` (one `drop[capture-gap]` 80 ms), WAV 1488 frames;
+  `phase-lock stats: max_abs_err_us=199 duration_pushes=673`; band step mean 0.53 %, p99 2.85 %, **max 8.9 %**, sd 30.1.
+- Why: **confirmed** that on this libcamera the lock harms the picture: its pushes change HMAX, the helper's exposure re-fit does not
+  hold the level, and period changes cost frames. **Probable**: the drops then kick the phase error and the servo pushes more.
+- Note: the `phase-lock stats` line is printed at every record stop from telemetry that only resets there; with the lock off it
+  can show leftovers from an earlier lock-on period (C0102 showed 31 pushes from 22:14-22:15).
+- Decision: lock off (default). Confirmed by: measurements run on the Pi at Patrik's request.
+- Tutorial: T27.
+

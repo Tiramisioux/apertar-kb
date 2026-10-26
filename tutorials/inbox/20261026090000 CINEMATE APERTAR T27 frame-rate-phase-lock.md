@@ -16,6 +16,8 @@ Status: written 2026-10-26 (cloud session; patch `working/patches/0001-camera-fr
 > the clock (40-80 ppm right after a correction). Referenced to BOOTTIME, the lock would make the sensor follow those slews and
 > switch HMAX every ~10 frames (lattice, 3.3). **Left off.** 5.2/5.3 not run. How to measure: run the lock with
 > `APERTAR_PHASE_LOCK_DEADBAND_US=100000` and sample `BOOTTIME - MONOTONIC_RAW` at the same time; subtract (hardware log 2026-10-26).
+> 60 s takes, same scene: lock off C0102 0 drops, level steady to 0.02 % per frame; lock on C0103 **10 drops, level steps up to
+> 8.9 %**, 673 pushes. The lattice turns every push into an HMAX change that shows in the picture. Keep it off on this libcamera.
 
 **You will learn**
 - Why a 24.000 fps sensor is never 24.000 fps against the Pi clock, and what that does to Core's frame numbering and WAV length over a long take.
