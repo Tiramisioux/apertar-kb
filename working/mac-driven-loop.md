@@ -17,8 +17,9 @@ the 4 GB board cannot carry the dev tools and a clean measurement together.
    (one-off, brings the Pi-only T23 commit `db17860` over. Read-only on the Pi).
 2. Mac: edit and commit on branch `clearhdr-fixes`. The work stays off GitHub: never push this branch to `origin`.
 3. To the Pi: the `pi` remote's push URL is a deliberate dud. Push to an explicit URL and to a **staging name**, not to the
-   branch checked out on the Pi: `git push ssh://apertar/home/pi/ApertarCore clearhdr-fixes:clearhdr-fixes-mac`, then on the
-   Pi `git merge --ff-only clearhdr-fixes-mac`. Patrik decides each time; this bypasses a safeguard on purpose.
+   branch checked out on the Pi, then fast-forward on the Pi. Patrik decides each time; this bypasses a safeguard on
+   purpose. Scripted (2026-10-26): `~/.claude/skills/apertar-dev/scripts/apertar_push_to_pi.sh core clearhdr-fixes`
+   (`--dry-run` first). It refuses on Pi-only commits, a dirty Pi tree or a non-fast-forward.
 4. Build on the Pi only: `ssh apertar 'cmake --build ~/ApertarCore-build -j2'` (no build while a take runs).
 5. Restart is Patrik's (`sudo`): `sudo systemctl restart apertar-core`.
 6. Test over ssh: `bash ~/apertar-kb/working/tools/takes.sh 5 10` and `core.py`, with nothing else running on the Pi.
@@ -26,8 +27,8 @@ the 4 GB board cannot carry the dev tools and a clean measurement together.
 
 ## Open
 
-- The Mac skill file (`SKILL.md`, source of truth) was not read from the Pi: check that it matches this loop.
-- Tutorial progress is written on whichever machine runs `tutorial.py`; the contract says the Mac collects the Pi's with
+- ~~The Mac skill file did not match this loop~~ Done 2026-10-26: `SKILL.md`, `SKILL.pi.md` and `workspace-contract.md` describe it.
+- Tutorial progress is written on the machine that runs `tutorial.py`: with the Mac-first loop that is the Mac (it reads the Pi over ssh), so progress is already in the Mac KB and `apertar_publish.sh kb` sends it on. Pi-side runs still go via `deploy_to_pi.sh` (**unconfirmed** end to end).
   `deploy_to_pi.sh`. How progress travels Mac to Pi is **unconfirmed**.
 - Pending KB entries: `hardware-log.md` follow-up for the uncompressed results (25 fps clean in 4 of 5 earlier takes, 30 fps
   loses ~51), the amendment that the T22 takes were lossless-JPEG (encoder capacity ~18 fps per Core's own
