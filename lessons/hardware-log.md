@@ -437,3 +437,15 @@ Entry format:
   first cluster) was still dirty in memory; the folder fsync writes the folder, not the files' entries. Fix `6fee0e4`.
 - Confirmed by: the card's contents after re-insert.
 
+## 2026-10-26: pull mid-take with per-file fsync: all frames up to ~0.9 s before the pull are readable
+
+- Tested: Core `6fee0e4` (writeback per DNG; 1 s sync thread fsyncs each finished DNG, then the folder), take C0011 (~11 s),
+  card pulled 23:58:57.26.
+- Seen: HAT `hat_card=out pulled=1` → `recording failure ... media_removed` 0.6 ms later; automounter `card removed` 10 ms
+  later; `written=280`; `dead-medium stages raw_ms=78 audio_ms=608`; re-insert mounted 23:59:08.4. On the card: 281 files,
+  **258 full frames (readable, band level steady, max step 0.078 %) and 23 empty** (the last 0.9 s). `audio_capture.raw`
+  0 bytes, no WAV (skipped on a dead medium by design).
+- Why: **confirmed** that fsyncing each finished file within a second keeps a pulled take readable to ~1 s before the pull.
+  Audio raw fix `7a545d9` (fsync once a second); `working/tools/raw2wav.py` turns a recovered raw file into a WAV.
+- Confirmed by: the card's contents after re-insert.
+
