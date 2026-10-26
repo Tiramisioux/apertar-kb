@@ -131,3 +131,22 @@ Entry format:
   call it fixed. exFAT was left marked dirty (fsck.exfat -n by Patrik pending).
 - Confirmed by: Pi kernel log (Patrik); the cause is not confirmed.
 - Tutorial: T23.
+
+## 2026-10-26: T25 (raw copy off libcamera's thread) removes Core's cost there; 30 fps Clear HDR 16-bit still delivers only ~26 fps
+
+- Tested: Pi 5 (4 GB), Apertar-Core branch `clearhdr-fixes` 351a3ee (T23 + T25), 3840x2160 Clear HDR 16-bit, uncompressed cDNG, exFAT on NVMe,
+  Pi otherwise idle, 20:33-20:38.
+- Worked: safety pass (3 takes at 25 fps, 0 missing, 12/16-bit switches, `record_stop` under lossless 30 fps load returned in 0.09 s,
+  Clear HDR off/on, same PID throughout, no `drop[copy-slot]`, files the same size as before, 16,590,340 bytes). `usample.py` on the
+  CameraManager thread while recording at 30 fps: `requestComplete`/`recordRawFrame` no longer on the callchain (21 % before T25).
+- Did not work: 30 fps. Takes C0077-C0079 missed 46/30/33 of ~287 (before T25: 35-52), all `dropped_gap_estimate`, `peak_queue` 1/12,
+  ipa 25.1-26.4 fps.
+- Numbers: CameraManager busy idle at 30 fps 44 % (29.99 fps delivered) = ~14.7 ms per frame for libcamera's swap + stats; recording
+  at 30 fps 61 % at ~26 fps = ~23.5 ms per frame with Core's share gone. The same libcamera passes take ~60 % longer while recording.
+- Why: **confirmed** that Core's copy is off the thread. **Probable** that the remaining loss is memory-bandwidth contention: recording
+  adds the copy (read + write) and the NVMe writes to the CFE DMA and libcamera's two full-frame passes; T22 already showed memory traffic
+  alone (dd to tmpfs) costs frames. **Unconfirmed**: why the thread loses frames at 61 % busy rather than 100 %; whether the CFE runs out
+  of queued buffers (needs the `has no buffer` line, not printable on this kernel, T22 4.6).
+- Confirmed by: measurements run on the Pi at Patrik's request; interpretation pending.
+- Tutorial: T25.
+
