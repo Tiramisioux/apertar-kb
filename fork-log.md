@@ -44,6 +44,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `dc471c1` | CFE automounter: card pulled while mounted → lazy unmount + PCIe remove, so the next insert remounts (T18 step 5a); branch `cinemate-port` | fork-only, Mac + Pi; built 22:58, install to `/usr/local/libexec` pending |
 | `160898c` | Touch UI follows Core's media state (MEDIA REMOVED / ERROR) instead of only the mount table; branch `cinemate-port` (created 2026-10-26 from `main` `4415a55`, on GitHub, Mac, Pi) | fork-only, built 22:55 |
 | `66d6d19` | Stop tracking the committed `build/` tree (551 files, 18 MB, #5) | offer |
 | `29ed99b` | Executable bits and `mesa-minimal` symlinks restored (#6) | offer |
