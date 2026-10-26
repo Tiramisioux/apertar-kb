@@ -47,3 +47,16 @@ Entry format:
   starts first (`ApertarCoreApp.cpp:6881` vs `:6893`) and would hold line 21. Config is read only at Core start.
 - Confirmed by: Patrik at the rig, "now it works".
 - Tutorial: `20261025193414 CINEMATE APERTAR tally-gpio21-tutorial` (T17, now in `APERTAR/_archive/`).
+
+## 2026-10-26: `/media/RAW` is exFAT on NVMe; kept for macOS/Windows compatibility
+
+- Tested: Pi 5, Apertar-Core fork `main` f60e301, `findmnt -no SOURCE,FSTYPE,OPTIONS /media/RAW` (T22 step 3.1).
+- Worked: n/a (a reading). Result: `/dev/nvme0n1p2 exfat rw,noatime,uid=1000,gid=1000,fmask=0002,dmask=0002,allow_utime=0020,iocharset=utf8,errors=remount-ro`.
+  Patrik predicted exFAT before running it.
+- Did not work: n/a
+- Why: Core's `format_media` defaults to exFAT (`ApertarCoreApp.cpp:10647`). ext4 would likely drop fewer frames
+  (Cinemate `a61a589`: exFAT/NTFS have spikier write+metadata latency), but exFAT mounts on macOS and Windows without drivers.
+  Both exFAT and ext4 support direct I/O (`fs/exfat/inode.c:492-506`), so T24 stays open. Consequence for T23-T26: work with exFAT
+  (buffer count, direct I/O, media profile), do not switch filesystem.
+- Confirmed by: Patrik, own `findmnt` reading and "yes, lets keep exfat".
+- Tutorial: `T22 clearhdr-drops-measure` (step 3.1).
