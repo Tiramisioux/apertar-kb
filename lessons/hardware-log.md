@@ -216,3 +216,18 @@ Entry format:
 - Confirmed by: measurements run on the Pi at Patrik's request.
 - Tutorial: T25 follow-up (libcamera L1).
 
+## 2026-10-26: libcamera L2 (swap + stats on a worker thread) runs safely but does not raise 30 fps delivery
+
+- Tested: Pi 5 (4 GB), Core d9f00d4, libcamera `apertar` 6b0b49f in `~/opt/libcamera-apertar`, drop-in `QBC_RAW_STATS_ROW_STEP=4`,
+  `QBC_RAW_CPU_WORKER=1` (journal: "Raw CPU passes run on a worker thread"). 21:10-21:16.
+- Worked: 25 fps uncompressed C0095 144/144; DNG pixel data in the right byte order (median raw 3643 vs 3625 before, same scene);
+  Clear HDR off/on, lossless 30 fps stop under load (109 ms), fps changes while running, no errors, same process throughout.
+- Did not work: 30 fps uncompressed C0098-C0100 missed 27/31/14 (L1 alone: 7/8/20; before L1: 30-46), delivery 26.3-28.2 fps.
+  CameraManager thread 34 % busy while recording (L1: 43 %, before: 54 %).
+- Why: **confirmed** the pipeline thread is no longer the limit (34 % busy, still losing frames). **Probable**: the remaining limit is
+  the back end itself (hardware, memory-bound): with the swap now overlapping the back end in time, both compete for memory, and the
+  per-frame cycle does not shrink. **Unconfirmed**: back end start->done with L2; settles with one more `LIBCAMERA_LOG_LEVELS=RPI:0` window.
+  Take-to-take spread is large (C0091 20 vs C0089 7), so 3 takes per setting are a weak comparison.
+- Confirmed by: measurements run on the Pi at Patrik's request.
+- Tutorial: T25 follow-up (libcamera L2).
+

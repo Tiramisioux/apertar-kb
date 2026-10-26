@@ -48,7 +48,8 @@ GitHub (`origin`) only from the Mac, when Patrik says publish. `apertar_publish.
 | Commit | Change | Status |
 | --- | --- | --- |
 | `7e9fef0` | base, unchanged (will127534 `qbc-pisp-handler`) | upstream of the fork |
-| `889567a` | `QBC_RAW_STATS_ROW_STEP=N`: software raw stats read every Nth Bayer row pair (default 1 = unchanged); built on the Pi into `~/opt/libcamera-apertar`, not yet run | fork-only (Pi staging, not on GitHub) |
+| `889567a` | `QBC_RAW_STATS_ROW_STEP=N`: software raw stats read every Nth Bayer row pair (default 1 = unchanged); built on the Pi into `~/opt/libcamera-apertar`; 30 fps ~26 -> ~28.5 | fork-only (Pi staging, not on GitHub) |
+| `6b0b49f` | `QBC_RAW_CPU_WORKER=1`: endian swap, CCMP unwrap and SW raw stats on a worker thread (default off); safe on the Pi, no 30 fps gain | fork-only (Pi staging, not on GitHub) |
 
 ## imx585-v4l2-driver · branch `apertar` · base will127534 `qbc-pisp-handler` (`1644466`)
 
