@@ -313,3 +313,14 @@ Entry format:
   run `fsck.exfat` with repair.
 - Confirmed by: dmesg and Core logs read on the Pi.
 - Tutorial: T28 (an unplanned 5.x).
+
+## 2026-10-26: PCIe Gen 2 test for the NVMe drops: 437 MB/s, 16-bit uncompressed 4K 25 fps still clean for 30 s
+
+- Tested: Pi 5 (4 GB), `config.txt:36` `dtparam=pciex1_gen=2` (backup `config.txt.bak-gen3`), reboot 22:33; dmesg
+  `link up, 5.0 GT/s PCIe x1`; `throttled=0x0`; Core `e8bb1b7`.
+- Seen: Core `run_media_speed_test` (1024 MB direct fio, QD32) **437 MB/s**. `takes.sh 1 30`: C0104 742 frames, 0 missing,
+  0 dropped, `peak_queue=1/12` (needs ~425 MB/s; 12.6 GB written, > RAM).
+- Not yet known: whether the drops stop at Gen 2 (needs hours of idle and recording without `CSTS=0xffffffff`), and whether
+  a 10-minute take holds with ~3 % margin. `ipa_rate.py` prints nothing since the `IPARPI:ERROR` drop-in (it counts IPA lines).
+- Confirmed by: measurements run on the Pi at Patrik's request.
+

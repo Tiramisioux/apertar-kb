@@ -78,6 +78,10 @@ Things the T22-T25 work changes for these notes:
   Core's own lines are gone from the readable file. Blocks T27 3.2 / 5.x (journal greps). **Probable** fixes (Patrik):
   `sudo systemd-machine-id-setup` + reboot; quieter IPA via `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR` for apertar-core.
 
+- **NVMe drops (2026-10-26 19:35, 22:29):** PCIe was Gen 3 (`config.txt:36`); now **Gen 2** on test (22:33, backup
+  `config.txt.bak-gen3`). 437 MB/s, 30 s 16-bit take clean. Watch for `CSTS=0xffffffff`; if none for days, keep Gen 2 (or go
+  back to Gen 3 after reseating the HAT). `/cDNG_26-10-26_C0030` has bad directory entries: delete, then `fsck.exfat` with repair.
+
 ## 5. Read first
 
 `llm/README.md` → `llm/tutoring.md` §7 → `working/mac-driven-loop.md` → `working/cinemate-lessons.md` (§4 yank, §5 media,
