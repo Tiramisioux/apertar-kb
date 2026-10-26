@@ -59,10 +59,10 @@ Prediction: `Selection: crop, Left 0, Top 0, Width 1920, Height 1080` for the im
 
 ```bash
 grep -n 'IMX585_WIN_CROP_REGS(54, 2076)' /home/pi/drivers/imx585-v4l2-driver/imx585.c
-grep -n -A6 '1.85:1 full-width RAW12 crop' /home/pi/drivers/imx585-v4l2-driver/imx585.c | grep -E 'top|height'
+grep -n -A14 '1.85:1 full-width RAW12 crop' /home/pi/drivers/imx585-v4l2-driver/imx585.c | grep -E 'top|height'
 ```
 
-Prediction: the registers put a 2076-row window at VST 54 (native row 42), the table says top 0.
+Prediction: the registers put a 2076-row window at VST 54 (native row 42), the table says top 0. Three hits: the first `.height` is the mode's output size, the indented `.top`/`.height` pair is the crop.
 
 **3.3 Does anything program registers from `.crop`?** (Pi)
 
