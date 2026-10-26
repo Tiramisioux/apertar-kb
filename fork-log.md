@@ -27,6 +27,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
 | `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
 | `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
+| `4ab1057` | Binning per sensor mode and for the current mode (crop width / output width; inferred from the active area when the driver gives no window); `list_sensor_modes`, `get_state` `sensor_binning*`; branch `clearhdr-fixes` | fork-only, Mac + Pi, not built |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
