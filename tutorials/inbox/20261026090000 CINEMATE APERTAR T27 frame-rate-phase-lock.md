@@ -224,13 +224,13 @@ Undo: `set_fps_phase_lock enabled=false` (persisted). Full undo: `git checkout -
 ## 9. Sources
 
 - `cinepi-raw/cinepi/phase_lock_core.hpp@63a08d5` (law), `tests/phase_lock_core_test.cpp` (behaviours), `cinepi_controller.cpp:733-737` (wall clock = audio clock); commits `bf717fa`, `85d0326`, `55562b6`, `d038556`, `e74e3e4`, `3b3ff60`, `4537153`, `5b4b209`, `28b30cc`, `3c6477e`; cinemate `0b8e947`, `2f79397`, `b029d7f`.
-- `Apertar-Core@9e6df59`: `src/camera/FramePhaseLock.hpp`; `CC:7051-7143`, `:7222-7236`, `:7303`, `:6040`, `:6046-6050`, `:6207-6214`, `:9422`; `App:203`, `:7857-7861`, `:7917`, `:9499`; `Types.hpp:127`. Critic items P1–P9 in `working/port-raw/critic.md`.
+- `Apertar-Core@9e6df59`: `src/camera/FramePhaseLock.hpp` (`:26` status struct, `:35` tuning, `:79` step, `:90` gap, `:129` rounding); `CC:7051-7143`, `:7222-7236`, `:7303`, `:6040`, `:6046-6050`, `:6207-6214`, `:9422`; `App:203`, `:7857-7861`, `:7917`, `:9499`; `Types.hpp:127`. Critic items P1–P9 in `working/port-raw/critic.md`.
 - `working/phaselock-answer.md`, `working/port-raw/p1-phaselock-cinemate.md`, `p2-phaselock-core.md`, `working/cinemate-lessons.md` §2–3, `working/tools/phase_lock_sim.cpp`.
 
 %% tutor
-ref core src/camera/FramePhaseLock.hpp 70 Decision step(bool enabled, bool recording, double fps, int64_t referenceNs)
-ref core src/camera/FramePhaseLock.hpp 81 const bool bigGap = active && sincePrevious > static_cast<int64_t>(1.5 * periodNs);
-ref core src/camera/FramePhaseLock.hpp 120 const int64_t durationUs = std::llround(requestedUs);
+ref core src/camera/FramePhaseLock.hpp 79 Decision step(bool enabled, bool recording, double fps, int64_t referenceNs)
+ref core src/camera/FramePhaseLock.hpp 90 const bool bigGap = active && sincePrevious > static_cast<int64_t>(1.5 * periodNs);
+ref core src/camera/FramePhaseLock.hpp 129 const int64_t durationUs = std::llround(requestedUs);
 ref core src/camera/CameraController.cpp 7051 void stepFramePhaseLock(libcamera::Request *request)
 ref core src/camera/CameraController.cpp 7078 t.proportional = env("APERTAR_PHASE_LOCK_KP", t.proportional);
 ref core src/camera/CameraController.cpp 7119 std::cerr << "ApertarCore phase-lock: saturated echoed_us=" << echoedUs
