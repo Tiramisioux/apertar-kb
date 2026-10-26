@@ -34,9 +34,8 @@ Each Mac repo has a remote `pi` (`ssh://apertar/home/pi/<dir>`), fetch only (pus
 
 Uncommitted edits do not travel. Commit them, or keep working on the same machine.
 
-> **2026-10-26: edit on the Mac, build and test on the Pi.** See `working/mac-driven-loop.md` and
-> `scripts/apertar_push_to_pi.sh` (sends a Mac branch to the Pi for testing). The text below still holds for
-> commits made on the Pi.
+> **2026-10-26:** code is committed on the Pi, then Pi → Mac → GitHub with `apertar_publish.sh`; Claude runs on the Mac and drives the Pi over ssh
+> (`working/mac-driven-loop.md`). `apertar_push_to_pi.sh` (Mac → Pi) is only for a commit that starts on the Mac.
 
 ## Which machine to edit on
 

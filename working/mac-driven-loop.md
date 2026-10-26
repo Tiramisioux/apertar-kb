@@ -11,19 +11,19 @@ swap in use, while the 25/30 fps takes lost more frames than the same cases earl
 0,0,0,0,6 missing earlier; 0,39,37 after). Whether that load caused the loss is **unconfirmed**; it is a confound, and
 the 4 GB board cannot carry the dev tools and a clean measurement together.
 
-## The loop (PROBABLE: from `workspace-contract.md` and `sync.md`; not yet run end to end)
+## The loop (how Patrik works, confirmed 2026-10-26): Pi → Mac → GitHub
 
-1. Mac: `git -C ~/Documents/Apertar/Apertar-Core fetch ssh://apertar/home/pi/ApertarCore clearhdr-fixes:clearhdr-fixes`
-   (one-off, brings the Pi-only T23 commit `db17860` over. Read-only on the Pi).
-2. Mac: edit and commit on branch `clearhdr-fixes`. The work stays off GitHub: never push this branch to `origin`.
-3. To the Pi: the `pi` remote's push URL is a deliberate dud. Push to an explicit URL and to a **staging name**, not to the
-   branch checked out on the Pi, then fast-forward on the Pi. Patrik decides each time; this bypasses a safeguard on
-   purpose. Scripted (2026-10-26): `~/.claude/skills/apertar-dev/scripts/apertar_push_to_pi.sh core clearhdr-fixes`
-   (`--dry-run` first). It refuses on Pi-only commits, a dirty Pi tree or a non-fast-forward.
-4. Build on the Pi only: `ssh apertar 'cmake --build ~/ApertarCore-build -j2'` (no build while a take runs).
-5. Restart is Patrik's (`sudo`): `sudo systemctl restart apertar-core`.
-6. Test over ssh: `bash ~/apertar-kb/working/tools/takes.sh 5 10` and `core.py`, with nothing else running on the Pi.
-7. `apertar_publish.sh` moves `main` only, so it does not touch `clearhdr-fixes`.
+Code is edited and committed **on the Pi**; Claude runs on the **Mac** and drives the Pi over ssh.
+
+1. Pi: edit and commit (on `main`, or on a local work branch such as `clearhdr-fixes` that stays off GitHub).
+2. Build on the Pi only: `ssh apertar 'cmake --build ~/ApertarCore-build -j2'` (no build while a take runs).
+3. Restart is Patrik's (`sudo`): `sudo systemctl restart apertar-core`.
+4. Test over ssh: `bash ~/apertar-kb/working/tools/takes.sh 5 10` and `core.py`, with nothing else running on the Pi.
+5. Publish, on the Mac: `apertar_publish.sh` takes the Pi's `main`/`apertar` commits to the Mac repo and GitHub, and the
+   KB likewise. It never touches a local work branch.
+6. Only a commit that starts on the Mac goes the other way: `apertar_push_to_pi.sh <core|ui|driver> [branch]` (staging
+   name + fast-forward; Patrik decides each time, `--dry-run` first). To bring a Pi-only work branch over to the Mac:
+   `git -C ~/Documents/Apertar/Apertar-Core fetch ssh://apertar/home/pi/ApertarCore clearhdr-fixes:clearhdr-fixes`.
 
 ## Open
 
