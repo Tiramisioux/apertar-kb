@@ -110,13 +110,18 @@ Prediction: 0 or a handful of index holes at exactly regular spacing (a slow sen
 Apertar's libcamera fork may carry an IMX585 `getBlanking` lattice search (`libcamera-qbc 4cff971`, after the 20260522 tag) that re-chooses (VMAX, HMAX) per requested microsecond. Cinemate kept its lock VBLANK-only because an HMAX-stretching patch once broke the 4K image (`bf717fa`). Pin two durations 1 µs apart and read the sensor back:
 
 ```bash
-git -C ~/libcamera log --oneline | grep -i 'lattice\|getBlanking' | head -3        # is 4cff971 in your tree?
-v4l2-ctl --list-subdevs 2>/dev/null; SUB=$(ls /dev/v4l-subdev* | head -1)
+git -C ~/libcamera merge-base --is-ancestor 4cff971 7e9fef0 && echo "installed libcamera has the lattice"   # /usr/local is 7e9fef0
+SUB=$(for d in /dev/v4l-subdev*; do grep -q imx585 /sys/class/video4linux/${d##*/}/name && echo $d; done); echo $SUB
 python3 -I ~/apertar-kb/working/tools/core.py set_fps value=25
-v4l2-ctl -d $SUB --get-ctrl=hblank,vblank
-python3 -I ~/apertar-kb/working/tools/core.py set_fps value=24.9994        # 40001 us
-v4l2-ctl -d $SUB --get-ctrl=hblank,vblank
+v4l2-ctl -d $SUB --get-ctrl=horizontal_blanking,vertical_blanking
+python3 -I ~/apertar-kb/working/tools/core.py set_fps value=24.9993        # 40001 us
+v4l2-ctl -d $SUB --get-ctrl=horizontal_blanking,vertical_blanking
+python3 -I ~/apertar-kb/working/tools/core.py set_fps value=25             # back
 ```
+
+Core pins `int64_t(1000000.0 / fps)` (truncated, `CC:2086`): 24.9994 gives 40000.96 → 40000, the same pin as 25 fps, so use
+24.9993 (40001.12 → 40001). The first subdev is `csi2`, not the sensor; the loop picks the imx585 one. The control names are
+`horizontal_blanking` / `vertical_blanking` (`hblank`/`vblank` are not accepted).
 
 Prediction: `hblank` identical, `vblank` differs by one line → VBLANK-only, the default helper. If `hblank` changes, the lattice is active; the simulator's case 6 says what to expect.
 
