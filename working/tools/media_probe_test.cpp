@@ -86,6 +86,20 @@ int main()
     MountTableEntry other{true, "/dev/sdb1", "exfat", "rw"};
     check(!a.sameMedium(evaluateMediaProbe(other, 0, 1, 2)), "a different device is a medium change");
 
+    std::printf("4b. device-level facts beat a statvfs that still answers (critic Y1)\n");
+    s = evaluateMediaProbe(mounted, 0, 1000, 5000, /*deviceNodePresent=*/false, "");
+    check(s.state == MediaSnapshot::State::Removed, "block device node gone -> removed even with statvfs ok");
+    s = evaluateMediaProbe(mounted, 0, 1000, 5000, true, "dead");
+    check(s.state == MediaSnapshot::State::Removed, "nvme controller state dead -> removed");
+    s = evaluateMediaProbe(mounted, 0, 1000, 5000, true, "live");
+    check(s.state == MediaSnapshot::State::Mounted, "nvme state live -> mounted");
+    check(rootDiskForDevice("/dev/nvme0n1p1") == "nvme0n1" && rootDiskForDevice("/dev/sda1") == "sda" &&
+          rootDiskForDevice("/dev/mmcblk0p2") == "mmcblk0", "root disk names");
+    check(!cachedMediaSnapshot().has_value(), "no cached snapshot before the watcher ran");
+    updateCachedMediaSnapshot(evaluateMediaProbe(mounted, 0, 7, 8));
+    check(cachedMediaSnapshot() && cachedMediaSnapshot()->freeBytes == 7, "cached snapshot round-trips");
+    check(cachedMediaSnapshotOrProbe("/nowhere").freeBytes == 7, "cachedMediaSnapshotOrProbe prefers the cache");
+
     std::printf("5. live probe on this host\n");
     const auto root = probeMediaRoot("/");
     check(root.state == MediaSnapshot::State::Mounted && root.totalBytes > 0, "/ probes as mounted with a size");

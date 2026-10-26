@@ -5,8 +5,8 @@ Written 2026-10-26 (cloud session) from `cinepi-raw@63a08d5` (`cinepi/phase_lock
 `apertar-core@f60e301` (patched at `2a6f114`), the reader reports `working/port-raw/p1-phaselock-cinemate.md` and
 `p2-phaselock-core.md`, and the history pass in `working/cinemate-lessons.md` §2–3. Nothing ran on a Pi.
 CONFIRMED = read in source; PROBABLE = inferred, reason given; UNKNOWN = not established.
-Patch: `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` (Core `2a6f114`,
-not compiled; the pure header is host-simulated by `working/tools/phase_lock_sim.cpp`). Tutorial T27.
+Patch: `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` (Core `9e6df59`, amended after the
+critic pass; not compiled; the pure header is host-simulated by `working/tools/phase_lock_sim.cpp`). Tutorial T27.
 
 ## 1. Verdicts
 
@@ -18,7 +18,7 @@ not compiled; the pure header is host-simulated by `working/tools/phase_lock_sim
 | Audio change needed in Core | **No.** The lock disciplines the picture to the clock the audio is already measured against; `finalizeWav`'s resampler keeps correcting the ALSA crystal (20–2000 ppm) | CONFIRMED (p2 §3, §5) |
 | Default | Cinemate on, standalone cinepi-raw off (`0b8e947`). Core: off until T27 has measured it on the rig | decision |
 | Gains | same four numbers; host simulation of the Core header reproduces 0.00 ppm mean, 13.9 µs max error, 3 adjacent requests from a +1066 ppm sensor (`phase_lock_sim.cpp`, 17 checks pass) | CONFIRMED (host) |
-| Hazard specific to Core | the qbc libcamera's IMX585 `getBlanking` lattice search (`4cff971`, after the 20260522 tag) may re-choose HMAX per microsecond of requested duration; Cinemate's first commit says an HMAX-stretching patch once produced a broken 4K image (`bf717fa`). Whether the rig's libcamera binary has the lattice is UNKNOWN; T27 §3 measures `HBLANK`/`FrameDuration` with two pinned durations 1 µs apart before enabling | PROBABLE |
+| Hazard specific to Core | the qbc libcamera's IMX585 `getBlanking` lattice search (`4cff971`, after the 20260522 tag) re-chooses HMAX per integer microsecond: the simulator now models it from the helper's source (`phase_lock_sim.cpp` case 6). At 25 fps a 40000 µs request is exact (HMAX 550 × VMAX 5400); 40001 becomes HMAX 581 × 5112 = 40000.97 µs and 39999 becomes HMAX 551 × 5390 = 39998.52 µs, so the dither moves the line length by up to 5.6 % (rolling-shutter skew) while the helper re-fits the exposure time. At 24 fps 41666 and 41667 both snap to the exact 625 × 4950, and ±2 µs requests land at 41665.37 / 41668.15. Under this model the lock still holds (+300 ppm sensor: 0.03 ppm mean, max error 7 µs, a push every ~23 frames, two HMAX values). Whether the rig's libcamera binary carries the lattice is UNKNOWN; T27 §3.3 reads `hblank` back with two pinned durations 1 µs apart | PROBABLE (model), UNKNOWN (rig) |
 
 ## 2. Where the frame cadence error comes from, and what the lock changes
 
@@ -70,6 +70,15 @@ not compiled; the pure header is host-simulated by `working/tools/phase_lock_sim
 | No per-frame telemetry nobody reads (handbook) | stats at stop + env-gated trace |
 | A default is a claim; read back the value the hardware receives | T27 §3.2 reads `FrameDuration` metadata and `HBLANK`, not the request |
 | "Phase lock" supersedes static correction tables (`2f79397`) | Core had none; its rounding heuristics become exact |
+
+## 4b. Amendments after the critic pass (2026-10-26)
+
+- The pin in `requeueRequest` no longer reads `settings_`: that path is also reached from the ProRes and H.264 release lambdas without the session-settings lock (p2 verifier, critic X6); `applyControls` already clears the pin under `controlsMutex_` when fps, the switch or photo mode changes.
+- Gains are environment-tunable without a rebuild (`APERTAR_PHASE_LOCK_KP/_KI/_DEADBAND_US/_CLAMP_US`, read at arm, printed in the `armed` line), as Cinemate's live keys were (critic P4).
+- Saturation is detected from the IPA's echoed `FrameDurationLimits` metadata: a pinned duration that comes back as a value never pinned on the last four requests was clamped to the mode's limits; one `phase-lock: saturated` line per arm (critic P5).
+- `/api/state` carries `fps_phase_lock_active`, `fps_phase_lock_err_us`, `fps_phase_lock_dur_us`, `fps_phase_lock_pushes`, `fps_phase_lock_saturated` next to `recording_has_dropped_frames`, so the switch is never shown without the number that would falsify it (critic P6; the WebUI toggle itself is still an exercise).
+- Settling from a cold arm at +1066 ppm: the simulator holds |err| < 20 µs from frame 157 (6.3 s at 25 fps); Cinemate's unit test waits 1000 frames before bounding the error, which is conservative (critic P7).
+- Still open (critic X6): of the session's four `settings_` writers (`start`, `reconfigure`, `applyControls`, the still-mode effective-settings path) only `applyControls` was confirmed to hold `controlsMutex_`; the reads in `stepFramePhaseLock` rely on the shared session-settings lock the completion callback holds, which is correct only if every writer takes it uniquely. T27 §7 has the grep.
 
 ## 5. Open points for T27 to settle on the Pi
 

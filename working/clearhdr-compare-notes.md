@@ -98,3 +98,10 @@ Incremental findings; the final answer is `clearhdr-compare-answer.md`. Each lin
 - Tutorials T27–T30 in `tutorials/inbox/`, index rows in `tutorials/README.md` and `llm/tutoring.md` §5; T24 tutorial notes the include.
 - Workflow wf_10785596-249: readers p1/p2/y1/y2/s1/s2 done; verifier sections appended to p1, p2, y1, y2 (0 refuted, line-number corrections); s1/s2 verifiers and the critic still running at this checkpoint.
 - Nothing ran on the Pi. Next: T22 baseline on the rig, then T23→T30 in order, each with its measurement.
+
+## Checkpoint 2026-10-26 10:20 — workflow finished; critic pass folded in
+
+- Workflow wf_10785596-249 completed: 13 agents, 0 errors; verifier sections on all six reports (p1 22 claims / p2 20 / y1 / y2 16 / s1 22 / s2 19: **0 refuted**, corrections are line ranges and scope); the completeness critic's 41 items are in `working/port-raw/critic.md`.
+- Core branch replayed again with the critic's fixes: `2f5a880` (T23) → `ce723fd` (T24) → `9e06ad6` (T25) → `9e6df59` (phase lock: pin reads no `settings_`, env gains `APERTAR_PHASE_LOCK_*`, saturation from the IPA's `FrameDurationLimits` echo, `fps_phase_lock_*` telemetry in `/api/state`) → `f2fa35b` (yank: device-node and NVMe-state checks, cached snapshot, WebUI on `media_alive`, 1 GiB floor) → `75e9f57` (profile: helper after the abort, APST knob, cached snapshot at configure/record_start) → `25397cd` (audio). Patches re-exported.
+- Host checks at HEAD: `g++ -fsyntax-only` 0 errors for App, CdngEncoder, MlvEncoder, LossyDngEncoder, AudioRecordingSession, WebControlPage; `phase_lock_sim.cpp` 22 checks incl. the qbc lattice model (25 fps: 40001 µs → HMAX 581, the lock holds at 0.03 ppm; cold-arm settling 157 frames); `media_probe_test.cpp` 38; `media_profile_test.cpp` 27; `takes.sh` greps the new counters.
+- Left as stated limits (not code): gyro/ProRes stops still touch a dead mount (Y7); `recording` event not always-broadcast (Y6); no consumer of the eject flag yet (Y12); settings_-writer lock audit beyond applyControls (X6); RT/affinity deferred (S6).

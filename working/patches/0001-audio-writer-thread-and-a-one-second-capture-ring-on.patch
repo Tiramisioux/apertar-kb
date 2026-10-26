@@ -1,4 +1,4 @@
-From 90e2415a5e41b4412ca1d458e2d6aa131c9cef83 Mon Sep 17 00:00:00 2001
+From 25397cd11ac5aa5c69528d92e84db4e01355df80 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 26 Oct 2026 09:09:57 +0000
 Subject: [PATCH] audio: writer thread and a one-second capture ring on the

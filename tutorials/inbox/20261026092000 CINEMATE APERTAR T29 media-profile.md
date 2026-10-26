@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T29. A media profile: let the drive decide the writers, the buffers and the kernel knobs
 
-Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-profile-the-recording-medium-and-tune-the-writ.patch`, Core `d405e22`, on top of T28). The pure header passes `working/tools/media_profile_test.cpp`; `ApertarCoreApp.cpp` and `CdngEncoder.cpp` pass a host syntax check; `CameraController.cpp` is not compiled there. Answer: `working/storage-answer.md`. Builds **M5** (recorders), **M7** (buffers), and a first root helper.
+Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-profile-the-recording-medium-and-tune-the-writ.patch`, Core `75e9f57`, on top of T28; amended after the critic pass: helper after the abort, APST knob, cached snapshot). Line numbers below are at `75e9f57`, the tree right after this patch; later patches shift them, the grep anchors do not. The pure header passes `working/tools/media_profile_test.cpp`; `ApertarCoreApp.cpp` and `CdngEncoder.cpp` pass a host syntax check; `CameraController.cpp` is not compiled there. Answer: `working/storage-answer.md`. Builds **M5** (recorders), **M7** (buffers), and a first root helper.
 
 **You will learn**
 - What Core actually knows about its drive today (a label) and what it throws away (the filesystem it parses from `/proc/mounts` twice).
@@ -55,11 +55,14 @@ Reading assignments: `src/util/MediaProfile.hpp` (all), `CC:1173-1181`, `CC:3486
 **3.1 What is `/media/RAW`, really?** (Pi, read-only — T22 asked for this and it was never recorded)
 
 ```bash
-findmnt -no SOURCE,FSTYPE,OPTIONS /media/RAW
+findmnt -no SOURCE,FSTYPE,OPTIONS /media/RAW                       # which mounter produced these options? (Core's noatime reaches only mount_media)
 DEV=$(findmnt -no SOURCE /media/RAW); ROOT=$(lsblk -no PKNAME $DEV); [ -z "$ROOT" ] && ROOT=$(basename $DEV)
 readlink -f /sys/class/block/$ROOT/device; cat /sys/class/block/$ROOT/device/uevent | head -5
 cat /sys/block/$ROOT/queue/scheduler /sys/block/$ROOT/queue/nr_requests /sys/block/$ROOT/queue/rq_affinity
 sysctl vm.dirty_bytes vm.dirty_background_bytes vm.dirty_ratio vm.dirty_background_ratio
+cat /etc/sysctl.d/60-apertar-writeback.conf 2>/dev/null                # Core's ProresEncoder.cpp says the image ships this with vm.dirty_bytes 128 MB
+cat /sys/module/nvme_core/parameters/default_ps_max_latency_us 2>/dev/null
+systemctl cat apertar-core | grep -E 'User=|ExecStart=|Nice=|CPUAffinity=|Environment'   # the sudoers snippet names pi; the env A/B needs the unit to read set-environment
 ```
 
 Prediction: write down the filesystem and the class you expect before running. Then feed the two sysfs strings to the pure classifier:
@@ -69,7 +72,7 @@ g++ -std=c++20 -Wall -I ~/ApertarCore/src ~/apertar-kb/working/tools/media_profi
 ```
 
 > [!tip]- Answer
-> A CFE card or NVMe in the Pi 5 slot shows a realpath through `1000110000.pcie/.../nvme/nvme0` and `DRIVER=nvme` → `pi-nvme`; a USB SSD shows `/usb` and `DRIVER=uas` (UAS bridge) or `DRIVER=sd` → `usb-uas` / `usb-storage`. The kernel defaults you printed are what the helper will change: typically `mq-deadline`/`none`, `nr_requests` 64–256, `dirty_ratio 20`, `dirty_bytes 0`.
+> A CFE card or NVMe in the Pi 5 slot shows a realpath through `1000110000.pcie/.../nvme/nvme0` and `DRIVER=nvme` → `pi-nvme`; a USB SSD shows `/usb` and `DRIVER=uas` (UAS bridge) or `DRIVER=sd` → `usb-uas` / `usb-storage`. The values you printed are what the helper will change and what `restore` returns to: kernel defaults are `mq-deadline`/`none`, `nr_requests` 64–256, `dirty_ratio 20`, `dirty_bytes 0` — unless the image's `60-apertar-writeback.conf` already sets `dirty_bytes` 128 MB, in which case that is the baseline and "reboot restores defaults" means that file. Paste each medium's realpath and uevent into `media_profile_test.cpp` as a case before trusting its class.
 
 **3.2 Where does Core decide workers and queue depth?** (Pi, read-only)
 
@@ -92,15 +95,15 @@ Record per take: `missing=`, `dropped_queue_full=`, `peak_queue=`, `write_failur
 
 ## 4. Make the change
 
-**4.1 The profile header** — `src/util/MediaProfile.hpp` as in the patch: enums, `rootDiskForDevice`, `classifyFilesystem`, `classifyMediaClass` (pure), `detectMediaClass` (sysfs), `writerSettingsFor` (the table), `MediaProfile` with `summary()`, `detectMediaProfile(snapshot)`, `configuredMediaRoot()` + `mediaExtraRawBuffersForConfiguredRoot()`. Re-run the host test against your copy.
+**4.1 The profile header** — `src/util/MediaProfile.hpp` as in the patch: enums, `classifyFilesystem` (`rootDiskForDevice` lives in `MediaProbe.hpp` since T28), `classifyMediaClass` (pure), `detectMediaClass` (sysfs), `writerSettingsFor` (the table), `MediaProfile` with `summary()`, `detectMediaProfile(snapshot)`, `configuredMediaRoot()` + `mediaExtraRawBuffersForConfiguredRoot()`. Re-run the host test against your copy.
 
-**4.2 The recorder follows the profile** — `DngRecordingQueue`: member `MediaProfile mediaProfile_` + `setMediaProfile()` (`CC:3719`); `normalWorkerCount` from `APERTAR_CDNG_UNCOMPRESSED_WORKERS` → profile → format (`CC:3492`); `defaultQueueFrames` from the profile for uncompressed formats (`CC:3498`); `encoder.setDirectIoPreferred(...)` in `dngWorkerLoop` (`CC:3922`); the clip line (`CC:3538-3540`). `CameraSession::startRecording`: `recorder_.setMediaProfile(detectMediaProfile(probeMediaRoot(mediaRoot)))` before `startAtFolder` (`CC:6273`). `rawCameraBufferCount` adds `mediaExtraRawBuffersForConfiguredRoot()` (`CC:1173-1181`); `CameraController::start` sets `configuredMediaRoot()` (`CC:8356`).
+**4.2 The recorder follows the profile** — `DngRecordingQueue`: member `MediaProfile mediaProfile_` + `setMediaProfile()` (`CC:3719`); `normalWorkerCount` from `APERTAR_CDNG_UNCOMPRESSED_WORKERS` → profile → format (`CC:3492`); `defaultQueueFrames` from the profile for uncompressed formats (`CC:3498`); `encoder.setDirectIoPreferred(...)` in `dngWorkerLoop` (`CC:3922`); the clip line (`CC:3538-3540`). `CameraSession::startRecording`: `recorder_.setMediaProfile(detectMediaProfile(cachedMediaSnapshotOrProbe(mediaRoot)))` before `startAtFolder` (`CC:6274`) — the watcher's cached snapshot, never a fresh `statvfs` under the controller lock. `rawCameraBufferCount` adds `mediaExtraRawBuffersForConfiguredRoot()` (`CC:1173-1181`); `CameraController::start` sets `configuredMediaRoot()` (`CC:8356`).
 
 **4.3 The encoder's preference** — `CdngEncoder`: `setDirectIoPreferred(bool)` + `directIoPreferred_` (`CdngEncoder.hpp:111`, `:221`); `directIoEnabled()` becomes `directIoEnvOverride()` returning `std::optional<bool>` and the decision is `directIoEnvOverride().value_or(directIoPreferred_)` (`CdngEncoder.cpp:471-481`, `:1269`).
 
-**4.4 The App** — watcher: on a medium change compute the profile, log it, `applyMediaTuning(profile, true)` / `(previous, false)` (`App:9170-9192`); `mediaProfile()` + `applyMediaTuning()` (`App:9263-9300`); `media_class`, `media_profile` in `/api/state` (`App:7940-7941`); `noatime` in `mountDeviceAtMediaPath` (`App:3627-3635`).
+**4.4 The App** — watcher: after the loss handling, compute the profile, log it, `applyMediaTuning(profile, true)` / `(previous, false)` (`App:9196-9215`); `mediaProfile()` + `applyMediaTuning()` (`App:9276-9313`); `media_class`, `media_profile` in `/api/state`; `noatime` in `mountDeviceAtMediaPath` (`App:3627-3635`).
 
-**4.5 The root helper** — `scripts/apertar-media-tune` (POSIX sh): per-class table, `apply` saves originals under `/run/apertar-media/tune/` then writes scheduler/nr_requests/rq_affinity and the six `vm.dirty_*` values; `restore` writes them back. Install:
+**4.5 The root helper** — `scripts/apertar-media-tune` (POSIX sh): per-class table, `apply` saves originals under `/run/apertar-media/tune/` then writes scheduler/nr_requests/rq_affinity, the six `vm.dirty_*` values and, for the Pi-NVMe class, `nvme_core.default_ps_max_latency_us = 0` (APST exit latency mid-take is a stall); `restore` writes them back. The watcher calls it only *after* the loss handling, so a `sudo` round-trip never delays an abort. Install:
 
 ```bash
 sudo install -m 0755 ~/ApertarCore/scripts/apertar-media-tune /usr/local/libexec/apertar-media-tune
@@ -129,7 +132,7 @@ python3 -I ~/apertar-kb/working/tools/core.py record_start; sleep 5; python3 -I 
 journalctl -u apertar-core -b --no-pager | grep -E 'recording clip:|RAW buffers:' | tail -2
 ```
 
-Prediction: `media_class= media_fs= direct_io=` on the clip line; `RAW buffers: ... count=10` on exFAT in Clear HDR (8 + 2), `count=8` on ext4.
+Prediction: `media_class= media_fs= direct_io=` on the clip line; `RAW buffers: ... count=10` on exFAT in Clear HDR (8 + 2), `count=8` on ext4. The buffer count is read at configure time from the watcher's cached snapshot: a medium swapped after the camera configured keeps the old count until the next reconfigure (toggle bit depth) or restart — Cinemate restarts cinepi-raw on a profile change for the same reason.
 
 **5.2 The comparison** — the same `takes.sh 5 20` as 3.3, three ways, same medium, same mode:
 
@@ -172,6 +175,8 @@ git -C ~/ApertarCore push -u origin main
 | `count=10` but `free -m` dropped more than you like | +2 Clear HDR buffers ≈ 34 MB | `APERTAR_RAW_CAMERA_BUFFERS=8` or edit the table |
 | direct I/O fallback message on ntfs3 | the kernel ntfs3 driver refused O_DIRECT on this kernel | set `Ntfs` → `directIo=false` in the table; record the kernel version |
 | no `media profile:` line at all | the watcher saw no change (profile logs only on change) | `journalctl ... | grep 'media:'` for the mount line; eject/remount to force one |
+| `count=8` on exFAT after swapping media | the bump is read at configure time | toggle the bit depth or restart Core |
+| `restore` leaves `dirty_bytes` at 128 MB | that was the image's value (`60-apertar-writeback.conf`), saved on the first apply | correct behaviour; the file is the baseline |
 
 Undo: `git checkout -- src scripts config && git clean -f src/util/MediaProfile.hpp`; `sudo rm /usr/local/libexec/apertar-media-tune /etc/sudoers.d/apertar-media`; reboot restores the kernel defaults.
 
@@ -185,20 +190,22 @@ Undo: `git checkout -- src scripts config && git clean -f src/util/MediaProfile.
 ## 9. Sources
 
 - cinemate `services/storage-automount/storage-automount.py:108-157` (profiles), `:238-266` (classify), `:319-341` (sysctl), `:365-382` (gate); `src/module/storage_profiles.py:50-95`, `:149-171`; `src/module/ssd_monitor.py:482-547` (device type); commits `9184c68`, `2a49fa1`, `31126f2`, `a61a589`, `d7a8d2b`, `c8f06c9`, `0142c5b`, `888093c`; handbook `lessons/hardware-log.md:945-985` (NTFS-over-FUSE ceiling), `:1610-1666` (CFE fallback).
-- `Apertar-Core@d405e22`: `src/util/MediaProfile.hpp`; `CC:1173-1181`, `:3492`, `:3498`, `:3538`, `:3719`, `:3922`, `:6273`, `:8356`; `CdngEncoder.hpp:111`, `:221`; `CdngEncoder.cpp:471`, `:1269`; `App:3627-3635`, `:7940-7941`, `:9170-9192`, `:9263-9300`; `scripts/apertar-media-tune`; `config/apertar-media.*`.
+- `Apertar-Core@75e9f57`: `src/util/MediaProfile.hpp:79`, `:133`, `:195`; `MediaProbe.hpp:115`; `CC:1173-1181`, `:3492`, `:3498`, `:3538`, `:3719`, `:3922`, `:6274`, `:8356`; `CdngEncoder.hpp:111`, `:221`; `CdngEncoder.cpp:471`, `:1269`; `App:3627-3635`, `:9196-9215`, `:9276-9313`; `scripts/apertar-media-tune`; `config/apertar-media.*`. Critic items S1–S12 in `working/port-raw/critic.md`.
 - `working/storage-answer.md`, `working/port-raw/s1-storage-cinemate.md`, `s2-storage-core.md`, `working/cinemate-lessons.md` §5, `working/tools/media_profile_test.cpp`, `takes.sh`, `writeback_watch.py`.
 
 %% tutor
-ref core src/util/MediaProfile.hpp 54 inline std::string rootDiskForDevice(const std::string &devicePath)
-ref core src/util/MediaProfile.hpp 98 inline MediaClass classifyMediaClass(const std::string &rootDisk, const std::string &deviceRealpath,
-ref core src/util/MediaProfile.hpp 152 inline MediaWriterSettings writerSettingsFor(MediaFilesystem filesystem, MediaClass /*mediaClass*/)
+ref core src/util/MediaProbe.hpp 115 inline std::string rootDiskForDevice(const std::string &devicePath)
+ref core src/util/MediaProfile.hpp 79 inline MediaClass classifyMediaClass(const std::string &rootDisk, const std::string &deviceRealpath,
+ref core src/util/MediaProfile.hpp 133 inline MediaWriterSettings writerSettingsFor(MediaFilesystem filesystem, MediaClass /*mediaClass*/)
+ref core src/util/MediaProfile.hpp 195 inline unsigned mediaExtraRawBuffersForConfiguredRoot()
 ref core src/camera/CameraController.cpp 1173 unsigned int rawCameraBufferCount(bool clearHdr)
 ref core src/camera/CameraController.cpp 3492 const unsigned int normalWorkerCount = unsignedEnvValue("APERTAR_CDNG_UNCOMPRESSED_WORKERS",
 ref core src/camera/CameraController.cpp 3538 std::cerr << " media_class=" << mediaClassName(mediaProfile_.mediaClass)
 ref core src/camera/CameraController.cpp 3922 encoder.setDirectIoPreferred(!mediaProfile_.known() || mediaProfile_.writer.directIo);
-ref core src/camera/CameraController.cpp 6273 recorder_.setMediaProfile(detectMediaProfile(probeMediaRoot(mediaRoot)));
+ref core src/camera/CameraController.cpp 6274 recorder_.setMediaProfile(detectMediaProfile(cachedMediaSnapshotOrProbe(mediaRoot)));
 ref core src/cdng/CdngEncoder.cpp 1269 const bool ifdFirst = !lossless && destinationFd < 0 && directIoEnvOverride().value_or(directIoPreferred_);
-ref core src/ApertarCoreApp.cpp 9273 void ApertarCoreApp::applyMediaTuning(const MediaProfile &profile, bool apply)
+ref core src/ApertarCoreApp.cpp 9286 void ApertarCoreApp::applyMediaTuning(const MediaProfile &profile, bool apply)
+ref core src/ApertarCoreApp.cpp 9196 // Only now the profile and the root helper: a sudo round-trip must not
 ref core scripts/apertar-media-tune 1 #!/bin/sh
 check 3.1 | g++ -std=c++20 -I /home/pi/ApertarCore/src /home/pi/apertar-kb/working/tools/media_profile_test.cpp -o /tmp/media_profile_test && /tmp/media_profile_test | tail -1 | ALL CHECKS PASSED
 check 4.1 | grep -c 'writerSettingsFor' /home/pi/ApertarCore/src/util/MediaProfile.hpp | ^[2-9]$

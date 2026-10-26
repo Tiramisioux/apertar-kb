@@ -1,4 +1,4 @@
-From d405e223d8d5f6a94fe275e2805a4b8c2662caf6 Mon Sep 17 00:00:00 2001
+From 75e9f574b695ff61b5e6e4ae82f4420bff787138 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 26 Oct 2026 09:09:05 +0000
 Subject: [PATCH] media: profile the recording medium and tune the writers and
@@ -41,14 +41,14 @@ Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
 ---
  config/apertar-media.sudoers       |   3 +
  config/apertar-media.tmpfiles.conf |   5 +
- scripts/apertar-media-tune         | 106 ++++++++++++++
- src/ApertarCoreApp.cpp             |  65 ++++++++-
+ scripts/apertar-media-tune         | 112 ++++++++++++++++
+ src/ApertarCoreApp.cpp             |  67 +++++++++-
  src/ApertarCoreApp.hpp             |   5 +-
- src/camera/CameraController.cpp    |  34 ++++-
+ src/camera/CameraController.cpp    |  35 ++++-
  src/cdng/CdngEncoder.cpp           |  18 ++-
  src/cdng/CdngEncoder.hpp           |   4 +
- src/util/MediaProfile.hpp          | 217 +++++++++++++++++++++++++++++
- 9 files changed, 442 insertions(+), 15 deletions(-)
+ src/util/MediaProfile.hpp          | 200 +++++++++++++++++++++++++++++
+ 9 files changed, 434 insertions(+), 15 deletions(-)
  create mode 100644 config/apertar-media.sudoers
  create mode 100644 config/apertar-media.tmpfiles.conf
  create mode 100755 scripts/apertar-media-tune
@@ -76,10 +76,10 @@ index 0000000..fcccd76
 +d /run/apertar-media/tune   0755 root root -
 diff --git a/scripts/apertar-media-tune b/scripts/apertar-media-tune
 new file mode 100755
-index 0000000..2c61fe1
+index 0000000..7dbddaf
 --- /dev/null
 +++ b/scripts/apertar-media-tune
-@@ -0,0 +1,106 @@
+@@ -0,0 +1,112 @@
 +#!/bin/sh
 +# apertar-media-tune apply|restore <rootdisk> <class> <fs>
 +#
@@ -93,7 +93,7 @@ index 0000000..2c61fe1
 +# table; T29 measures them on this rig before they are trusted:
 +#
 +#   class        dirty_bytes  dirty_background  scheduler    nr_requests  rq_affinity
-+#   pi-nvme      1 GiB        256 MiB           none         512          2
++#   pi-nvme      1 GiB        256 MiB           none         512          2   (+ nvme_core default_ps_max_latency_us 0)
 +#   usb-uas      512 MiB      256 MiB           none         256          2
 +#   usb-storage  256 MiB      128 MiB           none         256          2   (SLC-cache cliff: keep the cushion small)
 +#   sd-card      256 MiB      128 MiB           mq-deadline  128          1
@@ -147,11 +147,11 @@ index 0000000..2c61fe1
 +}
 +
 +case "$CLASS" in
-+    pi-nvme)     DIRTY=$((1024*1024*1024)); BG=$((256*1024*1024)); SCHED=none;        NR=512; RQ=2 ;;
-+    usb-uas)     DIRTY=$((512*1024*1024));  BG=$((256*1024*1024)); SCHED=none;        NR=256; RQ=2 ;;
-+    usb-storage) DIRTY=$((256*1024*1024));  BG=$((128*1024*1024)); SCHED=none;        NR=256; RQ=2 ;;
-+    sd-card)     DIRTY=$((256*1024*1024));  BG=$((128*1024*1024)); SCHED=mq-deadline; NR=128; RQ=1 ;;
-+    *)           DIRTY=""; BG=""; SCHED=""; NR=""; RQ="" ;;
++    pi-nvme)     DIRTY=$((1024*1024*1024)); BG=$((256*1024*1024)); SCHED=none;        NR=512; RQ=2; APST=0 ;;
++    usb-uas)     DIRTY=$((512*1024*1024));  BG=$((256*1024*1024)); SCHED=none;        NR=256; RQ=2; APST="" ;;
++    usb-storage) DIRTY=$((256*1024*1024));  BG=$((128*1024*1024)); SCHED=none;        NR=256; RQ=2; APST="" ;;
++    sd-card)     DIRTY=$((256*1024*1024));  BG=$((128*1024*1024)); SCHED=mq-deadline; NR=128; RQ=1; APST="" ;;
++    *)           DIRTY=""; BG=""; SCHED=""; NR=""; RQ=""; APST="" ;;
 +esac
 +
 +case "$ACTION" in
@@ -172,6 +172,11 @@ index 0000000..2c61fe1
 +        write_sys /proc/sys/vm/dirty_bytes "$DIRTY"
 +        write_sys /proc/sys/vm/dirty_writeback_centisecs 150
 +        write_sys /proc/sys/vm/dirty_expire_centisecs 3000
++        # NVMe autonomous power states: an exit latency mid-take is a stall (Cinemate sets 0 for NVMe classes)
++        if [ -n "$APST" ]; then
++            save_once nvme_ps_max_latency /sys/module/nvme_core/parameters/default_ps_max_latency_us
++            write_sys /sys/module/nvme_core/parameters/default_ps_max_latency_us "$APST"
++        fi
 +        ;;
 +    restore)
 +        log "restore root=$ROOT"
@@ -181,13 +186,14 @@ index 0000000..2c61fe1
 +        for k in dirty_bytes dirty_background_bytes dirty_ratio dirty_background_ratio dirty_writeback_centisecs dirty_expire_centisecs; do
 +            restore_one "vm_$k" "/proc/sys/vm/$k"
 +        done
++        restore_one nvme_ps_max_latency /sys/module/nvme_core/parameters/default_ps_max_latency_us
 +        ;;
 +    *)
 +        echo "usage: apertar-media-tune apply|restore <rootdisk> <class> <fs>" >&2; exit 2 ;;
 +esac
 +exit 0
 diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
-index c22394b..9dd05ad 100644
+index 5f114da..a6d1fc4 100644
 --- a/src/ApertarCoreApp.cpp
 +++ b/src/ApertarCoreApp.cpp
 @@ -3624,11 +3624,14 @@ bool mountDeviceAtMediaPath(const std::string &devicePath,
@@ -207,7 +213,7 @@ index c22394b..9dd05ad 100644
      }
  
      std::string command = "sudo -n mount";
-@@ -7746,6 +7749,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+@@ -7747,6 +7750,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
      const std::string sensorName = camera_.sensorName();
      const bool mediaMounted = isMountedPath(options_.mediaRoot);
      const MediaSnapshot mediaSnap = mediaSnapshot();
@@ -215,7 +221,7 @@ index c22394b..9dd05ad 100644
      const std::string mountedDevice = mediaMounted ? mountedDeviceForPath(options_.mediaRoot) : std::string();
      const std::string mountedVolumeLabel = mediaMounted ? volumeLabelForDevicePath(mountedDevice) : std::string();
      const std::string mediaTypeLabel = mediaMounted
-@@ -7933,6 +7937,8 @@ std::string ApertarCoreApp::buildWebStateJson() const
+@@ -7939,6 +7943,8 @@ std::string ApertarCoreApp::buildWebStateJson() const
          << ",\"media_alive\":" << (mediaSnap.mounted() ? "true" : "false")
          << ",\"media_device\":\"" << escapeJson(mediaSnap.device) << "\""
          << ",\"media_fstype\":\"" << escapeJson(mediaSnap.fstype) << "\""
@@ -224,10 +230,12 @@ index c22394b..9dd05ad 100644
          << ",\"recording_fault\":\"" << escapeJson(camera_.recordingFaultName()) << "\""
          << ",\"network_transport\":\"" << escapeJson(network.transport) << "\""
          << ",\"network_host\":\"" << escapeJson(network.hostLabel) << "\""
-@@ -9165,6 +9171,23 @@ void ApertarCoreApp::runMediaWatcher()
-                       << " free_mb=" << current.freeBytes / (1024 * 1024)
-                       << " errno=" << current.statvfsErrno << "\n";
-             publishEvent(mediaEventJson(current));
+@@ -9187,6 +9193,25 @@ void ApertarCoreApp::runMediaWatcher()
+                         syncRecordingTracking(false);
+                 }
+             }
++            // Only now the profile and the root helper: a sudo round-trip must not
++            // delay the abort above (critic S11).
 +            // The medium decides the writer topology and the kernel knobs; classify
 +            // it once per change, log it, and hand the kernel side to the root helper.
 +            MediaProfile profile;
@@ -245,10 +253,10 @@ index c22394b..9dd05ad 100644
 +                applyMediaTuning(profile, true);
 +            else if (previousProfile.known())
 +                applyMediaTuning(previousProfile, false);
-             const bool lost = havePrevious && previous.mounted() &&
-                 (current.state == MediaSnapshot::State::Removed || current.state == MediaSnapshot::State::None);
-             if (lost) {
-@@ -9237,6 +9260,44 @@ std::string ApertarCoreApp::mediaGateError() const
+         }
+         previous = current;
+         havePrevious = true;
+@@ -9248,6 +9273,44 @@ std::string ApertarCoreApp::mediaGateError() const
      return {};
  }
  
@@ -324,7 +332,7 @@ index ef25bb2..d4506d9 100644
  
  } // namespace apertar
 diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
-index 2a64fbb..3e59338 100644
+index 9cdd6c4..3db3b7f 100644
 --- a/src/camera/CameraController.cpp
 +++ b/src/camera/CameraController.cpp
 @@ -25,6 +25,7 @@
@@ -417,15 +425,16 @@ index 2a64fbb..3e59338 100644
      // Copy workers (completion-thread hand-off).
      std::mutex copyMutex_;
      std::condition_variable copyCv_;
-@@ -6248,6 +6270,7 @@ public:
+@@ -6248,6 +6270,8 @@ public:
              return true;
          }
  
-+        recorder_.setMediaProfile(detectMediaProfile(probeMediaRoot(mediaRoot)));
++        // The watcher's snapshot, not a fresh statvfs: this runs under the controller lock.
++        recorder_.setMediaProfile(detectMediaProfile(cachedMediaSnapshotOrProbe(mediaRoot)));
          if (!recorder_.startAtFolder(clipFolder, settings, error)) {
              audioRecorder_.stop();
              gyroRecorder_.stop();
-@@ -8330,6 +8353,7 @@ bool CameraController::start(const std::string &mediaRoot, bool simulateCamera)
+@@ -8397,6 +8421,7 @@ bool CameraController::start(const std::string &mediaRoot, bool simulateCamera)
  {
      std::lock_guard<std::mutex> lock(mutex_);
      mediaRoot_ = mediaRoot;
@@ -502,10 +511,10 @@ index d5766b7..7b8c860 100644
  
 diff --git a/src/util/MediaProfile.hpp b/src/util/MediaProfile.hpp
 new file mode 100644
-index 0000000..e501912
+index 0000000..a91b29e
 --- /dev/null
 +++ b/src/util/MediaProfile.hpp
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,200 @@
 +#pragma once
 +
 +#include "util/MediaProbe.hpp"
@@ -558,26 +567,7 @@ index 0000000..e501912
 +    return "none";
 +}
 +
-+// /dev/nvme0n1p1 -> nvme0n1, /dev/mmcblk0p2 -> mmcblk0, /dev/sda1 -> sda, /dev/sda -> sda.
-+inline std::string rootDiskForDevice(const std::string &devicePath)
-+{
-+    std::string name = std::filesystem::path(devicePath).filename().string();
-+    if (name.empty())
-+        return name;
-+    const bool partitionedWithP = name.rfind("nvme", 0) == 0 || name.rfind("mmcblk", 0) == 0;
-+    if (partitionedWithP) {
-+        const size_t p = name.rfind('p');
-+        if (p != std::string::npos && p > 0 && p + 1 < name.size() &&
-+            std::isdigit(static_cast<unsigned char>(name[p - 1])) &&
-+            std::all_of(name.begin() + static_cast<std::string::difference_type>(p) + 1, name.end(),
-+                        [](unsigned char ch) { return std::isdigit(ch) != 0; }))
-+            name.erase(p);
-+        return name;
-+    }
-+    while (name.size() > 1 && std::isdigit(static_cast<unsigned char>(name.back())))
-+        name.pop_back();
-+    return name;
-+}
++// rootDiskForDevice() lives in MediaProbe.hpp (the probe needs it too).
 +
 +inline MediaFilesystem classifyFilesystem(std::string fstype)
 +{
@@ -717,9 +707,11 @@ index 0000000..e501912
 +    return root;
 +}
 +
++// Uses the media watcher's cached snapshot: this runs at configure time and
++// must not block on a dead device (critic Y8).
 +inline unsigned mediaExtraRawBuffersForConfiguredRoot()
 +{
-+    return detectMediaProfile(probeMediaRoot(configuredMediaRoot())).writer.extraRawBuffers;
++    return detectMediaProfile(cachedMediaSnapshotOrProbe(configuredMediaRoot())).writer.extraRawBuffers;
 +}
 +
 +} // namespace apertar

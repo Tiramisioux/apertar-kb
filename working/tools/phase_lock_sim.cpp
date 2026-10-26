@@ -66,6 +66,51 @@ RunStats run(apertar::FramePhaseLock &lock, Sensor &sensor, bool enabled, bool r
     return stats;
 }
 
+// The qbc libcamera fork's IMX585 getBlanking (4cff971): when one rate is pinned
+// it searches the integer (VMAX even, HMAX) lattice for the product nearest the
+// requested period in 74.25 MHz ticks, snapping an integer-microsecond request
+// to the exact nominal rate when that is a whole even tick count. Modelled from
+// libcamera-qbc/src/ipa/rpi/cam_helper/cam_helper_imx585.cpp:95-225@7e9fef0.
+struct LatticeSensor {
+    double ppm;
+    int64_t requestUs;
+    long minHmax = 550;        // ticks; the 4K modes' HMAX per the Cinemate hardware log
+    long capHmax = 825;        // minHmax + minHmax/2
+    long long minFrameLength = 2200, maxFrameLength = (1LL << 20) - 1;
+    static constexpr double kClock = 74250000.0;
+    long lastH = 0; long long lastV = 0;
+
+    double realised(int64_t request)
+    {
+        long long target = std::llround(static_cast<double>(request) * 1e-6 * kClock);
+        const long nominalFps = std::lround(kClock / static_cast<double>(target));
+        if (nominalFps > 0 && std::fabs(1.0e6 / nominalFps - static_cast<double>(request)) < 1.0) {
+            const double exact = kClock / static_cast<double>(nominalFps);
+            const long long exactTicks = std::llround(exact);
+            if (exact == std::floor(exact) && (exactTicks & 1LL) == 0)
+                target = exactTicks;
+        }
+        long bestH = minHmax;
+        long long bestV = (target / minHmax) & ~1LL;      // default helper: floor to lines, driver rounds even
+        long long bestErr = std::llabs(bestV * bestH - target);
+        const long long halfUs = std::llround(kClock / 2.0e6);
+        long lowH = -1; long long lowV = 0;
+        for (long h = minHmax; h <= capHmax && bestErr; ++h) {
+            const long long vIdeal = (target + h / 2) / h;
+            const long long vEven = vIdeal & ~1LL;
+            for (long long v : { vEven, vEven + 2 }) {
+                if (v < minFrameLength || v > maxFrameLength) continue;
+                const long long err = std::llabs(v * h - target);
+                if (err < bestErr) { bestErr = err; bestV = v; bestH = h; }
+                if (lowH < 0 && err <= halfUs) { lowH = h; lowV = v; }
+            }
+        }
+        if (bestErr != 0 && lowH >= 0 && lowH < bestH) { bestH = lowH; bestV = lowV; }
+        lastH = bestH; lastV = bestV;
+        return static_cast<double>(bestV) * static_cast<double>(bestH) / kClock * 1e6 * (1.0 - ppm * 1e-6);
+    }
+};
+
 int failures = 0;
 void check(bool ok, const char *what)
 {
@@ -89,6 +134,23 @@ int main()
         const auto open = run(lock, sensor, false, false, 25.0, now, 500, 500);
         std::printf("    open loop: %.1f ppm\n", open.meanPpm);
         check(std::fabs(open.meanPpm + 1066.0) < 400.0, "open loop shows the sensor error (line rounding included)");
+        // Settling time from a cold arm (no preview pre-convergence): the frame
+        // after which |err| stays under 20 us for the rest of the run.
+        {
+            FramePhaseLock cold;
+            Sensor coldSensor{11.0, +1066.0, 40000};
+            int64_t t = 2'000'000'000LL;
+            uint64_t lastBad = 0;
+            for (uint64_t i = 0; i < 6000; ++i) {
+                t += static_cast<int64_t>(std::llround(coldSensor.realised(coldSensor.requestUs) * 1000.0));
+                const auto d = cold.step(true, true, 25.0, t);
+                if (d.pushDuration) coldSensor.requestUs = d.durationUs;
+                if (d.servoRan && std::fabs(d.phaseErrorUs) > 20.0) lastBad = i;
+            }
+            std::printf("    cold arm: |err| stays < 20 us after frame %llu (%.1f s at 25 fps)\n",
+                        (unsigned long long)lastBad + 1, (lastBad + 1) / 25.0);
+            check(lastBad < 2500, "settles within 2500 frames from a cold arm at +1066 ppm");
+        }
         run(lock, sensor, true, false, 25.0, now, 2000, 1);          // preview pre-converge
         lock.resetTelemetry();
         const auto rec = run(lock, sensor, true, true, 25.0, now, 20000, 20000);
@@ -179,6 +241,38 @@ int main()
             reqB.push_back(sb.requestUs);
         }
         check(reqA == reqB, "boot-relative and epoch-scale references produce identical requests");
+    }
+
+    // 6. The qbc lattice: what do the servo's +/-1..2 us requests become, and does
+    //    the lock still hold? (critic P1/P2). Table first, then a locked run.
+    {
+        std::printf("6. qbc getBlanking lattice (HMAX 550..825, VMAX even), realised period per request\n");
+        LatticeSensor table{0.0, 40000};
+        for (int64_t req : { 39998, 39999, 40000, 40001, 40002, 41665, 41666, 41667, 41668, 33332, 33333, 33334 }) {
+            const double r = table.realised(req);
+            std::printf("    req %6lld us -> HMAX %4ld x VMAX %5lld = %10.3f us (%+.2f us)\n",
+                        (long long)req, table.lastH, table.lastV, r, r - req);
+        }
+        for (double fps : { 25.0, 24.0 }) {
+            FramePhaseLock lock;
+            LatticeSensor sensor{+300.0, static_cast<int64_t>(1e6 / fps)};
+            int64_t now = 3'000'000'000LL;
+            std::set<long> hmaxSeen;
+            uint64_t pushes = 0; double maxErr = 0.0; double spanStart = 0; uint64_t frames = 0;
+            for (uint64_t i = 0; i < 12000; ++i) {
+                now += static_cast<int64_t>(std::llround(sensor.realised(sensor.requestUs) * 1000.0));
+                const auto d = lock.step(true, i >= 2000, fps, now);
+                if (d.pushDuration) sensor.requestUs = d.durationUs;
+                if (i == 4000) spanStart = static_cast<double>(now);
+                if (i >= 4000) { hmaxSeen.insert(sensor.lastH); ++frames; if (d.servoRan) maxErr = std::max(maxErr, std::fabs(d.phaseErrorUs)); }
+                if (i >= 4000 && d.pushDuration) ++pushes;
+            }
+            const double meanPpm = (((static_cast<double>(now) - spanStart) * 1e-3) / ((frames - 1) * 1e6 / fps) - 1.0) * 1e6;
+            std::printf("    %.0f fps, +300 ppm sensor under the lattice: mean %.2f ppm, max |err| %.1f us, pushes %llu / %llu frames, distinct HMAX %zu\n",
+                        fps, meanPpm, maxErr, (unsigned long long)pushes, (unsigned long long)frames, hmaxSeen.size());
+            check(std::fabs(meanPpm) < 10.0, "lattice: cadence still within 10 ppm");
+            check(maxErr < 150.0, "lattice: phase error bounded by the clamp");
+        }
     }
 
     std::printf("%s (%d failure%s)\n", failures ? "FAILED" : "ALL CHECKS PASSED", failures, failures == 1 ? "" : "s");

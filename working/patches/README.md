@@ -13,6 +13,8 @@ Reference patches for the tutorials, written in a cloud session on 2026-10-26 fr
 | 7 | `0001-audio-writer-thread-and-a-one-second-capture-ring-on.patch` | T30 | audio writer thread + RAM queue, 1 s ALSA ring with 10 ms period (`APERTAR_AUDIO_BUFFER_MS`), negotiated sizes and peak backlog logged | `AudioRecordingSession.cpp` syntax; `TimestampedAudioCapture.cpp` needs `alsa/asoundlib.h` |
 | – | `0001-imx585-report-each-mode-s-sensor-window-as-its-crop-.patch` | T26 | imx585-v4l2-driver `apertar` @ `e5b74d3`: per-mode `.crop` in native sensor pixels | none (kernel) |
 
+Patches 4–7 were amended on 2026-10-26 after the workflow's critic pass (phase-lock pin without a `settings_` read, env gains, saturation detection and state telemetry; device-node and NVMe-state checks and a cached snapshot in the media probe; helper after the abort, APST knob). `working/port-raw/critic.md` lists what was folded in and what was left as a stated limit.
+
 `CameraController.cpp` is touched by 1, 3, 4, 5 and 6 and cannot be compiled off the Pi (libcamera headers are generated at build time); every anchor in those hunks was taken from the file at the stated base, and the tutorials build after each step so a slip surfaces at the step that made it. The driver patch is independent of the Core series.
 
 Branch on the Pi: `git -C ~/ApertarCore checkout -b clearhdr-fixes f60e301 && git am ~/apertar-kb/working/patches/0001-camera-one-*.patch ...` in the table's order.

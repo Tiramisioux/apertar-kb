@@ -1,4 +1,4 @@
-From bb85899f5018c92fdac3febd9ddef0d502c562bd Mon Sep 17 00:00:00 2001
+From 9e6df59342b6a1f70dd9e443973ae3c2c6ddeffd Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 26 Oct 2026 08:16:56 +0000
 Subject: [PATCH] camera: frame-rate phase lock, off by default
@@ -22,11 +22,11 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
 ---
  include/apertar/core/Types.hpp  |   1 +
- src/ApertarCoreApp.cpp          |  13 ++-
- src/camera/CameraController.cpp |  87 +++++++++++++++++++
- src/camera/CameraController.hpp |   1 +
- src/camera/FramePhaseLock.hpp   | 147 ++++++++++++++++++++++++++++++++
- 5 files changed, 248 insertions(+), 1 deletion(-)
+ src/ApertarCoreApp.cpp          |  19 +++-
+ src/camera/CameraController.cpp | 162 ++++++++++++++++++++++++++++++++
+ src/camera/CameraController.hpp |   3 +
+ src/camera/FramePhaseLock.hpp   | 156 ++++++++++++++++++++++++++++++
+ 5 files changed, 340 insertions(+), 1 deletion(-)
  create mode 100644 src/camera/FramePhaseLock.hpp
 
 diff --git a/include/apertar/core/Types.hpp b/include/apertar/core/Types.hpp
@@ -42,7 +42,7 @@ index 92b6ef6..eafd5c9 100644
      bool isoAuto = false;
      uint32_t shutterUs = 20833;
 diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
-index 8d517af..94d25dc 100644
+index 8d517af..4c9e298 100644
 --- a/src/ApertarCoreApp.cpp
 +++ b/src/ApertarCoreApp.cpp
 @@ -199,6 +199,7 @@ std::string settingsBody(const CaptureSettings &settings)
@@ -53,7 +53,27 @@ index 8d517af..94d25dc 100644
          << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
          << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
          << ",\"hdr_blend\":" << settings.hdrBlend
-@@ -7894,6 +7895,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+@@ -7721,6 +7722,7 @@ std::string ApertarCoreApp::buildMediaLibraryJson() const
+ 
+ std::string ApertarCoreApp::buildWebStateJson() const
+ {
++    const PhaseLockStatus phaseLockStatus = camera_.phaseLockStatus();
+     const auto mediaWrite = camera_.mediaWriteStatus();
+     const CameraState cameraState = camera_.state();
+     const CaptureSettings settings = camera_.settings();
+@@ -7852,6 +7854,11 @@ std::string ApertarCoreApp::buildWebStateJson() const
+         << ",\"recording\":" << (recording ? "true" : "false")
+         << ",\"recording_error\":\"" << escapeJson(camera_.recordingError()) << "\""
+         << ",\"recording_has_dropped_frames\":" << (camera_.recordingHasDroppedFrames() ? "true" : "false")
++        << ",\"fps_phase_lock_active\":" << (phaseLockStatus.active ? "true" : "false")
++        << ",\"fps_phase_lock_err_us\":" << jsonNumber(phaseLockStatus.errorUs, 1)
++        << ",\"fps_phase_lock_dur_us\":" << phaseLockStatus.durationUs
++        << ",\"fps_phase_lock_pushes\":" << phaseLockStatus.pushes
++        << ",\"fps_phase_lock_saturated\":" << (phaseLockStatus.saturated ? "true" : "false")
+         << ",\"sound_recording\":" << (soundRecording ? "true" : "false")
+         << ",\"timelapse_active\":" << (timelapseActive ? "true" : "false")
+         << ",\"timelapse_interval_seconds\":" << timelapseIntervalSeconds
+@@ -7894,6 +7901,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
          << ",\"preview_exposure_reference\":" << previewExposureReferenceJson(settings.previewExposureReference.get())
          << ",\"tuning_file\":\"" << escapeJson(settings.tuningFile) << "\""
          << ",\"clear_hdr\":" << (settings.clearHdr ? "true" : "false")
@@ -61,7 +81,7 @@ index 8d517af..94d25dc 100644
          << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
          << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
          << ",\"hdr_blend\":" << settings.hdrBlend
-@@ -9248,7 +9250,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -9248,7 +9256,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
      }
  
      if (command.name == "help")
@@ -70,7 +90,7 @@ index 8d517af..94d25dc 100644
  
      if (command.name == "get_state") {
          const auto mediaWrite = camera_.mediaWriteStatus();
-@@ -9488,6 +9490,15 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -9488,6 +9496,15 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
              : errorReply(command.id, camera_.lastError());
      }
  
@@ -87,7 +107,7 @@ index 8d517af..94d25dc 100644
          const auto value = command.string("value");
          if (!value)
 diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
-index 3d255b1..1937b35 100644
+index 3d255b1..d0c10db 100644
 --- a/src/camera/CameraController.cpp
 +++ b/src/camera/CameraController.cpp
 @@ -1,3 +1,5 @@
@@ -156,7 +176,7 @@ index 3d255b1..1937b35 100644
          gyroRecorder_.stop();
          h264Recorder_.stop();
          recorder_.stop();
-@@ -7025,6 +7045,45 @@ private:
+@@ -7025,6 +7045,103 @@ private:
          return true;
      }
  
@@ -173,22 +193,68 @@ index 3d255b1..1937b35 100644
 +            std::lock_guard lock(recordingFrameMutex_);
 +            recording = recordingFramesEnabled_;
 +        }
++        // settings_ is read here under the shared session-settings lock the
++        // completion callback holds; controlsMutex_ guards the lock state itself.
 +        std::lock_guard<std::mutex> lock(controlsMutex_);
 +        const bool enabled = settings_.fpsPhaseLock && !settings_.photoModeEnabled && settings_.fps > 1.0;
 +        const bool wasActive = phaseLock_.active;
++        if (!wasActive) {
++            // Gains tune on the Pi without a rebuild (Cinemate kept them as live keys
++            // for the same reason): APERTAR_PHASE_LOCK_KP / _KI / _DEADBAND_US / _CLAMP_US.
++            static const FramePhaseLock::Tuning tuning = [] {
++                FramePhaseLock::Tuning t;
++                auto env = [](const char *name, double fallback) {
++                    const char *value = std::getenv(name);
++                    if (!value || !*value) return fallback;
++                    char *end = nullptr;
++                    const double parsed = std::strtod(value, &end);
++                    return (end && end != value && parsed > 0.0) ? parsed : fallback;
++                };
++                t.proportional = env("APERTAR_PHASE_LOCK_KP", t.proportional);
++                t.integral = env("APERTAR_PHASE_LOCK_KI", t.integral);
++                t.deadbandUs = env("APERTAR_PHASE_LOCK_DEADBAND_US", t.deadbandUs);
++                t.clampUs = env("APERTAR_PHASE_LOCK_CLAMP_US", t.clampUs);
++                return t;
++            }();
++            phaseLock_.tuning = tuning;
++        }
 +        const FramePhaseLock::Decision decision =
 +            phaseLock_.step(enabled, recording, settings_.fps, static_cast<int64_t>(*timestamp));
 +        if (!decision.active) {
 +            if (wasActive)
 +                std::cerr << "ApertarCore phase-lock: released\n";
 +            phaseLockDurationUs_.reset();
++            phaseLockSaturated_ = false;
 +            return;
 +        }
 +        if (decision.rearmed) {
 +            phaseLockDurationUs_.reset();
++            phaseLockSaturated_ = false;
++            recentPhaseLockPins_.fill(0);
 +            std::cerr << "ApertarCore phase-lock: armed fps=" << settings_.fps
-+                      << " nominal_us=" << phaseLock_.nominalUs << " ref=boottime\n";
++                      << " nominal_us=" << phaseLock_.nominalUs << " ref=boottime"
++                      << " kp=" << phaseLock_.tuning.proportional << " ki=" << phaseLock_.tuning.integral
++                      << " deadband_us=" << phaseLock_.tuning.deadbandUs << " clamp_us=" << phaseLock_.tuning.clampUs << "\n";
 +            return;
++        }
++        if (decision.servoRan) {
++            lastPhaseErrorUs_ = decision.phaseErrorUs;
++            // Saturation: the IPA echoes the validated FrameDurationLimits in the
++            // metadata. A pinned {d,d} that comes back as something we never pinned
++            // was clamped to the mode's limits; at a mode's top fps the servo can
++            // then only lengthen frames and the clamp would hide it (one line per arm).
++            if (const auto echoed = request->metadata().get(libcamera::controls::FrameDurationLimits);
++                echoed && echoed->size() == 2 && (*echoed)[0] == (*echoed)[1] && !phaseLockSaturated_) {
++                const int64_t echoedUs = (*echoed)[0];
++                bool pinned = false;
++                for (const int64_t pin : recentPhaseLockPins_)
++                    pinned = pinned || (pin != 0 && pin == echoedUs);
++                if (!pinned && recentPhaseLockPins_[0] != 0) {
++                    phaseLockSaturated_ = true;
++                    std::cerr << "ApertarCore phase-lock: saturated echoed_us=" << echoedUs
++                              << " requested_us=" << decision.durationUs << " nominal_us=" << phaseLock_.nominalUs << "\n";
++                }
++            }
 +        }
 +        if (decision.pushDuration)
 +            phaseLockDurationUs_ = decision.durationUs;
@@ -199,10 +265,22 @@ index 3d255b1..1937b35 100644
 +                      << " pushes=" << phaseLock_.pushes << "\n";
 +    }
 +
++    PhaseLockStatus phaseLockStatus()
++    {
++        std::lock_guard<std::mutex> lock(controlsMutex_);
++        PhaseLockStatus status;
++        status.active = phaseLock_.active;
++        status.errorUs = lastPhaseErrorUs_;
++        status.durationUs = phaseLockDurationUs_.value_or(0);
++        status.pushes = phaseLock_.pushes;
++        status.saturated = phaseLockSaturated_;
++        return status;
++    }
++
      void requeueRequest(libcamera::Request *request)
      {
          if (!request)
-@@ -7096,6 +7155,22 @@ private:
+@@ -7096,6 +7213,27 @@ private:
          }
          if (exposureArmed) emitStillExposureEvent();
  
@@ -214,18 +292,23 @@ index 3d255b1..1937b35 100644
 +                std::lock_guard lock(photoCaptureMutex_);
 +                photoBusy = !pendingPhotoCaptures_.empty() || stillExposureActive_ || restoreStillPreviewControls_;
 +            }
++            // No settings_ read here: requeueRequest also runs from the ProRes and
++            // H.264 release paths without the session-settings lock. applyControls
++            // clears the pin under controlsMutex_ when photo mode, fps or the switch
++            // changes, so the pin's presence is the only condition needed.
 +            std::lock_guard<std::mutex> lock(controlsMutex_);
-+            if (phaseLockDurationUs_ && !photoBusy && !settings_.photoModeEnabled) {
++            if (phaseLockDurationUs_ && !photoBusy) {
 +                const int64_t range[2] = { *phaseLockDurationUs_, *phaseLockDurationUs_ };
 +                request->controls().set(libcamera::controls::FrameDurationLimits,
 +                                        libcamera::Span<const int64_t, 2>(range));
++                recentPhaseLockPins_[recentPhaseLockPinIndex_++ % recentPhaseLockPins_.size()] = *phaseLockDurationUs_;
 +            }
 +        }
 +
          if (running_.load() && camera_) {
              if (camera_->queueRequest(request) < 0) {
                  ++requeueFailures_;
-@@ -7162,6 +7237,7 @@ private:
+@@ -7162,6 +7300,7 @@ private:
              }
          }
  
@@ -233,17 +316,21 @@ index 3d255b1..1937b35 100644
          capturePhotoFrame(request, whiteBalance);
          bool recoveredPreview = false;
          bool exposePreview = true;
-@@ -8023,6 +8099,9 @@ private:
+@@ -8023,6 +8162,13 @@ private:
      libcamera::ControlList pendingControls_;
      bool longExposureTimingUsed_ = false;
      std::mutex controlsMutex_;
 +    // Frame-rate phase lock state and the duration to pin on the next request (controlsMutex_).
 +    FramePhaseLock phaseLock_;
 +    std::optional<int64_t> phaseLockDurationUs_;
++    double lastPhaseErrorUs_ = 0.0;
++    bool phaseLockSaturated_ = false;
++    std::array<int64_t, 4> recentPhaseLockPins_{};   // durations pinned on the last requests (in-flight depth)
++    size_t recentPhaseLockPinIndex_ = 0;
      mutable std::mutex whiteBalanceMutex_;
      WhiteBalanceMeasurement whiteBalanceMeasured_;
      uint32_t measuredExposureUs_ = 0;
-@@ -8845,6 +8924,14 @@ bool CameraController::setTimecodeMode(TimecodeMode mode)
+@@ -8845,6 +8991,14 @@ bool CameraController::setTimecodeMode(TimecodeMode mode)
      return applySettingsLocked(next, false);
  }
  
@@ -258,11 +345,33 @@ index 3d255b1..1937b35 100644
  bool CameraController::setAutofocusMode(AutofocusMode mode)
  {
      std::lock_guard<std::mutex> lock(mutex_);
+@@ -9265,6 +9419,14 @@ std::string CameraController::lastError() const
+     return lastError_;
+ }
+ 
++PhaseLockStatus CameraController::phaseLockStatus() const
++{
++    std::lock_guard lock(mutex_);
++    if (simulateCamera_ || !session_)
++        return {};
++    return session_->phaseLockStatus();
++}
++
+ std::string CameraController::recordingError() const
+ {
+     std::lock_guard lock(mutex_);
 diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
-index fdc6785..72f3936 100644
+index fdc6785..6242461 100644
 --- a/src/camera/CameraController.hpp
 +++ b/src/camera/CameraController.hpp
-@@ -72,6 +72,7 @@ public:
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include "camera/FramePhaseLock.hpp"
+ #include <apertar/core/Types.hpp>
+ #include "util/RecordingDropWarning.hpp"
+ 
+@@ -72,6 +73,7 @@ public:
      bool setHdrGainAdder(uint32_t value);
      bool setH264Resolution(Resolution resolution);
      bool setTimecodeMode(TimecodeMode mode);
@@ -270,12 +379,20 @@ index fdc6785..72f3936 100644
      bool setAutofocusMode(AutofocusMode mode);
      bool setAutofocusRange(AutofocusRange range);
      bool setAutofocusSpeed(AutofocusSpeed speed);
+@@ -100,6 +102,7 @@ public:
+     bool isRecording() const;
+     std::string lastError() const;
+     std::string recordingError() const;
++    PhaseLockStatus phaseLockStatus() const;
+     bool recordingHasDroppedFrames() const { return recordingDropWarning_.dropped(); }
+ 
+ private:
 diff --git a/src/camera/FramePhaseLock.hpp b/src/camera/FramePhaseLock.hpp
 new file mode 100644
-index 0000000..ec55ca2
+index 0000000..31c7a09
 --- /dev/null
 +++ b/src/camera/FramePhaseLock.hpp
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,156 @@
 +#pragma once
 +
 +#include <algorithm>
@@ -300,6 +417,15 @@ index 0000000..ec55ca2
 +// frame's SensorTimestamp (CLOCK_BOOTTIME ns in this stack). Everything is in
 +// the reference clock's units; only differences are used, so the epoch does
 +// not matter.
++// Snapshot for state/telemetry consumers (controller -> App -> /api/state).
++struct PhaseLockStatus {
++    bool active = false;
++    double errorUs = 0.0;      // last phase error the servo saw
++    int64_t durationUs = 0;    // duration currently pinned, 0 when none
++    uint64_t pushes = 0;       // FrameDurationLimits changes since the last reset
++    bool saturated = false;    // the IPA echoed a different duration than the one pinned
++};
++
 +struct FramePhaseLock {
 +    struct Tuning {
 +        double proportional = 0.06;  // µs of duration per µs of phase error

@@ -5,7 +5,7 @@ Written 2026-10-26 (cloud session) from `apertar-core@2a6f114` (f60e301 + T23/T2
 `working/port-raw/y1-yank-cinemate.md` and `y2-yank-core.md`, and the history/handbook pass in
 `working/cinemate-lessons.md` §4. Nothing ran on a Pi. CONFIRMED = read in source; PROBABLE = inferred,
 reason given; UNKNOWN = not established. Patch: `working/patches/0001-media-survive-a-yanked-or-unmounted-recording-drive.patch`
-(Core `2715569`); tutorial T28.
+(Core `f2fa35b`, amended after the critic pass); tutorial T28.
 
 ## 1. Verdicts
 
@@ -65,9 +65,18 @@ Not ported, by decision:
 - Pool-exhaustion stop: Core's queue-full path drops and warns (`drop[queue-full]`), already published
   as `recording_health`.
 
+## 3b. Amendments after the critic pass (2026-10-26)
+
+- The probe no longer trusts `statvfs` alone: `ext4_statfs` answers from in-memory counters and exFAT/FAT cache theirs, so a pulled drive can keep answering (critic Y1, from kernel source). Two device-level facts now decide first, the way Cinemate's udev-remove and NVMe watchdogs do: the partition's `/sys/class/block/<name>` node is gone (USB: at once) or `/sys/block/<nvme>/device/state` reads `dead` (after the controller's I/O timeout, 30–60 s; critic Y3). `evaluateMediaProbe` takes both as inputs and is host-tested.
+- The watcher publishes its snapshot to a process-wide cache; configure-time buffer counts and `record_start` read the cache instead of running their own `statvfs` under the controller lock (critic Y8). Only the first seconds after start-up probe directly.
+- The WebUI's `hasMedia` follows `media_alive` (the watcher) when present, so the record button goes grey after a pull, not only after an eject (critic Y5).
+- The free-space floor defaults to 1024 MiB (critic Y11: 256 MiB is under one second of 16-bit 4K); per-format floors are the next step.
+- The root tuning helper (T29) runs after the abort, never before it (critic S11).
+- Not changed, stated as limits: `gyroRecorder_.stop()` still exports its sidecar and `proresRecorder_.stop()` still finishes its container on a dead mount (critic Y7); the `recording` event is still not always-broadcast, so a stop that lands while a command is collecting events reaches the HDMI process late (critic Y6, KB #36); nothing in any local repo consumes the eject flag yet (critic Y12).
+
 ## 4. Open points and hazards (for T28 to settle)
 
-1. errno sequence on this image for USB vs NVMe (statvfs and open) — UNKNOWN; T28 §3 records it.
+1. errno sequence on this image for USB vs NVMe (statvfs and open) — UNKNOWN; T28 §3 records it. On FAT32 a buffered `write()` keeps succeeding into the page cache after a pull (no shutdown hook in `fs/fat`), so only O_DIRECT cDNG, the node check or the NVMe state end such a take (critic Y2).
 2. A `close()` or `join()` stuck on a dead FUSE/NTFS mount can still hold `commandMutex_` for the
    duration of the stop; the watcher no longer adds to that, but the stop itself is not time-bounded.
    T28 §5 reads `ApertarCore recorder stop time:` after the pull. If it exceeds a few seconds on NTFS,

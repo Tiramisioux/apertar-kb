@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T30. Audio under storage load: a writer thread and a one-second ring, and why the WAV already had the right length
 
-Status: written 2026-10-26 (cloud session; patch `working/patches/0001-audio-writer-thread-and-a-one-second-capture-ring-on.patch`, Core `90e2415`, on top of T29). `AudioRecordingSession.cpp` passes a host syntax check; `TimestampedAudioCapture.cpp` needs `alsa/asoundlib.h` and is not compiled there. Answer: `working/storage-answer.md` §2, `working/cinemate-lessons.md` §3. Builds **M5** (audio) and the clock story from T27.
+Status: written 2026-10-26 (cloud session; patch `working/patches/0001-audio-writer-thread-and-a-one-second-capture-ring-on.patch`, Core `25397cd`, on top of T29). Line numbers below are at `25397cd`. `AudioRecordingSession.cpp` passes a host syntax check; `TimestampedAudioCapture.cpp` needs `alsa/asoundlib.h` and is not compiled there. Answer: `working/storage-answer.md` §2, `working/cinemate-lessons.md` §3. Builds **M5** (audio) and the clock story from T27.
 
 **You will learn**
 - Cinemate's June 2026 audio campaign in six commits: what each failure looked like in a WAV and what fixed it.

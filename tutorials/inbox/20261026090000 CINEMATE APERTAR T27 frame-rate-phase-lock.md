@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T27. The optional frame-rate phase lock: measure the cadence, simulate the servo, then switch it on
 
-Status: written 2026-10-26 (cloud session; patch `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` is the reference, not compiled on a Pi; the pure servo header passes `working/tools/phase_lock_sim.cpp` on the host). Needs T23–T25 applied (the patch sits on top of them). Answer: `working/phaselock-answer.md`. Builds **M7** (sensor path), the libcamera control merge, and the audio/video clock story.
+Status: written 2026-10-26 (cloud session; patch `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` is the reference, Core `9e6df59`, not compiled on a Pi; the pure servo header passes `working/tools/phase_lock_sim.cpp` on the host; amended after the critic pass with env gains, saturation detection, state telemetry and a pin that reads no settings). Needs T23–T25 applied (the patch sits on top of them). Line numbers are at `9e6df59`, the tree right after this patch; later patches shift them, the grep anchors do not. Answer: `working/phaselock-answer.md`. Builds **M7** (sensor path), the libcamera control merge, and the audio/video clock story.
 
 **You will learn**
 - Why a 24.000 fps sensor is never 24.000 fps against the Pi clock, and what that does to Core's frame numbering and WAV length over a long take.
@@ -27,24 +27,29 @@ Cinemate measured its imx585 at **+1066 ppm** on one mode (`cinepi-raw 55562b6`)
 ## 2. How this part works
 
 ```
- completion thread:  requestComplete()  -> metadata (SensorTimestamp, FrameDuration)
-                         -> stepFramePhaseLock(request)          CC:7147   (new)
+ completion thread:  requestComplete()  -> metadata (SensorTimestamp, FrameDuration, FrameDurationLimits echo)
+                         -> stepFramePhaseLock(request)          CC:7051   (new)
+                              gains from APERTAR_PHASE_LOCK_KP/_KI/_DEADBAND_US/_CLAMP_US at arm   CC:7068-7081
                               phase error = ts - (origin + k/fps)  on CLOCK_BOOTTIME
                               PI servo (kp 0.06, ki 0.0015), deadband 6 us, clamp +/-150 us
                               request = round(nominal - correction)  -> whole microseconds
+                              saturation: echoed limits != any of the last 4 pins -> one log line   CC:7105-7122
                          -> requeueRequest(request)               CC:7183
                               ... photo-mode merges ...
-                              if phaseLockDurationUs_: set FrameDurationLimits {d, d}   CC:7263-7264
-                              camera_->queueRequest(request)      CC:7271
+                              if phaseLockDurationUs_ && !photoBusy: set FrameDurationLimits {d, d}   CC:7229-7234
+                              camera_->queueRequest(request)      CC:7275
+ state:              phaseLockStatus() CC:7133 -> CameraController CC:9422 -> /api/state fps_phase_lock_{active,err_us,dur_us,pushes,saturated}  App:7857-7861
 ```
 
 The sensor can only realise whole lines (≈11 µs at 4K/25 fps), so a request of 40 003 µs becomes 40 007 and 40 002 becomes 39 996: the servo's integer requests alternate between the two and the **average** lands on nominal. That is a first-order sigma-delta; the instantaneous error stays inside the deadband. Cinemate's first version was pure-integral and oscillated to the clamp (`85d0326`); the P term is the damping.
 
 Reference clock: Cinemate uses `FrameWallClock` (wall time, "= the audio clock" in cinepi-raw). Core stamps audio on CLOCK_BOOTTIME (`src/audio/TimestampedAudioCapture.cpp:195-228`) and `SensorTimestamp` is BOOTTIME too (kernel `ktime_get_ns()`, `rp1_cfe/cfe.c:692`), so Core's reference is `SensorTimestamp` and **the audio path does not change**; `finalizeWav`'s resampler keeps correcting the ALSA crystal (`AudioRecordingSession.cpp:526-531`).
 
-Gap policy, the part Cinemate needed three Pi rounds for (`e74e3e4`, `3b3ff60`, `4537153`): in preview a gap > 1.5 frames (a mode switch) re-arms the datum; while recording a gap is a real drop and the missed frames are counted so the phase does not jump; in preview a leaked error > half a frame re-arms too.
+Gap policy, the part Cinemate needed three Pi rounds for (`e74e3e4`, `3b3ff60`, `4537153`): in preview a gap > 1.5 frames (a mode switch) re-arms the datum; while recording a gap is a real drop and the missed frames are counted so the phase does not jump; in preview a leaked error > half a frame re-arms too. The reasons, so you do not simplify them away: a reconfigure stall is *not* a whole number of frames, so absorbing it leaves a fractional residual that the clamp-limited loop bleeds off at ~3 ms per second — recordings started 90–169 ms behind until preview re-armed instead (`3b3ff60`); and the lock runs in preview at all so that a take starts already locked (`d038556`). Pure integral control oscillated to the clamp on the first Pi test; the proportional term is the damping (`85d0326`).
 
-Reading assignments: `src/camera/FramePhaseLock.hpp` (all 147 lines), `CC:7147-7181`, `CC:7263-7265`, `CC:6120-6127`, `CC:6286-6293`, `p2-phaselock-core.md` §3 and §5.
+The pin reads no `settings_`: `requeueRequest` is also reached from the ProRes and H.264 release paths without the session-settings lock, so `applyControls` clears the pin under `controlsMutex_` whenever fps, the switch or photo mode changes (`CC:6046-6050`) and the pin's presence is the only condition left.
+
+Reading assignments: `src/camera/FramePhaseLock.hpp` (all), `CC:7051-7143`, `CC:7222-7236`, `CC:6043-6051`, `CC:6207-6214`, `p2-phaselock-core.md` §3 and §5, `working/port-raw/critic.md` items P1–P9.
 
 ## 3. Find it yourself
 
@@ -55,10 +60,10 @@ cd ~/apertar-kb/working/tools
 g++ -std=c++20 -O2 -Wall -I ~/ApertarCore/src/camera phase_lock_sim.cpp -o /tmp/phase_lock_sim && /tmp/phase_lock_sim
 ```
 
-Prediction: 17 `[ok]` lines; case 1 ends within 10 ppm with 3 distinct requests; case 2 (an exactly-on sensor) shows 0 pushes.
+Prediction: 22 `[ok]` lines; case 1 ends within 10 ppm with 3 distinct requests and settles from a cold arm in a few hundred frames; case 2 (an exactly-on sensor) shows 0 pushes; case 6 prints the qbc lattice table.
 
 > [!tip]- Answer
-> `locked: mean 0.00 ppm, max |err| 13.9 us, pushes 4882, distinct requests 3` — the dither toggles every ~4 frames, like Cinemate's "2–3 line dither". Case 2 prints `pushes 0`: inside the deadband the servo holds and sends nothing. Note the comment in the test: a 24 fps period (41666.667 µs) *must* dither between 41666 and 41667, so exactness is tested at 25 fps.
+> `locked: mean 0.00 ppm, max |err| 13.9 us, pushes 4882, distinct requests 3` — the dither toggles every ~4 frames, like Cinemate's "2–3 line dither". `cold arm: |err| stays < 20 us after frame 157 (6.3 s at 25 fps)`: Cinemate's unit test waits 1000 frames before bounding the error, which is conservative. Case 2 prints `pushes 0`: inside the deadband the servo holds and sends nothing. Note the comment in the test: a 24 fps period (41666.667 µs) *must* dither between 41666 and 41667, so exactness is tested at 25 fps. Case 6 is what step 3.3 is about.
 
 **3.1 Which clock stamps the frames, and which clock stamps the audio?** (Pi, read-only)
 
@@ -108,10 +113,10 @@ python3 -I ~/apertar-kb/working/tools/core.py set_fps value=24.9994        # 400
 v4l2-ctl -d $SUB --get-ctrl=hblank,vblank
 ```
 
-Prediction: `hblank` identical, `vblank` differs by one line → VBLANK-only, safe. If `hblank` changes, the lattice is active.
+Prediction: `hblank` identical, `vblank` differs by one line → VBLANK-only, the default helper. If `hblank` changes, the lattice is active; the simulator's case 6 says what to expect.
 
 > [!tip]- Answer
-> With the lattice active the dither changes the line time, i.e. the rolling-shutter skew and the exposure quantum, by a fraction of a percent every few frames. Cinemate's "0.03 % exposure variation" assumes VBLANK-only. Measure before enabling: a 1-minute take with the lock on, a flat grey target, and the frame-to-frame mean level in `tools/dng_inspect.py`-style statistics; if it is stable to 0.1 %, proceed; if not, raise the deadband to 12 µs (one line) in `FramePhaseLock::Tuning` and note the finding in `lessons/hardware-log.md`.
+> The simulator models the lattice from the helper's source (`phase_lock_sim.cpp`, `LatticeSensor`, from `cam_helper_imx585.cpp:95-225`). At 25 fps, 40000 µs is exact (HMAX 550 × VMAX 5400); 40001 becomes HMAX 581 × 5112 = 40000.97 µs and 39999 becomes HMAX 551 × 5390 = 39998.52 µs — so a 1 µs push moves the *line length* by up to 5.6 % and the readback shows `hblank` jumping, not `vblank`. The helper re-fits the exposure time to the new line, so exposure stays put; what changes is the rolling-shutter skew by that 5.6 % on the frames that carry HMAX 581. At 24 fps, 41666 and 41667 both snap to the exact 625 × 4950, so ±1 µs pushes are no-ops there and the servo's ±2 µs requests land at 41665.37 / 41668.15 µs. Under this model the lock still holds (simulated +300 ppm sensor: 0.03 ppm mean, max error 7 µs, a push every ~23 frames, two HMAX values). Decide with a picture: a 1-minute take on a flat grey target with the lock on; if frame-to-frame mean level is stable to 0.1 % and a fast pan shows no skew flicker, proceed; otherwise raise `APERTAR_PHASE_LOCK_DEADBAND_US` to 12 (one line) and note it in `lessons/hardware-log.md`.
 
 ## 4. Make the change
 
@@ -129,12 +134,13 @@ Re-run step 3.0 against *your* header: `g++ ... -I ~/ApertarCore/src/camera phas
 
 **4.3 The step and the pin** — `CameraSession`:
 - members next to the controls state (`CC:8199-8200`): `FramePhaseLock phaseLock_; std::optional<int64_t> phaseLockDurationUs_;` guarded by `controlsMutex_`.
-- `stepFramePhaseLock(libcamera::Request *)` (`CC:7147-7181`): read `SensorTimestamp`; `enabled = settings_.fpsPhaseLock && !photoModeEnabled && fps > 1`; `recording = recordingFramesEnabled_`; call `step()`; on `rearmed` clear the pin and log `ApertarCore phase-lock: armed fps= nominal_us= ref=boottime`; on `pushDuration` set `phaseLockDurationUs_`; every 250 frames with `APERTAR_PHASE_LOCK_LOG=1` print `frames= err_us= req_us= pushes=`.
-- call it from `requestComplete` before `requeueRequest` (`CC:7336`).
-- in `requeueRequest`, after the photo-mode merges and only when not photo-busy (`CC:7263-7265`): `request->controls().set(controls::FrameDurationLimits, {d, d})`.
-- release on `stop()` (`CC:6040-6041`) and when fps or the switch changes in `applyControls` (`CC:6123-6126`); print `ApertarCore phase-lock stats: max_abs_err_us= duration_pushes=` in `stopRecording` (`CC:6289-6292`) and reset telemetry.
+- `stepFramePhaseLock(libcamera::Request *)` (`CC:7051-7131`): read `SensorTimestamp`; `enabled = settings_.fpsPhaseLock && !photoModeEnabled && fps > 1`; `recording = recordingFramesEnabled_`; at arm, take the gains from `APERTAR_PHASE_LOCK_KP/_KI/_DEADBAND_US/_CLAMP_US` (`CC:7064-7083`); call `step()`; on `rearmed` clear the pin and log `ApertarCore phase-lock: armed fps= nominal_us= ref=boottime kp= ki= deadband_us= clamp_us=`; on `servoRan` keep the error and compare the IPA's echoed `FrameDurationLimits` with the last four pins — a value never pinned means the IPA clamped it: `phase-lock: saturated echoed_us= requested_us=` once per arm (`CC:7105-7122`); on `pushDuration` set `phaseLockDurationUs_`; every 250 frames with `APERTAR_PHASE_LOCK_LOG=1` print `frames= err_us= dur_us= pushes=`.
+- `phaseLockStatus()` (`CC:7133-7143`) returns `{active, errorUs, durationUs, pushes, saturated}` under `controlsMutex_`.
+- call the step from `requestComplete` before `requeueRequest` (`CC:7303`).
+- in `requeueRequest`, after the photo-mode merges and only when not photo-busy (`CC:7222-7236`): `request->controls().set(controls::FrameDurationLimits, {d, d})` and remember the pin in `recentPhaseLockPins_` (the in-flight depth). No `settings_` read here.
+- release on `stop()` (`CC:6040-6041`) and when fps, the switch or photo mode changes in `applyControls` (`CC:6046-6050`); print `ApertarCore phase-lock stats: max_abs_err_us= duration_pushes=` in `stopRecording` (`CC:6207-6214`) and reset telemetry.
 
-**4.4 The command** — `ApertarCoreApp.cpp`: `set_fps_phase_lock` with `enabled` (`App:9631-9640`), the help list entry (`App:9389`), `fps_phase_lock` in both state JSONs (`App:203`, `:7913`); `CameraController::setFpsPhaseLock(bool)` (`CC:9027`).
+**4.4 The command and the telemetry** — `ApertarCoreApp.cpp`: `set_fps_phase_lock` with `enabled` (`App:9499-9508`), the help list entry, `fps_phase_lock` in both state JSONs (`App:203`, `:7917`); `CameraController::setFpsPhaseLock(bool)` and `phaseLockStatus()` (`CC:9422`); `/api/state` gains `fps_phase_lock_active`, `fps_phase_lock_err_us`, `fps_phase_lock_dur_us`, `fps_phase_lock_pushes`, `fps_phase_lock_saturated` next to `recording_has_dropped_frames` (`App:7857-7861`), so the switch is never shown without the number that would falsify it.
 
 Why the pin goes *after* the photo merges: a still capture's long exposure sets its own `FrameDurationLimits`; the servo must lose that argument, which is also why `enabled` excludes photo mode.
 
@@ -154,7 +160,13 @@ python3 -I ~/apertar-kb/working/tools/core.py set_fps_phase_lock enabled=true
 sleep 20; journalctl -u apertar-core -b --no-pager | grep 'phase-lock' | tail -3
 ```
 
-Prediction: one `armed fps=25 nominal_us=40000 ref=boottime` line within a second, then `frames=250 err_us=<±15> req_us=<39990..40010> pushes=<~60>`.
+Prediction: one `armed fps=25 nominal_us=40000 ref=boottime kp=0.06 ki=0.0015 ...` line within a second; by `frames=250` (10 s; the simulator settles a +1066 ppm sensor in ~160 frames) `err_us` within ±15 and `dur_us` within 39990..40010 on the default helper, or alternating between two or three values 1–2 µs apart on the lattice; `pushes` ≈ 60 on the default helper, ≈ 10 on the lattice. Then:
+
+```bash
+curl -s localhost:8000/api/state | grep -o '"fps_phase_lock_[a-z_]*":[^,]*'
+```
+
+Prediction: `active:true`, `err_us` a few µs, `dur_us` the current pin, `saturated:false`. A `saturated` line in the journal means the pin hit the mode's limit (the fastest fps of a mode): the servo can only lengthen frames there — lower the fps one step.
 
 **5.2 The 10-minute take, after** — repeat 3.2 with the lock on. Prediction: 0 index holes; `phase-lock stats: max_abs_err_us=` ≤ 20; `duration_pushes` ≈ frames/4; `audio clock: measured_drift_ppm=` unchanged from 3.2 (it is the ALSA crystal, not the sensor); `dropped_gap_estimate=0`.
 
@@ -195,6 +207,9 @@ Record the before/after cadence numbers and the HBLANK answer in `lessons/hardwa
 | `max_abs_err_us` grows past 150 and stays | the sensor cannot realise the request (clamp reached) or the lattice moved HMAX | check 3.3; compare `FrameDuration` metadata to the request in the 250-frame trace |
 | `drop[capture-gap]` lines appear only with the lock on | a request outside the IPA's accepted range got clamped and the frame restarted | look at `ApertarCore camera controls` warnings; raise `clampUs` only after reading the mode's `FrameDurationLimits` range |
 | audio drift figure changes with the lock | it should not; something else moved (USB load, mic) | compare two idle 2K takes first |
+| `phase-lock: saturated echoed_us=...` every arm | the pinned duration is at the mode's limit (its top fps): the servo can only lengthen frames | record one fps step below the mode maximum, or accept an open loop at the top rate |
+| gains need a trial | `APERTAR_PHASE_LOCK_KP=0.04` etc. in the service environment, restart, re-arm | no rebuild; Cinemate kept the same knobs as live keys |
+| you doubt the `settings_` reads on the completion thread | the critic (X6) audited only `applyControls` for holding `controlsMutex_` | `grep -n 'settings_ = ' src/camera/CameraController.cpp` and confirm each session writer runs with the camera stopped or under the unique `sessionSettingsMutex_`; the pin itself no longer reads settings |
 | still captures take the servo's duration | pin merged before the photo block | the pin belongs after the photo merges (`CC:7263`) and `enabled` must exclude photo mode |
 
 Undo: `set_fps_phase_lock enabled=false` (persisted). Full undo: `git checkout -- include/apertar/core/Types.hpp src/camera src/ApertarCoreApp.cpp`, rebuild.
@@ -209,26 +224,33 @@ Undo: `set_fps_phase_lock enabled=false` (persisted). Full undo: `git checkout -
 ## 9. Sources
 
 - `cinepi-raw/cinepi/phase_lock_core.hpp@63a08d5` (law), `tests/phase_lock_core_test.cpp` (behaviours), `cinepi_controller.cpp:733-737` (wall clock = audio clock); commits `bf717fa`, `85d0326`, `55562b6`, `d038556`, `e74e3e4`, `3b3ff60`, `4537153`, `5b4b209`, `28b30cc`, `3c6477e`; cinemate `0b8e947`, `2f79397`, `b029d7f`.
-- `Apertar-Core@2a6f114`: `src/camera/FramePhaseLock.hpp`; `CC:7147-7181`, `:7263-7265`, `:7336`, `:6040`, `:6123-6126`, `:6289-6292`, `:8199-8200`, `:9027`; `App:203`, `:7913`, `:9631`; `Types.hpp:127`.
+- `Apertar-Core@9e6df59`: `src/camera/FramePhaseLock.hpp`; `CC:7051-7143`, `:7222-7236`, `:7303`, `:6040`, `:6046-6050`, `:6207-6214`, `:9422`; `App:203`, `:7857-7861`, `:7917`, `:9499`; `Types.hpp:127`. Critic items P1–P9 in `working/port-raw/critic.md`.
 - `working/phaselock-answer.md`, `working/port-raw/p1-phaselock-cinemate.md`, `p2-phaselock-core.md`, `working/cinemate-lessons.md` §2–3, `working/tools/phase_lock_sim.cpp`.
 
 %% tutor
 ref core src/camera/FramePhaseLock.hpp 70 Decision step(bool enabled, bool recording, double fps, int64_t referenceNs)
 ref core src/camera/FramePhaseLock.hpp 81 const bool bigGap = active && sincePrevious > static_cast<int64_t>(1.5 * periodNs);
 ref core src/camera/FramePhaseLock.hpp 120 const int64_t durationUs = std::llround(requestedUs);
-ref core src/camera/CameraController.cpp 7147 void stepFramePhaseLock(libcamera::Request *request)
-ref core src/camera/CameraController.cpp 7263 if (phaseLockDurationUs_ && !photoBusy && !settings_.photoModeEnabled) {
-ref core src/camera/CameraController.cpp 7336 stepFramePhaseLock(request);
-ref core src/camera/CameraController.cpp 6123 if (std::fabs(settings_.fps - sanitized.fps) > 1e-9 || settings_.fpsPhaseLock != sanitized.fpsPhaseLock ||
-ref core src/camera/CameraController.cpp 6290 std::cerr << "ApertarCore phase-lock stats: max_abs_err_us=" << std::lround(phaseLock_.maxAbsErrorUs)
+ref core src/camera/CameraController.cpp 7051 void stepFramePhaseLock(libcamera::Request *request)
+ref core src/camera/CameraController.cpp 7078 t.proportional = env("APERTAR_PHASE_LOCK_KP", t.proportional);
+ref core src/camera/CameraController.cpp 7119 std::cerr << "ApertarCore phase-lock: saturated echoed_us=" << echoedUs
+ref core src/camera/CameraController.cpp 7133 PhaseLockStatus phaseLockStatus()
+ref core src/camera/CameraController.cpp 7229 if (phaseLockDurationUs_ && !photoBusy) {
+ref core src/camera/CameraController.cpp 7303 stepFramePhaseLock(request);
+ref core src/camera/CameraController.cpp 6046 if (std::fabs(settings_.fps - sanitized.fps) > 1e-9 || settings_.fpsPhaseLock != sanitized.fpsPhaseLock ||
+ref core src/camera/CameraController.cpp 6210 std::cerr << "ApertarCore phase-lock stats: max_abs_err_us=" << std::lround(phaseLock_.maxAbsErrorUs)
+ref core src/camera/CameraController.cpp 9422 PhaseLockStatus CameraController::phaseLockStatus() const
 ref core include/apertar/core/Types.hpp 127 bool fpsPhaseLock = false;
-ref core src/ApertarCoreApp.cpp 9631 if (command.name == "set_fps_phase_lock") {
+ref core src/ApertarCoreApp.cpp 7858 << ",\"fps_phase_lock_err_us\":" << jsonNumber(phaseLockStatus.errorUs, 1)
+ref core src/ApertarCoreApp.cpp 9499 if (command.name == "set_fps_phase_lock") {
 ref core src/audio/TimestampedAudioCapture.cpp 195 SND_PCM_TSTAMP_TYPE_MONOTONIC
 check 3.0 | g++ -std=c++20 -O2 -I /home/pi/ApertarCore/src/camera /home/pi/apertar-kb/working/tools/phase_lock_sim.cpp -o /tmp/phase_lock_sim && /tmp/phase_lock_sim | tail -1 | ALL CHECKS PASSED
 check 3.1 | grep -rc 'FrameWallClock' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^0$
 check 4.1 | test -f /home/pi/ApertarCore/src/camera/FramePhaseLock.hpp && grep -c 'struct FramePhaseLock' /home/pi/ApertarCore/src/camera/FramePhaseLock.hpp | ^1$
 check 4.2 | grep -c 'bool fpsPhaseLock' /home/pi/ApertarCore/include/apertar/core/Types.hpp | ^1$
 check 4.3 | grep -c 'stepFramePhaseLock' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^2$
+check 4.3b | grep -c 'phase-lock: saturated' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
+check 4.4b | grep -c 'fps_phase_lock_err_us' /home/pi/ApertarCore/src/ApertarCoreApp.cpp | ^1$
 check 4.4 | grep -c 'set_fps_phase_lock' /home/pi/ApertarCore/src/ApertarCoreApp.cpp | ^[2-9]$
 check 5.1 | journalctl -u apertar-core -b --no-pager | grep -c 'phase-lock: armed' | ^[1-9][0-9]*$
 %%

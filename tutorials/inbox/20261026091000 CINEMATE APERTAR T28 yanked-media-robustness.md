@@ -8,10 +8,10 @@ typ: digital anteckning
 
 # T28. A drive pulled mid-take: detect it on the mount root, stop without touching it, say so
 
-Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-survive-a-yanked-or-unmounted-recording-drive.patch` is the reference, Core `2715569`). Five of the eleven touched files pass a host syntax check (`MlvEncoder.cpp`, `LossyDngEncoder.cpp`, `AudioRecordingSession.cpp`, `ApertarCoreApp.cpp`, `WebControlPage.cpp`); the three new headers pass `working/tools/media_probe_test.cpp`; `CameraController.cpp` needs libcamera and is not compiled there. Answer: `working/yank-answer.md`. Supersedes the Core half of **T18**; the automounter half stays in the UI repo. Builds **M5** (recorders), **M6** (App/UI contract).
+Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-survive-a-yanked-or-unmounted-recording-drive.patch` is the reference, Core `f2fa35b`; amended after the critic pass: device-node and NVMe-state checks in the probe, a cached snapshot for configure and record_start, WebUI on `media_alive`, 1 GiB free-space floor). Line numbers are at `f2fa35b`, the tree right after this patch; later patches shift them, the grep anchors do not. Five of the eleven touched files pass a host syntax check (`MlvEncoder.cpp`, `LossyDngEncoder.cpp`, `AudioRecordingSession.cpp`, `ApertarCoreApp.cpp`, `WebControlPage.cpp`); the three new headers pass `working/tools/media_probe_test.cpp`; `CameraController.cpp` needs libcamera and is not compiled there. Answer: `working/yank-answer.md`. Supersedes the Core half of **T18**; the automounter half stays in the UI repo. Builds **M5** (recorders), **M6** (App/UI contract).
 
 **You will learn**
-- What the kernel actually does when a recording drive is pulled (the mount stays listed; `statvfs` on the root fails with a small set of errnos) and why Cinemate tests the mount root and never paths inside it.
+- What the kernel actually does when a recording drive is pulled (the mount stays listed; `statvfs` on the root may fail with a small set of errnos — or keep answering from cached counters, which is why the probe also checks the device node and the NVMe controller state) and why Cinemate tests the mount root and never paths inside it.
 - How Core ends a take today (first failed write → latched failure → 1 s supervisor) and the four places where the stop path reopens the dead medium.
 - How to turn an errno into a class (`Removed`, `Full`, `ReadOnly`, `Permission`) and route one gate and one event through the existing supervisor instead of adding a parallel mechanism.
 - Why a deliberate eject needs an intent flag before `umount`, and why the hardware log of the camera that invented all this contains no pull-during-take entry — yours will be the first.
@@ -30,9 +30,11 @@ Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-sur
 ## 2. How this part works
 
 ```
- media watcher thread (App:9151)        every 1 s idle / 250 ms recording
-   probeMediaRoot(/media/RAW)           /proc/mounts exact match  +  statvfs(root)
-   -> MediaSnapshot{state: none|mounted|removed|error, device, fstype, free, errno}
+ media watcher thread (App:9157)        every 1 s idle / 250 ms recording
+   probeMediaRoot(/media/RAW)           /proc/mounts exact match  +  /sys/class/block/<part> present?
+                                        +  /sys/block/<nvme>/device/state  +  statvfs(root)
+   -> MediaSnapshot{state: none|mounted|removed|error, device, fstype, free, errno, node, nvme_state}
+   -> updateCachedMediaSnapshot()       configure-time buffer counts and record_start read this, never statvfs
    -> on change: journal line, broadcast event {"event":"media",...}
    -> mounted -> removed/none while recording:
         camera_.flagMediaFault("Media removed during recording.", mediumGone=true)
@@ -43,7 +45,7 @@ Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-sur
    failRecording(mediaFaultMessage(fault, e.what()), fault)
      latch message + class; mediumGone_ if Removed; count queued frames as discarded_on_failure
 
- supervisor (CC:9370)                    every 1 s and on every command, and from the watcher
+ supervisor (CC:9437)                    every 1 s and on every command, and from the watcher
    checkRecordingFailure(): error = external message or recorder error
      mediumGone = external flag || recorder fault == Removed
      session_->stopRecording(mediumGone)            CC:6273
@@ -54,9 +56,11 @@ Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-sur
 
 The errno classes (`src/util/MediaFault.hpp`): `EIO ENODEV ENXIO ENOTCONN ESTALE ENOENT` → `Removed` (Cinemate's `YANK_ERRNOS` plus ENXIO); `ENOSPC EDQUOT` → `Full`; `EROFS` → `ReadOnly`; `EACCES EPERM` → `Permission`. Only `Removed` means "do not touch the medium again".
 
+Why `statvfs` is not enough on its own (the critic read the kernel for this): `ext4_statfs` answers from in-memory per-cpu counters and exFAT/FAT cache theirs after the first call, so a pulled drive can keep "answering" until something writes. The probe therefore asks two device-level questions first, the ones Cinemate's udev-remove path and NVMe watchdog ask: is the partition's `/sys/class/block/<name>` node still there (USB: gone the moment the device is removed), and does `/sys/block/<nvme>/device/state` read `dead` (NVMe: only after the controller's I/O timeout, 30–60 s, so a CFE pull is slow to show here and the writer's EIO usually wins). `evaluateMediaProbe` takes both as inputs and is host-tested.
+
 Why the probe has its own thread: `statvfs` on a hung USB device can block for 30 s+; Cinemate skips SD cards in its watchdog for that reason (`storage-automount.py:839-843`). The App's 1 s tick holds `commandMutex_`, so the probe cannot live there (y2 §6.1).
 
-Reading assignments: `src/util/MediaFault.hpp`, `src/util/MediaProbe.hpp` (decision function `evaluateMediaProbe`), `App:9151-9240`, `CC:4069-4090`, `CC:6273-6300`, `CC:9370-9410`.
+Reading assignments: `src/util/MediaFault.hpp`, `src/util/MediaProbe.hpp` (`evaluateMediaProbe` at `:145`, `probeMediaRoot` `:185`, the cache `:236`), `App:9157-9262`, `CC:4069-4090`, `CC:6273-6300`, `CC:9437-9475`, `working/port-raw/critic.md` items Y1–Y14.
 
 ## 3. Find it yourself
 
@@ -68,10 +72,10 @@ grep ' /media/RAW ' /proc/mounts
 grep ' /media/RAW ' /proc/mounts; stat -f /media/RAW; echo "errno path: $?"; ls /media/RAW | head -2; dmesg | tail -3
 ```
 
-Prediction: the mount is still listed; `stat -f` fails with `Input/output error` or `No such device`; `ls` fails too. Write down the errno text — this is the UNKNOWN the answer could not settle from source.
+First write down the filesystem (`findmnt -no FSTYPE /media/RAW`): the prediction depends on it. Prediction: the mount is still listed; on ext4 `stat -f` may **succeed** (in-memory counters) while `ls` fails; on exFAT/FAT `stat -f` may succeed too; `/sys/class/block/<part>` is gone at once for USB, still present for an NVMe/CFE card until the controller times out. Write down what you see — this is the UNKNOWN the answer could not settle from source, and the reason the probe no longer relies on `statvfs` alone.
 
 > [!tip]- Answer
-> This is why "is it in /proc/mounts" is not "is it here", and why `isMountedPath()` alone kept `media_mounted` true. If something has already run `umount -l`, `stat -f` succeeds again with the SD card's figures: the mount table must agree, which `evaluateMediaProbe` encodes as `None` vs `Mounted` vs `Removed`.
+> "Is it in /proc/mounts" is not "is it here", and neither is "does statvfs answer". The device node is the honest witness for USB; the controller state for NVMe. If something has already run `umount -l`, `stat -f` succeeds again with the SD card's figures: the mount table must agree, which `evaluateMediaProbe` encodes as `None` vs `Mounted` vs `Removed`. On FAT32 note one more thing: a *buffered* `write()` (MLV, H.264, audio) keeps succeeding into the page cache after the pull (`fs/fat` has no shutdown hook), so only the O_DIRECT cDNG writer, the node check or the NVMe state ends such a take.
 
 **3.2 Where does Core end a take today, and what does it touch afterwards?** (Pi, read-only)
 
@@ -106,17 +110,17 @@ Prediction: `ALL CHECKS PASSED`. Read the "exact match picks /media/RAW, not /me
 
 Eleven files; the patch is the reference. Order:
 
-**4.1 Pure headers** — `src/util/MediaFault.hpp` (errno → class, message, name), `src/util/MediaProbe.hpp` (`findMountEntry`, `evaluateMediaProbe`, `probeMediaRoot`), `src/util/MediaIntent.hpp` (eject flag under `$APERTAR_MEDIA_RUN_DIR/eject/`, default `/run/apertar-media`). Run 3.4 against your copies.
+**4.1 Pure headers** — `src/util/MediaFault.hpp` (errno → class, message, name), `src/util/MediaProbe.hpp` (`findMountEntry`, `rootDiskForDevice`, `evaluateMediaProbe` with the node/NVMe inputs, `probeMediaRoot`, the cached snapshot `updateCachedMediaSnapshot`/`cachedMediaSnapshotOrProbe`), `src/util/MediaIntent.hpp` (eject flag under `$APERTAR_MEDIA_RUN_DIR/eject/`, default `/run/apertar-media`). Run 3.4 against your copies.
 
 **4.2 Recorder latch** — `DngRecordingQueue` (`CC:3399`): `failRecording(error, fault)` records the class, `mediumGone_`, `discardedOnFailureFrames_ += queue_.size()` (`CC:4069`); both catch sites classify (`CC:3949`, `:4055`); lossy check after `writeDngFile` (`CC:3937`); `hasCapacityForFrame` counts `skippedAfterFailure_` (`CC:3713`); `stop(bool mediumDead)` abandons the lossy queue and lets the MLV worker `abandon()` (`CC:3560`, `:4024`); stats line gains `discarded_on_failure= skipped_after_failure= fault=`.
 
 **4.3 Encoders** — `MlvEncoder`: `lastErrno_` set in both catch blocks, `abandon()` (`MlvEncoder.cpp:993`, `:1043`, `:1050`). `LossyDngDiskWriter`: `failures_`, `lastErrno_`, `abandon()`; statics `diskWriteFailures()`, `lastDiskWriteErrno()`, `abandonWrites()` (`LossyDngEncoder.cpp:187`, `:252`, `:398`). `AudioRecordingSession::stop(bool finalize)` (`AudioRecordingSession.cpp:358-380`). H.264 `setMediumDead()` and the `else if` around the rename (`CC:4609`, `:5133`).
 
-**4.4 Session and controller** — `stopRecording(bool mediumGone)` passes the flag to every recorder (`CC:6273-6300`); `recordingFault()` (`CC:6530`); `checkRecordingFailure` reads the external flag and the recorder class, logs `ApertarCore recording failure: fault= medium_gone= message=`, calls `stopRecording(mediumGone)` (`CC:9370`); `flagMediaFault()` and `recordingFaultName()` (`CC:9395`, `:9405`); `recording` event gains `"fault"`.
+**4.4 Session and controller** — `stopRecording(bool mediumGone)` passes the flag to every recorder (`CC:6273-6300`); `recordingFault()` (`CC:6530`); `checkRecordingFailure` reads the external flag and the recorder class, logs `ApertarCore recording failure: fault= medium_gone= message=`, calls `stopRecording(mediumGone)` (`CC:9437`); `flagMediaFault()` and `recordingFaultName()` (`CC:9462`, `:9472`); `recording` event gains `"fault"`.
 
-**4.5 App** — watcher thread start/stop next to the preview thread (`App:6847`, the three failure paths and `stop()`); `runMediaWatcher`, `stopMediaWatcher`, `mediaSnapshot`, `mediaGateError` (`App:9151-9240`); gate in `handleCommand` right after the pending-writes gate (`App:9249`); `media_state`, `media_alive`, `media_device`, `media_fstype`, `recording_fault` in `/api/state` (`App:7932`) and `get_state` (`App:9401`); `"event":"media"` in the always-broadcast list (`App:11047`); eject intent in `ejectMediaAtPath` (`App:3734`) and clear in `mountMediaDeviceAtPath` (`App:3700`).
+**4.5 App** — watcher thread start/stop next to the preview thread (`App:6847`, the three failure paths and `stop()`); `runMediaWatcher` (publishes the cache at `App:9163`), `stopMediaWatcher`, `mediaSnapshot`, `mediaGateError` with the 1 GiB floor (`App:9157-9256`); gate in `handleCommand` right after the pending-writes gate (`App:9260`); `media_state`, `media_alive`, `media_device`, `media_fstype`, `recording_fault` in `/api/state` and `get_state`; `"event":"media"` in the always-broadcast list; eject intent in `ejectMediaAtPath` (`App:3734`) and clear in `mountMediaDeviceAtPath` (`App:3700`).
 
-**4.6 WebUI** — record button disabled without media; `MEDIA REMOVED` status (`WebControlPage.cpp:9838`, `:9523`).
+**4.6 WebUI** — `hasMedia` follows `media_alive` when the state has it (so a pull greys the button, not only an eject); record button disabled without media; `MEDIA REMOVED` status (`WebControlPage.cpp`, the three `hasMedia` sites and the status line).
 
 Design note to keep in mind while typing: everything funnels into the *existing* supervisor. The watcher does not stop the take itself; it flags, then calls the same `checkRecordingFailure()` the tick calls. "When this project routes, it wins" (handbook).
 
@@ -149,7 +153,7 @@ python3 -I ~/apertar-kb/working/tools/core.py record_start; sleep 20
 ```
 
 Predictions, written before pulling:
-1. `ApertarCore media: state=removed ... errno=5` (or 19) within 250 ms of the pull, **or** `DNG write failed ... fault=media_removed errno=5` first — note which won.
+1. USB: `ApertarCore media: state=removed ... node=0` within 250 ms of the pull (the node check), whatever `errno=` says. CFE/NVMe: the writer's `DNG write failed ... fault=media_removed errno=5` very likely wins, and `nvme_state=dead` follows only after the controller timeout (30–60 s); if neither appears within a few seconds the writer is blocked in the kernel until that timeout — note the time. Write down which signal fired first and on which filesystem.
 2. `ApertarCore recording failure: fault=media_removed medium_gone=1 message=Media removed during recording.`
 3. `recording stats: ... write_failures=1 discarded_on_failure=<queue depth> skipped_after_failure=<a few> fault=media_removed`.
 4. `recorder stop time:` absent or < 1 s (nothing waited on the dead medium); `audio: medium gone, WAV not finalised`.
@@ -188,7 +192,9 @@ git -C ~/ApertarCore push -u origin main
 | You see | It means | Do |
 | --- | --- | --- |
 | `state=removed` flaps mounted/removed every second | the drive answers intermittently (bad contact) or a FUSE mount returns EIO on `statvfs` while alive | read `dmesg`; if FUSE, add the fstype to an allow-list in `evaluateMediaProbe` only after confirming the drive is fine |
-| the take does not stop within 2 s of the pull | the worker is blocked in `write()` and the watcher's probe is blocked in `statvfs` (a hung device, not a clean removal) | wait for the kernel timeout (30–60 s on USB); note it; this is the "detached finaliser" follow-up in `yank-answer.md` §4.2 |
+| the take does not stop within 2 s of a CFE/NVMe pull | the writer is blocked in the kernel until the NVMe I/O timeout; the node is still present and `statvfs` may still answer | wait for `nvme_state=dead` (30–60 s); Cinemate's 50 ms latch poll on the hat's I2C byte is the only faster signal and lives in the automounter half |
+| `state=mounted` persists after a USB pull | the partition node is still listed (`ls /sys/class/block/`) — a hub that did not report the removal | `udevadm monitor` while pulling; if no remove event, the port needs the automounter's help |
+| FAT32: MLV/H.264/audio keep "writing" after a pull | buffered writes land in the page cache; FAT has no shutdown hook | the node check ends the take; switch the card to exFAT for recording |
 | `recorder stop time: 12.3s` | a `close()` or `join()` waited on the dead mount | which recorder? the preceding lines say; that finaliser still touches the medium |
 | `eject intent not recorded (/run/apertar-media/eject does not exist)` | nobody created the directory | the `install -d` line in §5, or a `tmpfiles.d` rule `d /run/apertar-media/eject 0755 pi pi -` |
 | record refused on a dev machine with a plain directory as media root | the gate wants a mount point | `APERTAR_MEDIA_REQUIRE_MOUNT=0` in the service environment |
@@ -201,33 +207,40 @@ Undo: `git checkout -- src && git clean -f src/util/Media*.hpp`, rebuild.
 - A guard that reads the present cannot defend a write that happens later: the gate and the classification at the write are both needed (handbook).
 - Count every frame's fate: written, failed, discarded at the latch, skipped after it. Cinemate's post-take verdict is blind after a pull because it counts files on a drive that is gone.
 - Exercise: a detached finaliser for `DngRecordingQueue::stop(true)` (the H.264 recorder already has one), so a hung `close()` never holds `commandMutex_`.
-- Automounter half (UI repo): honour `/run/apertar-media/eject/<dev>` on add/change; on the Core `media` event with `state=removed`, run `umount -l`; write a ready file; then T18's "USB remount" becomes `media: state=mounted` for free.
+- Automounter half (UI repo): honour `/run/apertar-media/eject/<dev>` on add/change (nothing consumes the flag yet — until then §5.3 is bookkeeping); on the Core `media` event with `state=removed`, run `umount -l`; write a ready file; then T18's "USB remount" becomes `media: state=mounted` for free.
+- Two recorders still touch a dead mount at stop and were left alone on purpose until measured: the gyro session exports its sidecar in `stop()`, and the ProRes recorder finishes its container (critic Y7). If §5.2's `recorder stop time` is long with gyro or ProRes on, those are next.
+- The `recording` event is not always-broadcast; a stop that lands while a command is collecting events reaches the HDMI process late (KB #36, critic Y6). The `media` event is, so the UI can react to the removal itself.
 
 ## 9. Sources
 
 - cinemate `src/module/ssd_monitor.py:731-771@d6cc93e` (`_handle_storage_error`), `services/storage-automount/storage-automount.py:835-864` (statvfs watchdog), `:513-531` (non-blocking `umount -l`), `:55-72` (eject flags); cinepi-raw `cinepi/dng_encoder.cpp:2352-2386@63a08d5` (write failures counted, never stopped); commits `8f49468`, `3259da7`, `1e56cb6`, `58fc7c2`, `8b705c8`, `5fbef52`, `34f8c59`, `f01b6cd`, `888093c`.
-- `Apertar-Core@2715569`: `src/util/MediaFault.hpp`, `MediaProbe.hpp`, `MediaIntent.hpp`; `CC:3560`, `:3701`, `:3713`, `:3937`, `:3949`, `:4024`, `:4055`, `:4069`, `:4609`, `:5133`, `:6273`, `:6530`, `:9370`, `:9395`, `:9405`; `App:3700`, `:3734`, `:6847`, `:7932`, `:9133-9240`, `:9249`, `:9401`, `:11047`; `MlvEncoder.cpp:993`, `:1043`, `:1050`; `LossyDngEncoder.cpp:187`, `:252`, `:398`; `AudioRecordingSession.cpp:358-380`; `WebControlPage.cpp:9523`, `:9838`.
+- `Apertar-Core@f2fa35b`: `src/util/MediaFault.hpp:24`, `MediaProbe.hpp:115`, `:145`, `:185`, `:236`, `MediaIntent.hpp`; `CC:3560`, `:3713`, `:3949`, `:4055`, `:4069`, `:6273`, `:6530`, `:9437`, `:9462`, `:9472`; `App:3700`, `:3734`, `:6847`, `:9157-9262`, `:9260`; `MlvEncoder.cpp:993`, `:1043`, `:1050`; `LossyDngEncoder.cpp:187`, `:252`, `:398`; `AudioRecordingSession.cpp:358-380`; `WebControlPage.cpp`. Critic items Y1–Y14 in `working/port-raw/critic.md`.
 - `working/yank-answer.md`, `working/port-raw/y1-yank-cinemate.md`, `y2-yank-core.md`, `working/cinemate-lessons.md` §4, `working/tools/media_probe_test.cpp`.
 
 %% tutor
-ref core src/util/MediaFault.hpp 25 inline MediaFault classifyMediaErrno(int err)
-ref core src/util/MediaProbe.hpp 101 inline MediaSnapshot evaluateMediaProbe(const MountTableEntry &entry, int statvfsErrno,
+ref core src/util/MediaFault.hpp 24 inline MediaFault classifyMediaErrno(int err)
+ref core src/util/MediaProbe.hpp 115 inline std::string rootDiskForDevice(const std::string &devicePath)
+ref core src/util/MediaProbe.hpp 145 inline MediaSnapshot evaluateMediaProbe(const MountTableEntry &entry, int statvfsErrno,
+ref core src/util/MediaProbe.hpp 185 inline MediaSnapshot probeMediaRoot(const std::string &mountPath)
+ref core src/util/MediaProbe.hpp 236 inline MediaSnapshot cachedMediaSnapshotOrProbe(const std::string &mountPath)
 ref core src/camera/CameraController.cpp 3560 void stop(bool mediumDead = false)
 ref core src/camera/CameraController.cpp 3713 bool hasCapacityForFrame(uint64_t frameIndex)
 ref core src/camera/CameraController.cpp 3949 const MediaFault fault = classifyMediaException(e);
 ref core src/camera/CameraController.cpp 4069 void failRecording(const std::string &error, MediaFault fault = MediaFault::Other)
 ref core src/camera/CameraController.cpp 6273 void stopRecording(bool mediumGone = false)
-ref core src/camera/CameraController.cpp 9370 bool CameraController::checkRecordingFailure()
-ref core src/camera/CameraController.cpp 9395 bool CameraController::flagMediaFault(const std::string &message, bool mediumGone)
-ref core src/ApertarCoreApp.cpp 9151 void ApertarCoreApp::runMediaWatcher()
-ref core src/ApertarCoreApp.cpp 9215 std::string ApertarCoreApp::mediaGateError() const
-ref core src/ApertarCoreApp.cpp 9249 if (const std::string gate = mediaGateError(); !gate.empty())
+ref core src/camera/CameraController.cpp 9437 bool CameraController::checkRecordingFailure()
+ref core src/camera/CameraController.cpp 9462 bool CameraController::flagMediaFault(const std::string &message, bool mediumGone)
+ref core src/ApertarCoreApp.cpp 9157 void ApertarCoreApp::runMediaWatcher()
+ref core src/ApertarCoreApp.cpp 9163 updateCachedMediaSnapshot(current);
+ref core src/ApertarCoreApp.cpp 9224 std::string ApertarCoreApp::mediaGateError() const
+ref core src/ApertarCoreApp.cpp 9260 if (const std::string gate = mediaGateError(); !gate.empty())
 ref core src/ApertarCoreApp.cpp 3734 if (!writeEjectIntent(devicePath, &intentError))
 ref core src/mlv/MlvEncoder.cpp 1050 void MlvEncoder::abandon()
 ref core src/lossydng/LossyDngEncoder.cpp 187 void abandon()
 ref core src/audio/AudioRecordingSession.cpp 358 void AudioRecordingSession::stop(bool finalize)
 check 3.4 | g++ -std=c++20 -I /home/pi/ApertarCore/src /home/pi/apertar-kb/working/tools/media_probe_test.cpp -o /tmp/media_probe_test && /tmp/media_probe_test | tail -1 | ALL CHECKS PASSED
 check 4.1 | ls /home/pi/ApertarCore/src/util/MediaFault.hpp /home/pi/ApertarCore/src/util/MediaProbe.hpp /home/pi/ApertarCore/src/util/MediaIntent.hpp | wc -l | ^3$
+check 4.1b | grep -c 'nvmeState == "dead"' /home/pi/ApertarCore/src/util/MediaProbe.hpp | ^1$
 check 4.2 | grep -c 'classifyMediaException' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^2$
 check 4.4 | grep -c 'flagMediaFault' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^[1-9]$
 check 4.5 | grep -c 'runMediaWatcher' /home/pi/ApertarCore/src/ApertarCoreApp.cpp | ^[2-9]$

@@ -5,8 +5,8 @@ Written 2026-10-26 (cloud session) from `cinemate@d6cc93e` (`services/storage-au
 `apertar-core` at the `clearhdr-fixes` branch (f60e301 + T23/T24/T25 + phase lock + T28), the reader reports
 `working/port-raw/s1-storage-cinemate.md` and `s2-storage-core.md`, and the history pass in `working/cinemate-lessons.md`
 §3 and §5. Nothing ran on a Pi. CONFIRMED = read in source; PROBABLE = inferred, reason given; UNKNOWN = not
-established. Patches: `0001-media-profile-the-recording-medium-...` (T29) and `0001-audio-writer-thread-...` (T30);
-the pure header passes `working/tools/media_profile_test.cpp`; the audio files pass a host syntax check.
+established. Patches: `0001-media-profile-the-recording-medium-...` (T29, Core `75e9f57`) and `0001-audio-writer-thread-...` (T30, Core
+`25397cd`); the pure header passes `working/tools/media_profile_test.cpp`; the audio session passes a host syntax check.
 
 ## 1. Verdicts
 
@@ -52,6 +52,14 @@ Not ported, by decision:
   worker nice values; without a measurement showing scheduling as the bottleneck (T22/T25 point at the write
   path) these stay out.
 - Standby drives, RAW-label arbitration, fsck on mount: automounter concerns (UI repo).
+
+## 3b. Amendments after the critic pass (2026-10-26)
+
+- The helper also writes `nvme_core.default_ps_max_latency_us = 0` for the Pi-NVMe class (APST exit latency mid-take is a stall; Cinemate sets it for every NVMe class) and saves/restores it like the rest (critic S5).
+- The watcher applies the profile and calls the helper only after the loss handling, so a `sudo` round-trip never delays an abort (critic S11).
+- Configure-time buffer counts and `record_start` use the watcher's cached snapshot (critic Y8).
+- `takes.sh` now prints `write_failures=`, `discarded_on_failure=`, `fault=`, `media_class=`, `media_fs=`, `direct_io=`, the phase-lock stats and the audio writer's peak backlog, so the pass criteria in T27–T30 are measured (critic S7).
+- Stated, not changed: Core's own `ProresEncoder.cpp` asserts that the image ships `/etc/sysctl.d/60-apertar-writeback.conf` with `vm.dirty_bytes` 128 MB (critic S2) — the helper's save-once keeps whatever is there and restores to it; T29 §3.1 reads the file. The buffer-count bump is read at configure, so a medium swapped after configure keeps the old count until the next reconfigure or restart (critic S8); the boot mounter's options (`media-RAW.service`/UI automounter) are not Core's and `noatime` reaches only `mount_media` (critic S9). RT priority, CPU affinity and `isolcpus` are deferred, not rejected: T22/T25 point at the write path, and Cinemate's own lesson is that affinity tables need a check before they are safe (`7551a16`); revisit with a measurement of scheduling latency (critic S6).
 
 ## 4. Open points and hazards (for T29/T30 to settle)
 

@@ -1,4 +1,4 @@
-From 4ea877c810e3adc599e01d86a6cf02016425386a Mon Sep 17 00:00:00 2001
+From f2fa35baeb0bbbdaa71a6060d7831b4c1c818620 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 26 Oct 2026 08:47:30 +0000
 Subject: [PATCH] media: survive a yanked or unmounted recording drive
@@ -51,27 +51,27 @@ and is not compiled here.
 Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
 ---
- src/ApertarCoreApp.cpp              | 139 ++++++++++++++++++++++
- src/ApertarCoreApp.hpp              |  14 +++
+ src/ApertarCoreApp.cpp              | 144 +++++++++++++++++
+ src/ApertarCoreApp.hpp              |  14 ++
  src/audio/AudioRecordingSession.cpp |  12 +-
  src/audio/AudioRecordingSession.hpp |   4 +-
- src/camera/CameraController.cpp     | 171 ++++++++++++++++++++++++----
+ src/camera/CameraController.cpp     | 171 +++++++++++++++++---
  src/camera/CameraController.hpp     |   5 +
- src/lossydng/LossyDngEncoder.cpp    |  41 ++++++-
+ src/lossydng/LossyDngEncoder.cpp    |  41 ++++-
  src/lossydng/LossyDngEncoder.hpp    |   5 +
- src/mlv/MlvEncoder.cpp              |  13 +++
+ src/mlv/MlvEncoder.cpp              |  13 ++
  src/mlv/MlvEncoder.hpp              |   5 +
- src/util/MediaFault.hpp             | 108 ++++++++++++++++++
- src/util/MediaIntent.hpp            |  67 +++++++++++
- src/util/MediaProbe.hpp             | 147 ++++++++++++++++++++++++
- src/web/WebControlPage.cpp          |   4 +-
- 14 files changed, 704 insertions(+), 31 deletions(-)
+ src/util/MediaFault.hpp             | 108 +++++++++++++
+ src/util/MediaIntent.hpp            |  67 ++++++++
+ src/util/MediaProbe.hpp             | 243 ++++++++++++++++++++++++++++
+ src/web/WebControlPage.cpp          |  11 +-
+ 14 files changed, 810 insertions(+), 33 deletions(-)
  create mode 100644 src/util/MediaFault.hpp
  create mode 100644 src/util/MediaIntent.hpp
  create mode 100644 src/util/MediaProbe.hpp
 
 diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
-index 94d25dc..c22394b 100644
+index 4c9e298..5f114da 100644
 --- a/src/ApertarCoreApp.cpp
 +++ b/src/ApertarCoreApp.cpp
 @@ -1,4 +1,5 @@
@@ -142,7 +142,7 @@ index 94d25dc..c22394b 100644
      webServer_.stop();
      controlServer_.stop();
      syncRecordingTracking(false);
-@@ -7731,6 +7745,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+@@ -7732,6 +7746,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
      const double timelapseIntervalSeconds = camera_.timelapseIntervalSeconds();
      const std::string sensorName = camera_.sensorName();
      const bool mediaMounted = isMountedPath(options_.mediaRoot);
@@ -150,7 +150,7 @@ index 94d25dc..c22394b 100644
      const std::string mountedDevice = mediaMounted ? mountedDeviceForPath(options_.mediaRoot) : std::string();
      const std::string mountedVolumeLabel = mediaMounted ? volumeLabelForDevicePath(mountedDevice) : std::string();
      const std::string mediaTypeLabel = mediaMounted
-@@ -7914,6 +7929,11 @@ std::string ApertarCoreApp::buildWebStateJson() const
+@@ -7920,6 +7935,11 @@ std::string ApertarCoreApp::buildWebStateJson() const
          << ",\"af_window_w\":" << jsonNumber(settings.autofocusWindowWidth, 3)
          << ",\"af_window_h\":" << jsonNumber(settings.autofocusWindowHeight, 3)
          << ",\"media_mounted\":" << (mediaMounted ? "true" : "false")
@@ -162,7 +162,7 @@ index 94d25dc..c22394b 100644
          << ",\"network_transport\":\"" << escapeJson(network.transport) << "\""
          << ",\"network_host\":\"" << escapeJson(network.hostLabel) << "\""
          << ",\"system\":{"
-@@ -9106,6 +9126,117 @@ void ApertarCoreApp::joinMediaSpeedTest()
+@@ -9112,6 +9132,122 @@ void ApertarCoreApp::joinMediaSpeedTest()
          mediaSpeedThread_.join();
  }
  
@@ -194,6 +194,7 @@ index 94d25dc..c22394b 100644
 +    bool havePrevious = false;
 +    while (mediaWatcherRunning_.load(std::memory_order_acquire)) {
 +        const MediaSnapshot current = probeMediaRoot(options_.mediaRoot);
++        updateCachedMediaSnapshot(current);
 +        {
 +            std::lock_guard<std::mutex> lock(mediaStateMutex_);
 +            mediaSnapshot_ = current;
@@ -203,7 +204,9 @@ index 94d25dc..c22394b 100644
 +            std::cerr << "ApertarCore media: state=" << current.stateName()
 +                      << " device=" << current.device << " fstype=" << current.fstype
 +                      << " free_mb=" << current.freeBytes / (1024 * 1024)
-+                      << " errno=" << current.statvfsErrno << "\n";
++                      << " errno=" << current.statvfsErrno
++                      << " node=" << (current.deviceNodePresent ? 1 : 0)
++                      << " nvme_state=" << (current.nvmeState.empty() ? "-" : current.nvmeState) << "\n";
 +            publishEvent(mediaEventJson(current));
 +            const bool lost = havePrevious && previous.mounted() &&
 +                (current.state == MediaSnapshot::State::Removed || current.state == MediaSnapshot::State::None);
@@ -245,8 +248,8 @@ index 94d25dc..c22394b 100644
 +        if (mediaSnapshotValid_)
 +            return mediaSnapshot_;
 +    }
-+    // Before the watcher's first cycle answer from a direct probe.
-+    return probeMediaRoot(options_.mediaRoot);
++    // Before the watcher's first cycle answer from a direct probe (start-up only).
++    return cachedMediaSnapshotOrProbe(options_.mediaRoot);
 +}
 +
 +// The record gate: mounted, alive and not full. One gate in handleCommand covers
@@ -269,7 +272,9 @@ index 94d25dc..c22394b 100644
 +    case MediaSnapshot::State::None:
 +        return "No media mounted at " + options_.mediaRoot + ".";
 +    }
-+    uint64_t minFreeMiB = 256;
++    // One second of 16-bit 4K at 25 fps is ~415 MB; the floor is a last line, not
++    // a time-left estimate (critic Y11). Per-format floors are the next step.
++    uint64_t minFreeMiB = 1024;
 +    if (const char *env = std::getenv("APERTAR_MEDIA_MIN_FREE_MB"); env && *env)
 +        minFreeMiB = static_cast<uint64_t>(std::max(0L, std::strtol(env, nullptr, 10)));
 +    if (snapshot.totalBytes > 0 && snapshot.freeBytes < minFreeMiB * 1024 * 1024)
@@ -280,7 +285,7 @@ index 94d25dc..c22394b 100644
  std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
  {
      std::lock_guard<std::mutex> commandLock(commandMutex_);
-@@ -9113,6 +9244,11 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -9119,6 +9255,11 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
      if ((command.name == "capture_photo" || command.name == "record_start" ||
           (command.name == "timelapse_start" && !camera_.timelapseActive())) && camera_.mediaWritesPending())
          return errorReply(command.id, "Wait for the current capture to finish writing to media.");
@@ -292,7 +297,7 @@ index 94d25dc..c22394b 100644
      const bool mediaAction = command.name == "format_media" || command.name == "eject_media" ||
          command.name == "mount_media" || command.name == "run_media_speed_test";
      bool speedTestActive;
-@@ -9261,6 +9397,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -9267,6 +9408,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
               << ",\"standby\":" << (camera_.state() == CameraState::Standby ? "true" : "false")
               << ",\"recording\":" << (recording ? "true" : "false")
               << ",\"recording_error\":\"" << escapeJson(camera_.recordingError()) << "\""
@@ -301,7 +306,7 @@ index 94d25dc..c22394b 100644
               << ",\"recording_has_dropped_frames\":" << (camera_.recordingHasDroppedFrames() ? "true" : "false")
               << ",\"sound_recording\":" << (soundRecording ? "true" : "false")
               << ",\"timelapse_active\":" << (camera_.timelapseActive() ? "true" : "false")
-@@ -10906,6 +11044,7 @@ void ApertarCoreApp::publishEvent(const std::string &eventJson)
+@@ -10912,6 +11055,7 @@ void ApertarCoreApp::publishEvent(const std::string &eventJson)
      // the command's requester. These events cannot be collected into its reply.
      if (eventJson.find("\"event\":\"settings\"") != std::string::npos ||
          eventJson.find("\"event\":\"recording_health\"") != std::string::npos ||
@@ -397,7 +402,7 @@ index d81a4cc..6b8483c 100644
      bool active() const;
      std::string error() const { return failure_.message(); }
 diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
-index 1937b35..2a64fbb 100644
+index d0c10db..9cdd6c4 100644
 --- a/src/camera/CameraController.cpp
 +++ b/src/camera/CameraController.cpp
 @@ -24,6 +24,7 @@
@@ -712,7 +717,7 @@ index 1937b35..2a64fbb 100644
      WhiteBalanceMeasurement measuredWhiteBalance() const
      {
  #if APERTARCORE_HAS_LIBCAMERA
-@@ -9008,6 +9104,9 @@ bool CameraController::startRecording(const AudioRecordingOptions &audioOptions,
+@@ -9075,6 +9171,9 @@ bool CameraController::startRecording(const AudioRecordingOptions &audioOptions,
      recording_ = true;
      recordingFailureReported_ = false;
      recordingFailureMessage_.clear();
@@ -722,7 +727,7 @@ index 1937b35..2a64fbb 100644
      state_ = CameraState::Recording;
      lastError_.clear();
      emitRecordingEventLocked();
-@@ -9261,6 +9360,7 @@ bool CameraController::stopRecording()
+@@ -9328,6 +9427,7 @@ bool CameraController::stopRecording()
      if (!simulateCamera_ && session_)
          session_->stopRecording();
      lastError_ = !simulateCamera_ && session_ ? session_->recordingError() : std::string();
@@ -730,7 +735,7 @@ index 1937b35..2a64fbb 100644
      recordingFailureReported_ = !lastError_.empty();
      recordingFailureMessage_ = lastError_;
      emitRecordingEventLocked();
-@@ -9272,10 +9372,15 @@ bool CameraController::checkRecordingFailure()
+@@ -9339,10 +9439,15 @@ bool CameraController::checkRecordingFailure()
      std::lock_guard lock(mutex_);
      if (simulateCamera_ || !session_ || recordingFailureReported_ ||
          (state_ != CameraState::Ready && state_ != CameraState::Recording)) return false;
@@ -748,7 +753,7 @@ index 1937b35..2a64fbb 100644
      recording_ = false;
      state_ = CameraState::Ready;
      lastError_ = error;
-@@ -9284,6 +9389,25 @@ bool CameraController::checkRecordingFailure()
+@@ -9351,6 +9456,25 @@ bool CameraController::checkRecordingFailure()
      return true;
  }
  
@@ -774,7 +779,7 @@ index 1937b35..2a64fbb 100644
  bool CameraController::mediaWritesPending() const
  {
      std::lock_guard lock(mutex_);
-@@ -9550,7 +9674,8 @@ void CameraController::emitRecordingEventLocked()
+@@ -9625,7 +9749,8 @@ void CameraController::emitRecordingEventLocked()
      std::ostringstream out;
      out << "{\"event\":\"recording\",\"active\":" << (recording_ ? "true" : "false")
          << ",\"recording_has_dropped_frames\":" << (recordingDropWarning_.dropped() ? "true" : "false")
@@ -785,10 +790,10 @@ index 1937b35..2a64fbb 100644
  }
  
 diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
-index 72f3936..321d25e 100644
+index 6242461..4ea9a6b 100644
 --- a/src/camera/CameraController.hpp
 +++ b/src/camera/CameraController.hpp
-@@ -79,6 +79,8 @@ public:
+@@ -80,6 +80,8 @@ public:
      bool setAutofocusWindow(double x, double y, double width, double height);
      bool applyCapturePreset(const CaptureSettings &settings, const std::function<bool()> &commitUi = {});
      bool checkRecordingFailure();
@@ -797,7 +802,7 @@ index 72f3936..321d25e 100644
      bool mediaWritesPending() const;
      MediaWriteStatus mediaWriteStatus() const;
      StillExposureStatus stillExposureStatus() const;
-@@ -139,6 +141,9 @@ private:
+@@ -141,6 +143,9 @@ private:
      bool recording_ = false;
      bool recordingFailureReported_ = false;
      std::string recordingFailureMessage_;
@@ -1157,17 +1162,21 @@ index 0000000..7ee7d97
 +} // namespace apertar
 diff --git a/src/util/MediaProbe.hpp b/src/util/MediaProbe.hpp
 new file mode 100644
-index 0000000..629d77d
+index 0000000..5f8bbbf
 --- /dev/null
 +++ b/src/util/MediaProbe.hpp
-@@ -0,0 +1,147 @@
+@@ -0,0 +1,243 @@
 +#pragma once
 +
 +#include "util/MediaFault.hpp"
 +
++#include <cctype>
 +#include <cerrno>
 +#include <cstdint>
++#include <filesystem>
 +#include <fstream>
++#include <mutex>
++#include <optional>
 +#include <string>
 +#include <sys/statvfs.h>
 +
@@ -1191,6 +1200,8 @@ index 0000000..629d77d
 +    uint64_t freeBytes = 0;
 +    uint64_t totalBytes = 0;
 +    int statvfsErrno = 0;    // the errno statvfs returned, 0 when it succeeded
++    bool deviceNodePresent = true;   // /sys/class/block/<root> still exists (USB: gone at once on a pull)
++    std::string nvmeState;           // /sys/block/<root>/device/state for NVMe ("live", "dead", ...), else empty
 +
 +    bool mounted() const { return state == State::Mounted; }
 +    const char *stateName() const
@@ -1268,10 +1279,40 @@ index 0000000..629d77d
 +    return findMountEntry(mounts, mountPath);
 +}
 +
-+// The decision: mounted + statvfs OK -> Mounted; mounted + yank errno -> Removed;
-+// mounted + other errno -> Error (reported, not acted on); not mounted -> None.
++// /dev/nvme0n1p1 -> nvme0n1, /dev/mmcblk0p2 -> mmcblk0, /dev/sda1 -> sda, /dev/sda -> sda.
++inline std::string rootDiskForDevice(const std::string &devicePath)
++{
++    std::string name = std::filesystem::path(devicePath).filename().string();
++    if (name.empty())
++        return name;
++    const bool partitionedWithP = name.rfind("nvme", 0) == 0 || name.rfind("mmcblk", 0) == 0;
++    if (partitionedWithP) {
++        const size_t p = name.rfind('p');
++        if (p != std::string::npos && p > 0 && p + 1 < name.size() &&
++            std::isdigit(static_cast<unsigned char>(name[p - 1]))) {
++            bool digits = true;
++            for (size_t i = p + 1; i < name.size(); ++i)
++                digits = digits && std::isdigit(static_cast<unsigned char>(name[i]));
++            if (digits)
++                name.erase(p);
++        }
++        return name;
++    }
++    while (name.size() > 1 && std::isdigit(static_cast<unsigned char>(name.back())))
++        name.pop_back();
++    return name;
++}
++
++// The decision. statvfs alone is not enough: ext4_statfs answers from in-memory
++// counters and exFAT/FAT cache theirs after the first call, so a pulled drive can
++// keep "answering" (critic Y1). Two device-level facts settle it the way
++// Cinemate's udev-remove and NVMe-state watchdogs do: the block device node is
++// gone (USB: immediately), or the NVMe controller reports "dead" (after its
++// I/O timeout). Order: not mounted -> None; node gone or NVMe dead -> Removed;
++// statvfs yank errno -> Removed; other errno -> Error; else Mounted.
 +inline MediaSnapshot evaluateMediaProbe(const MountTableEntry &entry, int statvfsErrno,
-+                                        uint64_t freeBytes, uint64_t totalBytes)
++                                        uint64_t freeBytes, uint64_t totalBytes,
++                                        bool deviceNodePresent = true, const std::string &nvmeState = {})
 +{
 +    MediaSnapshot snapshot;
 +    if (!entry.found) {
@@ -1282,6 +1323,12 @@ index 0000000..629d77d
 +    snapshot.fstype = entry.fstype;
 +    snapshot.options = entry.options;
 +    snapshot.statvfsErrno = statvfsErrno;
++    snapshot.deviceNodePresent = deviceNodePresent;
++    snapshot.nvmeState = nvmeState;
++    if (!deviceNodePresent || nvmeState == "dead") {
++        snapshot.state = MediaSnapshot::State::Removed;
++        return snapshot;
++    }
 +    if (statvfsErrno == 0) {
 +        snapshot.state = MediaSnapshot::State::Mounted;
 +        snapshot.freeBytes = freeBytes;
@@ -1295,24 +1342,106 @@ index 0000000..629d77d
 +
 +// statvfs on the mount root. It can block for a long time on a hung device, so
 +// call this from a thread that holds no lock anyone else waits for.
++inline std::string readSysfsWord(const std::filesystem::path &path)
++{
++    std::ifstream in(path);
++    std::string word;
++    in >> word;
++    return word;
++}
++
 +inline MediaSnapshot probeMediaRoot(const std::string &mountPath)
 +{
 +    const MountTableEntry entry = findMountEntry(mountPath);
 +    if (!entry.found)
 +        return evaluateMediaProbe(entry, 0, 0, 0);
++    bool nodePresent = true;
++    std::string nvmeState;
++    if (entry.device.rfind("/dev/", 0) == 0) {
++        std::error_code ec;
++        const std::string root = rootDiskForDevice(entry.device);
++        const std::filesystem::path partition = std::filesystem::path("/sys/class/block") / std::filesystem::path(entry.device).filename();
++        nodePresent = std::filesystem::exists(partition, ec);
++        if (root.rfind("nvme", 0) == 0)
++            nvmeState = readSysfsWord(std::filesystem::path("/sys/block") / root / "device" / "state");
++    }
 +    struct statvfs vfs {};
 +    if (::statvfs(mountPath.c_str(), &vfs) != 0)
-+        return evaluateMediaProbe(entry, errno ? errno : EIO, 0, 0);
++        return evaluateMediaProbe(entry, errno ? errno : EIO, 0, 0, nodePresent, nvmeState);
 +    const uint64_t frsize = vfs.f_frsize ? vfs.f_frsize : vfs.f_bsize;
-+    return evaluateMediaProbe(entry, 0, uint64_t(vfs.f_bavail) * frsize, uint64_t(vfs.f_blocks) * frsize);
++    return evaluateMediaProbe(entry, 0, uint64_t(vfs.f_bavail) * frsize, uint64_t(vfs.f_blocks) * frsize,
++                              nodePresent, nvmeState);
++}
++
++// The watcher's latest result, for code that must not block on a dead device
++// (configure-time buffer counts, record_start under the controller lock). Empty
++// until the watcher has run once.
++inline std::mutex &cachedMediaSnapshotMutex()
++{
++    static std::mutex mutex;
++    return mutex;
++}
++
++inline std::optional<MediaSnapshot> &cachedMediaSnapshotStorage()
++{
++    static std::optional<MediaSnapshot> snapshot;
++    return snapshot;
++}
++
++inline void updateCachedMediaSnapshot(const MediaSnapshot &snapshot)
++{
++    std::lock_guard<std::mutex> lock(cachedMediaSnapshotMutex());
++    cachedMediaSnapshotStorage() = snapshot;
++}
++
++inline std::optional<MediaSnapshot> cachedMediaSnapshot()
++{
++    std::lock_guard<std::mutex> lock(cachedMediaSnapshotMutex());
++    return cachedMediaSnapshotStorage();
++}
++
++// Cached when the watcher has one, a direct probe only before its first cycle.
++inline MediaSnapshot cachedMediaSnapshotOrProbe(const std::string &mountPath)
++{
++    if (const auto cached = cachedMediaSnapshot())
++        return *cached;
++    return probeMediaRoot(mountPath);
 +}
 +
 +} // namespace apertar
 diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
-index 6084823..2ff50b3 100644
+index 6084823..1bcc9ef 100644
 --- a/src/web/WebControlPage.cpp
 +++ b/src/web/WebControlPage.cpp
-@@ -9520,7 +9520,7 @@ std::string_view webControlPageHtml()
+@@ -6794,7 +6794,7 @@ std::string_view webControlPageHtml()
+       const systemState = snapshot && snapshot.system && typeof snapshot.system === "object" ? snapshot.system : {};
+       const deviceState = snapshot && snapshot.device && typeof snapshot.device === "object" ? snapshot.device : {};
+       const audioOptions = currentAudioOptions(snapshot);
+-      const hasMedia = !!(snapshot && snapshot.media_mounted);
++      const hasMedia = !!(snapshot && (snapshot.media_alive !== undefined ? snapshot.media_alive : snapshot.media_mounted));
+       const recordFormatText = recordingFormatLabel(snapshot && snapshot.recording_format);
+       const h264RecordFormat = processedVideoRecordFormatForSnapshot(snapshot);
+       const fixedTenBitRecordFormat = fixedTenBitRecordingFormat(snapshot && snapshot.recording_format, snapshot);
+@@ -9128,6 +9128,7 @@ std::string_view webControlPageHtml()
+         case "eject_media":
+           if (!optimistic && result && result.media_ejected) {
+             snapshot.media_mounted = false;
++            snapshot.media_alive = false;
+             snapshot.capture.storage = "No Media Mounted";
+           }
+           break;
+@@ -9387,7 +9388,9 @@ std::string_view webControlPageHtml()
+       const isRecording = !!snapshot.recording;
+       const isSoundRecording = !!snapshot.sound_recording;
+       const isTimelapse = !!snapshot.timelapse_active;
+-      const hasMedia = !!snapshot.media_mounted;
++      // media_alive comes from the media watcher and goes false on a pull; media_mounted
++      // only says the mount table still lists the drive.
++      const hasMedia = snapshot.media_alive !== undefined ? !!snapshot.media_alive : !!snapshot.media_mounted;
+       const whiteBalanceAuto = !!snapshot.wb_auto;
+       const whiteBalanceAvailable = snapshot.wb_available === true;
+       const displayWhiteBalance = nearestWhiteBalance(snapshot.wb_kelvin);
+@@ -9520,7 +9523,7 @@ std::string_view webControlPageHtml()
        setText("networkHost", snapshot.network_host || window.location.host || window.location.hostname);
        setText("networkTransport", snapshot.network_transport || "Wi-Fi / Ethernet");
        setText("webDateTimePill", formatWebDateTimePill(localDateTimeValue));
@@ -1321,7 +1450,7 @@ index 6084823..2ff50b3 100644
        setText("resolutionBadge", h264RecordFormat ? h264OutputResolutionLabel(snapshot) : resolutionLabel);
        setText("fpsBadge", String(Math.round(snapshot.fps)) + " FPS");
        const isoLabel = snapshot.iso_auto ? "Auto" : String(snapshot.iso);
-@@ -9835,7 +9835,7 @@ std::string_view webControlPageHtml()
+@@ -9835,7 +9838,7 @@ std::string_view webControlPageHtml()
  
        const recordButton = document.getElementById("recordButton");
        recordButton.disabled = !(isRecording || isTimelapse || isSoundRecording) &&
