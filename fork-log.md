@@ -39,15 +39,15 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `56d9137` | Pulled CFexpress card seen at once (HAT slot bit in the media probe); dead-medium stop bounded (DNG writers detached after 2 s), stage times logged; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:43 |
 | `da48974` | Pulled card latched removed until remounted (mount id); write stall (5 s, queue full / during stop) ends the take as media removed; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:51 |
 | `227ea7b` | `media_state`/`media_alive` in the socket's `get_state` (for the touch UI); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:54 |
-| `ffb87db` | Media profile (class + filesystem → workers/queue/raw buffers), noatime; root helper added, not installed; T29 without its direct-I/O step (needs T24); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
-| `a99691e` | Audio writer thread + 1 s ALSA ring, 10 ms period (T30 reference patch); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
-| `0586273` | `syncfs` on the clip folder once a second during a take and at every stop, so a pulled card keeps all but the last ~1-2 s; branch `cinemate-port` | fork-only, Mac + Pi; built 23:07, not tested |
-| `e2f55a2` | exFAT keeps 4 writers/queue 12 (T29's 2/16/+2 lost 166 frames in 3 min, C0106); audio ring 100 ms by default (1 s made the drift figure unreliable); branch `cinemate-port` | fork-only, Mac + Pi; built |
-| `775083f` | Each DNG's writeback started right after it is written (`sync_file_range`, async), so the 1 s syncfs no longer bursts; branch `cinemate-port` | fork-only, Mac + Pi; built; alone clean (C0004), with 1 s syncfs 782 drops (C0005) |
-| `77867e6` | Once-a-second sync is an `fsync` of the clip folder, not `syncfs` (which stalled the writers); full syncfs stays at stop; branch `cinemate-port` | fork-only, Mac + Pi; built 23:48; C0007 3 min clean (0 missing, peak 2/12) |
-| `a070e1b` | `recording` event broadcast to every client (the touch UI heard takes started elsewhere only on its 30 s poll); branch `cinemate-port` | fork-only, Mac + Pi; built 23:54; offer upstream |
-| `6fee0e4` | Sync thread fsyncs each DNG finished in the last second, then the folder (folder fsync alone left 0-byte files after a pull, C0010); branch `cinemate-port` | fork-only, Mac + Pi; built 23:58; pull test C0011: 258/281 frames readable |
-| `7a545d9` | Audio writer fsyncs `audio_capture.raw` once a second (was 0 bytes after a pull); branch `cinemate-port` | fork-only, Mac + Pi; pull test: 5.02 s raw audio kept, WAV recovered |
+| `ffb87db` | Media profile (class + filesystem → workers/queue/raw buffers), noatime; root helper added, not installed; T29 without its direct-I/O step (needs T24); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:04, not tested |
+| `a99691e` | Audio writer thread + 1 s ALSA ring, 10 ms period (T30 reference patch); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:04, not tested |
+| `0586273` | `syncfs` on the clip folder once a second during a take and at every stop, so a pulled card keeps all but the last ~1-2 s; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:07, not tested |
+| `e2f55a2` | exFAT keeps 4 writers/queue 12 (T29's 2/16/+2 lost 166 frames in 3 min, C0106); audio ring 100 ms by default (1 s made the drift figure unreliable); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built |
+| `775083f` | Each DNG's writeback started right after it is written (`sync_file_range`, async), so the 1 s syncfs no longer bursts; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built; alone clean (C0004), with 1 s syncfs 782 drops (C0005) |
+| `77867e6` | Once-a-second sync is an `fsync` of the clip folder, not `syncfs` (which stalled the writers); full syncfs stays at stop; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:48; C0007 3 min clean (0 missing, peak 2/12) |
+| `a070e1b` | `recording` event broadcast to every client (the touch UI heard takes started elsewhere only on its 30 s poll); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:54; offer upstream |
+| `6fee0e4` | Sync thread fsyncs each DNG finished in the last second, then the folder (folder fsync alone left 0-byte files after a pull, C0010); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:58; pull test C0011: 258/281 frames readable |
+| `7a545d9` | Audio writer fsyncs `audio_capture.raw` once a second (was 0 bytes after a pull); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); pull test: 5.02 s raw audio kept, WAV recovered |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
