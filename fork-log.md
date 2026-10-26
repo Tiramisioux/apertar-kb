@@ -39,7 +39,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 
 The Pi runs `v0.7.1+qbcfork.20260522-7-7e9fef0b` from `/usr/local` (confirmed 2026-10-26: version string in the installed library,
 and `7e9fef0` is the head of will127534's branch). Branch `apertar` created at exactly that commit on 2026-10-26. Mac clone:
-`~/Documents/Apertar/libcamera-qbc` (`origin` = Tiramisioux, `qbc` = will127534, fetch only). The `cinemate*` branches are Cinemate's: never touch them from here.
+`~/Documents/Apertar/libcamera`; Pi clone `~/libcamera` (public, cloned by Patrik, push disabled) (`origin` = Tiramisioux, `qbc` = will127534, fetch only). The `cinemate*` branches are Cinemate's: never touch them from here.
 
 | Commit | Change | Status |
 | --- | --- | --- |
