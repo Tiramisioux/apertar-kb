@@ -375,3 +375,19 @@ Entry format:
 - Confirmed by: Patrik ("it works"), Core and automounter journal.
 - Tutorial: T28 5.2, T18 step 5.
 
+## 2026-10-26: 3-minute 16-bit takes at Gen 3: a nearly full drive lost the frames, not the sync; capture gaps remain
+
+- Tested: Pi 5 (4 GB), PCIe Gen 3 again (`config.txt.bak-gen3` restored 23:07), Core `cinemate-port` (T28 follow-ups, T29
+  `ffb87db`, T30 `a99691e`, sync `0586273`, then `e2f55a2`), 4K Clear HDR 16-bit 25 fps uncompressed, `takes.sh 1 180`.
+- C0106 (drive ~77 % full, T29 exFAT row 2 writers/queue 16/+2 buffers, sync 1 s): 166 missing, queue full from ~140 s.
+  C0107 (81 % full, 4 writers/queue 12, sync 1 s): 676 missing, queue full from ~95 s. Fio burst 818 MB/s (1 GiB, QD32).
+  NVMe 55 °C (crit 85). After `format_media` exFAT (no trim): C0001 (Patrik, ~3 min): 4558 written, 0 queue drops,
+  peak 1/12, final sync 68 ms, 12 capture gaps from ~113 s, audio drift +18 ppm (`correction=none`), level steady (0.018 %).
+- Why: **probable** that the drive's write cache shrinks as it fills (35 % full: C0101 10 min clean; 77-81 %: drops after
+  40-60 GB); **confirmed** that the once-a-second syncfs does not limit throughput on an empty drive. **Confirmed** that T30's
+  1 s ALSA ring made the drift figure unreliable (+1339 / -201 ppm); the 100 ms ring reads +18.
+- Open: 12 capture gaps in 3 min (C0101 had none in 10 min before T28/T29/T30/sync): candidates are the sync thread, the media
+  watcher's 250 ms probe + HAT reads while recording, or T30's writer.
+- Confirmed by: measurements on the Pi at Patrik's request; format done at Patrik's request (all clips deleted).
+- Tutorial: T29, T30.
+
