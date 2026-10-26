@@ -22,6 +22,8 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `9fa7918` | WebUI: "4K Clear HDR" resolution and 16-bit bit depth, greyed where unavailable; Clear HDR is 12/16-bit only | offer (with the Clear HDR set) |
 | `94ac68d` | Clear HDR raw streams get CPU-cached buffers (libcamera's per-frame CPU passes ran on uncached CFE buffers: ~4 fps -> 25) | offer (with the Clear HDR set) |
 | `f60e301` | Startup sensor-mode probe (both WDR states, `FrameDurationLimits`), fps limits from it (Clear HDR 4K 30 at 891 MHz), `list_sensor_modes` | offer (after 30 fps recording is clean) |
+| `db17860` | One libcamera request per raw buffer, 8 buffers in Clear HDR (T23); local branch `clearhdr-fixes` | fork-only (local) |
+| `43a54f3` | dma-buf read sync as a free helper, no behaviour change (T25 4.1); local branch `clearhdr-fixes` | fork-only (local) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
