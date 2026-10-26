@@ -39,6 +39,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `56d9137` | Pulled CFexpress card seen at once (HAT slot bit in the media probe); dead-medium stop bounded (DNG writers detached after 2 s), stage times logged; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:43 |
 | `da48974` | Pulled card latched removed until remounted (mount id); write stall (5 s, queue full / during stop) ends the take as media removed; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:51 |
 | `227ea7b` | `media_state`/`media_alive` in the socket's `get_state` (for the touch UI); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:54 |
+| `ffb87db` | Media profile (class + filesystem → workers/queue/raw buffers), noatime; root helper added, not installed; T29 without its direct-I/O step (needs T24); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
+| `a99691e` | Audio writer thread + 1 s ALSA ring, 10 ms period (T30 reference patch); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
