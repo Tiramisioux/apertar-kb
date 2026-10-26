@@ -201,3 +201,18 @@ Entry format:
 - Confirmed by: measurements run on the Pi at Patrik's request; interpretation pending.
 - Tutorial: T25 follow-up.
 
+## 2026-10-26: libcamera with software raw stats on every 4th row pair: 30 fps Clear HDR 16-bit improves from ~26 to ~28.5 fps, not yet clean
+
+- Tested: Pi 5 (4 GB), Core `clearhdr-fixes` d9f00d4, libcamera `Tiramisioux/libcamera` `apertar` 889567a built into
+  `~/opt/libcamera-apertar` and loaded through a drop-in (`libcamera-test.conf`: `LD_LIBRARY_PATH`, `QBC_RAW_STATS_ROW_STEP=4`).
+  Confirmed loaded: `/proc/<pid>/maps` shows the private libcamera, libcamera-base and IPA; journal `RawStats row step 4`. 21:01-21:05.
+- Results: 25 fps uncompressed C0087 144/144, 0 missing. 30 fps uncompressed C0089-C0091 missed 7/8/20 (before: 30-46), all
+  `dropped_gap_estimate`, `peak_queue` 1/12, delivery 28.8/28.7/27.6 fps (before 25.1-26.4). CameraManager thread busy 43 % recording
+  (before 54 %).
+- Not tested: AE/AWB quality with the sparser stats. ISO, shutter and WB were manual in these takes (800, 20000 us, 4000 K), so the
+  stats steered nothing. Also not separated: the private build at row step 1 (same code as the installed library otherwise).
+- Why: **confirmed** that less work on the CameraManager thread raises delivery. **Probable** that the remaining loss is the 16-bit
+  endian swap (~10 ms per frame under load) still holding the thread when the back end completes.
+- Confirmed by: measurements run on the Pi at Patrik's request.
+- Tutorial: T25 follow-up (libcamera L1).
+
