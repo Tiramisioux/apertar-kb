@@ -126,7 +126,7 @@ After `mutable IfdTemplateCache ifdTemplateCache_;`:
 
 **Check:** `grep -c 'directStripOffset\|writeRawPayloadDirect\|AlignedBytes' src/cdng/CdngEncoder.hpp` → 6.
 
-**4.2 Helpers** (`CdngEncoder.cpp`, just above `bool writeAll(int fd, const void *data, size_t size)`; and add `#include <new>` after `#include <cstdlib>`)
+**4.2 Helpers** (`CdngEncoder.cpp`, just above `bool writeAll(int fd, const void *data, size_t size)`; and add `#include <new>` after `#include <cstdlib>` and `#include <iostream>` after `#include <cstring>` — the fallback messages use `std::cerr`, which this file never needed before; the host syntax check caught the missing include on 2026-10-26)
 
 ```cpp
 // Direct I/O: the kernel requires offset, length and memory aligned to the

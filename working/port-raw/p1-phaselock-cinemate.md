@@ -406,3 +406,110 @@ writes them to Redis with no consumer — a port can surface them in the status/
   decides FrameWallClock's unit.
 - Whether the imx585 `getBlanking` override ever existed in this libcamera fork's history (the
   shallow clone's `-S getBlanking` shows only upstream commits); its absence at HEAD is confirmed.
+
+---
+
+## Verification
+
+Adversarial pass over every finding above. Method: each cited file was opened at the cited line
+on the checkout at the stated commit (`sed -n` / `grep -n`; apertar-core via
+`git show f60e301:<path>` because that working tree is now at 2a6f114). Verdicts:
+CONFIRMED (line exact, content supports the claim, label honest), CORRECTED (claim stands but a
+citation, number or wording is fixed), REFUTED (source contradicts), UNVERIFIABLE. Numbers were
+recomputed. Nothing in any repository was modified except one allowed
+`git -C libcamera-qbc fetch --depth=1000 origin qbc-pisp-handler` (depth 123 → 1995) used to
+date the FrameWallClock unit change.
+
+### Per-finding verdicts
+
+| # | Finding (short) | Verdict | Notes |
+|---|---|---|---|
+| 1 | Pure header law; kp 0.06 / ki 0.0015 / deadband 6 us / clamp 150 us; only three Redis-tunable | **CONFIRMED** | phase_lock_core.hpp:27-32, :66-68@63a08d5 exact. cinepi_state.hpp:56-59 holds the four keys, :55 "Off by default." No key exists for clampUs (grep CONTROL_KEY_PLL finds three). |
+| 2 | Step order, re-arm rules, absorb, half-frame reset, PI, lround, push-on-change | **CORRECTED (wording)** | All ranges exact (:75-80, :83-88, :90-92, :96-97, :99-111, :113-118, :120-125, :130-139, :144-150, :152-163). The JSON wording "missed = round((dt+0.5P)/P)" is imprecise: :114-115 is `static_cast<uint64_t>((dt + 0.5P)/P)`, i.e. truncation, which equals round-to-nearest of dt/P (the markdown §1 step 5 has it right). Numbers recomputed: 150/40000 = 3750 ppm at 25 fps, 150/41666.67 = 3600 ppm at 24 fps. |
+| 3 | Push {durUs,durUs} on setControls; telemetry on servoRan; fps_user per frame; roleClient; is_recording_ | **CORRECTED (citation)** | :1237 roleClient, :1245-1249 dv/SetControls, :1257-1258 the two SETs (lround on phase error) exact; :697-698 `pipe.get("fps_user").get("is_recording")` exact. The rec handler is cinepi_controller.cpp:**781-792** (`is_recording_ = level` at :792), not :779-791. |
+| 4 | FrameWallClock preferred (us → ×1000), static BOOTTIME→REALTIME fallback, same epoch_ns to DNG and lock | **CORRECTED (off-by-one)** | `info.ts = ns since boot` comment is :**583** (not :584); `/* FrameWallClock is µs since epoch */` :592 and `* 1'000ULL` :**593** (the "surprises" cite :594). Fallback block :595-626, `REALTIME − BOOTTIME` :612, setWallClockTimestamp :658, comment :734, call :737 — exact. |
+| 5 | Why FrameWallClock (5b4b209), bf717fa monotonic, 94102f7 pure offset | **CONFIRMED** | All three commit bodies read; quotes verbatim ("de-jittered, = the audio clock", "matches the clock rpi.sync uses", "one frame ahead/behind"). Dates 2026-06-15, 2026-06-11, 2026-07-06 exact. |
+| 6 | ClockRecovery defaults 100/2000/10/50000; 0.95 leaky error; maxJitter clamp; LSQ with count cap; getOutput; PiSP per-frame addSample+getOutput; initial sample | **CONFIRMED** | clock_recovery.h:18-19; clock_recovery.cpp :109 addSample(), :139 addSample(in,out), :219-228 getOutput; pisp.cpp:1752-1757; pipeline_base.cpp:689-690 — all exact @bfe0b76. Nuance: `count_` stops incrementing when `count1 < numSamples_` fails, so it saturates at numSamples−1; the fit updates once `count_ > minSamples_`. |
+| 7 | FrameWallClock unit divergence: cinemate fork us, qbc fork ns | **CONFIRMED + settled further** | pisp.cpp:1754 `getOutput(sensorTimestamp / 1000)` and clock_recovery.cpp:121-124 (`/ 1000`) @bfe0b76; qbc pisp.cpp:1993 `getOutput(sensorTimestamp)`, clock_recovery.cpp:121-124 (`1000000000ULL`), control_ids_core.yaml:1275-1276 "expressed in nanoseconds" @7e9fef0 — all exact. See *Added* A1 for the upstream commits that date the change and the fork each camera actually runs. |
+| 8 | Eleven tests, sensor model, each assertion, 4624 checks | **CONFIRMED** | tests/phase_lock_core_test.cpp:46-56 model (`lround(dur/lineUs)`, ×(1+ppm)); :94-110, :112-121, :123-130, :132-140, :146-168 (`1778972127858905000LL`), :172-198 (`maxAbsAfter < 300.0`, `approx(avgUs, idealUs, 1.0)`, `hi > lo`), :202-222 (`i > 1500`, `tailPushes == 0`), :226-241 (4-period gap, `>= fcBefore + 3`, `< 200.0`), :244-254 (5-period gap), :256-265, :269-294 (1000e-6 slow, clamp band ±1, never re-armed) — all exact. 28b30cc body says "4624 checks" and "within 0.002us of ideal". |
+| 9 | Convergence time only implicit (warm-up 1000 / 2000 frames) | **CONFIRMED (as PROBABLE)** | :182 `for (size_t i = 1000;`, :189 `for (size_t i = 2000;` exact. 1000/24 = 41.7 s, 2000/24 = 83.3 s. Label honest. |
+| 10 | Hardware numbers from commits; ~125 ppm floor; former factors | **CONFIRMED** | 55562b6 "+1066 ppm uncorrected -> -9 ppm locked (120x), ~2-3 line dither (+/-12us duration, ~0.03% exposure variation), 0 drops"; 85d0326 "railing the clamp (+/-150us) and swinging VBLANK +/-15 lines ... -15 ppm (from +1066)"; e74e3e4 "-1394 ppm ... ~186ms ... ~54s"; 4537153 "-169ms ... ~47s"; 3b3ff60 "-90ms" and "sub-1.8-frame" — all verbatim. cinepi_controller.cpp:1211-1212 "~half-line (~125 ppm) floor"; hpp:354-355 exact. `git show 2f79397^:src/module/sensor_correction_factors.py` shows imx585 mode0 24: 0.9994, mode1 24: 0.9980, 25: 1.0 "exact after will127534/libcamera getBlanking patch (97f71626)", imx283 mode1 25: 0.9990. Recomputed: 1066/9 ≈ 118× (≈"120x"); 12/40000 = 0.03 %; 186 ms at the 24 fps rail (150 us × 24 = 3.6 ms/s) ≈ 52 s (+P-term tail ≈ 54 s); 169/3.6 ≈ 47 s. Markdown nit: the "VBLANK-only: never touches HMAX" comment is :1212-1213, not :1213-1214. |
+| 11 | Handbook has no phase-lock measurement; hardware-log dated 2026-09-21 → 2026-10-07 | **CORRECTED (date range)** | lessons/hardware-log.md is **not in date order**: 80 dated `## 20xx` entries; the earliest is `## 2026-08-23/24` at :115 (also :149 2026-08-25, :178/:203/:248 2026-08-26, :598 2026-08-26 HMAX entry the reader itself cites), the latest `## 2026-10-07` at :3900; :41 is merely the first by line (2026-09-21). The conclusion stands: every entry post-dates the June phase-lock work and none mentions it (grep for phase.lock/pll_/sigma: 0 hits; the 'drift'/'timecode'/'wall.clock' hits at :132, :592, :1596 concern DNG timecode rounding, journal clock jumps and lores write cost). redis-contract.md:38-46 and :59-60, cinemate.md:193-199, what-the-pi-taught-us.md:38-39, testing.md:34 exact. repository-and-tooling-traps.md "phase lock ships off" is :**98**, not :97. |
+| 12 | Audio capture timestamps; periodFrames/4 "~5.3 ms"; 10 ms period; 1 s ring; RT priority; 5 s cap | **CORRECTED (number + citation)** | :536-542 (MONOTONIC trigger, REALTIME, three tags), :638 TS_FIRST_BUFFER_A, :605 `maxGapFrames = rate * 5`, :647-669 reconciliation, :466-467 `periodTimeUs = 10000` / 1 s buffer, :533-534 RT elevation — exact. The tolerance constant is at :**611** (cited :599-610 stops one line short). The "~5.3 ms at 48 kHz" is the code comment (:606) and the 8e21f4a subject; it implies the device negotiated **periodFrames = 1024** (1024/4 = 256 frames = 5.33 ms; the earlier /8 "~2.7 ms" and /16 "~1.3 ms" commits agree). With the *requested* 10 ms period (480 frames) the tolerance would be 2.5 ms. periodFrames is whatever `snd_pcm_hw_params_get_period_size` returns (:510-513, fallback 256), so the ms figure is device-dependent; the reader's sentence conflates the two. |
+| 13 | vts from SensorTimestamp; audio marker min(B,A) else START; start_delta; REALTIME metadata; -c:a copy; ppm removed 2026-06-03 | **CONFIRMED (one range nit)** | cinepi_recorder.hpp:86-87 SensorTimestamp, :100 `log_ts` exact. cinepi_sound.cpp:112-128 chooseAudioStartTimestamp; :1334-1338 vts; :1358-1361 marker; latency bias only when REALTIME marker missing :1372-1373; the subtraction `start_delta_seconds = ...` is at :**1378** (just past the cited :1334-1376); :1418 `buildMetadataFromWallclockNs(... ts_audio_start_realtime`; :1423 "audio-start"; :1529 `-c:a copy`; :1537 time_reference. 7398b62 body verbatim. Stale comment noted: sound.cpp:1332-1333 still says "ADC clock correction ppm — applies..." although the subsystem is gone. |
+| 14 | Audio files untouched 2026-06-10..07-10; rework 06-02..06-06; lock 06-11..06-15 | **CONFIRMED** | `git log --since=2026-06-10 --until=2026-07-10 -- cinepi/cinepi_sound.cpp cinepi/cinepi_audio_capture.cpp cinepi/cinepi_sound.hpp` is empty. audio_capture log: fed2ede 2026-06-02 … 8e21f4a 2026-06-06; sound.cpp last pre-lock change f5973c3 2026-06-04. Lock commits bf717fa 2026-06-11 … 28b30cc 2026-06-15 (plus docs 0caa9a5 06-16, fallback fix 94102f7 07-06). |
+| 15 | "FrameWallClock = the audio clock" = shared REALTIME domain; marker MONOTONIC vs video BOOTTIME compared raw | **CONFIRMED (as PROBABLE)** | Comments at cinepi_controller.cpp:734, :1206, hpp:108-110 read; audio_capture.cpp:536-537 MONOTONIC/REALTIME; recorder.hpp:86-87 BOOTTIME; sound.cpp:1372-1378 subtracts them without conversion. Label honest — nothing stamps samples with FrameWallClock. |
+| 16 | SetControls pending list; queueRequest moves it; IPA FRAME_DURATION_LIMITS → applyFrameDurations → setMaxExposureTime; applyAGC getBlanking clip; VBLANK-only below maxFrameLength | **CORRECTED (citation)** | rpicam_app.cpp:1097-1106 SetControls ("applied to the next StartCamera or request"), :1022-1024 `request->controls() = std::move(controls_)`, :1027 queueRequest, :975 queueRequest decl — exact. ipa_base.cpp:1186-1190, :1638-1667 (`agc->setMaxExposureTime` :1667), :1691 comment — exact; the `V4L2_CID_VBLANK` / `V4L2_CID_EXPOSURE` writes are at :**1704-1705**, outside the cited :1691-1702. cam_helper.cpp:82-126 getBlanking with the HMAX stretch only `if (frameLengthLines > mode_.maxFrameLength)` — exact. |
+| 17 | Manual exposure default in cinepi-raw; AGC-on coexists | **CONFIRMED (as PROBABLE)** | rpicam_app.cpp:825-828 sets ExposureTimeModeManual / AnalogueGainModeManual when unset; ipa_base.cpp:1663-1667 recomputes max exposure per applyFrameDurations. AGC-on behaviour is reasoned, not measured — label honest. |
+| 18 | No imx585 getBlanking override at bfe0b76; the will127534 patch "probably reverted" | **CORRECTED (strengthened)** | grep confirms overrides only in cam_helper_imx477/519/708/500 @bfe0b76; cam_helper_imx585.cpp exists but has none. The fork's history is **not** shallow enough to hide it: 1282 commits back to 2023-05-01; cam_helper_imx585.cpp has exactly two commits (64570c7 2025-03-15 "Adding IMX585 + IMX585-mono support", c8af77d 2025-03-15 "remove getDelays in cam_helper") and `git log -S getBlanking -- src/ipa/rpi/cam_helper/cam_helper_imx585.cpp` is empty; `97f71626` and `ea5abb8b` are not objects in this repo. So the override was **never in Tiramisioux/libcamera's lineage**, not reverted from it; the old docs/fps-correction.md:7 (@2f79397^) credits "will127534/libcamera, ea5abb8b", a different lineage. |
+| 19 | Defaults and knobs (ships off, Cinemate seeds on, --phase-lock, live handlers, telemetry, changelog) | **CORRECTED (citations)** | hpp:353 `phaseLockEnabled_{false}`; cpp:401-408 precedence with seed `"0"` at :**408** (prose says :407); :410-424 gain keys; :982-996 live handlers; :1161/:1165/:1188 dispatch+subscribe; cinepi_options.cpp:227-230 help, :572-585 parser (bare flag, following 0/1, on/off/true/false); raw_options.hpp:66-68; README.md:176 — all exact. cinemate: cinepi_controller.py:120-144 exact; config_loader.py:556 exact; settings.jsonc cam0 `"phase_lock": true` at :100 (comments :98-99) but cam1 is at :**121**, not :116; docs/settings-json.md:78 exact; docs/redis-keys.md:23 "read once at CinePi-raw startup, not live" exact (and contradicted by cpp:982-986); redis_controller.py:34 key, :329-330 `set_value` docstring "Write key, publish" (the publish statement itself was not opened); changelog.md:97, :114-116 exact; cinepi_controller.py fps_user write is :1763-1764 and the "hardware fps == the user fps" comment :1766-1767 (within the cited :1762-1767). |
+| 20 | Apertar inputs: SensorTimestamp read, RecordingClock offset, audio stamps, pendingControls_ merge, truncated 1e6/fps, max>min in photo mode | **CORRECTED (citation)** | @f60e301: CameraController.cpp:7239 SensorTimestamp, :7253 wallClockForSensorTimestamp, :7183-7187 its definition, :2075 `static_cast<int64_t>(1000000.0 / settings.fps)`, :2079-2083 maximumFrameDurationUs/FrameDurationLimits — exact. RecordingClock.hpp:34-48 (constructor averages two BOOTTIME reads around one REALTIME read, same scheme as libcamera addSample()) exact. AudioRecordingSession.cpp:348-349, :427-428, :577-578 exact. **The `pendingControls_` merge is at :6841-6843** (`request->controls().merge(pendingControls_)` :6842) inside `requeueRequest` (:6833) under `controlsMutex_` (:6840); the cited :6864-6876 is a different block (still-preview `controlsForSettings` restore). |
+| 21 | Loop latency / gain transfer UNKNOWN | **CONFIRMED as UNKNOWN → now PROBABLE estimate** | pisp.cpp:1746 `delayedCtrls_->get(...)` exact; 55562b6 "Verified on imx585 mode0 @25fps" exact. See *Added* A2 for a source-derived estimate. |
+| 22 | Slope-vs-BOOTTIME difference unmeasured; tests prove offset invariance only | **CONFIRMED** | tests :142-168 comment "the loop only uses int64 *differences*" exact. No measurement in any repo. |
+
+### Surprises re-checked
+
+- S1 unit divergence: holds; cite cinepi_controller.cpp:**593** for the `* 1'000ULL`.
+- S2 ships off: holds; seed at :**408**; handbook traps line is :**98**.
+- S3 live handler vs stale doc row: holds (cpp:982-996 vs redis-keys.md:23).
+- S4 MONOTONIC marker vs BOOTTIME video: holds (audio_capture.cpp:536-537; recorder.hpp:86-87; sound.cpp:1372-1378).
+- S5 getBlanking override absent: holds and is stronger — never in this fork's history (see #18).
+- S6 factor magnitudes: 1−0.9994 = 600 ppm, 1−0.9980 = 2000 ppm, 1−0.9990 = 1000 ppm; clamp pull range 3600–3750 ppm — arithmetic correct.
+- S7 handbook dates: **corrected** to 2026-08-23/24 → 2026-10-07 (still all after June).
+
+### Added (settled from source in this pass)
+
+**A1. Which libcamera emits which FrameWallClock unit, dated.** With the qbc clone deepened to
+1995 commits: upstream **29a88d85 (Naushir Patuck, 2025-07-08) "libcamera: controls: Use
+nanoseconds units for FrameWallClock"** changed the yaml and the RPi pipeline handlers to ns;
+**c576b437 (David Plowman, 2025-08-14)** added the `/ 1000` in `ipa/rpi/controller/rpi/sync.cpp`
+("Convert from ns into us", qbc sync.cpp:166-167@7e9fef0); **bfd68f78 (Paul Elder, 2025-09-01)**
+made `ClockRecovery::addSample()` sample in ns. The cinemate fork (Tiramisioux/libcamera, last
+upstream merge 983ffa7 2025-04-22; its sync.cpp:166-167 uses `local.wallClock` directly) predates
+all three → **microseconds**; Cinemate's installer clones exactly that fork
+(cinemate/cinemate-install.sh:94 `LIBCAMERA_REPO_URL=.../Tiramisioux/libcamera.git`;
+docs/installation-steps.md:99 "`cinemate` branch tip — Will Whang's IMX585 fork (base 9d0cdfe5)"),
+so cinepi-raw's `* 1000` is correct on a Cinemate Pi. The qbc clone is
+`will127534/libcamera` branch `qbc-pisp-handler` → **nanoseconds**. Apertar's README says it builds
+against the image's "libcamera and libcamera-base development files" or "a custom libcamera build"
+(apertar-core/README.md:186,199@f60e301); any libcamera carrying upstream ≥ 2025-07-08 (every
+Raspberry Pi OS libcamera released after that) emits ns. **PROBABLE: an Apertar Pi sees ns.**
+A port must still check at runtime (e.g. compare FrameWallClock − SensorTimestamp magnitude to
+the REALTIME−BOOTTIME offset).
+
+**A2. Loop latency, estimated from source (PROBABLE).** A request's controls are applied when
+the pipeline dispatches that request with a captured frame, not when it is queued:
+libcamera(cinemate)/src/libcamera/pipeline/rpi/pisp/pisp.cpp:2353 `params.requestControls =
+request->controls()` → :2367 `ipa_->prepareIsp(params)` → src/ipa/rpi/common/ipa_base.cpp:399
+`applyControls(params.requestControls)` (qbc: pisp.cpp:2929/:2970, ipa_base.cpp:428, same
+mechanism). The AGC result for that frame goes out through `setDelayedControls.emit`
+(ipa_base.cpp:527-530) and DelayedControls applies VBLANK with the sensor's delay:
+imx585 `vblankDelay = 2` (src/libcamera/sensor/camera_sensor_properties.cpp:298-302; default
+table also 2, camera_sensor_legacy.cpp:489-494; pipeline_base.cpp:822-829 wires them). rpicam-apps
+queues every buffer at start (cinepi-raw/core/rpicam_app.cpp:923-926) and re-queues each completed
+request carrying the pending list (:1022-1027), so a control pushed at frame k rides the request
+that is dispatched ≈ buffer-count frames later. With Cinemate's default `--buffer-count 8`
+(cinemate/src/module/cinepi_multi.py:845-847) the push→realised-frame delay is ≈ 8 + 1 (AGC on
+that frame) + 2 (VBLANK delay) ≈ **10–11 frames**; with Apertar's 3 requests in flight ≈ 3 + 1 + 2
+≈ **5–6 frames**. A shorter loop delay gives the same PI gains more phase margin, so kp 0.06 /
+ki 0.0015 should be *at least* as stable in Apertar; the exact dispatch order inside the pipeline
+queue was not traced, hence PROBABLE. On-camera verification still required.
+
+**A3. The imx585 getBlanking override never existed in Tiramisioux/libcamera** (detail in #18);
+the reader's "unanswered" item 5 is settled.
+
+**A4. apertar-core HEAD is ahead of the reader's commit.** HEAD 2a6f114 (2026-10-26, "camera:
+frame-rate phase lock, off by default (fps_phase_lock)") already adds
+`src/camera/FramePhaseLock.hpp` (147 lines) referenced to SensorTimestamp/CLOCK_BOOTTIME, with
+the commit message stating "not compiled here". The reader's §7 "inputs Apertar must supply" is
+correct for f60e301 and remains the right baseline for the tutorial; verifying the HEAD port is a
+separate task.
+
+### Still UNKNOWN after verification
+
+- Any measured drift before/after in the handbook (none exists; only commit figures).
+- Whether FrameWallClock's fitted slope differs measurably from raw CLOCK_BOOTTIME on a Pi.
+- The realised ALSA `periodFrames` on Apertar's audio device (the ~5.3 ms tolerance figure is
+  device-specific).
+- The exact in-pipeline dispatch order that fixes A2's frame counts; and kp/ki behaviour on
+  Apertar hardware.

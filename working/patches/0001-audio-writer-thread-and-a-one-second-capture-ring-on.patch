@@ -1,0 +1,320 @@
+From 90e2415a5e41b4412ca1d458e2d6aa131c9cef83 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 09:09:57 +0000
+Subject: [PATCH] audio: writer thread and a one-second capture ring on the
+ record path
+
+The reader thread wrote audio_capture.raw on the recording medium itself,
+behind a 100 ms ALSA buffer. Cinemate found the failure this invites
+(ffb61fd, 5021ba3): under 4K DNG pressure an exFAT write() blocks for
+hundreds of milliseconds, the capture thread cannot read the ring, the
+ring overruns and samples are gone. Core's discontinuity padding keeps the
+WAV the right length, so the loss shows as a silent hole and as a lower
+frames-per-second figure in the whole-take drift measurement.
+
+- AudioRecordingSession: the reader hands blocks (and gap zeros) to a RAM
+  queue; a writer thread drains them into the raw file. The reader never
+  touches the medium. Write failures latch as before; a backlog above 16 MB
+  logs once; stop() drains the writer, or lets it discard when the medium is
+  gone, and logs the take's peak backlog.
+- TimestampedAudioCapture::open() sets the hardware parameters by hand:
+  buffer and period are independent, so the record path gets a 1 s ring
+  (APERTAR_AUDIO_BUFFER_MS, 100..4000) with a 10 ms period; the negotiated
+  sizes are logged. snd_pcm_set_params() tied the period to buffer/4.
+
+Host-checked: AudioRecordingSession.cpp passes g++ -fsyntax-only;
+TimestampedAudioCapture.cpp needs alsa/asoundlib.h and is not compiled here.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/audio/AudioRecordingSession.cpp   | 91 ++++++++++++++++++++++++---
+ src/audio/AudioRecordingSession.hpp   | 16 +++++
+ src/audio/TimestampedAudioCapture.cpp | 38 +++++++++--
+ src/audio/TimestampedAudioCapture.hpp |  7 ++-
+ 4 files changed, 138 insertions(+), 14 deletions(-)
+
+diff --git a/src/audio/AudioRecordingSession.cpp b/src/audio/AudioRecordingSession.cpp
+index fda5034..a120cd1 100644
+--- a/src/audio/AudioRecordingSession.cpp
++++ b/src/audio/AudioRecordingSession.cpp
+@@ -3,6 +3,7 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <cstdlib>
+ #include <cerrno>
+ #include <chrono>
+ #include <cmath>
+@@ -203,6 +204,18 @@ AudioRecordingSession::~AudioRecordingSession()
+     stop();
+ }
+ 
++namespace {
++// Capture ring on the record path: APERTAR_AUDIO_BUFFER_MS, default 1000, 100..4000.
++unsigned recordCaptureBufferUs()
++{
++    long ms = 1000;
++    if (const char *env = std::getenv("APERTAR_AUDIO_BUFFER_MS"); env && *env)
++        ms = std::strtol(env, nullptr, 10);
++    ms = std::max(100L, std::min(4000L, ms));
++    return static_cast<unsigned>(ms) * 1000u;
++}
++} // namespace
++
+ bool AudioRecordingSession::start(const std::filesystem::path &clipFolder,
+                                   const AudioRecordingOptions &options,
+                                   AudioLevelCallback levelCallback,
+@@ -248,7 +261,7 @@ bool AudioRecordingSession::start(const std::filesystem::path &clipFolder,
+         return false;
+     }
+     AudioCaptureMode mode{options_.sampleFormat, options_.sampleRate, options_.channels};
+-    if (!capture_.open(options_.inputDevice, mode, options_.firstChannel, error)) {
++    if (!capture_.open(options_.inputDevice, mode, options_.firstChannel, error, recordCaptureBufferUs(), 10000)) {
+         capture_.close();
+         resetState();
+         return false;
+@@ -335,6 +348,15 @@ bool AudioRecordingSession::start(const std::filesystem::path &clipFolder,
+     stopRequested_.store(false, std::memory_order_relaxed);
+     running_.store(true, std::memory_order_relaxed);
+     sessionActive_.store(true, std::memory_order_relaxed);
++    {
++        std::lock_guard<std::mutex> lock(writeMutex_);
++        writeQueue_.clear();
++        queuedWriteBytes_ = 0;
++        peakQueuedWriteBytes_ = 0;
++        writerStop_ = false;
++    }
++    writeFailed_.store(false, std::memory_order_relaxed);
++    writerThread_ = std::thread(&AudioRecordingSession::writerLoop, this);
+     readerThread_ = std::thread(&AudioRecordingSession::readerLoop, this);
+     return true;
+ }
+@@ -362,6 +384,20 @@ void AudioRecordingSession::stop(bool finalize)
+         readerThread_.join();
+     capture_.close();
+ 
++    // Drain the writer (or, with the medium gone, let it discard) before the
++    // raw stream is closed; the reader has stopped, so nothing enqueues now.
++    if (!finalize)
++        writeFailed_.store(true, std::memory_order_release);
++    {
++        std::lock_guard<std::mutex> lock(writeMutex_);
++        writerStop_ = true;
++    }
++    writeCv_.notify_all();
++    if (writerThread_.joinable())
++        writerThread_.join();
++    if (peakQueuedWriteBytes_ > 0 && !clipFolder_.empty())
++        std::cerr << "ApertarCore audio writer: peak_backlog_kb=" << peakQueuedWriteBytes_ / 1024 << "\n";
++
+     if (rawStream_.is_open())
+         rawStream_.close();
+ 
+@@ -434,11 +470,7 @@ void AudioRecordingSession::readerLoop()
+                 // rather than closing the gap and shifting the remaining take.
+                 if (audioEndBootUs_ && sampleBootUs > int64_t(audioEndBootUs_) + 10000) {
+                     const uint64_t gapBytes = framesForDurationUs(sampleBootUs - audioEndBootUs_, options_.sampleRate) * blockAlign;
+-                    std::array<char,4096> zeros{};
+-                    for (uint64_t left = gapBytes; left;) {
+-                        const auto size = std::min<uint64_t>(left, zeros.size());
+-                        rawStream_.write(zeros.data(), size);left -= size;
+-                    }
++                    enqueueWrite(nullptr, static_cast<size_t>(gapBytes));
+                     capturedBytes_ += gapBytes;
+                     std::cerr << "ApertarCore audio discontinuity: padded_us=" << sampleBootUs - audioEndBootUs_ << "\n";
+                 }
+@@ -473,8 +505,8 @@ void AudioRecordingSession::readerLoop()
+                     break;
+                 }
+             }
+-            rawStream_.write(buffer.data(), bytesRead);
+-            if (!rawStream_) { failure_.set("Audio capture write failed.");std::cerr << "ApertarCore audio capture write failed.\n"; break; }
++            enqueueWrite(buffer.data(), static_cast<size_t>(bytesRead));
++            if (writeFailed_.load(std::memory_order_acquire)) break;
+             capturedBytes_ += static_cast<uint64_t>(bytesRead);
+             if (shouldMeasureLevel)
+                 emitLevel(meterLevel);
+@@ -659,6 +691,49 @@ void AudioRecordingSession::finalizeWav()
+     if (outputBytes64 & 1u) output.put('\0');
+ }
+ 
++void AudioRecordingSession::enqueueWrite(const char *data, size_t size)
++{
++    if (size == 0)
++        return;
++    std::vector<char> block(size);
++    if (data)
++        std::memcpy(block.data(), data, size);
++    std::lock_guard<std::mutex> lock(writeMutex_);
++    writeQueue_.push_back(std::move(block));
++    queuedWriteBytes_ += size;
++    peakQueuedWriteBytes_ = std::max(peakQueuedWriteBytes_, queuedWriteBytes_);
++    writeCv_.notify_one();
++}
++
++void AudioRecordingSession::writerLoop()
++{
++    bool warnedBacklog = false;
++    for (;;) {
++        std::vector<char> block;
++        {
++            std::unique_lock<std::mutex> lock(writeMutex_);
++            writeCv_.wait(lock, [this] { return writerStop_ || !writeQueue_.empty(); });
++            if (writeQueue_.empty())
++                return;
++            block = std::move(writeQueue_.front());
++            writeQueue_.pop_front();
++            queuedWriteBytes_ -= std::min(queuedWriteBytes_, block.size());
++            if (!warnedBacklog && queuedWriteBytes_ > 16u * 1024u * 1024u) {
++                warnedBacklog = true;
++                std::cerr << "ApertarCore audio writer: backlog above 16 MB, the medium is stalling\n";
++            }
++        }
++        if (writeFailed_.load(std::memory_order_acquire))
++            continue;  // medium gone or failed: drain without touching it
++        rawStream_.write(block.data(), static_cast<std::streamsize>(block.size()));
++        if (!rawStream_) {
++            failure_.set("Audio capture write failed.");
++            writeFailed_.store(true, std::memory_order_release);
++            std::cerr << "ApertarCore audio capture write failed.\n";
++        }
++    }
++}
++
+ void AudioRecordingSession::resetState()
+ {
+     if (playbackWriteFd_ >= 0) {
+diff --git a/src/audio/AudioRecordingSession.hpp b/src/audio/AudioRecordingSession.hpp
+index 6b8483c..e01fd2f 100644
+--- a/src/audio/AudioRecordingSession.hpp
++++ b/src/audio/AudioRecordingSession.hpp
+@@ -6,7 +6,9 @@
+ #include "util/RecordingFailure.hpp"
+ 
+ #include <atomic>
++#include <condition_variable>
+ #include <cstdint>
++#include <deque>
+ #include <filesystem>
+ #include <functional>
+ #include <fstream>
+@@ -39,6 +41,8 @@ public:
+ 
+ private:
+     void readerLoop();
++    void writerLoop();
++    void enqueueWrite(const char *data, size_t size);  // data == nullptr writes zeros
+     void finalizeWav();
+     void resetState();
+     void emitLevel(int level);
+@@ -67,6 +71,18 @@ private:
+     AudioLevelCallback levelCallback_;
+ 
+     std::thread readerThread_;
++    // The reader never touches the medium: it hands blocks to this queue and the
++    // writer thread drains them into rawStream_ (Cinemate ffb61fd: an exFAT
++    // write() under DNG pressure blocked the capture thread for hundreds of ms
++    // and the ALSA ring overran).
++    std::thread writerThread_;
++    std::mutex writeMutex_;
++    std::condition_variable writeCv_;
++    std::deque<std::vector<char>> writeQueue_;
++    size_t queuedWriteBytes_ = 0;
++    size_t peakQueuedWriteBytes_ = 0;
++    bool writerStop_ = false;
++    std::atomic<bool> writeFailed_{false};
+     std::atomic<bool> running_{false};
+     std::atomic<pid_t> playbackPid_{-1};
+     int playbackWriteFd_ = -1;
+diff --git a/src/audio/TimestampedAudioCapture.cpp b/src/audio/TimestampedAudioCapture.cpp
+index d6e7ec3..06a1814 100644
+--- a/src/audio/TimestampedAudioCapture.cpp
++++ b/src/audio/TimestampedAudioCapture.cpp
+@@ -6,6 +6,7 @@
+ #include <dlfcn.h>
+ #include <cstring>
+ #include <fstream>
++#include <iostream>
+ #include <regex>
+ #include <sstream>
+ 
+@@ -19,7 +20,9 @@ namespace apertar {
+     X(snd_pcm_wait) X(snd_pcm_htimestamp) X(snd_pcm_readi) X(snd_pcm_recover) X(snd_strerror) \
+     X(snd_pcm_hw_params_malloc) X(snd_pcm_hw_params_free) X(snd_pcm_hw_params_any) \
+     X(snd_pcm_hw_params_set_access) X(snd_pcm_hw_params_set_format) \
+-    X(snd_pcm_hw_params_set_rate) X(snd_pcm_hw_params_test_channels) X(snd_pcm_hw_params_set_channels)
++    X(snd_pcm_hw_params_set_rate) X(snd_pcm_hw_params_test_channels) X(snd_pcm_hw_params_set_channels) \
++    X(snd_pcm_hw_params_set_buffer_time_near) X(snd_pcm_hw_params_set_period_time_near) X(snd_pcm_hw_params) \
++    X(snd_pcm_hw_params_get_buffer_size) X(snd_pcm_hw_params_get_period_size)
+ 
+ struct TimestampedAudioCapture::Impl {
+     void *library = nullptr;
+@@ -152,7 +155,8 @@ std::vector<AudioCaptureMode> TimestampedAudioCapture::probe(const std::string &
+     return modes;
+ }
+ 
+-bool TimestampedAudioCapture::open(const std::string &device, AudioCaptureMode &mode, unsigned firstChannel, std::string *error)
++bool TimestampedAudioCapture::open(const std::string &device, AudioCaptureMode &mode, unsigned firstChannel, std::string *error,
++                                   unsigned bufferUs, unsigned periodUs)
+ {
+     close();
+     const auto modes = probe(device, error);
+@@ -185,9 +189,33 @@ bool TimestampedAudioCapture::open(const std::string &device, AudioCaptureMode &
+     s.firstChannel = firstChannel - 1;
+     s.outputBytes = audioSampleBytes(mode.format);
+     s.nativeBytes = selected->nativeFormat == SND_PCM_FORMAT_S24_LE ? 4 : s.outputBytes;
+-    if (!s.result(s.snd_pcm_open(&s.pcm, hardwareDevice(device).c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK), error) ||
+-        !s.result(s.snd_pcm_set_params(s.pcm, snd_pcm_format_t(mode.nativeFormat), SND_PCM_ACCESS_RW_INTERLEAVED,
+-                                    s.nativeChannels, s.rate, 0, 100000), error)) return false;
++    if (!s.result(s.snd_pcm_open(&s.pcm, hardwareDevice(device).c_str(), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK), error))
++        return false;
++    // Hardware parameters by hand rather than snd_pcm_set_params(): that helper
++    // derives the period from the buffer (latency / 4), so a one-second ring
++    // would wake the reader four times a second. The ring absorbs storage stalls
++    // (Cinemate 5021ba3: hundreds of ms under 4K writes), the period keeps the
++    // meter and the sample timestamps at 10 ms.
++    snd_pcm_hw_params_t *hw = nullptr;
++    if (!s.result(s.snd_pcm_hw_params_malloc(&hw), error)) return false;
++    unsigned bufferTime = bufferUs, periodTime = periodUs;
++    const bool hwOk = s.result(s.snd_pcm_hw_params_any(s.pcm, hw), error) &&
++        s.result(s.snd_pcm_hw_params_set_access(s.pcm, hw, SND_PCM_ACCESS_RW_INTERLEAVED), error) &&
++        s.result(s.snd_pcm_hw_params_set_format(s.pcm, hw, snd_pcm_format_t(mode.nativeFormat)), error) &&
++        s.result(s.snd_pcm_hw_params_set_channels(s.pcm, hw, s.nativeChannels), error) &&
++        s.result(s.snd_pcm_hw_params_set_rate(s.pcm, hw, s.rate, 0), error) &&
++        s.result(s.snd_pcm_hw_params_set_period_time_near(s.pcm, hw, &periodTime, nullptr), error) &&
++        s.result(s.snd_pcm_hw_params_set_buffer_time_near(s.pcm, hw, &bufferTime, nullptr), error) &&
++        s.result(s.snd_pcm_hw_params(s.pcm, hw), error);
++    snd_pcm_uframes_t bufferFrames = 0, periodFrames = 0;
++    if (hwOk) {
++        s.snd_pcm_hw_params_get_buffer_size(hw, &bufferFrames);
++        s.snd_pcm_hw_params_get_period_size(hw, &periodFrames, nullptr);
++    }
++    s.snd_pcm_hw_params_free(hw);
++    if (!hwOk) return false;
++    std::cerr << "ApertarCore audio capture: buffer_frames=" << bufferFrames << " period_frames=" << periodFrames
++              << " requested_ms=" << bufferUs / 1000 << "/" << periodUs / 1000 << "\n";
+     snd_pcm_sw_params_t *sw = nullptr;
+     if (!s.result(s.snd_pcm_sw_params_malloc(&sw), error)) return false;
+     const bool configured = s.result(s.snd_pcm_sw_params_current(s.pcm, sw), error) &&
+diff --git a/src/audio/TimestampedAudioCapture.hpp b/src/audio/TimestampedAudioCapture.hpp
+index 9f473c0..477c4c0 100644
+--- a/src/audio/TimestampedAudioCapture.hpp
++++ b/src/audio/TimestampedAudioCapture.hpp
+@@ -20,7 +20,12 @@ public:
+     TimestampedAudioCapture();
+     ~TimestampedAudioCapture();
+     bool open(const std::string &device, unsigned rate, unsigned channels, std::string *error);
+-    bool open(const std::string &device, AudioCaptureMode &mode, unsigned firstChannel, std::string *error);
++    // bufferUs/periodUs: the ALSA ring and wake-up interval. The record path asks
++    // for a deep ring (storage stalls must not overrun it) with a short period
++    // (VU meter, timestamp granularity); the two are independent only when the
++    // hardware parameters are set by hand, see open().
++    bool open(const std::string &device, AudioCaptureMode &mode, unsigned firstChannel, std::string *error,
++              unsigned bufferUs = 100000, unsigned periodUs = 10000);
+     static std::vector<AudioCaptureMode> probe(const std::string &device, std::string *error);
+     int read(void *data, size_t frames, int64_t *firstSampleBootUs, std::string *error);
+     void close();
+-- 
+2.43.0
+

@@ -88,3 +88,13 @@ Incremental findings; the final answer is `clearhdr-compare-answer.md`. Each lin
 - Branch `clearhdr-fixes` in the local apertar-core clone: 2f5a880 (T23), d3c1b17 (T24), 6853891 (T25); driver worktree branch `apertar-crop-rects`: 98b9862 (T26). Exported to working/patches/. NOT compiled (no toolchain here).
 - Tutorials T22-T26 in tutorials/inbox/ (Obsidian format, tutor blocks); index rows added to tutorials/README.md and llm/tutoring.md §5. Tool working/tools/writeback_watch.py.
 - Investigation workflow wf_10785596-249 (phase lock / yank / storage) still running: readers p1, p2 started; results go to working/port-raw/.
+
+## Checkpoint 2026-10-26 09:40 — phase lock, yank, storage, audio: investigations, patches, tutorials written
+
+- Lessons pass over Cinemate's git history and handbook: `working/cinemate-lessons.md` (commit bodies read for every cited hash; handbook orientation/philosophy/what-the-pi-taught-us in full, hardware-log by section).
+- Answers: `working/phaselock-answer.md`, `working/yank-answer.md`, `working/storage-answer.md`.
+- Core branch `clearhdr-fixes` now: 2f5a880 (T23) → ce723fd (T24, amended with the missing `#include <iostream>` the host syntax check found) → 9e06ad6 (T25) → bb85899 (phase lock) → 4ea877c (yank) → d405e22 (media profile) → 90e2415 (audio writer). All exported to `working/patches/` as `0001-*.patch`, README rewritten.
+- Host verification available here: `g++ -fsyntax-only` passes for `ApertarCoreApp.cpp`, `CdngEncoder.cpp`, `MlvEncoder.cpp`, `LossyDngEncoder.cpp`, `AudioRecordingSession.cpp`, `WebControlPage.cpp`; pure headers pass `tools/phase_lock_sim.cpp` (17 checks), `tools/media_probe_test.cpp` (30), `tools/media_profile_test.cpp` (27). `CameraController.cpp` and `TimestampedAudioCapture.cpp` need libcamera / alsa headers (generating libcamera's headers from its yaml was refused by the sandbox policy).
+- Tutorials T27–T30 in `tutorials/inbox/`, index rows in `tutorials/README.md` and `llm/tutoring.md` §5; T24 tutorial notes the include.
+- Workflow wf_10785596-249: readers p1/p2/y1/y2/s1/s2 done; verifier sections appended to p1, p2, y1, y2 (0 refuted, line-number corrections); s1/s2 verifiers and the critic still running at this checkpoint.
+- Nothing ran on the Pi. Next: T22 baseline on the rig, then T23→T30 in order, each with its measurement.

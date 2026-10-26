@@ -1,0 +1,1335 @@
+From 4ea877c810e3adc599e01d86a6cf02016425386a Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 08:47:30 +0000
+Subject: [PATCH] media: survive a yanked or unmounted recording drive
+
+A drive pulled or unmounted during a take used to end the take by accident:
+the first failed write latched a generic "Input/output error", the stop path
+then reopened, renamed and fsynced files on the dead mount, lossy DNG takes
+never stopped at all (the background writer only logged), the queued frames
+vanished uncounted, and the UIs learned nothing until the 1 s poll showed
+"recording_error". Nothing gated record_start on media, so a take with no
+drive landed on the SD card.
+
+Logic ported from Cinemate's storage handling, in Core's own shape:
+
+- util/MediaFault.hpp: errno -> {Removed, Full, ReadOnly, Permission, Other}
+  (Cinemate's yank set EIO/ENOENT/ENODEV/ENOTCONN/ESTALE plus ENXIO), one
+  operator message per class, a machine name for state fields.
+- util/MediaProbe.hpp: is the media root a mount point (/proc/mounts, exact
+  path match, last entry wins) and does statvfs on the mount root answer; the
+  decision is a pure function, host-tested.
+- ApertarCoreApp: a media watcher thread (1 s idle, 250 ms while recording)
+  that holds no shared lock while it probes, publishes a broadcast "media"
+  event on every change, flags the controller when a mounted medium is lost
+  mid-take and ends the take through the existing supervisor path; state
+  fields media_state/media_alive/media_device/media_fstype/recording_fault in
+  /api/state and get_state; one record gate in handleCommand (mounted, alive,
+  >= APERTAR_MEDIA_MIN_FREE_MB free; APERTAR_MEDIA_REQUIRE_MOUNT=0 for dev
+  machines) covering socket, WebUI and buttons.
+- DngRecordingQueue: catch sites classify the errno (std::system_error) and
+  latch the class; frames discarded at the latch and frames offered after it
+  are counted (discarded_on_failure=, skipped_after_failure=, fault= in the
+  stats line); lossy DNG background-write failures now surface one frame late
+  and end the take; stop(mediumDead) skips the lossy drain and the MLV header
+  patch (MlvEncoder::abandon).
+- CameraSession::stopRecording(mediumGone): H.264 leaves its .mp4.writing in
+  place, audio does not finalise the WAV or reopen the raw capture, nothing
+  touches the medium again.
+- MlvEncoder keeps the errno behind its text errors; LossyDngDiskWriter
+  counts failures and can abandon its queue.
+- Eject intent: util/MediaIntent.hpp writes /run/apertar-media/eject/<dev>
+  before a deliberate unmount and clears it on remount or when the device
+  node is gone, for an automounter to honour (Cinemate f01b6cd).
+- WebUI: record button disabled without media, "MEDIA REMOVED" status.
+
+Host-checked: MlvEncoder.cpp, LossyDngEncoder.cpp, AudioRecordingSession.cpp,
+ApertarCoreApp.cpp and WebControlPage.cpp pass g++ -fsyntax-only; the new
+headers pass tools/media_probe_test (KB). CameraController.cpp needs libcamera
+and is not compiled here.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/ApertarCoreApp.cpp              | 139 ++++++++++++++++++++++
+ src/ApertarCoreApp.hpp              |  14 +++
+ src/audio/AudioRecordingSession.cpp |  12 +-
+ src/audio/AudioRecordingSession.hpp |   4 +-
+ src/camera/CameraController.cpp     | 171 ++++++++++++++++++++++++----
+ src/camera/CameraController.hpp     |   5 +
+ src/lossydng/LossyDngEncoder.cpp    |  41 ++++++-
+ src/lossydng/LossyDngEncoder.hpp    |   5 +
+ src/mlv/MlvEncoder.cpp              |  13 +++
+ src/mlv/MlvEncoder.hpp              |   5 +
+ src/util/MediaFault.hpp             | 108 ++++++++++++++++++
+ src/util/MediaIntent.hpp            |  67 +++++++++++
+ src/util/MediaProbe.hpp             | 147 ++++++++++++++++++++++++
+ src/web/WebControlPage.cpp          |   4 +-
+ 14 files changed, 704 insertions(+), 31 deletions(-)
+ create mode 100644 src/util/MediaFault.hpp
+ create mode 100644 src/util/MediaIntent.hpp
+ create mode 100644 src/util/MediaProbe.hpp
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 94d25dc..c22394b 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -1,4 +1,5 @@
+ #include "ApertarCoreApp.hpp"
++#include "util/MediaIntent.hpp"
+ #include <apertar/core/PreviewExposureReference.hpp>
+ #include <apertar/core/RecordingCapabilities.hpp>
+ #include "camera/ExposureMetering.hpp"
+@@ -3696,6 +3697,7 @@ bool mountMediaDeviceAtPath(const std::string &devicePath,
+ 
+     std::string commandError;
+     if (mountDeviceAtMediaPath(normalizedDevicePath, mountPath, fsType, &commandError)) {
++        clearEjectIntent(normalizedDevicePath);
+         scanMountableMediaDrives(mountPath, true);
+         return true;
+     }
+@@ -3726,6 +3728,12 @@ bool ejectMediaAtPath(const std::string &mountPath, std::string *errorMessage)
+         return false;
+     }
+ 
++    // Tell the automounter this unmount is deliberate before the kernel's udev
++    // "change" event can make it remount the drive (Cinemate f01b6cd).
++    std::string intentError;
++    if (!writeEjectIntent(devicePath, &intentError))
++        std::cerr << "ApertarCore media: eject intent not recorded (" << intentError
++                  << "); an automounter may remount the drive\n";
+     flushMediaPath(mountPath, devicePath);
+     const bool isNvme = devicePath.rfind("/dev/nvme", 0) == 0;
+     bool unmounted = false;
+@@ -6835,6 +6843,8 @@ bool ApertarCoreApp::start()
+         previewPublisherRunning_ = true;
+     }
+     previewThread_ = std::thread(&ApertarCoreApp::runPreviewPublisher, this);
++    mediaWatcherRunning_.store(true, std::memory_order_release);
++    mediaWatcherThread_ = std::thread(&ApertarCoreApp::runMediaWatcher, this);
+ 
+ #if APERTARCORE_HAS_JPEG
+     if (options_.webPort != 0) {
+@@ -6850,6 +6860,7 @@ bool ApertarCoreApp::start()
+     if (!camera_.start(options_.mediaRoot, options_.simulateCamera)) {
+         stopMjpegEncoder();
+         stopPreviewPublisher();
++        stopMediaWatcher();
+         running_ = false;
+         return false;
+     }
+@@ -6874,6 +6885,7 @@ bool ApertarCoreApp::start()
+         camera_.stop();
+         stopMjpegEncoder();
+         stopPreviewPublisher();
++        stopMediaWatcher();
+         running_ = false;
+         return false;
+     }
+@@ -6886,6 +6898,7 @@ bool ApertarCoreApp::start()
+         camera_.stop();
+         stopMjpegEncoder();
+         stopPreviewPublisher();
++        stopMediaWatcher();
+         running_ = false;
+         return false;
+     }
+@@ -6935,6 +6948,7 @@ void ApertarCoreApp::stop()
+     camera_.stop();
+     stopMjpegEncoder();
+     stopPreviewPublisher();
++    stopMediaWatcher();
+     webServer_.stop();
+     controlServer_.stop();
+     syncRecordingTracking(false);
+@@ -7731,6 +7745,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+     const double timelapseIntervalSeconds = camera_.timelapseIntervalSeconds();
+     const std::string sensorName = camera_.sensorName();
+     const bool mediaMounted = isMountedPath(options_.mediaRoot);
++    const MediaSnapshot mediaSnap = mediaSnapshot();
+     const std::string mountedDevice = mediaMounted ? mountedDeviceForPath(options_.mediaRoot) : std::string();
+     const std::string mountedVolumeLabel = mediaMounted ? volumeLabelForDevicePath(mountedDevice) : std::string();
+     const std::string mediaTypeLabel = mediaMounted
+@@ -7914,6 +7929,11 @@ std::string ApertarCoreApp::buildWebStateJson() const
+         << ",\"af_window_w\":" << jsonNumber(settings.autofocusWindowWidth, 3)
+         << ",\"af_window_h\":" << jsonNumber(settings.autofocusWindowHeight, 3)
+         << ",\"media_mounted\":" << (mediaMounted ? "true" : "false")
++        << ",\"media_state\":\"" << mediaSnap.stateName() << "\""
++        << ",\"media_alive\":" << (mediaSnap.mounted() ? "true" : "false")
++        << ",\"media_device\":\"" << escapeJson(mediaSnap.device) << "\""
++        << ",\"media_fstype\":\"" << escapeJson(mediaSnap.fstype) << "\""
++        << ",\"recording_fault\":\"" << escapeJson(camera_.recordingFaultName()) << "\""
+         << ",\"network_transport\":\"" << escapeJson(network.transport) << "\""
+         << ",\"network_host\":\"" << escapeJson(network.hostLabel) << "\""
+         << ",\"system\":{"
+@@ -9106,6 +9126,117 @@ void ApertarCoreApp::joinMediaSpeedTest()
+         mediaSpeedThread_.join();
+ }
+ 
++namespace {
++std::string mediaEventJson(const MediaSnapshot &snapshot)
++{
++    std::ostringstream out;
++    out << "{\"event\":\"media\",\"state\":\"" << snapshot.stateName() << "\""
++        << ",\"mounted\":" << (snapshot.mounted() ? "true" : "false")
++        << ",\"device\":\"" << escapeJson(snapshot.device) << "\""
++        << ",\"fstype\":\"" << escapeJson(snapshot.fstype) << "\""
++        << ",\"free_bytes\":" << snapshot.freeBytes
++        << ",\"total_bytes\":" << snapshot.totalBytes
++        << ",\"errno\":" << snapshot.statvfsErrno << "}";
++    return out.str();
++}
++} // namespace
++
++// The media watcher. Two independent questions every cycle, as Cinemate asks
++// them: is the media root still a mount point (/proc/mounts), and does statvfs
++// on the mount root answer. A yanked drive stays in /proc/mounts until something
++// unmounts it, and statvfs then fails with EIO/ENODEV; the writer would find out
++// only on its next frame, and the UI never. 1 s idle, 250 ms while recording.
++// This thread holds no lock anyone else waits for while it probes, so a probe
++// that blocks on a hung device blocks only this thread.
++void ApertarCoreApp::runMediaWatcher()
++{
++    MediaSnapshot previous;
++    bool havePrevious = false;
++    while (mediaWatcherRunning_.load(std::memory_order_acquire)) {
++        const MediaSnapshot current = probeMediaRoot(options_.mediaRoot);
++        {
++            std::lock_guard<std::mutex> lock(mediaStateMutex_);
++            mediaSnapshot_ = current;
++            mediaSnapshotValid_ = true;
++        }
++        if (!havePrevious || !current.sameMedium(previous)) {
++            std::cerr << "ApertarCore media: state=" << current.stateName()
++                      << " device=" << current.device << " fstype=" << current.fstype
++                      << " free_mb=" << current.freeBytes / (1024 * 1024)
++                      << " errno=" << current.statvfsErrno << "\n";
++            publishEvent(mediaEventJson(current));
++            const bool lost = havePrevious && previous.mounted() &&
++                (current.state == MediaSnapshot::State::Removed || current.state == MediaSnapshot::State::None);
++            if (lost) {
++                if (!blockDeviceNodeExists(previous.device))
++                    clearEjectIntent(previous.device);   // a real removal, like udev "remove"
++                const std::string why = current.state == MediaSnapshot::State::Removed
++                    ? "Media removed during recording." : "Media was unmounted during recording.";
++                if (camera_.isRecording() && camera_.flagMediaFault(why, true)) {
++                    std::lock_guard<std::mutex> commandLock(commandMutex_);
++                    if (camera_.checkRecordingFailure())
++                        syncRecordingTracking(false);
++                }
++            }
++        }
++        previous = current;
++        havePrevious = true;
++        std::unique_lock<std::mutex> lock(mediaStateMutex_);
++        mediaWatcherCv_.wait_for(lock, std::chrono::milliseconds(camera_.isRecording() ? 250 : 1000),
++                                 [this] { return !mediaWatcherRunning_.load(std::memory_order_acquire); });
++    }
++}
++
++void ApertarCoreApp::stopMediaWatcher()
++{
++    mediaWatcherRunning_.store(false, std::memory_order_release);
++    {
++        std::lock_guard<std::mutex> lock(mediaStateMutex_);
++    }
++    mediaWatcherCv_.notify_all();
++    if (mediaWatcherThread_.joinable())
++        mediaWatcherThread_.join();
++}
++
++MediaSnapshot ApertarCoreApp::mediaSnapshot() const
++{
++    {
++        std::lock_guard<std::mutex> lock(mediaStateMutex_);
++        if (mediaSnapshotValid_)
++            return mediaSnapshot_;
++    }
++    // Before the watcher's first cycle answer from a direct probe.
++    return probeMediaRoot(options_.mediaRoot);
++}
++
++// The record gate: mounted, alive and not full. One gate in handleCommand covers
++// the socket, the WebUI and the hardware buttons. APERTAR_MEDIA_REQUIRE_MOUNT=0
++// disables it for a development machine whose media root is a plain directory.
++std::string ApertarCoreApp::mediaGateError() const
++{
++    if (options_.simulateCamera)
++        return {};
++    if (const char *env = std::getenv("APERTAR_MEDIA_REQUIRE_MOUNT"); env && env[0] == '0')
++        return {};
++    const MediaSnapshot snapshot = mediaSnapshot();
++    switch (snapshot.state) {
++    case MediaSnapshot::State::Mounted:
++        break;
++    case MediaSnapshot::State::Removed:
++        return "Media was removed. Insert or mount media before recording.";
++    case MediaSnapshot::State::Error:
++        return "Media is not answering (errno " + std::to_string(snapshot.statvfsErrno) + "). Check the drive.";
++    case MediaSnapshot::State::None:
++        return "No media mounted at " + options_.mediaRoot + ".";
++    }
++    uint64_t minFreeMiB = 256;
++    if (const char *env = std::getenv("APERTAR_MEDIA_MIN_FREE_MB"); env && *env)
++        minFreeMiB = static_cast<uint64_t>(std::max(0L, std::strtol(env, nullptr, 10)));
++    if (snapshot.totalBytes > 0 && snapshot.freeBytes < minFreeMiB * 1024 * 1024)
++        return "Media is full (" + std::to_string(snapshot.freeBytes / (1024 * 1024)) + " MB free).";
++    return {};
++}
++
+ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+ {
+     std::lock_guard<std::mutex> commandLock(commandMutex_);
+@@ -9113,6 +9244,11 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+     if ((command.name == "capture_photo" || command.name == "record_start" ||
+          (command.name == "timelapse_start" && !camera_.timelapseActive())) && camera_.mediaWritesPending())
+         return errorReply(command.id, "Wait for the current capture to finish writing to media.");
++    if (command.name == "capture_photo" || command.name == "record_start" ||
++        (command.name == "timelapse_start" && !camera_.timelapseActive())) {
++        if (const std::string gate = mediaGateError(); !gate.empty())
++            return errorReply(command.id, gate);
++    }
+     const bool mediaAction = command.name == "format_media" || command.name == "eject_media" ||
+         command.name == "mount_media" || command.name == "run_media_speed_test";
+     bool speedTestActive;
+@@ -9261,6 +9397,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+              << ",\"standby\":" << (camera_.state() == CameraState::Standby ? "true" : "false")
+              << ",\"recording\":" << (recording ? "true" : "false")
+              << ",\"recording_error\":\"" << escapeJson(camera_.recordingError()) << "\""
++             << ",\"recording_fault\":\"" << escapeJson(camera_.recordingFaultName()) << "\""
++             << ",\"media_state\":\"" << mediaSnapshot().stateName() << "\""
+              << ",\"recording_has_dropped_frames\":" << (camera_.recordingHasDroppedFrames() ? "true" : "false")
+              << ",\"sound_recording\":" << (soundRecording ? "true" : "false")
+              << ",\"timelapse_active\":" << (camera_.timelapseActive() ? "true" : "false")
+@@ -10906,6 +11044,7 @@ void ApertarCoreApp::publishEvent(const std::string &eventJson)
+     // the command's requester. These events cannot be collected into its reply.
+     if (eventJson.find("\"event\":\"settings\"") != std::string::npos ||
+         eventJson.find("\"event\":\"recording_health\"") != std::string::npos ||
++        eventJson.find("\"event\":\"media\"") != std::string::npos ||
+         eventJson.find("\"event\":\"standby\"") != std::string::npos ||
+         eventJson.find("\"event\":\"still_exposure\"") != std::string::npos ||
+         eventJson.find("\"event\":\"media_write_state\"") != std::string::npos ||
+diff --git a/src/ApertarCoreApp.hpp b/src/ApertarCoreApp.hpp
+index e91e010..ef25bb2 100644
+--- a/src/ApertarCoreApp.hpp
++++ b/src/ApertarCoreApp.hpp
+@@ -13,6 +13,7 @@
+ #include "ipc/ControlProtocol.hpp"
+ #include "ipc/ControlServer.hpp"
+ #include "web/WebServer.hpp"
++#include "util/MediaProbe.hpp"
+ 
+ #include <atomic>
+ #include <chrono>
+@@ -98,6 +99,10 @@ private:
+     bool startMediaSpeedTest(std::string *errorMessage);
+     void runMediaSpeedTest(uint64_t testMiB, std::string mountPath);
+     void joinMediaSpeedTest();
++    void runMediaWatcher();
++    void stopMediaWatcher();
++    MediaSnapshot mediaSnapshot() const;
++    std::string mediaGateError() const;
+     void handleHardwareInputAction(const std::string &action, bool buttonPress = true);
+     bool handlePowerButtonPress(bool doublePress);
+     void handleSingleHardwareInputAction(const std::string &action);
+@@ -174,6 +179,15 @@ private:
+     double mediaSpeedLastWriteSpeedMBps_ = 0.0;
+     std::string mediaSpeedError_;
+     std::thread mediaSpeedThread_;
++
++    // Media watcher: probes the mount root on its own thread (statvfs can block
++    // on a hung device) and publishes the result; see runMediaWatcher().
++    std::thread mediaWatcherThread_;
++    std::atomic<bool> mediaWatcherRunning_{false};
++    mutable std::mutex mediaStateMutex_;
++    std::condition_variable mediaWatcherCv_;
++    MediaSnapshot mediaSnapshot_;
++    bool mediaSnapshotValid_ = false;
+ };
+ 
+ } // namespace apertar
+diff --git a/src/audio/AudioRecordingSession.cpp b/src/audio/AudioRecordingSession.cpp
+index 2ca7b7f..fda5034 100644
+--- a/src/audio/AudioRecordingSession.cpp
++++ b/src/audio/AudioRecordingSession.cpp
+@@ -355,7 +355,7 @@ void AudioRecordingSession::observeVideoFrame(uint64_t sensorBootUs, int64_t fra
+     videoEndBootUs_ = std::max(videoEndBootUs_, frameEndUs);
+ }
+ 
+-void AudioRecordingSession::stop()
++void AudioRecordingSession::stop(bool finalize)
+ {
+     stopRequested_.store(true, std::memory_order_relaxed);
+     if (readerThread_.joinable())
+@@ -365,12 +365,16 @@ void AudioRecordingSession::stop()
+     if (rawStream_.is_open())
+         rawStream_.close();
+ 
+-    if (capturedBytes_ > 0)
++    if (!finalize) {
++        if (!clipFolder_.empty())
++            std::cerr << "ApertarCore audio: medium gone, WAV not finalised; raw PCM left at " << rawPath_ << "\n";
++    } else if (capturedBytes_ > 0) {
+         finalizeWav();
+-    else if (!clipFolder_.empty())
++    } else if (!clipFolder_.empty()) {
+         std::cerr << "ApertarCore audio capture produced no samples.\n";
++    }
+ 
+-    if (!rawPath_.empty()) {
++    if (finalize && !rawPath_.empty()) {
+         std::error_code ec;
+         std::filesystem::remove(rawPath_, ec);
+     }
+diff --git a/src/audio/AudioRecordingSession.hpp b/src/audio/AudioRecordingSession.hpp
+index d81a4cc..6b8483c 100644
+--- a/src/audio/AudioRecordingSession.hpp
++++ b/src/audio/AudioRecordingSession.hpp
+@@ -30,7 +30,9 @@ public:
+                std::string *error,
+                const RecordingClock *clock = nullptr);
+     void observeVideoFrame(uint64_t sensorBootUs, int64_t frameDurationUs);
+-    void stop();
++    // finalize=false: the medium is gone; the WAV is not written and the raw PCM
++    // capture file is left where it is.
++    void stop(bool finalize = true);
+ 
+     bool active() const;
+     std::string error() const { return failure_.message(); }
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 1937b35..2a64fbb 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -24,6 +24,7 @@
+ #include "video/LibavH264EncoderClient.hpp"
+ #include "video/H264Hardware.hpp"
+ #include "util/RecordingFailure.hpp"
++#include "util/MediaFault.hpp"
+ #include "prores/ProresRecorder.hpp"
+ 
+ #include <algorithm>
+@@ -3405,6 +3406,8 @@ public:
+         uint64_t droppedQueueFull = 0;
+         uint64_t discardedOnStop = 0;
+         uint64_t writeFailures = 0;
++        uint64_t discardedOnFailure = 0;   // queued frames thrown away when the first write failed
++        uint64_t skippedAfterFailure = 0;  // frames the camera offered after the failure latched
+         uint64_t currentQueueDepth = 0;
+         uint64_t peakQueueDepth = 0;
+         uint64_t maxQueueDepth = 0;
+@@ -3439,6 +3442,12 @@ public:
+         writtenFrames_ = 0;
+         writeFailures_ = 0;
+         failure_.reset();
++        failed_.store(false, std::memory_order_relaxed);
++        fault_.store(MediaFault::None, std::memory_order_relaxed);
++        mediumGone_.store(false, std::memory_order_relaxed);
++        discardedOnFailureFrames_ = 0;
++        skippedAfterFailure_.store(0, std::memory_order_relaxed);
++        lossyFailuresSeen_.store(LossyDngEncoder::diskWriteFailures(), std::memory_order_relaxed);
+         losslessTimedJobs_ = 0;
+         losslessWorkerWallUs_ = 0;
+         losslessWorkerCpuUs_ = 0;
+@@ -3546,13 +3555,17 @@ public:
+         return allocateClipFolder(mediaRoot, settings);
+     }
+ 
+-    void stop()
++    // mediumDead: the medium is gone (yank, unmount under us). Nothing that would
++    // reopen, rename or fsync a file on it runs; the workers just drain and exit.
++    void stop(bool mediumDead = false)
+     {
+         {
+             std::lock_guard<std::mutex> lock(mutex_);
+             if (!active_.load(std::memory_order_acquire) && workers_.empty() && !stopping_)
+                 return;
+         }
++        if (mediumDead)
++            mediumGone_.store(true, std::memory_order_release);
+         const auto stopStarted = std::chrono::steady_clock::now();
+         active_.store(false, std::memory_order_release);
+         stopCopyWorkers();
+@@ -3569,18 +3582,26 @@ public:
+         workers_.clear();
+         if (const uint64_t dropped = droppedNoRequestSlot_.load(std::memory_order_relaxed); dropped > 0)
+             std::cerr << "ApertarCore recording stats: dropped_copy_slot=" << dropped << "\n";
+-        if (recordingFormat_ == RecordingFormat::LossyDng)
+-            LossyDngEncoder::drainWrites();
++        if (recordingFormat_ == RecordingFormat::LossyDng) {
++            if (mediumGone_.load(std::memory_order_acquire))
++                LossyDngEncoder::abandonWrites();
++            else
++                LossyDngEncoder::drainWrites();
++        }
+ 
+         const Stats summary = stats();
+         if (summary.enqueued > 0 || summary.written > 0 || summary.droppedQueueFull > 0 ||
+-            summary.discardedOnStop > 0 || summary.writeFailures > 0) {
++            summary.discardedOnStop > 0 || summary.writeFailures > 0 ||
++            summary.discardedOnFailure > 0 || summary.skippedAfterFailure > 0) {
+             std::cerr << "ApertarCore recording stats: "
+                       << "enqueued=" << summary.enqueued
+                       << " written=" << summary.written
+                       << " dropped_queue_full=" << summary.droppedQueueFull
+                       << " discarded_on_stop=" << summary.discardedOnStop
+                       << " write_failures=" << summary.writeFailures
++                      << " discarded_on_failure=" << summary.discardedOnFailure
++                      << " skipped_after_failure=" << summary.skippedAfterFailure
++                      << " fault=" << mediaFaultName(fault_.load(std::memory_order_acquire))
+                       << " peak_queue=" << summary.peakQueueDepth << "/" << summary.maxQueueDepth
+                       << "\n";
+         }
+@@ -3663,11 +3684,13 @@ public:
+         out.enqueued = enqueuedFrames_.load(std::memory_order_relaxed);
+         out.written = writtenFrames_.load(std::memory_order_relaxed);
+         out.writeFailures = writeFailures_.load(std::memory_order_relaxed);
++        out.skippedAfterFailure = skippedAfterFailure_.load(std::memory_order_relaxed);
+         out.maxQueueDepth = maxQueuedFrames_;
+         {
+             std::lock_guard<std::mutex> lock(mutex_);
+             out.droppedQueueFull = droppedFrames_;
+             out.discardedOnStop = discardedOnStopFrames_;
++            out.discardedOnFailure = discardedOnFailureFrames_;
+             out.currentQueueDepth = queue_.size();
+             out.peakQueueDepth = maxObservedQueueDepth_;
+         }
+@@ -3675,6 +3698,7 @@ public:
+     }
+ 
+     std::string error() const { return failure_.message(); }
++    MediaFault fault() const { return fault_.load(std::memory_order_acquire); }
+ 
+     uint64_t nextFrameIndex(int64_t timestampUs)
+     {
+@@ -3689,8 +3713,13 @@ public:
+     bool hasCapacityForFrame(uint64_t frameIndex)
+     {
+         std::lock_guard<std::mutex> lock(mutex_);
+-        if (stopping_ || !active() || workers_.empty())
++        if (stopping_ || !active() || workers_.empty()) {
++            // After a latched failure the completion thread keeps offering frames;
++            // count them so the stop line says how much of the take never reached disk.
++            if (failed_.load(std::memory_order_acquire))
++                skippedAfterFailure_.fetch_add(1, std::memory_order_relaxed);
+             return false;
++        }
+         if (queue_.size() < maxQueuedFrames_)
+             return true;
+ 
+@@ -3899,17 +3928,28 @@ private:
+             const uint64_t cpuStartedUs = timeLossless ? currentThreadCpuTimeUs() : 0;
+             bool completed = false;
+             try {
+-                if (lossyEncoder)
++                if (lossyEncoder) {
+                     lossyEncoder->writeDngFile(job.path, job.frame, job.metadata);
+-                else
++                    // The lossy writer stores asynchronously and only logged its
++                    // failures; surface them here (one frame late) so a dead medium
++                    // ends a lossy take like any other.
++                    const uint64_t lossyFailures = LossyDngEncoder::diskWriteFailures();
++                    if (lossyFailures != lossyFailuresSeen_.exchange(lossyFailures, std::memory_order_acq_rel)) {
++                        const int err = LossyDngEncoder::lastDiskWriteErrno();
++                        throw std::system_error(err ? err : EIO, std::generic_category(),
++                                                "LossyDng background write failed");
++                    }
++                } else {
+                     encoder.writeDngFile(job.path, job.frame, job.metadata);
++                }
+                 completed = true;
+                 ++writtenFrames_;
+             } catch (const std::exception &e) {
+                 ++writeFailures_;
+-                failRecording(e.what());
+-                std::cerr << "ApertarCore DNG write failed for "
+-                          << job.path << ": " << e.what() << "\n";
++                const MediaFault fault = classifyMediaException(e);
++                failRecording(mediaFaultMessage(fault, e.what()), fault);
++                std::cerr << "ApertarCore DNG write failed for " << job.path << ": " << e.what()
++                          << " fault=" << mediaFaultName(fault) << " errno=" << errnoFromException(e) << "\n";
+             }
+             if (timeLossless) {
+                 if (completed)
+@@ -3976,8 +4016,14 @@ private:
+                 });
+ 
+                 if (queue_.empty()) {
+-                    if (stopping_)
++                    if (stopping_) {
++                        // On a dead medium the destructor's header patch (seek +
++                        // write) must not run; abandon() closes the fd and keeps
++                        // the frame count the header had at open.
++                        if (mediumGone_.load(std::memory_order_acquire))
++                            encoder.abandon();
+                         return;
++                    }
+                     continue;
+                 }
+ 
+@@ -3990,30 +4036,49 @@ private:
+                 std::string mlvError;
+                 if (!encoder.isOpen() &&
+                     !encoder.open(job.path, settings_, job.frame, job.metadata, &mlvError)) {
++                    if (encoder.lastErrno() != 0)
++                        throw std::system_error(encoder.lastErrno(), std::generic_category(),
++                                                mlvError.empty() ? "failed to open MLV file" : mlvError);
+                     throw std::runtime_error(mlvError.empty() ? "failed to open MLV file" : mlvError);
+                 }
+ 
+-                if (!encoder.writeFrame(job.frame, job.metadata, &mlvError))
++                if (!encoder.writeFrame(job.frame, job.metadata, &mlvError)) {
++                    // writeFrame reports text; the errno it saw decides the class.
++                    if (encoder.lastErrno() != 0)
++                        throw std::system_error(encoder.lastErrno(), std::generic_category(),
++                                                mlvError.empty() ? "failed to write MLV frame" : mlvError);
+                     throw std::runtime_error(mlvError.empty() ? "failed to write MLV frame" : mlvError);
++                }
+                 ++writtenFrames_;
+             } catch (const std::exception &e) {
+                 ++writeFailures_;
+-                failRecording(e.what());
+-                std::cerr << "ApertarCore MLV write failed for "
+-                          << job.path << ": " << e.what() << "\n";
++                const MediaFault fault = classifyMediaException(e);
++                failRecording(mediaFaultMessage(fault, e.what()), fault);
++                std::cerr << "ApertarCore MLV write failed for " << job.path << ": " << e.what()
++                          << " fault=" << mediaFaultName(fault) << " errno=" << errnoFromException(e) << "\n";
+             }
+ 
+             recycleRawBuffer(std::move(job.rawBytes));
+         }
+     }
+ 
+-    void failRecording(const std::string &error)
++    // First failure wins (message and class), like RecordingFailure itself. The
++    // queued frames are lost with the take: count them, they are neither written
++    // nor write failures. A removal also marks the medium gone so stop() and the
++    // MLV worker skip everything that would touch it.
++    void failRecording(const std::string &error, MediaFault fault = MediaFault::Other)
+     {
+         failure_.set(error);
++        MediaFault expected = MediaFault::None;
++        fault_.compare_exchange_strong(expected, fault, std::memory_order_acq_rel);
++        if (mediaFaultMeansGone(fault))
++            mediumGone_.store(true, std::memory_order_release);
++        failed_.store(true, std::memory_order_release);
+         active_.store(false, std::memory_order_release);
+         {
+             std::lock_guard lock(mutex_);
+             stopping_ = true;
++            discardedOnFailureFrames_ += queue_.size();
+             queue_.clear();
+         }
+         cv_.notify_all();
+@@ -4195,6 +4260,12 @@ private:
+     std::atomic<uint64_t> writtenFrames_{0};
+     RecordingFailure failure_;
+     std::atomic<uint64_t> writeFailures_{0};
++    std::atomic<bool> failed_{false};
++    std::atomic<MediaFault> fault_{MediaFault::None};
++    std::atomic<bool> mediumGone_{false};
++    uint64_t discardedOnFailureFrames_ = 0;
++    std::atomic<uint64_t> skippedAfterFailure_{0};
++    std::atomic<uint64_t> lossyFailuresSeen_{0};
+     // Copy workers (completion-thread hand-off).
+     std::mutex copyMutex_;
+     std::condition_variable copyCv_;
+@@ -4533,6 +4604,9 @@ public:
+ 
+     std::string error() const { return failure_.message(); }
+     bool finalizing() const { return finalizing_.load(std::memory_order_acquire); }
++    // Set before stop() when the medium is gone: finalizeStop() then leaves the
++    // .mp4.writing file where it is instead of renaming or copying on a dead mount.
++    void setMediumDead(bool dead) { mediumDead_.store(dead, std::memory_order_release); }
+ 
+     bool active() const
+     {
+@@ -5056,7 +5130,9 @@ private:
+         }
+ 
+         std::error_code ec;
+-        if (!tempPath_.empty() && std::filesystem::exists(tempPath_, ec)) {
++        if (mediumDead_.load(std::memory_order_acquire)) {
++            std::cerr << "ApertarCore H.264: medium gone, leaving " << tempPath_ << " unfinalised\n";
++        } else if (!tempPath_.empty() && std::filesystem::exists(tempPath_, ec)) {
+             ec.clear();
+             if (std::filesystem::file_size(tempPath_, ec) > 0) {
+                 ec.clear();
+@@ -5301,6 +5377,7 @@ private:
+     std::vector<std::thread> copyWorkers_;
+     std::thread worker_;
+     std::thread finalizer_;
++    std::atomic<bool> mediumDead_{false};
+     std::filesystem::path folderPath_;
+     std::filesystem::path finalPath_;
+     std::filesystem::path tempPath_;
+@@ -6190,7 +6267,10 @@ public:
+ #endif
+     }
+ 
+-    void stopRecording()
++    // mediumGone: the recording medium is no longer there. Every recorder then
++    // skips the finalisation that would reopen it (MLV header patch, H.264
++    // rename, lossy drain, WAV finalise) so the stop cannot hang on a dead mount.
++    void stopRecording(bool mediumGone = false)
+     {
+ #if APERTARCORE_HAS_LIBCAMERA
+         recordingStopInProgress_.store(true, std::memory_order_release);
+@@ -6211,11 +6291,15 @@ public:
+                           << " duration_pushes=" << phaseLock_.pushes << "\n";
+             phaseLock_.resetTelemetry();
+         }
++        if (mediumGone)
++            std::cerr << "ApertarCore recording stop: medium gone, finalisation that would reopen it is skipped\n";
+         gyroRecorder_.stop();
++        h264Recorder_.setMediumDead(mediumGone);
+         h264Recorder_.stop();
+-        recorder_.stop();
++        h264Recorder_.setMediumDead(false);
++        recorder_.stop(mediumGone);
+         proresRecorder_.stop();
+-        audioRecorder_.stop();
++        audioRecorder_.stop(/*finalize=*/!mediumGone);
+         haveLastRecordingSensorTimestamp_ = false;
+         lastRecordingSensorTimestampUs_ = 0;
+         h264FrameCounter_.store(0, std::memory_order_relaxed);
+@@ -6442,6 +6526,18 @@ public:
+ #endif
+     }
+ 
++    // The class of the latched recorder failure (none while everything is fine).
++    MediaFault recordingFault() const
++    {
++#if APERTARCORE_HAS_LIBCAMERA
++        if (lastRecordingFormat_ == RecordingFormat::H264 || lastRecordingFormat_ == RecordingFormat::Prores)
++            return MediaFault::None;
++        return recorder_.fault();
++#else
++        return MediaFault::None;
++#endif
++    }
++
+     WhiteBalanceMeasurement measuredWhiteBalance() const
+     {
+ #if APERTARCORE_HAS_LIBCAMERA
+@@ -9008,6 +9104,9 @@ bool CameraController::startRecording(const AudioRecordingOptions &audioOptions,
+     recording_ = true;
+     recordingFailureReported_ = false;
+     recordingFailureMessage_.clear();
++    externalFailureMessage_.clear();
++    externalMediumGone_ = false;
++    recordingFaultName_.clear();
+     state_ = CameraState::Recording;
+     lastError_.clear();
+     emitRecordingEventLocked();
+@@ -9261,6 +9360,7 @@ bool CameraController::stopRecording()
+     if (!simulateCamera_ && session_)
+         session_->stopRecording();
+     lastError_ = !simulateCamera_ && session_ ? session_->recordingError() : std::string();
++    recordingFaultName_ = !simulateCamera_ && session_ ? mediaFaultName(session_->recordingFault()) : "";
+     recordingFailureReported_ = !lastError_.empty();
+     recordingFailureMessage_ = lastError_;
+     emitRecordingEventLocked();
+@@ -9272,10 +9372,15 @@ bool CameraController::checkRecordingFailure()
+     std::lock_guard lock(mutex_);
+     if (simulateCamera_ || !session_ || recordingFailureReported_ ||
+         (state_ != CameraState::Ready && state_ != CameraState::Recording)) return false;
+-    const auto error = session_->recordingError();
++    const MediaFault sessionFault = session_->recordingFault();
++    const std::string error = externalFailureMessage_.empty() ? session_->recordingError() : externalFailureMessage_;
+     if (error.empty()) return false;
++    const bool mediumGone = externalMediumGone_ || mediaFaultMeansGone(sessionFault);
+     recordingFailureReported_ = true;
+-    session_->stopRecording();
++    recordingFaultName_ = mediumGone ? mediaFaultName(MediaFault::Removed) : mediaFaultName(sessionFault);
++    std::cerr << "ApertarCore recording failure: fault=" << (recordingFaultName_.empty() ? "write_error" : recordingFaultName_)
++              << " medium_gone=" << (mediumGone ? 1 : 0) << " message=" << error << "\n";
++    session_->stopRecording(mediumGone);
+     recording_ = false;
+     state_ = CameraState::Ready;
+     lastError_ = error;
+@@ -9284,6 +9389,25 @@ bool CameraController::checkRecordingFailure()
+     return true;
+ }
+ 
++// Called by the media watcher when the mount root stops answering while a take
++// runs. The supervisor (checkRecordingFailure) then ends the take through the
++// same path a failed write takes, with the medium marked gone.
++bool CameraController::flagMediaFault(const std::string &message, bool mediumGone)
++{
++    std::lock_guard lock(mutex_);
++    if (!recording_ || recordingFailureReported_ || !externalFailureMessage_.empty())
++        return false;
++    externalFailureMessage_ = message.empty() ? std::string("Media removed during recording.") : message;
++    externalMediumGone_ = mediumGone;
++    return true;
++}
++
++std::string CameraController::recordingFaultName() const
++{
++    std::lock_guard lock(mutex_);
++    return recordingFaultName_;
++}
++
+ bool CameraController::mediaWritesPending() const
+ {
+     std::lock_guard lock(mutex_);
+@@ -9550,7 +9674,8 @@ void CameraController::emitRecordingEventLocked()
+     std::ostringstream out;
+     out << "{\"event\":\"recording\",\"active\":" << (recording_ ? "true" : "false")
+         << ",\"recording_has_dropped_frames\":" << (recordingDropWarning_.dropped() ? "true" : "false")
+-        << ",\"error\":\"" << apertar::escapeJson(lastError_) << "\"}";
++        << ",\"error\":\"" << apertar::escapeJson(lastError_) << "\""
++        << ",\"fault\":\"" << recordingFaultName_ << "\"}";
+     eventCallback_(out.str());
+ }
+ 
+diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
+index 72f3936..321d25e 100644
+--- a/src/camera/CameraController.hpp
++++ b/src/camera/CameraController.hpp
+@@ -79,6 +79,8 @@ public:
+     bool setAutofocusWindow(double x, double y, double width, double height);
+     bool applyCapturePreset(const CaptureSettings &settings, const std::function<bool()> &commitUi = {});
+     bool checkRecordingFailure();
++    bool flagMediaFault(const std::string &message, bool mediumGone);
++    std::string recordingFaultName() const;
+     bool mediaWritesPending() const;
+     MediaWriteStatus mediaWriteStatus() const;
+     StillExposureStatus stillExposureStatus() const;
+@@ -139,6 +141,9 @@ private:
+     bool recording_ = false;
+     bool recordingFailureReported_ = false;
+     std::string recordingFailureMessage_;
++    std::string externalFailureMessage_;
++    bool externalMediumGone_ = false;
++    std::string recordingFaultName_;
+     bool timelapseStopRequested_ = false;
+     bool timelapseActive_ = false;
+     double timelapseIntervalSeconds_ = 0;
+diff --git a/src/lossydng/LossyDngEncoder.cpp b/src/lossydng/LossyDngEncoder.cpp
+index 8c69816..b31974d 100644
+--- a/src/lossydng/LossyDngEncoder.cpp
++++ b/src/lossydng/LossyDngEncoder.cpp
+@@ -2,6 +2,7 @@
+ #include "lossydng/LossyDngEncoder.hpp"
+ 
+ #include <array>
++#include <atomic>
+ #include <cerrno>
+ #include <cmath>
+ #include <condition_variable>
+@@ -181,6 +182,24 @@ public:
+         });
+     }
+ 
++    // Drop every queued item and give its buffer back; the write in progress (if
++    // any) finishes or fails on its own. For a medium that is gone.
++    void abandon()
++    {
++        std::deque<Item> dropped;
++        {
++            std::lock_guard<std::mutex> lock(mutex_);
++            dropped.swap(queue_);
++            queuedBytes_ = 0;
++        }
++        for (Item &item : dropped)
++            give(item.data, item.capacity);
++        drainCv_.notify_all();
++    }
++
++    uint64_t failures() const { return failures_.load(std::memory_order_acquire); }
++    int lastErrno() const { return lastErrno_.load(std::memory_order_acquire); }
++
+ private:
+     struct Item {
+         std::string path;
+@@ -228,8 +247,11 @@ private:
+             }
+ 
+             if (!writeFile(item.path, item.data, item.size)) {
++                const int err = errno ? errno : EIO;
++                lastErrno_.store(err, std::memory_order_relaxed);
++                failures_.fetch_add(1, std::memory_order_release);
+                 std::cerr << "ApertarCore LossyDng write failed for "
+-                          << item.path << ": " << std::strerror(errno) << "\n";
++                          << item.path << ": " << std::strerror(err) << " errno=" << err << "\n";
+             }
+             give(item.data, item.capacity);
+ 
+@@ -248,6 +270,8 @@ private:
+     std::deque<Item> queue_;
+     size_t queuedBytes_ = 0;
+     bool writing_ = false;
++    std::atomic<uint64_t> failures_{0};
++    std::atomic<int> lastErrno_{0};
+     bool stopping_ = false;
+     std::thread thread_;
+ 
+@@ -371,6 +395,21 @@ void LossyDngEncoder::drainWrites()
+     LossyDngDiskWriter::instance().drain();
+ }
+ 
++uint64_t LossyDngEncoder::diskWriteFailures()
++{
++    return LossyDngDiskWriter::instance().failures();
++}
++
++int LossyDngEncoder::lastDiskWriteErrno()
++{
++    return LossyDngDiskWriter::instance().lastErrno();
++}
++
++void LossyDngEncoder::abandonWrites()
++{
++    LossyDngDiskWriter::instance().abandon();
++}
++
+ void LossyDngEncoder::writeDngFile(const std::string &path, const RawFrameView &frame,
+                                    const CdngEncoder::Metadata &metadata)
+ {
+diff --git a/src/lossydng/LossyDngEncoder.hpp b/src/lossydng/LossyDngEncoder.hpp
+index 97bfb07..f924624 100644
+--- a/src/lossydng/LossyDngEncoder.hpp
++++ b/src/lossydng/LossyDngEncoder.hpp
+@@ -23,6 +23,11 @@ public:
+     void writeDngFile(const std::string &path, const RawFrameView &frame,
+                       const CdngEncoder::Metadata &metadata);
+     static void drainWrites();
++    // Background writer telemetry: failures since process start and the errno of
++    // the last one; abandonWrites() drops the queue without waiting (dead medium).
++    static uint64_t diskWriteFailures();
++    static int lastDiskWriteErrno();
++    static void abandonWrites();
+ 
+ private:
+     void ensureBuf(size_t need, size_t used);
+diff --git a/src/mlv/MlvEncoder.cpp b/src/mlv/MlvEncoder.cpp
+index 27fa3aa..ca0ded4 100644
+--- a/src/mlv/MlvEncoder.cpp
++++ b/src/mlv/MlvEncoder.cpp
+@@ -1,3 +1,4 @@
++#include "util/MediaFault.hpp"
+ #include "mlv/MlvEncoder.hpp"
+ #include "audio/RecordingClock.hpp"
+ #include "cdng/CdngEncoder.hpp"
+@@ -989,6 +990,7 @@ bool MlvEncoder::open(const std::string &path,
+         writeWhiteBalanceBlock(metadata);
+         return true;
+     } catch (const std::exception &e) {
++        lastErrno_ = errnoFromException(e);
+         if (error)
+             *error = e.what();
+         close();
+@@ -1038,12 +1040,23 @@ bool MlvEncoder::writeFrame(const RawFrameView &frame,
+         ++frameCount_;
+         return true;
+     } catch (const std::exception &e) {
++        lastErrno_ = errnoFromException(e);
+         if (error)
+             *error = e.what();
+         return false;
+     }
+ }
+ 
++void MlvEncoder::abandon()
++{
++    if (fd_ < 0)
++        return;
++    std::cerr << "ApertarCore MLV: medium gone, leaving " << path_ << " with its header frame count\n";
++    ::close(fd_);
++    fd_ = -1;
++    path_.clear();
++}
++
+ void MlvEncoder::close()
+ {
+     if (fd_ < 0)
+diff --git a/src/mlv/MlvEncoder.hpp b/src/mlv/MlvEncoder.hpp
+index 8ece6c1..34bef5d 100644
+--- a/src/mlv/MlvEncoder.hpp
++++ b/src/mlv/MlvEncoder.hpp
+@@ -24,6 +24,10 @@ public:
+                     const CdngEncoder::Metadata &metadata,
+                     std::string *error);
+     void close();
++    // Close without patching the header: for a medium that is gone.
++    void abandon();
++    // errno behind the last open()/writeFrame() failure, 0 when it carried none.
++    int lastErrno() const { return lastErrno_; }
+ 
+     bool isOpen() const { return fd_ >= 0; }
+     uint32_t frameCount() const { return frameCount_; }
+@@ -60,6 +64,7 @@ private:
+     std::vector<uint8_t> payloadScratch_;
+     std::vector<uint16_t> rowScratch_;
+     int fd_ = -1;
++    int lastErrno_ = 0;
+     uint64_t fileGuid_ = 0;
+     int64_t firstTimestampUs_ = 0;
+     uint32_t frameCount_ = 0;
+diff --git a/src/util/MediaFault.hpp b/src/util/MediaFault.hpp
+new file mode 100644
+index 0000000..0507bdc
+--- /dev/null
++++ b/src/util/MediaFault.hpp
+@@ -0,0 +1,108 @@
++#pragma once
++
++#include <cerrno>
++#include <exception>
++#include <string>
++#include <system_error>
++
++namespace apertar {
++
++// What a failed write to the recording medium means. The errno decides; the
++// classes are the ones a recorder has to treat differently: a medium that is
++// gone must not be touched again, a full medium is an orderly stop, a permission
++// problem is a configuration error. Logic follows Cinemate's yank errno set
++// {EIO, ENOENT, ENODEV, ENOTCONN, ESTALE} plus ENXIO and ENOMEDIUM.
++enum class MediaFault {
++    None,
++    Removed,     // device or mount gone: do not reopen, rename or fsync anything on it
++    Full,        // ENOSPC/EDQUOT: keep what was written, stop cleanly
++    ReadOnly,    // EROFS: the kernel remounted read-only after an error, or a ro mount
++    Permission,  // EACCES/EPERM
++    Other
++};
++
++inline MediaFault classifyMediaErrno(int err)
++{
++    switch (err) {
++    case 0:
++        return MediaFault::None;
++    case EIO:
++    case ENODEV:
++    case ENXIO:
++    case ENOTCONN:
++    case ESTALE:
++    case ENOENT:
++#ifdef ENOMEDIUM
++    case ENOMEDIUM:
++#endif
++        return MediaFault::Removed;
++    case ENOSPC:
++    case EDQUOT:
++        return MediaFault::Full;
++    case EROFS:
++        return MediaFault::ReadOnly;
++    case EACCES:
++    case EPERM:
++        return MediaFault::Permission;
++    default:
++        return MediaFault::Other;
++    }
++}
++
++// The errno behind an exception, when there is one. std::system_error from the
++// generic or system category carries it; anything else is unknown (0).
++inline int errnoFromException(const std::exception &e)
++{
++    if (const auto *se = dynamic_cast<const std::system_error *>(&e)) {
++        const auto &code = se->code();
++        if (code.category() == std::generic_category() || code.category() == std::system_category())
++            return code.value();
++    }
++    return 0;
++}
++
++inline MediaFault classifyMediaException(const std::exception &e)
++{
++    const int err = errnoFromException(e);
++    return err == 0 ? MediaFault::Other : classifyMediaErrno(err);
++}
++
++// Short machine-readable name for state fields and logs.
++inline const char *mediaFaultName(MediaFault fault)
++{
++    switch (fault) {
++    case MediaFault::None: return "";
++    case MediaFault::Removed: return "media_removed";
++    case MediaFault::Full: return "media_full";
++    case MediaFault::ReadOnly: return "media_read_only";
++    case MediaFault::Permission: return "media_permission";
++    case MediaFault::Other: return "write_error";
++    }
++    return "write_error";
++}
++
++// Operator-facing text. `detail` is the low-level message (path + strerror)
++// and is appended so the journal keeps the evidence.
++inline std::string mediaFaultMessage(MediaFault fault, const std::string &detail)
++{
++    std::string text;
++    switch (fault) {
++    case MediaFault::None: return detail;
++    case MediaFault::Removed: text = "Media removed during recording."; break;
++    case MediaFault::Full: text = "Media is full."; break;
++    case MediaFault::ReadOnly: text = "Media became read-only."; break;
++    case MediaFault::Permission: text = "No permission to write to the media."; break;
++    case MediaFault::Other: return detail.empty() ? std::string("Recording write failed.") : detail;
++    }
++    if (!detail.empty())
++        text += " (" + detail + ")";
++    return text;
++}
++
++// A medium in this state must not be reopened, renamed, fsynced or unlinked on.
++inline bool mediaFaultMeansGone(MediaFault fault)
++{
++    return fault == MediaFault::Removed;
++}
++
++} // namespace apertar
+diff --git a/src/util/MediaIntent.hpp b/src/util/MediaIntent.hpp
+new file mode 100644
+index 0000000..7ee7d97
+--- /dev/null
++++ b/src/util/MediaIntent.hpp
+@@ -0,0 +1,67 @@
++#pragma once
++
++#include <cstdlib>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <system_error>
++
++namespace apertar {
++
++// Eject intent: a flag file an automounter honours so a deliberate unmount is
++// not undone. `umount` makes udev emit a "change" event for the device, and an
++// automounter that treats "change" like "add" remounts the drive within a
++// second (Cinemate f01b6cd). Core touches
++//   $APERTAR_MEDIA_RUN_DIR/eject/<device basename>   (default /run/apertar-media)
++// before unmounting and removes it when it mounts the device again or when the
++// device node is gone. /run is a tmpfs, so no flag survives a reboot. The
++// directory is created by the automounter or by a tmpfiles.d rule, owned by the
++// user Core runs as; writing is best effort and failure only costs the
++// protection, never the eject.
++inline std::string mediaRunDirectory()
++{
++    if (const char *env = std::getenv("APERTAR_MEDIA_RUN_DIR"); env && *env)
++        return env;
++    return "/run/apertar-media";
++}
++
++inline std::filesystem::path ejectIntentPath(const std::string &devicePath)
++{
++    return std::filesystem::path(mediaRunDirectory()) / "eject" / std::filesystem::path(devicePath).filename();
++}
++
++inline bool writeEjectIntent(const std::string &devicePath, std::string *why)
++{
++    const std::filesystem::path flag = ejectIntentPath(devicePath);
++    if (flag.filename().empty()) {
++        if (why) *why = "no device name";
++        return false;
++    }
++    std::error_code ec;
++    if (!std::filesystem::is_directory(flag.parent_path(), ec)) {
++        if (why) *why = flag.parent_path().string() + " does not exist";
++        return false;
++    }
++    std::ofstream out(flag, std::ios::trunc);
++    if (!out) {
++        if (why) *why = "cannot write " + flag.string();
++        return false;
++    }
++    out << "ejected by apertar-core\n";
++    return static_cast<bool>(out);
++}
++
++inline void clearEjectIntent(const std::string &devicePath)
++{
++    std::error_code ec;
++    std::filesystem::remove(ejectIntentPath(devicePath), ec);
++}
++
++inline bool blockDeviceNodeExists(const std::string &devicePath)
++{
++    std::error_code ec;
++    return std::filesystem::exists(std::filesystem::path("/sys/class/block") /
++                                   std::filesystem::path(devicePath).filename(), ec);
++}
++
++} // namespace apertar
+diff --git a/src/util/MediaProbe.hpp b/src/util/MediaProbe.hpp
+new file mode 100644
+index 0000000..629d77d
+--- /dev/null
++++ b/src/util/MediaProbe.hpp
+@@ -0,0 +1,147 @@
++#pragma once
++
++#include "util/MediaFault.hpp"
++
++#include <cerrno>
++#include <cstdint>
++#include <fstream>
++#include <string>
++#include <sys/statvfs.h>
++
++namespace apertar {
++
++// Is the recording medium alive? Cinemate's two independent answers are "is the
++// path still a mount point" (/proc/mounts) and "does statvfs on the mount root
++// answer" (a yanked device stays in /proc/mounts until something unmounts it,
++// and statvfs then fails with EIO/ENODEV/...). Errors on paths *inside* the
++// volume are deliberately not consulted here: a corrupt clip directory is not a
++// yank (Cinemate 58fc7c2).
++//
++// The decision is a pure function (evaluateMediaProbe) so it can be tested on
++// the host; probeMediaRoot() is the thin syscall wrapper around it.
++struct MediaSnapshot {
++    enum class State { None, Mounted, Removed, Error };
++    State state = State::None;
++    std::string device;      // /dev/... column of /proc/mounts, empty when not mounted
++    std::string fstype;      // ext4, exfat, ntfs3, fuseblk, vfat, ...
++    std::string options;     // mount options as /proc/mounts shows them
++    uint64_t freeBytes = 0;
++    uint64_t totalBytes = 0;
++    int statvfsErrno = 0;    // the errno statvfs returned, 0 when it succeeded
++
++    bool mounted() const { return state == State::Mounted; }
++    const char *stateName() const
++    {
++        switch (state) {
++        case State::None: return "none";
++        case State::Mounted: return "mounted";
++        case State::Removed: return "removed";
++        case State::Error: return "error";
++        }
++        return "none";
++    }
++    bool sameMedium(const MediaSnapshot &other) const
++    {
++        return state == other.state && device == other.device && fstype == other.fstype;
++    }
++};
++
++struct MountTableEntry {
++    bool found = false;
++    std::string device;
++    std::string fstype;
++    std::string options;
++};
++
++// /proc/mounts escapes space, tab, newline and backslash as \040 \011 \012 \134.
++inline std::string decodeMountField(const std::string &field)
++{
++    std::string out;
++    out.reserve(field.size());
++    for (size_t i = 0; i < field.size(); ++i) {
++        if (field[i] == '\\' && i + 3 < field.size()) {
++            const char a = field[i + 1], b = field[i + 2], c = field[i + 3];
++            if (a >= '0' && a <= '7' && b >= '0' && b <= '7' && c >= '0' && c <= '7') {
++                out.push_back(static_cast<char>((a - '0') * 64 + (b - '0') * 8 + (c - '0')));
++                i += 3;
++                continue;
++            }
++        }
++        out.push_back(field[i]);
++    }
++    return out;
++}
++
++inline std::string normalizeMountPathForProbe(std::string path)
++{
++    while (path.size() > 1 && path.back() == '/')
++        path.pop_back();
++    return path;
++}
++
++// Exact match on the mount-point column; "/media/RAW1" never matches "/media/RAW"
++// (Cinemate's cinepi-raw used a substring test and a standby drive kept it true).
++inline MountTableEntry findMountEntry(std::istream &mounts, const std::string &mountPath)
++{
++    const std::string wanted = normalizeMountPathForProbe(mountPath);
++    MountTableEntry entry;
++    std::string device, mountedAt, type, options, rest;
++    while (mounts >> device >> mountedAt >> type >> options) {
++        std::getline(mounts, rest);
++        if (normalizeMountPathForProbe(decodeMountField(mountedAt)) != wanted)
++            continue;
++        // The last entry for a path is the one on top.
++        entry.found = true;
++        entry.device = decodeMountField(device);
++        entry.fstype = type;
++        entry.options = options;
++    }
++    return entry;
++}
++
++inline MountTableEntry findMountEntry(const std::string &mountPath)
++{
++    std::ifstream mounts("/proc/mounts");
++    return findMountEntry(mounts, mountPath);
++}
++
++// The decision: mounted + statvfs OK -> Mounted; mounted + yank errno -> Removed;
++// mounted + other errno -> Error (reported, not acted on); not mounted -> None.
++inline MediaSnapshot evaluateMediaProbe(const MountTableEntry &entry, int statvfsErrno,
++                                        uint64_t freeBytes, uint64_t totalBytes)
++{
++    MediaSnapshot snapshot;
++    if (!entry.found) {
++        snapshot.state = MediaSnapshot::State::None;
++        return snapshot;
++    }
++    snapshot.device = entry.device;
++    snapshot.fstype = entry.fstype;
++    snapshot.options = entry.options;
++    snapshot.statvfsErrno = statvfsErrno;
++    if (statvfsErrno == 0) {
++        snapshot.state = MediaSnapshot::State::Mounted;
++        snapshot.freeBytes = freeBytes;
++        snapshot.totalBytes = totalBytes;
++        return snapshot;
++    }
++    snapshot.state = classifyMediaErrno(statvfsErrno) == MediaFault::Removed
++        ? MediaSnapshot::State::Removed : MediaSnapshot::State::Error;
++    return snapshot;
++}
++
++// statvfs on the mount root. It can block for a long time on a hung device, so
++// call this from a thread that holds no lock anyone else waits for.
++inline MediaSnapshot probeMediaRoot(const std::string &mountPath)
++{
++    const MountTableEntry entry = findMountEntry(mountPath);
++    if (!entry.found)
++        return evaluateMediaProbe(entry, 0, 0, 0);
++    struct statvfs vfs {};
++    if (::statvfs(mountPath.c_str(), &vfs) != 0)
++        return evaluateMediaProbe(entry, errno ? errno : EIO, 0, 0);
++    const uint64_t frsize = vfs.f_frsize ? vfs.f_frsize : vfs.f_bsize;
++    return evaluateMediaProbe(entry, 0, uint64_t(vfs.f_bavail) * frsize, uint64_t(vfs.f_blocks) * frsize);
++}
++
++} // namespace apertar
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 6084823..2ff50b3 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -9520,7 +9520,7 @@ std::string_view webControlPageHtml()
+       setText("networkHost", snapshot.network_host || window.location.host || window.location.hostname);
+       setText("networkTransport", snapshot.network_transport || "Wi-Fi / Ethernet");
+       setText("webDateTimePill", formatWebDateTimePill(localDateTimeValue));
+-      setText("recordingStatus", !hasMedia ? "NO MEDIA" : (isTimelapse ? "TIMELAPSE" : (isSoundRecording ? "SOUND REC" : (isRecording ? "REC" : snapshot.media_writes_pending ? "WRITING" : "READY"))));
++      setText("recordingStatus", !hasMedia ? (snapshot.media_state === "removed" ? "MEDIA REMOVED" : "NO MEDIA") : (isTimelapse ? "TIMELAPSE" : (isSoundRecording ? "SOUND REC" : (isRecording ? "REC" : snapshot.media_writes_pending ? "WRITING" : "READY"))));
+       setText("resolutionBadge", h264RecordFormat ? h264OutputResolutionLabel(snapshot) : resolutionLabel);
+       setText("fpsBadge", String(Math.round(snapshot.fps)) + " FPS");
+       const isoLabel = snapshot.iso_auto ? "Auto" : String(snapshot.iso);
+@@ -9835,7 +9835,7 @@ std::string_view webControlPageHtml()
+ 
+       const recordButton = document.getElementById("recordButton");
+       recordButton.disabled = !(isRecording || isTimelapse || isSoundRecording) &&
+-        (!!snapshot.media_writes_pending || state.photoCaptureInProgress || state.commandInFlightCount > 0);
++        (!hasMedia || !!snapshot.media_writes_pending || state.photoCaptureInProgress || state.commandInFlightCount > 0);
+       const recordIcon = document.getElementById("recordIcon");
+       recordButton.classList.toggle("recording", isRecording && hasMedia && !stillModeEnabled);
+       recordButton.classList.toggle("photo-mode", stillModeEnabled);
+-- 
+2.43.0
+

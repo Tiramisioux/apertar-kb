@@ -1,0 +1,428 @@
+From bb85899f5018c92fdac3febd9ddef0d502c562bd Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 08:16:56 +0000
+Subject: [PATCH] camera: frame-rate phase lock, off by default
+ (fps_phase_lock)
+
+A sensor frame period is an integer number of lines of the sensor's own
+crystal, so a take drifts against the Pi clock that stamps the audio. The
+new FramePhaseLock (pure PI servo, 6 us deadband, +/-150 us clamp, whole-
+microsecond requests that dither between adjacent line counts) measures
+each frame's SensorTimestamp against origin + k/fps on CLOCK_BOOTTIME and
+pins FrameDurationLimits {d,d} on the next request, after every other
+merge. Referenced to BOOTTIME, not FrameWallClock, because Core's audio is
+stamped in BOOTTIME: the audio path is unchanged. Re-arms on fps change,
+preview gaps and stalls; counts dropped frames while recording. Setting
+fps_phase_lock (persisted, set_fps_phase_lock enabled=true/false), state
+field fps_phase_lock, stats line at record stop, APERTAR_PHASE_LOCK_LOG=1
+for a per-250-frame trace. Logic ported from Cinemate's phase lock; not
+compiled here.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ include/apertar/core/Types.hpp  |   1 +
+ src/ApertarCoreApp.cpp          |  13 ++-
+ src/camera/CameraController.cpp |  87 +++++++++++++++++++
+ src/camera/CameraController.hpp |   1 +
+ src/camera/FramePhaseLock.hpp   | 147 ++++++++++++++++++++++++++++++++
+ 5 files changed, 248 insertions(+), 1 deletion(-)
+ create mode 100644 src/camera/FramePhaseLock.hpp
+
+diff --git a/include/apertar/core/Types.hpp b/include/apertar/core/Types.hpp
+index 92b6ef6..eafd5c9 100644
+--- a/include/apertar/core/Types.hpp
++++ b/include/apertar/core/Types.hpp
+@@ -124,6 +124,7 @@ struct WhiteBalanceMeasurement {
+ struct CaptureSettings {
+     Resolution resolution{};
+     double fps = 24.0;
++    bool fpsPhaseLock = false; // Closed-loop cadence lock to the Pi clock (FramePhaseLock).
+     uint32_t iso = 800;
+     bool isoAuto = false;
+     uint32_t shutterUs = 20833;
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 8d517af..94d25dc 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -199,6 +199,7 @@ std::string settingsBody(const CaptureSettings &settings)
+         << ",\"preview_exposure_reference\":" << previewExposureReferenceJson(settings.previewExposureReference.get())
+         << ",\"tuning_file\":\"" << escapeJson(settings.tuningFile) << "\""
+         << ",\"clear_hdr\":" << (settings.clearHdr ? "true" : "false")
++        << ",\"fps_phase_lock\":" << (settings.fpsPhaseLock ? "true" : "false")
+         << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
+         << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
+         << ",\"hdr_blend\":" << settings.hdrBlend
+@@ -7894,6 +7895,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+         << ",\"preview_exposure_reference\":" << previewExposureReferenceJson(settings.previewExposureReference.get())
+         << ",\"tuning_file\":\"" << escapeJson(settings.tuningFile) << "\""
+         << ",\"clear_hdr\":" << (settings.clearHdr ? "true" : "false")
++        << ",\"fps_phase_lock\":" << (settings.fpsPhaseLock ? "true" : "false")
+         << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
+         << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
+         << ",\"hdr_blend\":" << settings.hdrBlend
+@@ -9248,7 +9250,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+     }
+ 
+     if (command.name == "help")
+-        return okReply(command.id, "\"commands\":[\"get_state\",\"list_sensor_modes\",\"set_iso\",\"set_iso_auto\",\"set_exposure_compensation\",\"set_exposure_metering\",\"set_fps\",\"set_shutter_us\",\"set_shutter_auto\",\"set_wb\",\"set_wb_auto\",\"set_resolution\",\"set_record_format\",\"set_cdng_compression\",\"set_lossy_dng_ratio\",\"set_prores_profile\",\"set_prores_color_profile\",\"set_cdng_preview_color_profile\",\"set_tuning_file\",\"set_raw_bit_depth\",\"set_clear_hdr\",\"set_hdr_threshold_high\",\"set_hdr_threshold_low\",\"set_hdr_blend\",\"set_hdr_gain_adder\",\"set_h264_resolution\",\"set_timecode_mode\",\"set_af_mode\",\"set_af_range\",\"set_af_speed\",\"set_af_window\",\"set_photo_mode_enabled\",\"set_photo_long_exposure_enabled\",\"set_photo_bracketing_enabled\",\"set_photo_bracketing_ev\",\"set_photo_timer\",\"set_photo_burst\",\"set_photo_format\",\"set_photo_timelapse\",\"timelapse_start\",\"timelapse_stop\",\"set_focus_peaking_enabled\",\"set_focus_peaking_threshold\",\"set_focus_peaking_color\",\"set_zebra_enabled\",\"set_zebra_threshold\",\"set_false_color_enabled\",\"set_false_color_mode\",\"set_lut_preview_enabled\",\"set_lut_preview_file\",\"set_guides_enabled\",\"set_guides_type\",\"set_guides_thickness\",\"set_center_marker_enabled\",\"set_center_marker_type\",\"set_grayscale_enabled\",\"set_smpte_enabled\",\"set_anamorphic_desqueeze_enabled\",\"set_anamorphic_ratio\",\"set_external_monitor_enabled\",\"set_external_monitor_mode\",\"set_external_monitor_info_overlay\",\"set_external_monitor_orientation\",\"set_ui_orientation\",\"set_camera_controls_opacity\",\"set_camera_controls_mode\",\"set_date_time_overlay_enabled\",\"set_sound_recorder_enabled\",\"set_record_audio_enabled\",\"set_record_gyro_enabled\",\"set_imu_driver\",\"set_imu_orientation\",\"set_imu_sync_offset\",\"adjust_imu_sync_offset\",\"reset_imu_sync_offset\",\"set_imu_level_reference\",\"clear_imu_level_reference\",\"calibrate_gyro\",\"set_live_audio_monitoring_enabled\",\"set_audio_meter_enabled\",\"set_audio_input_device\",\"set_audio_output_device\",\"set_input_volume\",\"set_headphone_volume\",\"set_battery_type\",\"set_battery_capacity\",\"set_custom_battery_wh\",\"set_custom_battery_voltage\",\"set_sleep_mode\",\"set_favorites_order\",\"apply_time_zone\",\"apply_date_time\",\"set_fan_mode\",\"format_media\",\"eject_media\",\"mount_media\",\"run_media_speed_test\",\"capture_photo\",\"record_start\",\"record_stop\",\"preview_subscribe\",\"restart_system\",\"power_off_system\",\"shutdown\"]");
++        return okReply(command.id, "\"commands\":[\"get_state\",\"list_sensor_modes\",\"set_iso\",\"set_iso_auto\",\"set_exposure_compensation\",\"set_exposure_metering\",\"set_fps\",\"set_shutter_us\",\"set_shutter_auto\",\"set_wb\",\"set_wb_auto\",\"set_resolution\",\"set_record_format\",\"set_cdng_compression\",\"set_lossy_dng_ratio\",\"set_prores_profile\",\"set_prores_color_profile\",\"set_cdng_preview_color_profile\",\"set_tuning_file\",\"set_raw_bit_depth\",\"set_clear_hdr\",\"set_hdr_threshold_high\",\"set_hdr_threshold_low\",\"set_hdr_blend\",\"set_hdr_gain_adder\",\"set_h264_resolution\",\"set_timecode_mode\",\"set_fps_phase_lock\",\"set_af_mode\",\"set_af_range\",\"set_af_speed\",\"set_af_window\",\"set_photo_mode_enabled\",\"set_photo_long_exposure_enabled\",\"set_photo_bracketing_enabled\",\"set_photo_bracketing_ev\",\"set_photo_timer\",\"set_photo_burst\",\"set_photo_format\",\"set_photo_timelapse\",\"timelapse_start\",\"timelapse_stop\",\"set_focus_peaking_enabled\",\"set_focus_peaking_threshold\",\"set_focus_peaking_color\",\"set_zebra_enabled\",\"set_zebra_threshold\",\"set_false_color_enabled\",\"set_false_color_mode\",\"set_lut_preview_enabled\",\"set_lut_preview_file\",\"set_guides_enabled\",\"set_guides_type\",\"set_guides_thickness\",\"set_center_marker_enabled\",\"set_center_marker_type\",\"set_grayscale_enabled\",\"set_smpte_enabled\",\"set_anamorphic_desqueeze_enabled\",\"set_anamorphic_ratio\",\"set_external_monitor_enabled\",\"set_external_monitor_mode\",\"set_external_monitor_info_overlay\",\"set_external_monitor_orientation\",\"set_ui_orientation\",\"set_camera_controls_opacity\",\"set_camera_controls_mode\",\"set_date_time_overlay_enabled\",\"set_sound_recorder_enabled\",\"set_record_audio_enabled\",\"set_record_gyro_enabled\",\"set_imu_driver\",\"set_imu_orientation\",\"set_imu_sync_offset\",\"adjust_imu_sync_offset\",\"reset_imu_sync_offset\",\"set_imu_level_reference\",\"clear_imu_level_reference\",\"calibrate_gyro\",\"set_live_audio_monitoring_enabled\",\"set_audio_meter_enabled\",\"set_audio_input_device\",\"set_audio_output_device\",\"set_input_volume\",\"set_headphone_volume\",\"set_battery_type\",\"set_battery_capacity\",\"set_custom_battery_wh\",\"set_custom_battery_voltage\",\"set_sleep_mode\",\"set_favorites_order\",\"apply_time_zone\",\"apply_date_time\",\"set_fan_mode\",\"format_media\",\"eject_media\",\"mount_media\",\"run_media_speed_test\",\"capture_photo\",\"record_start\",\"record_stop\",\"preview_subscribe\",\"restart_system\",\"power_off_system\",\"shutdown\"]");
+ 
+     if (command.name == "get_state") {
+         const auto mediaWrite = camera_.mediaWriteStatus();
+@@ -9488,6 +9490,15 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+             : errorReply(command.id, camera_.lastError());
+     }
+ 
++    if (command.name == "set_fps_phase_lock") {
++        const auto enabled = command.string("enabled");
++        if (!enabled)
++            return errorReply(command.id, "set_fps_phase_lock requires enabled.");
++        return camera_.setFpsPhaseLock(*enabled == "true" || *enabled == "1")
++            ? okReply(command.id, settingsBody(camera_.settings()))
++            : errorReply(command.id, camera_.lastError());
++    }
++
+     if (command.name == "set_timecode_mode") {
+         const auto value = command.string("value");
+         if (!value)
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 3d255b1..1937b35 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -1,3 +1,5 @@
++#include "camera/FramePhaseLock.hpp"
++#include <optional>
+ #include "camera/CameraController.hpp"
+ #include <apertar/core/RecordingCapabilities.hpp>
+ #include "camera/DefaultTuningSelection.hpp"
+@@ -181,6 +183,7 @@ std::string settingsEvent(const CaptureSettings &settings)
+         << ",\"h264_width\":" << settings.h264Resolution.width
+         << ",\"h264_height\":" << settings.h264Resolution.height
+         << ",\"timecode_mode\":\"" << toString(settings.timecodeMode) << "\""
++        << ",\"fps_phase_lock\":" << (settings.fpsPhaseLock ? "true" : "false")
+         << ",\"af_mode\":\"" << toString(settings.autofocusMode) << "\""
+         << ",\"af_range\":\"" << toString(settings.autofocusRange) << "\""
+         << ",\"af_speed\":\"" << toString(settings.autofocusSpeed) << "\""
+@@ -723,6 +726,8 @@ CaptureSettings loadPersistedCaptureSettings(std::map<RecordingFormat, CaptureSe
+                 settings.h264Resolution.height = static_cast<uint32_t>(std::stoul(value));
+             else if (key == "timecode_mode")
+                 settings.timecodeMode = timecodeModeFromString(value);
++            else if (key == "fps_phase_lock")
++                settings.fpsPhaseLock = (value == "true" || value == "1");
+             else if (key == "af_mode")
+                 settings.autofocusMode = autofocusModeFromString(value);
+             else if (key == "af_range")
+@@ -792,6 +797,7 @@ void writeCaptureSettings(std::ostream &output, const CaptureSettings &settings,
+     output << prefix << "h264_height=" << s.h264Resolution.height << '\n';
+     output << prefix << "tuning_file=" << s.tuningFile << '\n';
+     output << prefix << "timecode_mode=" << toString(s.timecodeMode) << '\n';
++    output << prefix << "fps_phase_lock=" << (s.fpsPhaseLock ? "true" : "false") << '\n';
+     output << prefix << "af_mode=" << toString(s.autofocusMode) << '\n';
+     output << prefix << "af_range=" << toString(s.autofocusRange) << '\n';
+     output << prefix << "af_speed=" << toString(s.autofocusSpeed) << '\n';
+@@ -5954,6 +5960,8 @@ public:
+         {
+             std::lock_guard<std::mutex> lock(controlsMutex_);
+             pendingControls_.clear();
++            phaseLock_.release();
++            phaseLockDurationUs_.reset();
+         }
+ 
+         gyroRecorder_.stop();
+@@ -6035,6 +6043,11 @@ public:
+                                                    camera_->controls(),
+                                                    Resolution{ configuredSensorWidth_, configuredSensorHeight_ },
+                                                    camera_->properties(), monochromeSensor_);
++            if (std::fabs(settings_.fps - sanitized.fps) > 1e-9 || settings_.fpsPhaseLock != sanitized.fpsPhaseLock ||
++                settings_.photoModeEnabled != sanitized.photoModeEnabled) {
++                phaseLock_.release();
++                phaseLockDurationUs_.reset();
++            }
+             settings_ = sanitized;
+         }
+         return true;
+@@ -6191,6 +6204,13 @@ public:
+                       << " requeue_failures=" << requeueFailures_
+                       << "\n";
+         }
++        {
++            std::lock_guard<std::mutex> lock(controlsMutex_);
++            if (phaseLock_.pushes > 0 || phaseLock_.maxAbsErrorUs > 0.0)
++                std::cerr << "ApertarCore phase-lock stats: max_abs_err_us=" << std::lround(phaseLock_.maxAbsErrorUs)
++                          << " duration_pushes=" << phaseLock_.pushes << "\n";
++            phaseLock_.resetTelemetry();
++        }
+         gyroRecorder_.stop();
+         h264Recorder_.stop();
+         recorder_.stop();
+@@ -7025,6 +7045,45 @@ private:
+         return true;
+     }
+ 
++    // Frame-rate phase lock: one servo step per completed frame, referenced to
++    // CLOCK_BOOTTIME (the SensorTimestamp domain, which is also where the audio
++    // samples are stamped, so no audio change is needed). Runs on the completion thread.
++    void stepFramePhaseLock(libcamera::Request *request)
++    {
++        const auto timestamp = request->metadata().get(libcamera::controls::SensorTimestamp);
++        if (!timestamp)
++            return;
++        bool recording = false;
++        {
++            std::lock_guard lock(recordingFrameMutex_);
++            recording = recordingFramesEnabled_;
++        }
++        std::lock_guard<std::mutex> lock(controlsMutex_);
++        const bool enabled = settings_.fpsPhaseLock && !settings_.photoModeEnabled && settings_.fps > 1.0;
++        const bool wasActive = phaseLock_.active;
++        const FramePhaseLock::Decision decision =
++            phaseLock_.step(enabled, recording, settings_.fps, static_cast<int64_t>(*timestamp));
++        if (!decision.active) {
++            if (wasActive)
++                std::cerr << "ApertarCore phase-lock: released\n";
++            phaseLockDurationUs_.reset();
++            return;
++        }
++        if (decision.rearmed) {
++            phaseLockDurationUs_.reset();
++            std::cerr << "ApertarCore phase-lock: armed fps=" << settings_.fps
++                      << " nominal_us=" << phaseLock_.nominalUs << " ref=boottime\n";
++            return;
++        }
++        if (decision.pushDuration)
++            phaseLockDurationUs_ = decision.durationUs;
++        if (decision.servoRan && (phaseLock_.frames % 250) == 0 && boolEnvValue("APERTAR_PHASE_LOCK_LOG", false))
++            std::cerr << "ApertarCore phase-lock: frames=" << phaseLock_.frames
++                      << " err_us=" << std::lround(decision.phaseErrorUs)
++                      << " dur_us=" << decision.durationUs
++                      << " pushes=" << phaseLock_.pushes << "\n";
++    }
++
+     void requeueRequest(libcamera::Request *request)
+     {
+         if (!request)
+@@ -7096,6 +7155,22 @@ private:
+         }
+         if (exposureArmed) emitStillExposureEvent();
+ 
++        // Phase lock: pin this request's frame duration. Set after every merge above,
++        // so it wins; skipped while a still capture owns the exposure.
++        {
++            bool photoBusy = false;
++            {
++                std::lock_guard lock(photoCaptureMutex_);
++                photoBusy = !pendingPhotoCaptures_.empty() || stillExposureActive_ || restoreStillPreviewControls_;
++            }
++            std::lock_guard<std::mutex> lock(controlsMutex_);
++            if (phaseLockDurationUs_ && !photoBusy && !settings_.photoModeEnabled) {
++                const int64_t range[2] = { *phaseLockDurationUs_, *phaseLockDurationUs_ };
++                request->controls().set(libcamera::controls::FrameDurationLimits,
++                                        libcamera::Span<const int64_t, 2>(range));
++            }
++        }
++
+         if (running_.load() && camera_) {
+             if (camera_->queueRequest(request) < 0) {
+                 ++requeueFailures_;
+@@ -7162,6 +7237,7 @@ private:
+             }
+         }
+ 
++        stepFramePhaseLock(request);
+         capturePhotoFrame(request, whiteBalance);
+         bool recoveredPreview = false;
+         bool exposePreview = true;
+@@ -8023,6 +8099,9 @@ private:
+     libcamera::ControlList pendingControls_;
+     bool longExposureTimingUsed_ = false;
+     std::mutex controlsMutex_;
++    // Frame-rate phase lock state and the duration to pin on the next request (controlsMutex_).
++    FramePhaseLock phaseLock_;
++    std::optional<int64_t> phaseLockDurationUs_;
+     mutable std::mutex whiteBalanceMutex_;
+     WhiteBalanceMeasurement whiteBalanceMeasured_;
+     uint32_t measuredExposureUs_ = 0;
+@@ -8845,6 +8924,14 @@ bool CameraController::setTimecodeMode(TimecodeMode mode)
+     return applySettingsLocked(next, false);
+ }
+ 
++bool CameraController::setFpsPhaseLock(bool enabled)
++{
++    std::lock_guard<std::mutex> lock(mutex_);
++    CaptureSettings next = settings_;
++    next.fpsPhaseLock = enabled;
++    return applySettingsLocked(next, false);
++}
++
+ bool CameraController::setAutofocusMode(AutofocusMode mode)
+ {
+     std::lock_guard<std::mutex> lock(mutex_);
+diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
+index fdc6785..72f3936 100644
+--- a/src/camera/CameraController.hpp
++++ b/src/camera/CameraController.hpp
+@@ -72,6 +72,7 @@ public:
+     bool setHdrGainAdder(uint32_t value);
+     bool setH264Resolution(Resolution resolution);
+     bool setTimecodeMode(TimecodeMode mode);
++    bool setFpsPhaseLock(bool enabled);
+     bool setAutofocusMode(AutofocusMode mode);
+     bool setAutofocusRange(AutofocusRange range);
+     bool setAutofocusSpeed(AutofocusSpeed speed);
+diff --git a/src/camera/FramePhaseLock.hpp b/src/camera/FramePhaseLock.hpp
+new file mode 100644
+index 0000000..ec55ca2
+--- /dev/null
++++ b/src/camera/FramePhaseLock.hpp
+@@ -0,0 +1,147 @@
++#pragma once
++
++#include <algorithm>
++#include <cmath>
++#include <cstdint>
++
++namespace apertar {
++
++// Closed-loop frame-rate phase lock.
++//
++// The sensor's frame period is an integer number of lines of its own crystal,
++// so a nominal 24.000 fps is never exact and a long take drifts against the
++// Pi's clock, which is where the audio samples are stamped. This loop measures
++// the accumulated phase error of the frame arrivals against "origin + k /
++// fps" on the reference clock and nudges the requested frame duration by whole
++// microseconds. The sensor can only realise whole lines, so the integer
++// requests alternate between two adjacent line counts: the average cadence
++// becomes exact (a first-order sigma-delta), the instantaneous error stays
++// within the deadband.
++//
++// Pure state machine: no I/O. Call step() once per completed frame with the
++// frame's SensorTimestamp (CLOCK_BOOTTIME ns in this stack). Everything is in
++// the reference clock's units; only differences are used, so the epoch does
++// not matter.
++struct FramePhaseLock {
++    struct Tuning {
++        double proportional = 0.06;  // µs of duration per µs of phase error
++        double integral = 0.0015;    // µs of duration per µs·frame of accumulated error
++        double deadbandUs = 6.0;     // hold the current request while |error| is below this
++        double clampUs = 150.0;      // never request more than this away from nominal
++    };
++
++    struct Decision {
++        bool active = false;         // the lock is tracking
++        bool rearmed = false;        // this frame set a new datum, nothing requested
++        bool servoRan = false;       // error and duration below are valid
++        bool pushDuration = false;   // the integer request changed: send FrameDurationLimits {d, d}
++        int64_t durationUs = 0;
++        double phaseErrorUs = 0.0;   // > 0: frames arrive late (sensor slow), < 0: early
++    };
++
++    Tuning tuning{};
++
++    bool active = false;
++    double targetFps = 0.0;
++    double nominalUs = 0.0;          // 1e6 / targetFps, fractional
++    double requestedUs = 0.0;        // current fractional request
++    double integralUs = 0.0;
++    int64_t originNs = 0;            // datum: reference time of frame 0
++    int64_t previousNs = 0;          // last reference time, for gap detection
++    uint64_t frames = 0;             // frames since the datum, missed ones included
++    int64_t lastPushedUs = -1;
++
++    // Telemetry since the last reset.
++    double maxAbsErrorUs = 0.0;
++    uint64_t pushes = 0;
++
++    void release()
++    {
++        active = false;
++        previousNs = 0;
++    }
++
++    void resetTelemetry()
++    {
++        maxAbsErrorUs = 0.0;
++        pushes = 0;
++    }
++
++    Decision step(bool enabled, bool recording, double fps, int64_t referenceNs)
++    {
++        Decision decision;
++        if (!enabled || fps <= 1.0) {
++            release();
++            return decision;
++        }
++
++        const double periodNs = 1e9 / fps;
++        const int64_t sincePrevious = (active && previousNs != 0) ? referenceNs - previousNs : 0;
++        previousNs = referenceNs;
++        const bool bigGap = active && sincePrevious > static_cast<int64_t>(1.5 * periodNs);
++
++        // A new datum: first frame, an fps change, or (in preview only) a gap from a
++        // stall or reconfigure. While recording a gap is a real drop: keep the datum
++        // and count the missing frames so the phase does not jump.
++        if (!active || std::fabs(fps - targetFps) > 1e-6 || (bigGap && !recording)) {
++            arm(fps, referenceNs);
++            decision.active = true;
++            decision.rearmed = true;
++            return decision;
++        }
++        if (bigGap) {
++            const uint64_t slots = static_cast<uint64_t>((static_cast<double>(sincePrevious) + 0.5 * periodNs) / periodNs);
++            if (slots > 1)
++                frames += slots - 1;
++        }
++        ++frames;
++
++        const double errorUs = (static_cast<double>(referenceNs - originNs) - static_cast<double>(frames) * periodNs) * 1e-3;
++
++        // Preview only: a leak larger than half a frame would take tens of seconds to
++        // bleed off through the clamp; start again instead. Recording tracks it.
++        if (!recording && std::fabs(errorUs) > 0.5e6 / fps) {
++            arm(fps, referenceNs);
++            decision.active = true;
++            decision.rearmed = true;
++            return decision;
++        }
++
++        if (std::fabs(errorUs) > tuning.deadbandUs) {
++            const double windup = tuning.clampUs / std::max(tuning.integral, 1e-9);
++            integralUs = std::clamp(integralUs + errorUs, -windup, windup);
++            requestedUs = nominalUs - (tuning.proportional * errorUs + tuning.integral * integralUs);
++            requestedUs = std::clamp(requestedUs, nominalUs - tuning.clampUs, nominalUs + tuning.clampUs);
++        }
++        maxAbsErrorUs = std::max(maxAbsErrorUs, std::fabs(errorUs));
++
++        // Whole microseconds: the integer rounding is the dither, and it keeps control
++        // traffic down to the frames where the request really changes.
++        const int64_t durationUs = std::llround(requestedUs);
++        decision.active = true;
++        decision.servoRan = true;
++        decision.phaseErrorUs = errorUs;
++        decision.durationUs = durationUs;
++        if (durationUs != lastPushedUs) {
++            lastPushedUs = durationUs;
++            ++pushes;
++            decision.pushDuration = true;
++        }
++        return decision;
++    }
++
++private:
++    void arm(double fps, int64_t referenceNs)
++    {
++        targetFps = fps;
++        nominalUs = 1e6 / fps;
++        requestedUs = nominalUs;
++        integralUs = 0.0;
++        originNs = referenceNs;
++        frames = 0;
++        lastPushedUs = -1;
++        active = true;
++    }
++};
++
++} // namespace apertar
+-- 
+2.43.0
+

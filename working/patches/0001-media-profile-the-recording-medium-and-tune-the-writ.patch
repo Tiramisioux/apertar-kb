@@ -1,0 +1,728 @@
+From d405e223d8d5f6a94fe275e2805a4b8c2662caf6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 09:09:05 +0000
+Subject: [PATCH] media: profile the recording medium and tune the writers and
+ the kernel for it
+
+Core knew its drive by a volume label. Workers, queue depth, direct I/O and
+the camera buffer count depended on the recording format only; nothing in
+the repo touched the block queue or vm.dirty_*; Core's own mounts carried no
+noatime. Cinemate classifies the medium twice (connection for kernel knobs,
+filesystem for the writer topology) and applies the kernel side only to the
+recording target. Logic ported, in Core's shape:
+
+- util/MediaProfile.hpp: connection class from /sys/class/block/<root>/device
+  (realpath + uevent: pi-nvme, usb-uas, usb-storage, sd-card, other, unknown;
+  no fallback that cannot say no), filesystem from the mount table (ext4,
+  exfat, vfat, ntfs, ntfs-fuse, other), a writer table per filesystem
+  (uncompressed cDNG workers 4/2, queue 12/16, +2 raw camera buffers on
+  FAT-family and NTFS, direct I/O off on FUSE), summary string. Pure parts
+  host-tested (KB tools/media_profile_test.cpp).
+- DngRecordingQueue takes the profile before start: worker count
+  (APERTAR_CDNG_UNCOMPRESSED_WORKERS still wins), queue depth, the encoder's
+  direct I/O preference (APERTAR_CDNG_DIRECT_IO still wins); the clip line
+  gains media_class= media_fs= direct_io=.
+- rawCameraBufferCount adds the profile's extra buffers for the configured
+  media root (APERTAR_RAW_CAMERA_BUFFERS still wins).
+- The media watcher logs the profile on every medium change, publishes
+  media_class/media_profile in /api/state, and asks the root helper
+  /usr/local/libexec/apertar-media-tune (scripts/, sudoers and tmpfiles
+  snippets in config/) to apply block-queue and vm.dirty_* settings for the
+  mounted recording drive and restore them when it goes; without the helper
+  one journal line says so. APERTAR_MEDIA_TUNE=0 disables.
+- mount_media adds noatime (ext4 too).
+
+Starting points for T29 to measure, not Cinemate's numbers as facts.
+Host-checked: ApertarCoreApp.cpp and CdngEncoder.cpp pass g++ -fsyntax-only;
+CameraController.cpp needs libcamera and is not compiled here.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ config/apertar-media.sudoers       |   3 +
+ config/apertar-media.tmpfiles.conf |   5 +
+ scripts/apertar-media-tune         | 106 ++++++++++++++
+ src/ApertarCoreApp.cpp             |  65 ++++++++-
+ src/ApertarCoreApp.hpp             |   5 +-
+ src/camera/CameraController.cpp    |  34 ++++-
+ src/cdng/CdngEncoder.cpp           |  18 ++-
+ src/cdng/CdngEncoder.hpp           |   4 +
+ src/util/MediaProfile.hpp          | 217 +++++++++++++++++++++++++++++
+ 9 files changed, 442 insertions(+), 15 deletions(-)
+ create mode 100644 config/apertar-media.sudoers
+ create mode 100644 config/apertar-media.tmpfiles.conf
+ create mode 100755 scripts/apertar-media-tune
+ create mode 100644 src/util/MediaProfile.hpp
+
+diff --git a/config/apertar-media.sudoers b/config/apertar-media.sudoers
+new file mode 100644
+index 0000000..de246a8
+--- /dev/null
++++ b/config/apertar-media.sudoers
+@@ -0,0 +1,3 @@
++# /etc/sudoers.d/apertar-media  (install with: sudo install -m 0440 config/apertar-media.sudoers /etc/sudoers.d/apertar-media)
++# Lets the user apertar-core runs as call the media tuning helper without a password.
++pi ALL=(root) NOPASSWD: /usr/local/libexec/apertar-media-tune
+diff --git a/config/apertar-media.tmpfiles.conf b/config/apertar-media.tmpfiles.conf
+new file mode 100644
+index 0000000..fcccd76
+--- /dev/null
++++ b/config/apertar-media.tmpfiles.conf
+@@ -0,0 +1,5 @@
++# /etc/tmpfiles.d/apertar-media.conf  (install with: sudo install -m 0644 config/apertar-media.tmpfiles.conf /etc/tmpfiles.d/apertar-media.conf; sudo systemd-tmpfiles --create)
++# Runtime state shared between apertar-core and the automounter: eject-intent flags and saved kernel settings.
++d /run/apertar-media        0755 pi pi -
++d /run/apertar-media/eject  0755 pi pi -
++d /run/apertar-media/tune   0755 root root -
+diff --git a/scripts/apertar-media-tune b/scripts/apertar-media-tune
+new file mode 100755
+index 0000000..2c61fe1
+--- /dev/null
++++ b/scripts/apertar-media-tune
+@@ -0,0 +1,106 @@
++#!/bin/sh
++# apertar-media-tune apply|restore <rootdisk> <class> <fs>
++#
++# Root helper for the recording drive's kernel-side knobs. Called by
++# apertar-core (as `sudo -n /usr/local/libexec/apertar-media-tune ...`) when
++# the media root is mounted (apply) and when it goes away (restore). Only the
++# recording target is ever tuned: a USB stick for file transfer must not
++# override the recorder's settings (Cinemate c8f06c9).
++#
++# Per connection class, starting points taken from Cinemate's storage-automount
++# table; T29 measures them on this rig before they are trusted:
++#
++#   class        dirty_bytes  dirty_background  scheduler    nr_requests  rq_affinity
++#   pi-nvme      1 GiB        256 MiB           none         512          2
++#   usb-uas      512 MiB      256 MiB           none         256          2
++#   usb-storage  256 MiB      128 MiB           none         256          2   (SLC-cache cliff: keep the cushion small)
++#   sd-card      256 MiB      128 MiB           mq-deadline  128          1
++#   other/unknown: block queue untouched, vm.dirty_* untouched
++#
++# With O_DIRECT cDNG the dirty cushion only covers buffered writers (MLV, H.264,
++# audio); it still decides how much unflushed data a yank can take with it.
++# Originals are saved under /run/apertar-media/tune/ on the first apply and
++# written back on restore. Every write is logged; nothing here is silent.
++set -u
++
++ACTION=${1:-}
++ROOT=${2:-}
++CLASS=${3:-unknown}
++FS=${4:-none}
++STATE_DIR="${APERTAR_MEDIA_RUN_DIR:-/run/apertar-media}/tune"
++
++log() { echo "apertar-media-tune: $*"; }
++
++case "$ROOT" in
++    ""|*/*|*..*) log "bad root disk '$ROOT'"; exit 2 ;;
++esac
++QUEUE="/sys/block/$ROOT/queue"
++
++write_sys() {
++    # write_sys <path> <value>
++    if [ -w "$1" ]; then
++        if printf '%s' "$2" > "$1" 2>/dev/null; then log "$1 = $2"; else log "cannot set $1 to $2"; fi
++    else
++        log "$1 not writable, skipped"
++    fi
++}
++
++save_once() {
++    # save_once <name> <path>: keep the first value seen, so repeated applies do not overwrite the original
++    mkdir -p "${STATE_DIR:?}"
++    [ -e "${STATE_DIR:?}/${1:?}" ] && return
++    [ -r "$2" ] && cat "$2" > "${STATE_DIR:?}/${1:?}" 2>/dev/null
++}
++
++restore_one() {
++    # restore_one <name> <path>
++    name=${1:?}
++    saved="${STATE_DIR:?}/${name}"
++    if [ -e "$saved" ]; then
++        value=$(cat "$saved")
++        case "$name" in queue_scheduler) value=$(echo "$value" | sed -n 's/.*\[\(.*\)\].*/\1/p') ;; esac
++        write_sys "$2" "$value"
++        rm -f "${STATE_DIR:?}/${name:?}"
++    fi
++}
++
++case "$CLASS" in
++    pi-nvme)     DIRTY=$((1024*1024*1024)); BG=$((256*1024*1024)); SCHED=none;        NR=512; RQ=2 ;;
++    usb-uas)     DIRTY=$((512*1024*1024));  BG=$((256*1024*1024)); SCHED=none;        NR=256; RQ=2 ;;
++    usb-storage) DIRTY=$((256*1024*1024));  BG=$((128*1024*1024)); SCHED=none;        NR=256; RQ=2 ;;
++    sd-card)     DIRTY=$((256*1024*1024));  BG=$((128*1024*1024)); SCHED=mq-deadline; NR=128; RQ=1 ;;
++    *)           DIRTY=""; BG=""; SCHED=""; NR=""; RQ="" ;;
++esac
++
++case "$ACTION" in
++    apply)
++        log "apply root=$ROOT class=$CLASS fs=$FS"
++        if [ -z "$DIRTY" ]; then log "class $CLASS: nothing to tune"; exit 0; fi
++        for k in scheduler nr_requests rq_affinity; do save_once "queue_$k" "$QUEUE/$k"; done
++        for k in dirty_bytes dirty_background_bytes dirty_ratio dirty_background_ratio dirty_writeback_centisecs dirty_expire_centisecs; do
++            save_once "vm_$k" "/proc/sys/vm/$k"
++        done
++        write_sys "$QUEUE/scheduler" "$SCHED"
++        write_sys "$QUEUE/nr_requests" "$NR"
++        write_sys "$QUEUE/rq_affinity" "$RQ"
++        # the ratios must be 0 before the byte values take effect
++        write_sys /proc/sys/vm/dirty_ratio 0
++        write_sys /proc/sys/vm/dirty_background_ratio 0
++        write_sys /proc/sys/vm/dirty_background_bytes "$BG"
++        write_sys /proc/sys/vm/dirty_bytes "$DIRTY"
++        write_sys /proc/sys/vm/dirty_writeback_centisecs 150
++        write_sys /proc/sys/vm/dirty_expire_centisecs 3000
++        ;;
++    restore)
++        log "restore root=$ROOT"
++        [ -d "${STATE_DIR:?}" ] || { log "nothing saved"; exit 0; }
++        for k in scheduler nr_requests rq_affinity; do restore_one "queue_$k" "$QUEUE/$k"; done
++        # byte values first, then the ratios, so the kernel never sees both at 0
++        for k in dirty_bytes dirty_background_bytes dirty_ratio dirty_background_ratio dirty_writeback_centisecs dirty_expire_centisecs; do
++            restore_one "vm_$k" "/proc/sys/vm/$k"
++        done
++        ;;
++    *)
++        echo "usage: apertar-media-tune apply|restore <rootdisk> <class> <fs>" >&2; exit 2 ;;
++esac
++exit 0
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index c22394b..9dd05ad 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -3624,11 +3624,14 @@ bool mountDeviceAtMediaPath(const std::string &devicePath,
+     std::string mountType = fsType;
+     std::string options;
+ 
++    // noatime everywhere: a DNG per frame must not cost an inode update per read.
+     if (fsType == "ntfs") {
+         mountType = "ntfs3";
+-        options = "uid=1000,gid=1000,umask=0002";
++        options = "uid=1000,gid=1000,umask=0002,noatime";
+     } else if (fsType == "exfat" || fsType == "vfat" || fsType == "fat32" || fsType == "fat" || fsType == "msdos") {
+-        options = "uid=1000,gid=1000,umask=0002";
++        options = "uid=1000,gid=1000,umask=0002,noatime";
++    } else {
++        options = "noatime";
+     }
+ 
+     std::string command = "sudo -n mount";
+@@ -7746,6 +7749,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+     const std::string sensorName = camera_.sensorName();
+     const bool mediaMounted = isMountedPath(options_.mediaRoot);
+     const MediaSnapshot mediaSnap = mediaSnapshot();
++    const MediaProfile mediaProf = mediaProfile();
+     const std::string mountedDevice = mediaMounted ? mountedDeviceForPath(options_.mediaRoot) : std::string();
+     const std::string mountedVolumeLabel = mediaMounted ? volumeLabelForDevicePath(mountedDevice) : std::string();
+     const std::string mediaTypeLabel = mediaMounted
+@@ -7933,6 +7937,8 @@ std::string ApertarCoreApp::buildWebStateJson() const
+         << ",\"media_alive\":" << (mediaSnap.mounted() ? "true" : "false")
+         << ",\"media_device\":\"" << escapeJson(mediaSnap.device) << "\""
+         << ",\"media_fstype\":\"" << escapeJson(mediaSnap.fstype) << "\""
++        << ",\"media_class\":\"" << mediaClassName(mediaProf.mediaClass) << "\""
++        << ",\"media_profile\":\"" << escapeJson(mediaProf.summary()) << "\""
+         << ",\"recording_fault\":\"" << escapeJson(camera_.recordingFaultName()) << "\""
+         << ",\"network_transport\":\"" << escapeJson(network.transport) << "\""
+         << ",\"network_host\":\"" << escapeJson(network.hostLabel) << "\""
+@@ -9165,6 +9171,23 @@ void ApertarCoreApp::runMediaWatcher()
+                       << " free_mb=" << current.freeBytes / (1024 * 1024)
+                       << " errno=" << current.statvfsErrno << "\n";
+             publishEvent(mediaEventJson(current));
++            // The medium decides the writer topology and the kernel knobs; classify
++            // it once per change, log it, and hand the kernel side to the root helper.
++            MediaProfile profile;
++            if (current.mounted()) {
++                profile = detectMediaProfile(current);
++                std::cerr << "ApertarCore media profile: " << profile.summary() << "\n";
++            }
++            MediaProfile previousProfile;
++            {
++                std::lock_guard<std::mutex> lock(mediaStateMutex_);
++                previousProfile = mediaProfile_;
++                mediaProfile_ = profile;
++            }
++            if (current.mounted())
++                applyMediaTuning(profile, true);
++            else if (previousProfile.known())
++                applyMediaTuning(previousProfile, false);
+             const bool lost = havePrevious && previous.mounted() &&
+                 (current.state == MediaSnapshot::State::Removed || current.state == MediaSnapshot::State::None);
+             if (lost) {
+@@ -9237,6 +9260,44 @@ std::string ApertarCoreApp::mediaGateError() const
+     return {};
+ }
+ 
++MediaProfile ApertarCoreApp::mediaProfile() const
++{
++    std::lock_guard<std::mutex> lock(mediaStateMutex_);
++    return mediaProfile_;
++}
++
++// Kernel-side knobs (block queue, vm.dirty_*) need root; Core hands them to
++// /usr/local/libexec/apertar-media-tune through sudo -n, for the recording
++// target only, and asks it to restore when that medium goes away. Without the
++// helper the camera runs exactly as before, with one journal line saying so.
++void ApertarCoreApp::applyMediaTuning(const MediaProfile &profile, bool apply)
++{
++    if (const char *env = std::getenv("APERTAR_MEDIA_TUNE"); env && env[0] == '0')
++        return;
++    if (profile.rootDisk.empty())
++        return;
++    static const char *const helper = "/usr/local/libexec/apertar-media-tune";
++    std::error_code ec;
++    if (!std::filesystem::exists(helper, ec)) {
++        static bool warned = false;
++        if (!warned) {
++            warned = true;
++            std::cerr << "ApertarCore media: " << helper
++                      << " not installed; block-queue and dirty-page tuning skipped\n";
++        }
++        return;
++    }
++    std::string commandError;
++    const std::string command = std::string("sudo -n ") + helper + (apply ? " apply " : " restore ") +
++        shellQuote(profile.rootDisk) + " " + mediaClassName(profile.mediaClass) + " " +
++        mediaFilesystemName(profile.filesystem);
++    if (!runShellCommand(command, &commandError))
++        std::cerr << "ApertarCore media: tuning helper failed: " << commandError << "\n";
++    else
++        std::cerr << "ApertarCore media: tuning " << (apply ? "applied" : "restored") << " for "
++                  << profile.rootDisk << " (" << mediaClassName(profile.mediaClass) << ")\n";
++}
++
+ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+ {
+     std::lock_guard<std::mutex> commandLock(commandMutex_);
+diff --git a/src/ApertarCoreApp.hpp b/src/ApertarCoreApp.hpp
+index ef25bb2..d4506d9 100644
+--- a/src/ApertarCoreApp.hpp
++++ b/src/ApertarCoreApp.hpp
+@@ -13,7 +13,7 @@
+ #include "ipc/ControlProtocol.hpp"
+ #include "ipc/ControlServer.hpp"
+ #include "web/WebServer.hpp"
+-#include "util/MediaProbe.hpp"
++#include "util/MediaProfile.hpp"
+ 
+ #include <atomic>
+ #include <chrono>
+@@ -103,6 +103,8 @@ private:
+     void stopMediaWatcher();
+     MediaSnapshot mediaSnapshot() const;
+     std::string mediaGateError() const;
++    void applyMediaTuning(const MediaProfile &profile, bool apply);
++    MediaProfile mediaProfile() const;
+     void handleHardwareInputAction(const std::string &action, bool buttonPress = true);
+     bool handlePowerButtonPress(bool doublePress);
+     void handleSingleHardwareInputAction(const std::string &action);
+@@ -188,6 +190,7 @@ private:
+     std::condition_variable mediaWatcherCv_;
+     MediaSnapshot mediaSnapshot_;
+     bool mediaSnapshotValid_ = false;
++    MediaProfile mediaProfile_;
+ };
+ 
+ } // namespace apertar
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 2a64fbb..3e59338 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -25,6 +25,7 @@
+ #include "video/H264Hardware.hpp"
+ #include "util/RecordingFailure.hpp"
+ #include "util/MediaFault.hpp"
++#include "util/MediaProfile.hpp"
+ #include "prores/ProresRecorder.hpp"
+ 
+ #include <algorithm>
+@@ -1171,8 +1172,12 @@ unsigned int proresCameraBufferCount()
+ // request, so this is also the number of requests in flight.
+ unsigned int rawCameraBufferCount(bool clearHdr)
+ {
+-    return unsignedEnvValue("APERTAR_RAW_CAMERA_BUFFERS",
+-                            clearHdr ? kClearHdrBufferCount : kConfiguredBufferCount, 3, 16);
++    const unsigned int base = clearHdr ? kClearHdrBufferCount : kConfiguredBufferCount;
++    // Spikier filesystems (exFAT/FAT/NTFS allocate a directory entry per frame)
++    // get two more buffers of cushion, as Cinemate's profiles do (8 ext4 /
++    // 10 exFAT-NTFS). The env override still wins over everything.
++    const unsigned int extra = mediaExtraRawBuffersForConfiguredRoot();
++    return unsignedEnvValue("APERTAR_RAW_CAMERA_BUFFERS", std::min(16u, base + extra), 3, 16);
+ }
+ 
+ bool photoFormatWritesDng(PhotoCaptureFormat format)
+@@ -3480,18 +3485,25 @@ public:
+         }
+ 
+         const unsigned int hardwareThreads = std::thread::hardware_concurrency();
+-        const unsigned int normalWorkerCount = std::max(2u, std::min(4u, hardwareThreads));
++        const unsigned int formatWorkerCount = std::max(2u, std::min(4u, hardwareThreads));
++        // Uncompressed cDNG is storage-bound: the medium decides how many writers make
++        // sense (ext4 keeps 4, exFAT/NTFS get 2; T29 measures). Env wins, then the
++        // media profile, then the format default.
++        const unsigned int normalWorkerCount = unsignedEnvValue("APERTAR_CDNG_UNCOMPRESSED_WORKERS",
++            mediaProfile_.known() ? std::min(mediaProfile_.writer.workers, formatWorkerCount) : formatWorkerCount, 1, 8);
+         const bool losslessCdng = recordingFormat_ == RecordingFormat::Cdng &&
+             settings_.cdngCompression == CdngCompression::LosslessJpeg;
+         const bool compressedDng = losslessCdng || recordingFormat_ == RecordingFormat::LossyDng;
+-        const unsigned int defaultQueueFrames = compressedDng && hardwareThreads >= 4 ? 24u : 12u;
++        const unsigned int defaultQueueFrames = compressedDng && hardwareThreads >= 4
++            ? 24u
++            : (mediaProfile_.known() ? mediaProfile_.writer.queueFrames : 12u);
+         maxQueuedFrames_ = unsignedEnvValue(
+             "APERTAR_CDNG_QUEUE_FRAMES", defaultQueueFrames, 4, 64);
+         // One extra lossless worker overlaps tile-write and scheduling stalls
+         // while the other workers remain CPU-active.
+         const unsigned int defaultLosslessWorkers = hardwareThreads >= 4
+             ? std::min(8u, hardwareThreads + 1u)
+-            : normalWorkerCount;
++            : formatWorkerCount;
+         // Lossy DNG is CPU-bound and does not benefit from oversubscribing the
+         // four-core Pi. Leave one worker per core so capture can be scheduled
+         // promptly; lossless cDNG keeps its separately measured extra worker.
+@@ -3523,6 +3535,9 @@ public:
+                   << " compression=" << (recordingFormat_ == RecordingFormat::Cdng ? toString(settings_.cdngCompression)
+                                       : recordingFormat_ == RecordingFormat::LossyDng ? toWireValue(settings_.lossyDngRatio)
+                                       : "none");
++        std::cerr << " media_class=" << mediaClassName(mediaProfile_.mediaClass)
++                  << " media_fs=" << mediaFilesystemName(mediaProfile_.filesystem)
++                  << " direct_io=" << ((!mediaProfile_.known() || mediaProfile_.writer.directIo) ? 1 : 0);
+         if (recordingFormat_ == RecordingFormat::Cdng && settings_.cdngCompression == CdngCompression::LosslessJpeg) {
+             std::cerr << " worker_nice=" << unsignedEnvValue("APERTAR_CDNG_WORKER_NICE", 0, 0, 19);
+             std::cerr << " workers=" << workerCount_;
+@@ -3699,6 +3714,10 @@ public:
+ 
+     std::string error() const { return failure_.message(); }
+     MediaFault fault() const { return fault_.load(std::memory_order_acquire); }
++    // The medium the next take writes to; set before start so workers, queue depth
++    // and direct I/O follow it. Logged in the clip line.
++    void setMediaProfile(const MediaProfile &profile) { mediaProfile_ = profile; }
++    const MediaProfile &mediaProfile() const { return mediaProfile_; }
+ 
+     uint64_t nextFrameIndex(int64_t timestampUs)
+     {
+@@ -3899,6 +3918,8 @@ private:
+         }
+ #endif
+         CdngEncoder encoder;
++        // Direct I/O follows the medium (off on FUSE ntfs-3g); APERTAR_CDNG_DIRECT_IO still wins.
++        encoder.setDirectIoPreferred(!mediaProfile_.known() || mediaProfile_.writer.directIo);
+         std::unique_ptr<LossyDngEncoder> lossyEncoder;
+         if (settings_.recordingFormat == RecordingFormat::LossyDng)
+             lossyEncoder = std::make_unique<LossyDngEncoder>(settings_.lossyDngRatio);
+@@ -4266,6 +4287,7 @@ private:
+     uint64_t discardedOnFailureFrames_ = 0;
+     std::atomic<uint64_t> skippedAfterFailure_{0};
+     std::atomic<uint64_t> lossyFailuresSeen_{0};
++    MediaProfile mediaProfile_;
+     // Copy workers (completion-thread hand-off).
+     std::mutex copyMutex_;
+     std::condition_variable copyCv_;
+@@ -6248,6 +6270,7 @@ public:
+             return true;
+         }
+ 
++        recorder_.setMediaProfile(detectMediaProfile(probeMediaRoot(mediaRoot)));
+         if (!recorder_.startAtFolder(clipFolder, settings, error)) {
+             audioRecorder_.stop();
+             gyroRecorder_.stop();
+@@ -8330,6 +8353,7 @@ bool CameraController::start(const std::string &mediaRoot, bool simulateCamera)
+ {
+     std::lock_guard<std::mutex> lock(mutex_);
+     mediaRoot_ = mediaRoot;
++    configuredMediaRoot() = mediaRoot;
+     simulateCamera_ = simulateCamera;
+     state_ = CameraState::Starting;
+     applyProcessTuningFile(settings_.tuningFile);
+diff --git a/src/cdng/CdngEncoder.cpp b/src/cdng/CdngEncoder.cpp
+index 31684db..45caa3d 100644
+--- a/src/cdng/CdngEncoder.cpp
++++ b/src/cdng/CdngEncoder.cpp
+@@ -17,6 +17,7 @@
+ #include <new>
+ #include <cstring>
+ #include <iostream>
++#include <optional>
+ #include <filesystem>
+ #include <iomanip>
+ #include <limits>
+@@ -465,14 +466,17 @@ void patchFixedAscii(std::vector<uint8_t> &bytes,
+ // device's logical block size (512 or 4096); 4096 satisfies every device.
+ constexpr size_t kDirectIoPage = 4096;
+ 
+-bool directIoEnabled()
++// APERTAR_CDNG_DIRECT_IO forces direct I/O on or off; unset leaves the decision
++// to the encoder's preference, which the recorder sets from the media profile.
++std::optional<bool> directIoEnvOverride()
+ {
+-    static const bool enabled = [] {
+-        const char *value = std::getenv("APERTAR_CDNG_DIRECT_IO");
+-        return !value || (std::strcmp(value, "0") != 0 && std::strcmp(value, "false") != 0 &&
+-                          std::strcmp(value, "off") != 0);
++    static const std::optional<bool> value = []() -> std::optional<bool> {
++        const char *env = std::getenv("APERTAR_CDNG_DIRECT_IO");
++        if (!env || !*env)
++            return std::nullopt;
++        return std::strcmp(env, "0") != 0 && std::strcmp(env, "false") != 0 && std::strcmp(env, "off") != 0;
+     }();
+-    return enabled;
++    return value;
+ }
+ 
+ size_t roundUpToPage(size_t value)
+@@ -1262,7 +1266,7 @@ void CdngEncoder::writeDngFile(const std::string &path,
+     // Direct I/O layout: header and IFD first, the image strip on the next page
+     // boundary, so every write is page aligned and the page cache stays out of the
+     // way of the CFE (Clear HDR frame drops). Stills (borrowed fd) keep the old layout.
+-    const bool ifdFirst = !lossless && destinationFd < 0 && directIoEnabled();
++    const bool ifdFirst = !lossless && destinationFd < 0 && directIoEnvOverride().value_or(directIoPreferred_);
+     const bool profileLosslessDetails = lossless && detailedLosslessProfilingEnabled();
+     const uint32_t rowsPerStrip = lossless ? losslessTileRows() : frame.height;
+     // A padded tile wider than the image is misread by LibRaw. Use two
+diff --git a/src/cdng/CdngEncoder.hpp b/src/cdng/CdngEncoder.hpp
+index d5766b7..7b8c860 100644
+--- a/src/cdng/CdngEncoder.hpp
++++ b/src/cdng/CdngEncoder.hpp
+@@ -106,6 +106,9 @@ public:
+     bool writeRawPayload(int fd, const RawFrameView &frame, const EncodedRawLayout &layout) const;
+     // Direct I/O: every write page aligned in offset, length and memory.
+     bool writeRawPayloadDirect(int fd, const RawFrameView &frame, const EncodedRawLayout &layout) const;
++    // Direct I/O for uncompressed DNGs unless the medium cannot take it (FUSE);
++    // the APERTAR_CDNG_DIRECT_IO environment override still wins.
++    void setDirectIoPreferred(bool enabled) { directIoPreferred_ = enabled; }
+     void writeDngFile(const std::string &path, const RawFrameView &frame, const Metadata &metadata,
+                       int destinationFd = -1) const;
+     const PerformanceStats &lastPerformanceStats() const { return lastPerformanceStats_; }
+@@ -215,6 +218,7 @@ private:
+     mutable AlignedBytes directScratch_;
+     // Set when the filesystem refuses O_DIRECT (EINVAL); later frames fall back to buffered writes.
+     mutable bool directIoUnsupported_ = false;
++    bool directIoPreferred_ = true;
+     mutable PerformanceStats lastPerformanceStats_{};
+ };
+ 
+diff --git a/src/util/MediaProfile.hpp b/src/util/MediaProfile.hpp
+new file mode 100644
+index 0000000..e501912
+--- /dev/null
++++ b/src/util/MediaProfile.hpp
+@@ -0,0 +1,217 @@
++#pragma once
++
++#include "util/MediaProbe.hpp"
++
++#include <algorithm>
++#include <cctype>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <system_error>
++
++namespace apertar {
++
++// The recording medium, classified two ways, as Cinemate does it: the
++// *connection* (how the drive is attached) decides kernel-side tuning, the
++// *filesystem* decides the writer topology. Core had neither: workers, queue
++// depth and buffers depended on the recording format only, and the only thing
++// Core knew about its drive was a volume label (s2 §1).
++//
++// Everything here is a pure function of strings except detectMediaClass(),
++// which reads two sysfs files; the tables are starting points for the
++// measurement in T29, not Cinemate's numbers copied.
++enum class MediaClass { Unknown, PiNvme, UsbUas, UsbStorage, SdCard, Other };
++enum class MediaFilesystem { None, Ext4, Exfat, Vfat, Ntfs, NtfsFuse, Other };
++
++inline const char *mediaClassName(MediaClass c)
++{
++    switch (c) {
++    case MediaClass::Unknown: return "unknown";
++    case MediaClass::PiNvme: return "pi-nvme";
++    case MediaClass::UsbUas: return "usb-uas";
++    case MediaClass::UsbStorage: return "usb-storage";
++    case MediaClass::SdCard: return "sd-card";
++    case MediaClass::Other: return "other";
++    }
++    return "unknown";
++}
++
++inline const char *mediaFilesystemName(MediaFilesystem f)
++{
++    switch (f) {
++    case MediaFilesystem::None: return "none";
++    case MediaFilesystem::Ext4: return "ext4";
++    case MediaFilesystem::Exfat: return "exfat";
++    case MediaFilesystem::Vfat: return "vfat";
++    case MediaFilesystem::Ntfs: return "ntfs";
++    case MediaFilesystem::NtfsFuse: return "ntfs-fuse";
++    case MediaFilesystem::Other: return "other";
++    }
++    return "none";
++}
++
++// /dev/nvme0n1p1 -> nvme0n1, /dev/mmcblk0p2 -> mmcblk0, /dev/sda1 -> sda, /dev/sda -> sda.
++inline std::string rootDiskForDevice(const std::string &devicePath)
++{
++    std::string name = std::filesystem::path(devicePath).filename().string();
++    if (name.empty())
++        return name;
++    const bool partitionedWithP = name.rfind("nvme", 0) == 0 || name.rfind("mmcblk", 0) == 0;
++    if (partitionedWithP) {
++        const size_t p = name.rfind('p');
++        if (p != std::string::npos && p > 0 && p + 1 < name.size() &&
++            std::isdigit(static_cast<unsigned char>(name[p - 1])) &&
++            std::all_of(name.begin() + static_cast<std::string::difference_type>(p) + 1, name.end(),
++                        [](unsigned char ch) { return std::isdigit(ch) != 0; }))
++            name.erase(p);
++        return name;
++    }
++    while (name.size() > 1 && std::isdigit(static_cast<unsigned char>(name.back())))
++        name.pop_back();
++    return name;
++}
++
++inline MediaFilesystem classifyFilesystem(std::string fstype)
++{
++    std::transform(fstype.begin(), fstype.end(), fstype.begin(),
++                   [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
++    if (fstype.empty())
++        return MediaFilesystem::None;
++    if (fstype == "ext4" || fstype == "ext3" || fstype == "ext2")
++        return MediaFilesystem::Ext4;
++    if (fstype == "exfat")
++        return MediaFilesystem::Exfat;
++    if (fstype == "vfat" || fstype == "msdos" || fstype == "fat")
++        return MediaFilesystem::Vfat;
++    if (fstype == "ntfs" || fstype == "ntfs3")
++        return MediaFilesystem::Ntfs;
++    if (fstype == "fuseblk")
++        return MediaFilesystem::NtfsFuse;  // ntfs-3g is the only FUSE block filesystem this camera mounts
++    return MediaFilesystem::Other;
++}
++
++// Pure classification from the sysfs facts: the realpath of
++// /sys/class/block/<root>/device (contains "/usb" for anything behind a USB
++// bridge) and that directory's uevent text (DRIVER=uas|usb-storage|nvme).
++// A fallback that cannot say no is not a fallback (Cinemate 888093c): nothing
++// here returns a class on the strength of a node that exists on every Pi.
++inline MediaClass classifyMediaClass(const std::string &rootDisk, const std::string &deviceRealpath,
++                                     std::string uevent)
++{
++    if (rootDisk.rfind("mmcblk", 0) == 0)
++        return MediaClass::SdCard;
++    std::transform(uevent.begin(), uevent.end(), uevent.begin(),
++                   [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
++    const bool usb = deviceRealpath.find("/usb") != std::string::npos;
++    if (usb)
++        return uevent.find("driver=uas") != std::string::npos ? MediaClass::UsbUas : MediaClass::UsbStorage;
++    if (rootDisk.rfind("nvme", 0) == 0 || uevent.find("driver=nvme") != std::string::npos)
++        return MediaClass::PiNvme;
++    if (rootDisk.empty())
++        return MediaClass::Unknown;
++    return MediaClass::Other;
++}
++
++inline std::string readSmallSysFile(const std::filesystem::path &path)
++{
++    std::ifstream in(path);
++    std::string text, line;
++    while (std::getline(in, line)) {
++        text += line;
++        text += '\n';
++    }
++    return text;
++}
++
++inline MediaClass detectMediaClass(const std::string &devicePath)
++{
++    const std::string root = rootDiskForDevice(devicePath);
++    if (root.empty())
++        return MediaClass::Unknown;
++    const std::filesystem::path device = std::filesystem::path("/sys/class/block") / root / "device";
++    std::error_code ec;
++    const std::filesystem::path real = std::filesystem::canonical(device, ec);
++    const std::string realpath = ec ? std::string() : real.string();
++    const std::string uevent = readSmallSysFile(device / "uevent");
++    return classifyMediaClass(root, realpath, uevent);
++}
++
++// Writer topology per filesystem. ext4 has the flattest write latency and keeps
++// Core's default 4 uncompressed workers; exFAT/FAT/NTFS allocate a directory
++// entry per frame and get fewer concurrent writers, a deeper queue and two
++// more camera buffers of cushion (Cinemate: 8 ext4 / 10 exFAT-NTFS). Direct I/O
++// stays on where the kernel driver accepts O_DIRECT; the FUSE ntfs-3g path does
++// not. Compressed formats are CPU-bound and keep their own worker counts.
++struct MediaWriterSettings {
++    unsigned workers = 2;
++    unsigned queueFrames = 12;
++    unsigned extraRawBuffers = 0;
++    bool directIo = false;
++};
++
++inline MediaWriterSettings writerSettingsFor(MediaFilesystem filesystem, MediaClass /*mediaClass*/)
++{
++    switch (filesystem) {
++    case MediaFilesystem::Ext4: return {4, 12, 0, true};
++    case MediaFilesystem::Exfat: return {2, 16, 2, true};
++    case MediaFilesystem::Vfat: return {2, 16, 2, true};
++    case MediaFilesystem::Ntfs: return {2, 16, 2, true};
++    case MediaFilesystem::NtfsFuse: return {2, 16, 2, false};
++    case MediaFilesystem::None:
++    case MediaFilesystem::Other: return {2, 12, 0, false};
++    }
++    return {2, 12, 0, false};
++}
++
++struct MediaProfile {
++    MediaClass mediaClass = MediaClass::Unknown;
++    MediaFilesystem filesystem = MediaFilesystem::None;
++    std::string device;
++    std::string rootDisk;
++    std::string fstype;
++    MediaWriterSettings writer{};
++
++    bool known() const { return filesystem != MediaFilesystem::None; }
++
++    std::string summary() const
++    {
++        return std::string("class=") + mediaClassName(mediaClass) + " fs=" + mediaFilesystemName(filesystem) +
++               " workers=" + std::to_string(writer.workers) + " queue=" + std::to_string(writer.queueFrames) +
++               " raw_buffers=+" + std::to_string(writer.extraRawBuffers) +
++               " direct_io=" + (writer.directIo ? "1" : "0");
++    }
++};
++
++inline MediaProfile deriveMediaProfile(MediaClass mediaClass, const std::string &device, const std::string &fstype)
++{
++    MediaProfile profile;
++    profile.mediaClass = mediaClass;
++    profile.filesystem = classifyFilesystem(fstype);
++    profile.device = device;
++    profile.rootDisk = rootDiskForDevice(device);
++    profile.fstype = fstype;
++    profile.writer = writerSettingsFor(profile.filesystem, mediaClass);
++    return profile;
++}
++
++inline MediaProfile detectMediaProfile(const MediaSnapshot &snapshot)
++{
++    if (!snapshot.mounted())
++        return MediaProfile{};
++    return deriveMediaProfile(detectMediaClass(snapshot.device), snapshot.device, snapshot.fstype);
++}
++
++// The media root the camera records to, for code that decides buffer counts at
++// configure time and has no other way to the path. Set once at start-up.
++inline std::string &configuredMediaRoot()
++{
++    static std::string root = "/media/RAW";
++    return root;
++}
++
++inline unsigned mediaExtraRawBuffersForConfiguredRoot()
++{
++    return detectMediaProfile(probeMediaRoot(configuredMediaRoot())).writer.extraRawBuffers;
++}
++
++} // namespace apertar
+-- 
+2.43.0
+

@@ -1,4 +1,4 @@
-From 685389128540526b32242bae565bebd56569bc09 Mon Sep 17 00:00:00 2001
+From 9e06ad64bdb894b2ed2d43d9aaac11398c829a29 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 26 Oct 2026 08:00:24 +0000
 Subject: [PATCH] camera: copy raw frames on a recorder worker, not on
