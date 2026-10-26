@@ -42,6 +42,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `ffb87db` | Media profile (class + filesystem → workers/queue/raw buffers), noatime; root helper added, not installed; T29 without its direct-I/O step (needs T24); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
 | `a99691e` | Audio writer thread + 1 s ALSA ring, 10 ms period (T30 reference patch); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
 | `0586273` | `syncfs` on the clip folder once a second during a take and at every stop, so a pulled card keeps all but the last ~1-2 s; branch `cinemate-port` | fork-only, Mac + Pi; built 23:07, not tested |
+| `e2f55a2` | exFAT keeps 4 writers/queue 12 (T29's 2/16/+2 lost 166 frames in 3 min, C0106); audio ring 100 ms by default (1 s made the drift figure unreliable); branch `cinemate-port` | fork-only, Mac + Pi; built |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
