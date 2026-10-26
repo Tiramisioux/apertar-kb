@@ -257,3 +257,22 @@ Entry format:
 - Confirmed by: Patrik's readback on the Pi.
 - Tutorial: T27 3.3.
 
+## 2026-10-26: imx585 free-running cadence is within ~1.5 ppm of the Pi's crystal; the phase lock would chase NTP (T27)
+
+- Tested: Pi 5 (4 GB), Core `cinemate-port` `114bfb9`, 4K Clear HDR 16-bit 25 fps, preview. The phase lock as a meter:
+  `APERTAR_PHASE_LOCK_DEADBAND_US=100000` (no pushes, sensor on Core's own 40000 µs pin), `err_us` every 250 frames; at the same
+  time BOOTTIME - MONOTONIC_RAW sampled every 10 s (read-only python). 22:10-22:14.
+- Seen: free-running error against BOOTTIME 83 ppm falling to 42 ppm within 3.5 min; BOOTTIME vs MONOTONIC_RAW in the same window
+  49 → 39 ppm (`adjtimex`: PLL mode, 12.8 ms offset still being slewed; systemd-timesyncd last offset +22 ms, freq +3.17 ppm).
+  Difference, i.e. sensor vs the Pi's raw crystal: **1.2-1.6 ppm, steady** (sensor slightly slow).
+- Lock on (deadband 6): phase error within ±22 µs over 5000 frames, pin mostly 40002 µs, a push every 9-10 frames, each switching
+  HMAX (lattice, see T27 3.3). The lock holds to BOOTTIME, so it makes the sensor follow NTP slews (tens of ppm after a correction).
+- Why: **confirmed** that the large drift was the Pi clock being slewed, not the sensor. **Probable** that C0101's clean result
+  (0 holes, WAV = frames) reflects the same: the sensor needs no lock at 25 fps.
+- Also fixed on the way: the lock's `saturated` flag fired at every arm (pin history 4 < 8 requests in flight; history not
+  seeded with Core's own pin): `3a18db0`, `114bfb9`.
+- Decision (Patrik, 2026-10-26): lock stays in the code, **off** (`fps_phase_lock false`). A future version should reference an
+  unslewed clock (MONOTONIC_RAW) or the audio crystal, not BOOTTIME.
+- Confirmed by: measurements run on the Pi at Patrik's request.
+- Tutorial: T27 5.1 / measurement.
+

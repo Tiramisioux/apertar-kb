@@ -10,6 +10,13 @@ typ: digital anteckning
 
 Status: written 2026-10-26 (cloud session; patch `working/patches/0001-camera-frame-rate-phase-lock-off-by-default-fps_phas.patch` is the reference, Core `9e6df59`, not compiled on a Pi; the pure servo header passes `working/tools/phase_lock_sim.cpp` on the host; amended after the critic pass with env gains, saturation detection, state telemetry and a pin that reads no settings). Needs T23–T25 applied (the patch sits on top of them). Line numbers in the text are at `9e6df59`; the `%% tutor` refs are at `80ddac1` (`cinemate-port`, applied 2026-10-26 on top of the binning commit `4ab1057`); later patches shift them, the grep anchors do not. Answer: `working/phaselock-answer.md`. Builds **M7** (sensor path), the libcamera control merge, and the audio/video clock story.
 
+> [!important] Result on the Pi, 2026-10-26
+> Built (`80ddac1` + fixes `8f7dc39`, `3a18db0`, `114bfb9`) and run. The sensor free-runs within **~1.5 ppm** of the Pi's
+> crystal (measured against `CLOCK_MONOTONIC_RAW`); the large drift seen against `CLOCK_BOOTTIME` was systemd-timesyncd slewing
+> the clock (40-80 ppm right after a correction). Referenced to BOOTTIME, the lock would make the sensor follow those slews and
+> switch HMAX every ~10 frames (lattice, 3.3). **Left off.** 5.2/5.3 not run. How to measure: run the lock with
+> `APERTAR_PHASE_LOCK_DEADBAND_US=100000` and sample `BOOTTIME - MONOTONIC_RAW` at the same time; subtract (hardware log 2026-10-26).
+
 **You will learn**
 - Why a 24.000 fps sensor is never 24.000 fps against the Pi clock, and what that does to Core's frame numbering and WAV length over a long take.
 - How Cinemate's phase lock works (a PI servo whose integer-microsecond requests dither the sensor between two line counts), and how to prove the law on your Mac before touching the camera.
