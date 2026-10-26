@@ -22,11 +22,11 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `9fa7918` | WebUI: "4K Clear HDR" resolution and 16-bit bit depth, greyed where unavailable; Clear HDR is 12/16-bit only | offer (with the Clear HDR set) |
 | `94ac68d` | Clear HDR raw streams get CPU-cached buffers (libcamera's per-frame CPU passes ran on uncached CFE buffers: ~4 fps -> 25) | offer (with the Clear HDR set) |
 | `f60e301` | Startup sensor-mode probe (both WDR states, `FrameDurationLimits`), fps limits from it (Clear HDR 4K 30 at 891 MHz), `list_sensor_modes` | offer (after 30 fps recording is clean) |
-| `db17860` | One libcamera request per raw buffer, 8 buffers in Clear HDR (T23); local branch `clearhdr-fixes` | fork-only (local) |
-| `43a54f3` | dma-buf read sync as a free helper, no behaviour change (T25 4.1); local branch `clearhdr-fixes` | fork-only (local) |
-| `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); local branch `clearhdr-fixes` | fork-only (local) |
-| `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); local branch `clearhdr-fixes` | fork-only (local) |
-| `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); local branch `clearhdr-fixes` | fork-only (local) |
+| `db17860` | One libcamera request per raw buffer, 8 buffers in Clear HDR (T23); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
+| `43a54f3` | dma-buf read sync as a free helper, no behaviour change (T25 4.1); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
+| `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
+| `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
+| `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); branch `clearhdr-fixes` | on GitHub (`clearhdr-fixes`, 2026-10-26) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

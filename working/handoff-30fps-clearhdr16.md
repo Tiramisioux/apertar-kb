@@ -21,7 +21,7 @@ propose experiments that Patrik can run on the Pi, each with a prediction and th
 | --- | --- | --- |
 | libcamera the Pi runs (base) | `will127534/libcamera` `qbc-pisp-handler` @ `7e9fef0` (= installed `v0.7.1+qbcfork.20260522-7-7e9fef0b`) | unchanged |
 | Our libcamera | `Tiramisioux/libcamera` branch **`apertar`**: `889567a` (L1), `6b0b49f` (L2) | on GitHub |
-| Core changes | Apertar-Core local branch `clearhdr-fixes` (not on GitHub): `db17860` T23, `43a54f3`/`fc7eb16`/`351a3ee` T25, `d9f00d4` audio | described below; ask Patrik for the diff if you need it |
+| Core changes | `Tiramisioux/Apertar-Core` branch **`clearhdr-fixes`** (from `main` `f60e301`): `db17860` T23, `43a54f3`/`fc7eb16`/`351a3ee` T25, `d9f00d4` audio | on GitHub |
 | Files that matter | libcamera `src/libcamera/pipeline/rpi/pisp/pisp.cpp` (`cfeBufferDequeue`, `tryRunPipeline`, `processRawStats`, `do16BitEndianSwap`), `raw_stats.cpp`, `common/pipeline_base.cpp` (`handleState`, `checkRequestCompleted`) | |
 | Measurement tools | this KB, `working/tools/`: `takes.sh`, `core.py`, `usample.py` (user-space IP sampler), `hwcount.py` (A76 PMU per thread), `libcam_stages.py` (per-stage times from libcamera's RPI debug log), `ipa_rate.py` | read-only |
 | Full measurement record | `lessons/hardware-log.md`, entries dated 2026-10-26 (last seven) | |
@@ -105,8 +105,8 @@ sharpen or reject:
 - Read the KB first: `llm/README.md`, then this file, `lessons/hardware-log.md` (2026-10-26 entries),
   `working/clearhdr-compare-notes.md`, `working/cinemate-lessons.md`.
 - Label every claim confirmed / probable / unconfirmed, with `path:line@commit`.
-- Do not push to Apertar-Core on GitHub: the `clearhdr-fixes` work stays local. libcamera work goes on `Tiramisioux/libcamera`
-  branch `apertar` only (never the `cinemate*` branches).
+- Only the Mac pushes, and only when Patrik asks. Core work is on `Tiramisioux/Apertar-Core` branch `clearhdr-fixes` (not `main`);
+  libcamera work on `Tiramisioux/libcamera` branch `apertar` only (never the `cinemate*` branches).
 - The Pi is a measurement machine: keep it quiet while measuring, no language servers or agents on it.
 
 ## 8. Current Pi state (end of 2026-10-26)
