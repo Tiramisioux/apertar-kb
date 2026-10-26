@@ -25,6 +25,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `db17860` | One libcamera request per raw buffer, 8 buffers in Clear HDR (T23); local branch `clearhdr-fixes` | fork-only (local) |
 | `43a54f3` | dma-buf read sync as a free helper, no behaviour change (T25 4.1); local branch `clearhdr-fixes` | fork-only (local) |
 | `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); local branch `clearhdr-fixes` | fork-only (local) |
+| `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); local branch `clearhdr-fixes` | fork-only (local) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

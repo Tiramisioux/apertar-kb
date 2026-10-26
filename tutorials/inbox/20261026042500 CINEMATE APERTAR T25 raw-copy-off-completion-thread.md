@@ -280,7 +280,7 @@ and after `workers_.clear();`:
 
 Why copy workers stop first: their last `enqueue()` calls must land before the write workers drain.
 
-**Check:** `grep -c 'copyLoop\|stopCopyWorkers' src/camera/CameraController.cpp` → 4.
+**Check:** `grep -c 'copyLoop\|stopCopyWorkers' src/camera/CameraController.cpp` → 6 (4 new, plus the H.264 recorder's own `copyLoop` definition and start).
 
 **4.6 The session gives the recorder a way to requeue** (`CameraSession::start()`, search `if (!makeRequests(error))`; insert after the `return false;`)
 
@@ -379,7 +379,7 @@ queued. The callback now hands the request to a copy worker that requeues it
 after the copy; at most buffers-2 requests are held.
 Tested: usample.py (no memcpy on the CameraManager thread), takes.sh 3 at
 30 fps, no 'has no buffer' lines."
-git -C ~/ApertarCore push -u origin main
+# clearhdr-fixes stays off GitHub: no push to origin (local branch, 2026-10-26)
 ~/.claude/skills/apertar-dev/scripts/apertar_status.sh
 ```
 
@@ -422,7 +422,7 @@ ref core src/camera/CameraController.cpp 7209 void recordRawFrame(libcamera::Req
 check 3.1 | grep -c 'requeueRequest(request);' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^[0-9]+$
 check 4.1 | grep -c 'DMA_BUF_IOCTL_SYNC' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
 check 4.2 | grep -c 'bool enqueueCopy(PendingCopy copy)' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
-check 4.5 | grep -c 'copyLoop\|stopCopyWorkers' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^4$
+check 4.5 | grep -c 'copyLoop\|stopCopyWorkers' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^6$
 check 4.6 | grep -c 'recorder_.setRequestRelease' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
 check 4.7 | grep -c 'if (recordRawFrame(request, whiteBalance)) return;' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
 %%
