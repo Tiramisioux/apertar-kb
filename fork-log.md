@@ -47,7 +47,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `77867e6` | Once-a-second sync is an `fsync` of the clip folder, not `syncfs` (which stalled the writers); full syncfs stays at stop; branch `cinemate-port` | fork-only, Mac + Pi; built 23:48; C0007 3 min clean (0 missing, peak 2/12) |
 | `a070e1b` | `recording` event broadcast to every client (the touch UI heard takes started elsewhere only on its 30 s poll); branch `cinemate-port` | fork-only, Mac + Pi; built 23:54; offer upstream |
 | `6fee0e4` | Sync thread fsyncs each DNG finished in the last second, then the folder (folder fsync alone left 0-byte files after a pull, C0010); branch `cinemate-port` | fork-only, Mac + Pi; built 23:58; pull test C0011: 258/281 frames readable |
-| `7a545d9` | Audio writer fsyncs `audio_capture.raw` once a second (was 0 bytes after a pull); branch `cinemate-port` | fork-only, Mac + Pi; built 00:00, not tested |
+| `7a545d9` | Audio writer fsyncs `audio_capture.raw` once a second (was 0 bytes after a pull); branch `cinemate-port` | fork-only, Mac + Pi; pull test: 5.02 s raw audio kept, WAV recovered |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

@@ -449,3 +449,12 @@ Entry format:
   Audio raw fix `7a545d9` (fsync once a second); `working/tools/raw2wav.py` turns a recovered raw file into a WAV.
 - Confirmed by: the card's contents after re-insert.
 
+## 2026-10-27: pull mid-take keeps picture to ~0.8 s before the pull and all but the last moment of audio
+
+- Tested: Core `7a545d9` (audio raw fsync once a second), take `cDNG_26-10-27_C0001`, pulled 5.4 s in (00:01:53.43).
+- Seen: 102 readable DNGs (4.1 s, band level steady, max step 0.058 %) + 21 empty; `audio_capture.raw` 1 445 778 bytes =
+  5.02 s s24 stereo 48 kHz, real signal in all 502 sampled 10 ms blocks (peak -44.7 dBFS); `raw2wav.py` made
+  `cDNG_26-10-27_C0001.recovered.wav`. Stop: `dead-medium stages raw_ms=2 audio_ms=488`; remount 7.4 s after the pull.
+- Why: **confirmed** that a pulled take now keeps its picture to within a second and its audio as raw PCM, recoverable to WAV.
+- Confirmed by: the card's contents after re-insert.
+
