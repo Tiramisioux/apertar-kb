@@ -71,6 +71,13 @@ Things the T22-T25 work changes for these notes:
   path in `tutorials/README.md` was not found from this session).
 - `deploy_to_pi.sh` has not been run since the KB moved on; the Pi's `~/apertar-kb` is behind (tools there are used by `takes.sh`).
 
+- **Journal unusable (found 2026-10-26 21:45, during T27 3.1):** `/etc/machine-id` is missing (not empty), so journald writes
+  flat files in `/run/log/journal/` that `journalctl` does not open ("No journal files were opened"); `/var/log/journal` unused,
+  nothing survives a reboot. And the system libcamera's IPA logs `WARN IPARPI ipa_base.cpp:1450 No HDR algorithm available` on
+  every frame in Clear HDR 16-bit (~25/s), so the 8 MB runtime journal rotates into a root-only archive within minutes and
+  Core's own lines are gone from the readable file. Blocks T27 3.2 / 5.x (journal greps). **Probable** fixes (Patrik):
+  `sudo systemd-machine-id-setup` + reboot; quieter IPA via `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR` for apertar-core.
+
 ## 5. Read first
 
 `llm/README.md` → `llm/tutoring.md` §7 → `working/mac-driven-loop.md` → `working/cinemate-lessons.md` (§4 yank, §5 media,
