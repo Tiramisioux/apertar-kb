@@ -43,7 +43,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `a99691e` | Audio writer thread + 1 s ALSA ring, 10 ms period (T30 reference patch); branch `cinemate-port` | fork-only, Mac + Pi; built 23:04, not tested |
 | `0586273` | `syncfs` on the clip folder once a second during a take and at every stop, so a pulled card keeps all but the last ~1-2 s; branch `cinemate-port` | fork-only, Mac + Pi; built 23:07, not tested |
 | `e2f55a2` | exFAT keeps 4 writers/queue 12 (T29's 2/16/+2 lost 166 frames in 3 min, C0106); audio ring 100 ms by default (1 s made the drift figure unreliable); branch `cinemate-port` | fork-only, Mac + Pi; built |
-| `775083f` | Each DNG's writeback started right after it is written (`sync_file_range`, async), so the 1 s syncfs no longer bursts; branch `cinemate-port` | fork-only, Mac + Pi; built, not tested |
+| `775083f` | Each DNG's writeback started right after it is written (`sync_file_range`, async), so the 1 s syncfs no longer bursts; branch `cinemate-port` | fork-only, Mac + Pi; built; alone clean (C0004), with 1 s syncfs 782 drops (C0005) |
+| `77867e6` | Once-a-second sync is an `fsync` of the clip folder, not `syncfs` (which stalled the writers); full syncfs stays at stop; branch `cinemate-port` | fork-only, Mac + Pi; built 23:48, not tested |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

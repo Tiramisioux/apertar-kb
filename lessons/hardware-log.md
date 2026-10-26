@@ -406,3 +406,14 @@ Entry format:
   re-insert tests at Gen 2.
 - Confirmed by: Patrik's takes; journal of boot -1.
 
+## 2026-10-26: per-DNG writeback alone is clean; with the 1 s syncfs it stalls the writers
+
+- Tested: Core `775083f` (sync_file_range per DNG), Gen 3, `takes.sh 1 180` (12→16 reconfigure first), 16-bit 4K25.
+- Writeback, syncfs off (drop-in): C0004 4494 frames, 0 queue drops, no capture gaps, peak 1/12, stop sync 62 ms.
+  Writeback + syncfs 1 s: C0005 3701 written, **782 queue drops**, 12 capture gaps, peak 12/12, stop sync 181 ms.
+- Why: **probable** that syncfs waits for all pages already in writeback and the DNG writers block behind it. Next:
+  `77867e6` (fsync of the clip folder instead).
+- Also: Core answers `record_start` in 0.24 s and emits its `recording` event; the touch UI's apparent delay during these
+  tests is `takes.sh`'s 12→16 reconfigure (~11 s) before it records (**probable**; Patrik to check with his own press).
+- Audio drift figure with T30's writer still varies take to take (+18, +15, +64, -139, +156 ppm): open.
+
