@@ -26,6 +26,7 @@ commit, PR or upstream release. Check: `scripts/fork_log_check.sh` (skill folder
 | `43a54f3` | dma-buf read sync as a free helper, no behaviour change (T25 4.1); local branch `clearhdr-fixes` | fork-only (local) |
 | `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); local branch `clearhdr-fixes` | fork-only (local) |
 | `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); local branch `clearhdr-fixes` | fork-only (local) |
+| `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); local branch `clearhdr-fixes` | fork-only (local) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
@@ -47,6 +48,7 @@ GitHub (`origin`) only from the Mac, when Patrik says publish. `apertar_publish.
 | Commit | Change | Status |
 | --- | --- | --- |
 | `7e9fef0` | base, unchanged (will127534 `qbc-pisp-handler`) | upstream of the fork |
+| `889567a` | `QBC_RAW_STATS_ROW_STEP=N`: software raw stats read every Nth Bayer row pair (default 1 = unchanged); built on the Pi into `~/opt/libcamera-apertar`, not yet run | fork-only (Pi staging, not on GitHub) |
 
 ## imx585-v4l2-driver · branch `apertar` · base will127534 `qbc-pisp-handler` (`1644466`)
 
