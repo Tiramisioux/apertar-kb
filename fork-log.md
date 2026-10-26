@@ -37,6 +37,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `438a342` | Survive a yanked/unmounted drive: media fault latch, probe + watcher, record gate, eject intent, `media_alive` state, WebUI (T28 reference patch); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:27 with `e8bb1b7` |
 | `e8bb1b7` | MLV abandon-on-dead-medium moved to the MLV worker (438a342 had it in the DNG loop; build failed); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
 | `56d9137` | Pulled CFexpress card seen at once (HAT slot bit in the media probe); dead-medium stop bounded (DNG writers detached after 2 s), stage times logged; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:43 |
+| `da48974` | Pulled card latched removed until remounted (mount id); write stall (5 s, queue full / during stop) ends the take as media removed; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:51 |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

@@ -341,3 +341,19 @@ Entry format:
 - Confirmed by: Patrik's report; the card's contents.
 - Tutorial: T28 5.2 (CFE variant).
 
+## 2026-10-26: CFE pull test with the HAT slot bit (56d9137): detection works; re-insert breaks the card; stop waited 22.6 s
+
+- Tested: Core `56d9137` (HAT slot bit, bounded dead-medium stop), persistent journal, card pulled three times idle (22:46:09,
+  :25, :31) and re-inserted each time, then record (22:47:16), stop pressed during the take.
+- Seen: every pull logged `media: state=removed ... nvme_state=- hat_card=out` within the 1 s watcher cycle without touching the
+  device; every re-insert `state=mounted ... nvme_state=live hat_card=in`. But the card was unusable after re-insert:
+  direct write `Input/output error`, `exFAT ... set read-only`, controller `dead` (dmesg 665 s, `lost async page write`).
+  Record at 22:47:16 passed the gate; `drop[queue-full] queue=12/12` after 0.7 s; nothing written; at 22:47:40 the kernel
+  failed the I/O: `write_failures=4`, `recorder stop time: 22.631s`, `Audio capture write failed`. The touch UI kept READY
+  (it reads the mount table via QStorageInfo, not Core's `media_alive`).
+- Why: **confirmed** the HAT bit sees pulls at once. **Confirmed** a Pi 5 cannot hot-plug the CFE NVMe: a re-inserted card needs
+  a PCIe remove/rescan (remount) or a reboot. **Confirmed** the stop hang was writers stuck until the NVMe timeout (~24 s).
+- Fix: `da48974` (pulled latch per mount id; write-stall detection in the take and in every stop). Touch UI: open (UI repo).
+- Confirmed by: Core journal and dmesg on the Pi; Patrik's report on the UI.
+- Tutorial: T28 5.2.
+
