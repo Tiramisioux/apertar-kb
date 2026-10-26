@@ -357,3 +357,21 @@ Entry format:
 - Confirmed by: Core journal and dmesg on the Pi; Patrik's report on the UI.
 - Tutorial: T28 5.2.
 
+## 2026-10-26: CFE card pull and re-insert work end to end (Core da48974+227ea7b, UI 160898c+dc471c1); a stopped take is lost if pulled within ~30 s
+
+- Tested: Pi 5 (4 GB), PCIe Gen 2, Core `cinemate-port` `227ea7b`, UI `cinemate-port` `dc471c1` (automounter installed to
+  `/usr/local/libexec` 22:59:19, backup `apertar-cfe-automounter.bak-1.6.0`), persistent journal. Boot 22:59:33.
+- Idle pull 22:59:56.42: automounter `card removed while mounted` (lazy unmount + PCIe remove); Core `state=none` 0.3 s later;
+  touch UI NO MEDIA. Re-insert 23:00:00.07: `insert requested`, `resetting PCIe controller`, mounted 23:00:02.28; Core
+  `state=mounted pulled=0` 0.5 s later. Take C0105 (23:00:09.9-11.3): 32/32 written.
+- Pull during take C0106 (23:00:15.04): Core `recording failure: fault=media_removed` 0.21 s later; `dead-medium stages gyro_ms=0
+  h264_ms=0 raw_ms=0 prores_ms=0 audio_ms=125`; Core responsive throughout. Re-insert 23:00:16.8, mounted 23:00:24.8 (8 s).
+- **Data loss:** neither C0105 nor C0106 is on the card afterwards. C0106 is expected. C0105 had stopped cleanly 4 s before the
+  pull: its frames were still dirty in the page cache (`vm.dirty_expire_centisecs=3000`, writeback every 5 s) and Core never
+  syncs at stop (no `fsync`/`syncfs` in the recorders). **Confirmed**: a take pulled within ~30 s of its stop is lost.
+- Why: **confirmed** that the HAT slot bit + automounter surprise-removal path gives clean detection, a bounded stop and a
+  working re-insert without reboot (T18 defects 1 and 2 for CFE).
+- Next: `syncfs` on the media root at record stop, with `media_writes_pending` (WRITING) held until it returns; then repeat.
+- Confirmed by: Patrik ("it works"), Core and automounter journal.
+- Tutorial: T28 5.2, T18 step 5.
+

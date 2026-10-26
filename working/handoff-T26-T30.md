@@ -82,6 +82,16 @@ Things the T22-T25 work changes for these notes:
   `config.txt.bak-gen3`). 437 MB/s, 30 s 16-bit take clean. Watch for `CSTS=0xffffffff`; if none for days, keep Gen 2 (or go
   back to Gen 3 after reseating the HAT). `/cDNG_26-10-26_C0030` has bad directory entries: delete, then `fsck.exfat` with repair.
 
+- **Session 2026-10-26 evening, summary:** T26 confirmed (driver crops, `cinemate-port` `24172e6`); Core binning `4ab1057`;
+  T27 built and **left off** (sensor ~1.5 ppm vs the Pi crystal, lock flickers and drops frames on the lattice libcamera);
+  T28 applied (`438a342`, fix `e8bb1b7`) plus CFE follow-ups `56d9137`, `da48974`, `227ea7b` and UI `cinemate-port`
+  (`160898c`, `dc471c1`): CFE pull/re-insert works without reboot. Journal persistent (`50-apertar-persistent.conf`),
+  `IPARPI:ERROR` drop-in, PCIe Gen 2 on test. Branches renamed: Core `clearhdr-fixes` and driver `apertar-tiramisioux` are now
+  `cinemate-port`; UI got `cinemate-port` too.
+- **Open: a stopped take is lost if the card is pulled within ~30 s** (no sync at stop). Fix: `syncfs` at record stop with
+  WRITING held until it returns.
+- **T28 not finished:** 5.1 eject gate, USB-stick pull, 5.3 eject intent; T29/T30 after it.
+
 ## 5. Read first
 
 `llm/README.md` → `llm/tutoring.md` §7 → `working/mac-driven-loop.md` → `working/cinemate-lessons.md` (§4 yank, §5 media,

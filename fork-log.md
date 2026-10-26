@@ -29,23 +29,23 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `fc7eb16` | Raw copy hand-off API and copy worker in the DNG queue, not wired in yet (T25 4.2-4.4); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
 | `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
 | `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
-| `4ab1057` | Binning per sensor mode and for the current mode (crop width / output width; inferred from the active area when the driver gives no window); `list_sensor_modes`, `get_state` `sensor_binning*`; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built and running 21:39, list_sensor_modes + get_state verified |
-| `80ddac1` | Frame-rate phase lock, off by default (`set_fps_phase_lock`, `fps_phase_lock_*` state), T27 reference patch; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub), built 22:04 with `8f7dc39` |
-| `8f7dc39` | `CameraSession::phaseLockStatus` made public (80ddac1 did not compile); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
-| `3a18db0` | Phase-lock pin history 16 deep (8 requests in flight in Clear HDR since T23); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
-| `114bfb9` | Phase-lock history seeded with Core's own pin at arm (false `saturated` right after arming); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
-| `438a342` | Survive a yanked/unmounted drive: media fault latch, probe + watcher, record gate, eject intent, `media_alive` state, WebUI (T28 reference patch); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:27 with `e8bb1b7` |
-| `e8bb1b7` | MLV abandon-on-dead-medium moved to the MLV worker (438a342 had it in the DNG loop; build failed); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
-| `56d9137` | Pulled CFexpress card seen at once (HAT slot bit in the media probe); dead-medium stop bounded (DNG writers detached after 2 s), stage times logged; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:43 |
-| `da48974` | Pulled card latched removed until remounted (mount id); write stall (5 s, queue full / during stop) ends the take as media removed; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:51 |
-| `227ea7b` | `media_state`/`media_alive` in the socket's `get_state` (for the touch UI); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:54 |
+| `4ab1057` | Binning per sensor mode and for the current mode (crop width / output width; inferred from the active area when the driver gives no window); `list_sensor_modes`, `get_state` `sensor_binning*`; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built and running 21:39, list_sensor_modes + get_state verified |
+| `80ddac1` | Frame-rate phase lock, off by default (`set_fps_phase_lock`, `fps_phase_lock_*` state), T27 reference patch; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`), built 22:04 with `8f7dc39` |
+| `8f7dc39` | `CameraSession::phaseLockStatus` made public (80ddac1 did not compile); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`) |
+| `3a18db0` | Phase-lock pin history 16 deep (8 requests in flight in Clear HDR since T23); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`) |
+| `114bfb9` | Phase-lock history seeded with Core's own pin at arm (false `saturated` right after arming); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`) |
+| `438a342` | Survive a yanked/unmounted drive: media fault latch, probe + watcher, record gate, eject intent, `media_alive` state, WebUI (T28 reference patch); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:27 with `e8bb1b7` |
+| `e8bb1b7` | MLV abandon-on-dead-medium moved to the MLV worker (438a342 had it in the DNG loop; build failed); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`) |
+| `56d9137` | Pulled CFexpress card seen at once (HAT slot bit in the media probe); dead-medium stop bounded (DNG writers detached after 2 s), stage times logged; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:43 |
+| `da48974` | Pulled card latched removed until remounted (mount id); write stall (5 s, queue full / during stop) ends the take as media removed; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:51 |
+| `227ea7b` | `media_state`/`media_alive` in the socket's `get_state` (for the touch UI); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 22:54 |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
 | --- | --- | --- |
-| `dc471c1` | CFE automounter: card pulled while mounted → lazy unmount + PCIe remove, so the next insert remounts (T18 step 5a); branch `cinemate-port` | fork-only, Mac + Pi; built 22:58, install to `/usr/local/libexec` pending |
-| `160898c` | Touch UI follows Core's media state (MEDIA REMOVED / ERROR) instead of only the mount table; branch `cinemate-port` (created 2026-10-26 from `main` `4415a55`, on GitHub, Mac, Pi) | fork-only, built 22:55 |
+| `dc471c1` | CFE automounter: card pulled while mounted → lazy unmount + PCIe remove, so the next insert remounts (T18 step 5a); branch `cinemate-port` | fork-only; installed 22:59, tested on the Pi (pull + re-insert, no reboot) |
+| `160898c` | Touch UI follows Core's media state (MEDIA REMOVED / ERROR) instead of only the mount table; branch `cinemate-port` (created 2026-10-26 from `main` `4415a55`, on GitHub, Mac, Pi) | fork-only, on GitHub (`cinemate-port`); built 22:55, tested |
 | `66d6d19` | Stop tracking the committed `build/` tree (551 files, 18 MB, #5) | offer |
 | `29ed99b` | Executable bits and `mesa-minimal` symlinks restored (#6) | offer |
 | `4415a55` | Touch UI: "4K Clear HDR" resolution (quick menu + settings) and 16-bit bit depth, greyed where unavailable; bridge `clearHdr` / `applyClearHdr` | offer (needs Core `631721d`+) |
