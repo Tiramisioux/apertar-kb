@@ -512,8 +512,8 @@ ref core src/cdng/CdngEncoder.cpp 1458 key.stripByteCount = stripByteCount;
 ref core src/cdng/CdngEncoder.cpp 1748 int openFlags = O_WRONLY | O_CREAT | O_TRUNC;
 ref core src/cdng/CdngEncoder.cpp 1779 ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 ref core src/cdng/CdngEncoder.cpp 1861 bool CdngEncoder::writeRawPayload(int fd, const RawFrameView &frame, const EncodedRawLayout &layout) const
-ref core src/camera/CameraController.cpp 3028 size_t activeRawFrameBytes(uint32_t stride, uint32_t activeHeight)
-ref core src/camera/CameraController.cpp 7268 std::vector<uint8_t> rawCopy = recorder_.acquireRawBuffer(rawSize);
+ref core src/camera/CameraController.cpp 3039 size_t activeRawFrameBytes(uint32_t stride, uint32_t activeHeight)
+ref core src/camera/CameraController.cpp 7288 std::vector<uint8_t> rawCopy = recorder_.acquireRawBuffer(rawSize);
 check 3.2 | grep -c 'ifd.add(273' /home/pi/ApertarCore/src/cdng/CdngEncoder.cpp | ^1$
 check 4.1 | grep -c 'directStripOffset\|writeRawPayloadDirect\|AlignedBytes' /home/pi/ApertarCore/src/cdng/CdngEncoder.hpp | ^6$
 check 4.4 | grep -c 'findIfdTagValueOffset(ifdTemplateCache_.bytes, ifdOffset, 0, 273, true)' /home/pi/ApertarCore/src/cdng/CdngEncoder.cpp | ^1$

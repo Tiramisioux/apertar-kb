@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T25. Copy raw frames on a recorder worker, not on libcamera's completion thread
 
-Status: written 2026-10-26 (cloud session; reference patch `working/patches/0001-camera-copy-raw-frames-on-a-recorder-worker-not-on-l.patch`, **not compiled**). Needs T23 (requests follow buffers) and T24 (`alignedRawData`, page-aligned pool). Builds the request lifecycle (**M7** plus threads).
+Status: written 2026-10-26 (cloud session; reference patch `working/patches/0001-camera-copy-raw-frames-on-a-recorder-worker-not-on-l.patch`, **not compiled**). Needs T23 (requests follow buffers). **T24 is skipped on our build (2026-10-26, uncompressed 25 fps is already clean, so direct I/O has nothing to fix): wherever this note or the patch uses `alignedRawData(rawCopy)` use `rawCopy.data()`, and wherever it asks for `copy.size + kRawCopyAlignment` use `copy.size`; drop the patch's `alignedRawData` hunk.** Builds the request lifecycle (**M7** plus threads).
 
 **You will learn**
 - What libcamera's completion thread does per frame in our stack (two full-buffer passes in libcamera, then Core's sync + copy), and why 30 fps does not fit.
@@ -85,7 +85,7 @@ All in `/home/pi/ApertarCore/src/camera/CameraController.cpp`. Lines at `f60e301
 
 **4.1 A dma-buf sync helper both classes can call** (search `static bool syncCpuReadBuffer(int fd, bool begin)`)
 
-`syncCpuReadBuffer` is a static member of `CameraSession`, defined after `DngRecordingQueue`, so the queue cannot call it. Add a free function next to `alignedRawData` (from T24):
+`syncCpuReadBuffer` is a static member of `CameraSession`, defined after `DngRecordingQueue`, so the queue cannot call it. Add a free function in the anonymous namespace next to `activeRawFrameBytes` (T24 and its `alignedRawData` are skipped; see the status line):
 
 ```cpp
 // CPU-cached dma-bufs need a sync before and after the CPU reads them.
@@ -412,13 +412,13 @@ Undo: `git -C ~/ApertarCore checkout -- src/camera/CameraController.cpp`, rebuil
 - Kernel: `rp1_cfe/cfe.c:615-631@5bd564a`.
 
 %% tutor
-ref core src/camera/CameraController.cpp 4799 static void releasePreviewJob(PreviewJob &job)
-ref core src/camera/CameraController.cpp 5757 camera_->requestCompleted.disconnect(this, &CameraSession::requestComplete);
-ref core src/camera/CameraController.cpp 6762 static bool syncCpuReadBuffer(int fd, bool begin)
-ref core src/camera/CameraController.cpp 6833 void requeueRequest(libcamera::Request *request)
-ref core src/camera/CameraController.cpp 6915 void requestComplete(libcamera::Request *request)
-ref core src/camera/CameraController.cpp 6999 if (recordProcessedPreviewFrame(request)) return;
-ref core src/camera/CameraController.cpp 7189 void recordRawFrame(libcamera::Request *request, const WhiteBalanceMeasurement &whiteBalance)
+ref core src/camera/CameraController.cpp 4817 static void releasePreviewJob(PreviewJob &job)
+ref core src/camera/CameraController.cpp 5775 camera_->requestCompleted.disconnect(this, &CameraSession::requestComplete);
+ref core src/camera/CameraController.cpp 6781 static bool syncCpuReadBuffer(int fd, bool begin)
+ref core src/camera/CameraController.cpp 6853 void requeueRequest(libcamera::Request *request)
+ref core src/camera/CameraController.cpp 6935 void requestComplete(libcamera::Request *request)
+ref core src/camera/CameraController.cpp 7019 if (recordProcessedPreviewFrame(request)) return;
+ref core src/camera/CameraController.cpp 7209 void recordRawFrame(libcamera::Request *request, const WhiteBalanceMeasurement &whiteBalance)
 check 3.1 | grep -c 'requeueRequest(request);' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^[0-9]+$
 check 4.1 | grep -c 'DMA_BUF_IOCTL_SYNC' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
 check 4.2 | grep -c 'bool enqueueCopy(PendingCopy copy)' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
