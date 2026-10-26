@@ -305,8 +305,11 @@ Entry format:
   `media_alive=false` while `media_mounted=true`.
 - Why: **confirmed** that the boot args did not stop the drops. **Probable**: hardware (HAT power or contact, PCIe link, heat);
   not the software. **Confirmed** that T28's probe sees a dead NVMe behind a live mount.
-- Next: power-cycle; check `dmesg` for the link speed and errors after boot; watch whether it recurs idle; then delete C0030 and
+- After a power cycle (22:30): NVMe `live`, writable; `throttled=0x0`, EXT5V 5.02 V, 57 °C; `brcm-pcie 1000110000.pcie: link up,
+  8.0 GT/s PCIe x1` = **Gen 3**, from `config.txt:35-36` (`dtparam=pciex1`, `dtparam=pciex1_gen=3`; also `rp1-clk-333mhz`). Gen 3 is
+  an overclock on the Pi 5 connector (certified Gen 2) and a known cause of `CSTS=0xffffffff` drops: **probable** cause here.
+  Trade-off: 16-bit uncompressed 4K at 25 fps needs ~425 MB/s; Gen 2 x1 gives ~400 MB/s usable, Gen 3 ~800.
+- Next (was): power-cycle; check `dmesg` for the link speed and errors after boot; watch whether it recurs idle; then delete C0030 and
   run `fsck.exfat` with repair.
 - Confirmed by: dmesg and Core logs read on the Pi.
 - Tutorial: T28 (an unplanned 5.x).
-
