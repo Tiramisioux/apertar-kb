@@ -271,7 +271,7 @@ Entry format:
   (0 holes, WAV = frames) reflects the same: the sensor needs no lock at 25 fps.
 - Also fixed on the way: the lock's `saturated` flag fired at every arm (pin history 4 < 8 requests in flight; history not
   seeded with Core's own pin): `3a18db0`, `114bfb9`.
-- Decision (Patrik, 2026-10-26): lock stays in the code, **off** (`fps_phase_lock false`). A future version should reference an
+- Left in the code, **off** after the measurement (2026-10-26; Patrik ran the undo) (`fps_phase_lock false`). A future version should reference an
   unslewed clock (MONOTONIC_RAW) or the audio crystal, not BOOTTIME.
 - Confirmed by: measurements run on the Pi at Patrik's request.
 - Tutorial: T27 5.1 / measurement.
