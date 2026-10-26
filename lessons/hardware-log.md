@@ -60,3 +60,33 @@ Entry format:
   (buffer count, direct I/O, media profile), do not switch filesystem.
 - Confirmed by: Patrik, own `findmnt` reading and "yes, lets keep exfat".
 - Tutorial: `T22 clearhdr-drops-measure` (step 3.1).
+
+## 2026-10-26: Clear HDR 16-bit 4K at 25 fps loses 16-40 % of frames; CSI-2 receiver never errors; dirty-page tuning does not help
+
+- Tested: Pi 5 (4 GB), IMX585, Apertar-Core fork main f60e301, kernel 6.12.75+rpt-rpi-2712, /media/RAW = exFAT on
+  /dev/nvme0n1p2, rp1_cfe.track_csi2_errors=1 on the kernel command line. 3840x2160, Clear HDR, 16-bit, 25 fps,
+  CDNG lossless_jpeg, workers=5, queue=24. T22.
+- Worked: counters and measurement setup. dd direct I/O to the NVMe: 733 MB/s with frame delivery clean (24.99/s, 0 gaps).
+- Did not work: any 10 s take. 5 baseline takes lost 39-96 of ~243 frames (mean 62.8), 5 takes with dirty_background_bytes=256 MiB,
+  dirty_bytes=1 GiB, writeback 150 cs lost 43-92 (mean 66.2): no difference. fps into libcamera 22.4/19.3/22.3/22.1/19.3 baseline.
+- Results:
+
+  | run | fps into libcamera | intervals >60 ms | CSI-2 counters |
+  | --- | --- | --- | --- |
+  | idle, no load | 24.92 | 0 | - |
+  | dd buffered (fdatasync) | 24.63 | 3 | all 0 |
+  | dd direct | 24.99 | 0 | all 0 |
+  | dd tmpfs, 12 x 1 GB | 22.77 | 11 | all 0 |
+  | take C0001 | 24.36 | 3 | not read |
+  | takes C0002-6 (baseline) | 19.3-22.4 | 19-52 | not read |
+  | takes C0007-11 (dirty knobs) | 18.2-22.7 | 19-68 | not read |
+
+  Of the lost frames: capture-side gaps 25-70 per take in C0002-11 (64-69 %), queue-full drops 14-35; in C0001, 6 and 36.
+  files + queue-full + capture gaps = last file index + 1, within 1 frame, in all 11 takes.
+- Why (what is established): the receiver never overflowed or saw a link error, so theory A (CSI-2 FIFO starvation) is not
+  supported. Memory traffic alone (dd to tmpfs, no NVMe) costs frames; direct I/O (no page-cache copy) does not. Throttling
+  (get_throttled 0x0, 2.4 GHz, ~63 C), direct reclaim, compaction and write failures were all 0.
+  Not established: why takes alternate between ~22 fps and ~19 fps; whether the "no buffer" scheduling line exists on this kernel
+  (CONFIG_DYNAMIC_DEBUG is not set); block-queue tuning (not tested); 30 fps (not tested). 89 MB of swap was in use.
+- Confirmed by: Patrik, own measurements on the Pi.
+- Tutorial: T22 clearhdr-drops-measure.
