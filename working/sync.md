@@ -74,7 +74,7 @@ Set up 2026-10-25 so Claude Code can run on the Pi (VS Code Remote-SSH) with the
 
 | Side | Path | Remote |
 | --- | --- | --- |
-| Mac | `~/Documents/Apertar/apertar-kb` | `pi` = `ssh://apertar/home/pi/apertar-kb` (fetch **and** push) |
+| Mac | `~/Documents/Apertar/apertar-kb` | `origin` = `Tiramisioux/apertar-kb` (**private**, since 2026-10-26); `pi` = `ssh://apertar/home/pi/apertar-kb` (fetch **and** push) |
 | Pi | `~/apertar-kb` | none. `receive.denyCurrentBranch=updateInstead` |
 
 No GitHub here, so the Mac pushes straight to the Pi. `updateInstead` updates the Pi's checked-out

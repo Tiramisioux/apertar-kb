@@ -1,7 +1,8 @@
 # Apertar knowledge base
 
-Local git, no GitHub remote. Two copies: the Mac (`~/Documents/Apertar/apertar-kb`) and the Pi
-(`~/apertar-kb`), synced by the Mac (`working/sync.md`, "The KB on the Pi"). Read by the `apertar-dev` skill before it diagnoses a problem or
+Git, with a **private** GitHub repo `Tiramisioux/apertar-kb` (since 2026-10-26). Three copies: the Mac
+(`~/Documents/Apertar/apertar-kb`), the Pi (`~/apertar-kb`) and GitHub. `apertar_publish.sh` on the Mac
+syncs all three (`working/sync.md`, "The KB on the Pi"); the Pi gets its copy via the Mac. Read by the `apertar-dev` skill before it diagnoses a problem or
 writes a tutorial. Written for Patrik, who learns Apertar by making the changes himself.
 
 ## What lives where
