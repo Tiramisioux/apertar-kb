@@ -56,9 +56,14 @@ Reading assignments: `src/camera/FramePhaseLock.hpp` (all), `CC:7051-7143`, `CC:
 **3.0 Prove the law on your Mac first** (no camera; mirrors Cinemate `28b30cc`, "tests that exercise the shipped code path, not a copy")
 
 ```bash
-cd ~/apertar-kb/working/tools
-g++ -std=c++20 -O2 -Wall -I ~/ApertarCore/src/camera phase_lock_sim.cpp -o /tmp/phase_lock_sim && /tmp/phase_lock_sim
+# Mac. The header does not exist in the Core tree until 4.1, so take it from the reference patch into a scratch folder.
+KB=~/Documents/Apertar/apertar-kb; S=$(mktemp -d)
+(cd "$S" && git init -q && git apply --include='src/camera/FramePhaseLock.hpp' "$KB"/working/patches/0001-camera-frame-rate-phase-lock*.patch)
+g++ -std=c++20 -O2 -Wall -I "$S/src/camera" "$KB/working/tools/phase_lock_sim.cpp" -o "$S/phase_lock_sim" && "$S/phase_lock_sim"
 ```
+
+After 4.1 the same test runs against your own header: `-I ~/Documents/Apertar/Apertar-Core/src/camera` on the Mac, or on the Pi
+`g++ ... -I ~/ApertarCore/src/camera ~/apertar-kb/working/tools/phase_lock_sim.cpp`.
 
 Prediction: 22 `[ok]` lines; case 1 ends within 10 ppm with 3 distinct requests and settles from a cold arm in a few hundred frames; case 2 (an exactly-on sensor) shows 0 pushes; case 6 prints the qbc lattice table.
 
