@@ -30,7 +30,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `351a3ee` | Raw frames copied on a recorder worker, request requeued after the copy, buffers-2 held (T25 4.5-4.7); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
 | `d9f00d4` | Audio recorder told about a raw frame only once the write queue accepted it; WAV start/end order-proof (follow-up to T25); branch `cinemate-port` | on GitHub (`cinemate-port`, 2026-10-26) |
 | `4ab1057` | Binning per sensor mode and for the current mode (crop width / output width; inferred from the active area when the driver gives no window); `list_sensor_modes`, `get_state` `sensor_binning*`; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built and running 21:39, list_sensor_modes + get_state verified |
-| `80ddac1` | Frame-rate phase lock, off by default (`set_fps_phase_lock`, `fps_phase_lock_*` state), T27 reference patch; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub), not built |
+| `80ddac1` | Frame-rate phase lock, off by default (`set_fps_phase_lock`, `fps_phase_lock_*` state), T27 reference patch; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub), built 22:04 with `8f7dc39` |
+| `8f7dc39` | `CameraSession::phaseLockStatus` made public (80ddac1 did not compile); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
