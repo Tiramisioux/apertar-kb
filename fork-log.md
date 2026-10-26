@@ -46,6 +46,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `775083f` | Each DNG's writeback started right after it is written (`sync_file_range`, async), so the 1 s syncfs no longer bursts; branch `cinemate-port` | fork-only, Mac + Pi; built; alone clean (C0004), with 1 s syncfs 782 drops (C0005) |
 | `77867e6` | Once-a-second sync is an `fsync` of the clip folder, not `syncfs` (which stalled the writers); full syncfs stays at stop; branch `cinemate-port` | fork-only, Mac + Pi; built 23:48; C0007 3 min clean (0 missing, peak 2/12) |
 | `a070e1b` | `recording` event broadcast to every client (the touch UI heard takes started elsewhere only on its 30 s poll); branch `cinemate-port` | fork-only, Mac + Pi; built 23:54; offer upstream |
+| `6fee0e4` | Sync thread fsyncs each DNG finished in the last second, then the folder (folder fsync alone left 0-byte files after a pull, C0010); branch `cinemate-port` | fork-only, Mac + Pi; built 23:58, not tested |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

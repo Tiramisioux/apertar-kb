@@ -427,3 +427,13 @@ Entry format:
   (`handleTriggerEvent`). The touch UI then learned on its next `get_state` poll (`kSteadyStatePollIntervalMs` 30 s).
   Fix `a070e1b`. Upstream behaviour (**probable**: the list is unchanged from 1.6.0).
 
+## 2026-10-26: pull with writeback + folder fsync: folder and names survive, files are 0 bytes
+
+- Tested: Core `a070e1b` (writeback per DNG, 1 s folder fsync), take C0010 started 23:56:19.1, card pulled 23:56:21.28.
+- Seen: automounter `card removed while mounted` + Core `recording failure ... media_removed` within 9 ms; `written=52`;
+  `dead-medium stages raw_ms=20 audio_ms=1277`; re-insert remounted in 3.9 s. After: folder C0010 with 48 `.dng` names,
+  **all 0 bytes**. C0008/C0009 (stopped normally just before) complete, WAV = frames.
+- Why: **probable** that the data blocks reached the card (writeback started per file) but each file's exFAT entry (size,
+  first cluster) was still dirty in memory; the folder fsync writes the folder, not the files' entries. Fix `6fee0e4`.
+- Confirmed by: the card's contents after re-insert.
+
