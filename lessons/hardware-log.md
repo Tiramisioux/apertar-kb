@@ -391,3 +391,18 @@ Entry format:
 - Confirmed by: measurements on the Pi at Patrik's request; format done at Patrik's request (all clips deleted).
 - Tutorial: T29, T30.
 
+## 2026-10-26: the once-a-second syncfs costs capture frames; a crash right after a PCIe re-insert at Gen 3
+
+- Tested: Core `e2f55a2`, Gen 3, freshly formatted exFAT, 16-bit 4K25 uncompressed, ~3 min takes by Patrik.
+  Sync on (`APERTAR_MEDIA_SYNC_MS` 1000): C0001 4558 frames, **12 capture gaps**. Sync off (drop-in `sync-off-test.conf`):
+  C0003 4519 frames, **0 holes**, WAV = frames; C0002 (30 s) clean too. Queue peak 1/12 both ways; stop sync 67-68 ms.
+- Crash (Patrik: "it was a crash"): card pulled and re-inserted 23:33:28, automounter PCIe controller reset + mount at
+  23:33:33.8, C0004 started 23:33:36.31; the journal of that boot ends at 23:33:36.47 with no shutdown and no kernel message
+  (hardware watchdog reset or freeze). C0004 is not on the card at all (sync was off).
+- Why: **probable** that syncfs's once-a-second writeback burst competes with the memory-bound PiSP back end (capture gaps,
+  not disk). **Probable** that the crash is the fresh PCIe link after the controller reset under immediate Gen 3 load; the
+  22:28:42 reboot also followed NVMe trouble at Gen 3. **Confirmed** that without the sync a crash loses the running take.
+- Next: smoother writeback instead of syncfs bursts (e.g. `sync_file_range` per DNG, or a shorter `vm.dirty_expire`), and
+  re-insert tests at Gen 2.
+- Confirmed by: Patrik's takes; journal of boot -1.
+
