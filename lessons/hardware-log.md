@@ -292,3 +292,21 @@ Entry format:
 - Decision: lock off (default). Confirmed by: measurements run on the Pi at Patrik's request.
 - Tutorial: T27.
 
+## 2026-10-26: second NVMe controller drop (54 s after a boot), with APST/ASPM off; Core's T28 media watcher reports it
+
+- Tested: Pi 5 (4 GB), CFE HAT NVMe `/dev/nvme0n1p2` exFAT, boot args `nvme_core.default_ps_max_latency_us=0 pcie_aspm=off`,
+  Core `cinemate-port` `e8bb1b7` (T28 built 22:27). Boot at 22:28:42 (cause unknown: the journal is volatile).
+- Seen: dmesg `[54.53] nvme nvme0: controller is down; will reset: CSTS=0xffffffff`, read I/O errors, then
+  `Disabling device after reset failure: -19`; `/sys/class/nvme/nvme0/state` = `dead`; `/media/RAW` still in the mount table,
+  every access `Input/output error`. Earlier the same evening `fsck.exfat -n` found bad checksums and stray entries (0xc0/0xc1)
+  in `/cDNG_26-10-26_C0030` (folder 19:34, a minute before the 19:35 drop); nothing repaired.
+- Core: a hardware record press at 22:29:36 failed with `filesystem error: status: Input/output error` and Core kept running;
+  at 22:29:37 the watcher logged `media: state=removed ... nvme_state=dead`; `/api/state` `media_state=removed`,
+  `media_alive=false` while `media_mounted=true`.
+- Why: **confirmed** that the boot args did not stop the drops. **Probable**: hardware (HAT power or contact, PCIe link, heat);
+  not the software. **Confirmed** that T28's probe sees a dead NVMe behind a live mount.
+- Next: power-cycle; check `dmesg` for the link speed and errors after boot; watch whether it recurs idle; then delete C0030 and
+  run `fsck.exfat` with repair.
+- Confirmed by: dmesg and Core logs read on the Pi.
+- Tutorial: T28 (an unplanned 5.x).
+
