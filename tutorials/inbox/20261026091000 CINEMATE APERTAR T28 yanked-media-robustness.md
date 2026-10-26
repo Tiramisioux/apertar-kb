@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T28. A drive pulled mid-take: detect it on the mount root, stop without touching it, say so
 
-Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-survive-a-yanked-or-unmounted-recording-drive.patch` is the reference, Core `f2fa35b`; amended after the critic pass: device-node and NVMe-state checks in the probe, a cached snapshot for configure and record_start, WebUI on `media_alive`, 1 GiB free-space floor). Line numbers are at `f2fa35b`, the tree right after this patch; later patches shift them, the grep anchors do not. Five of the eleven touched files pass a host syntax check (`MlvEncoder.cpp`, `LossyDngEncoder.cpp`, `AudioRecordingSession.cpp`, `ApertarCoreApp.cpp`, `WebControlPage.cpp`); the three new headers pass `working/tools/media_probe_test.cpp`; `CameraController.cpp` needs libcamera and is not compiled there. Answer: `working/yank-answer.md`. Supersedes the Core half of **T18**; the automounter half stays in the UI repo. Builds **M5** (recorders), **M6** (App/UI contract).
+Status: written 2026-10-26 (cloud session; patch `working/patches/0001-media-survive-a-yanked-or-unmounted-recording-drive.patch` is the reference, Core `f2fa35b`; amended after the critic pass: device-node and NVMe-state checks in the probe, a cached snapshot for configure and record_start, WebUI on `media_alive`, 1 GiB free-space floor). Line numbers in the text are at `f2fa35b`; the `%% tutor` refs are at `e8bb1b7` (`cinemate-port`, 2026-10-26: patch applied as `438a342` + fix `e8bb1b7`, the MLV abandon hunk had landed in the DNG loop); later patches shift them, the grep anchors do not. Five of the eleven touched files pass a host syntax check (`MlvEncoder.cpp`, `LossyDngEncoder.cpp`, `AudioRecordingSession.cpp`, `ApertarCoreApp.cpp`, `WebControlPage.cpp`); the three new headers pass `working/tools/media_probe_test.cpp`; `CameraController.cpp` needs libcamera and is not compiled there. Answer: `working/yank-answer.md`. Supersedes the Core half of **T18**; the automounter half stays in the UI repo. Builds **M5** (recorders), **M6** (App/UI contract).
 
 **You will learn**
 - What the kernel actually does when a recording drive is pulled (the mount stays listed; `statvfs` on the root may fail with a small set of errnos — or keep answering from cached counters, which is why the probe also checks the device node and the NVMe controller state) and why Cinemate tests the mount root and never paths inside it.
@@ -223,21 +223,21 @@ ref core src/util/MediaProbe.hpp 115 inline std::string rootDiskForDevice(const 
 ref core src/util/MediaProbe.hpp 145 inline MediaSnapshot evaluateMediaProbe(const MountTableEntry &entry, int statvfsErrno,
 ref core src/util/MediaProbe.hpp 185 inline MediaSnapshot probeMediaRoot(const std::string &mountPath)
 ref core src/util/MediaProbe.hpp 236 inline MediaSnapshot cachedMediaSnapshotOrProbe(const std::string &mountPath)
-ref core src/camera/CameraController.cpp 3560 void stop(bool mediumDead = false)
-ref core src/camera/CameraController.cpp 3713 bool hasCapacityForFrame(uint64_t frameIndex)
-ref core src/camera/CameraController.cpp 3949 const MediaFault fault = classifyMediaException(e);
-ref core src/camera/CameraController.cpp 4069 void failRecording(const std::string &error, MediaFault fault = MediaFault::Other)
-ref core src/camera/CameraController.cpp 6273 void stopRecording(bool mediumGone = false)
-ref core src/camera/CameraController.cpp 9437 bool CameraController::checkRecordingFailure()
-ref core src/camera/CameraController.cpp 9462 bool CameraController::flagMediaFault(const std::string &message, bool mediumGone)
-ref core src/ApertarCoreApp.cpp 9157 void ApertarCoreApp::runMediaWatcher()
-ref core src/ApertarCoreApp.cpp 9163 updateCachedMediaSnapshot(current);
-ref core src/ApertarCoreApp.cpp 9224 std::string ApertarCoreApp::mediaGateError() const
-ref core src/ApertarCoreApp.cpp 9260 if (const std::string gate = mediaGateError(); !gate.empty())
-ref core src/ApertarCoreApp.cpp 3734 if (!writeEjectIntent(devicePath, &intentError))
+ref core src/camera/CameraController.cpp 3547 void stop(bool mediumDead = false)
+ref core src/camera/CameraController.cpp 3700 bool hasCapacityForFrame(uint64_t frameIndex)
+ref core src/camera/CameraController.cpp 4079 const MediaFault fault = classifyMediaException(e);
+ref core src/camera/CameraController.cpp 4199 void failRecording(const std::string &error, MediaFault fault = MediaFault::Other)
+ref core src/camera/CameraController.cpp 6302 void stopRecording(bool mediumGone = false)
+ref core src/camera/CameraController.cpp 9486 bool CameraController::checkRecordingFailure()
+ref core src/camera/CameraController.cpp 9511 bool CameraController::flagMediaFault(const std::string &message, bool mediumGone)
+ref core src/ApertarCoreApp.cpp 9169 void ApertarCoreApp::runMediaWatcher()
+ref core src/ApertarCoreApp.cpp 9175 updateCachedMediaSnapshot(current);
+ref core src/ApertarCoreApp.cpp 9236 std::string ApertarCoreApp::mediaGateError() const
+ref core src/ApertarCoreApp.cpp 9272 if (const std::string gate = mediaGateError(); !gate.empty())
+ref core src/ApertarCoreApp.cpp 3744 if (!writeEjectIntent(devicePath, &intentError))
 ref core src/mlv/MlvEncoder.cpp 1050 void MlvEncoder::abandon()
 ref core src/lossydng/LossyDngEncoder.cpp 187 void abandon()
-ref core src/audio/AudioRecordingSession.cpp 358 void AudioRecordingSession::stop(bool finalize)
+ref core src/audio/AudioRecordingSession.cpp 363 void AudioRecordingSession::stop(bool finalize)
 check 3.4 | g++ -std=c++20 -I /home/pi/ApertarCore/src /home/pi/apertar-kb/working/tools/media_probe_test.cpp -o /tmp/media_probe_test && /tmp/media_probe_test | tail -1 | ALL CHECKS PASSED
 check 4.1 | ls /home/pi/ApertarCore/src/util/MediaFault.hpp /home/pi/ApertarCore/src/util/MediaProbe.hpp /home/pi/ApertarCore/src/util/MediaIntent.hpp | wc -l | ^3$
 check 4.1b | grep -c 'nvmeState == "dead"' /home/pi/ApertarCore/src/util/MediaProbe.hpp | ^1$

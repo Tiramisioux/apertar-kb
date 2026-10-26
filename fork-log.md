@@ -34,6 +34,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `8f7dc39` | `CameraSession::phaseLockStatus` made public (80ddac1 did not compile); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
 | `3a18db0` | Phase-lock pin history 16 deep (8 requests in flight in Clear HDR since T23); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
 | `114bfb9` | Phase-lock history seeded with Core's own pin at arm (false `saturated` right after arming); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
+| `438a342` | Survive a yanked/unmounted drive: media fault latch, probe + watcher, record gate, eject intent, `media_alive` state, WebUI (T28 reference patch); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub); built 22:27 with `e8bb1b7` |
+| `e8bb1b7` | MLV abandon-on-dead-medium moved to the MLV worker (438a342 had it in the DNG loop; build failed); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
