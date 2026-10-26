@@ -417,3 +417,13 @@ Entry format:
   tests is `takes.sh`'s 12→16 reconfigure (~11 s) before it records (**probable**; Patrik to check with his own press).
 - Audio drift figure with T30's writer still varies take to take (+18, +15, +64, -139, +156 ppm): open.
 
+## 2026-10-26: writeback + folder fsync is clean; the touch UI misses takes started elsewhere
+
+- C0007 (Core `77867e6`: per-DNG `sync_file_range` + 1 s `fsync` of the clip folder; Gen 3; `takes.sh 1 180`): 4495 frames,
+  0 missing, no capture gaps, queue peak 2/12, stop syncfs 59 ms, audio writer peak 9 KB.
+- Patrik: the tally LED lit "a couple of seconds" before the touch UI showed recording. Cause (code, **confirmed**):
+  `ApertarCoreApp::publishEvent` collects events raised during a command into that command's reply unless they are on its
+  broadcast list, and `recording` was not, so only the sender heard it; the tally reacts to the same event inside Core
+  (`handleTriggerEvent`). The touch UI then learned on its next `get_state` poll (`kSteadyStatePollIntervalMs` 30 s).
+  Fix `a070e1b`. Upstream behaviour (**probable**: the list is unchanged from 1.6.0).
+
