@@ -15,7 +15,7 @@ the 4 GB board cannot carry the dev tools and a clean measurement together.
 
 Code is edited and committed **on the Pi**; Claude runs on the **Mac** and drives the Pi over ssh.
 
-1. Pi: edit and commit (on `main`, or on a work branch such as `clearhdr-fixes`, which is on GitHub since 2026-10-26).
+1. Pi: edit and commit (on `main`, or on a work branch such as `cinemate-port`, which is on GitHub since 2026-10-26).
 2. Build on the Pi only: `ssh apertar 'cmake --build ~/ApertarCore-build -j2'` (no build while a take runs).
 3. Restart is Patrik's (`sudo`): `sudo systemctl restart apertar-core`.
 4. Test over ssh: `bash ~/apertar-kb/working/tools/takes.sh 5 10` and `core.py`, with nothing else running on the Pi.
@@ -23,7 +23,7 @@ Code is edited and committed **on the Pi**; Claude runs on the **Mac** and drive
    KB likewise. It never touches a local work branch.
 6. Only a commit that starts on the Mac goes the other way: `apertar_push_to_pi.sh <core|ui|driver> [branch]` (staging
    name + fast-forward; Patrik decides each time, `--dry-run` first). To bring a Pi-only work branch over to the Mac:
-   `git -C ~/Documents/Apertar/Apertar-Core fetch ssh://apertar/home/pi/ApertarCore clearhdr-fixes:clearhdr-fixes`.
+   `git -C ~/Documents/Apertar/Apertar-Core fetch ssh://apertar/home/pi/ApertarCore cinemate-port:cinemate-port`.
 
 ## Open
 

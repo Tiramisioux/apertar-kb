@@ -16,7 +16,7 @@ points to, before touching anything.
 
 Branches (all on GitHub, pushed only from the Mac and only when Patrik asks):
 
-- Core `Tiramisioux/Apertar-Core` **`clearhdr-fixes`** @ `d9f00d4` (Mac, Pi and GitHub identical). `main` @ `f60e301` untouched.
+- Core `Tiramisioux/Apertar-Core` **`cinemate-port`** @ `d9f00d4` (Mac, Pi and GitHub identical). `main` @ `f60e301` untouched.
 - libcamera `Tiramisioux/libcamera` **`apertar`** @ `6b0b49f` (L1 row-step stats, L2 worker thread). **Not in use**: the Pi runs the
   system libcamera again (`/usr/local`, `7e9fef0`); the private build stays in `~/opt/libcamera-apertar`, inert without a drop-in.
 - Driver `Tiramisioux/imx585-v4l2-driver` **`apertar`** @ `e5b74d3`.
@@ -30,9 +30,9 @@ Pi state: Core `d9f00d4` running, 25 fps, uncompressed, Clear HDR 16-bit, system
   (Claude was removed from the Pi on 2026-10-26; transcripts were backed up first).
 - **Tutor mode, Patrik decides when Claude edits.** When he asks for a change: make it, say what changed, verify with a read-only
   check. **No prediction questions unless he asks for them.**
-- The loop is `working/mac-driven-loop.md`: edit and commit on the Mac (`clearhdr-fixes`), push to the Pi's staging branch
-  (`git push ssh://apertar/home/pi/ApertarCore clearhdr-fixes:clearhdr-fixes-mac`), on the Pi `git merge --ff-only
-  clearhdr-fixes-mac`, build on the Pi (`cmake --build ~/ApertarCore-build -j2`, never while a take runs).
+- The loop is `working/mac-driven-loop.md`: edit and commit on the Mac (`cinemate-port`), push to the Pi's staging branch
+  (`git push ssh://apertar/home/pi/ApertarCore cinemate-port:cinemate-port-mac`), on the Pi `git merge --ff-only
+  cinemate-port-mac`, build on the Pi (`cmake --build ~/ApertarCore-build -j2`, never while a take runs).
 - **Patrik runs** `sudo`, service restarts, reboots, `/boot/firmware` edits, systemd drop-ins, DKMS. Give him exact commands.
 - Commits Claude writes: `<area>: <imperative>`, Why/What, `Tested:` line, Co-Authored-By trailer. Add a fork-log row for every
   Core/driver/libcamera commit; log tutorial progress with `tutorial.py log` and commit it.
