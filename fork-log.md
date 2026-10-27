@@ -48,6 +48,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `a070e1b` | `recording` event broadcast to every client (the touch UI heard takes started elsewhere only on its 30 s poll); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:54; offer upstream |
 | `6fee0e4` | Sync thread fsyncs each DNG finished in the last second, then the folder (folder fsync alone left 0-byte files after a pull, C0010); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); built 23:58; pull test C0011: 258/281 frames readable |
 | `7a545d9` | Audio writer fsyncs `audio_capture.raw` once a second (was 0 bytes after a pull); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); pull test: 5.02 s raw audio kept, WAV recovered |
+| `e9dd6b2` | Media tuning helper opt-in (`APERTAR_MEDIA_TUNE=1`); audio drift = least-squares slope over all blocks, not two endpoints; branch `cinemate-port` | fork-only, Mac + Pi; built, not tested |
+| `6ae70b5` | Storage label "Media Removed"/"Media Error" from the watcher (T20 Step 4); time-left estimate follows format and bit depth, 16 included, truthful label (T21); branch `cinemate-port` | fork-only, Mac + Pi; built, not tested |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
