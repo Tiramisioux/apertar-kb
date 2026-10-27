@@ -1,0 +1,39 @@
+From d005f7140e1d206ce9a7a4494c626e22a8821f03 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 27 Oct 2026 21:11:18 +0000
+Subject: [PATCH 1/2] ui: 4K Clear HDR 16-bit offers FPS up to 25
+
+Why: Core caps 4K Clear HDR 16-bit at 25 fps (at 30 the back end delivers
+about 28 and drops frames; Patrik accepted 25 as the observed maximum on
+2026-10-27). The touch UI still offered 30, which Core would clamp.
+What: maximumSupportedFpsForResolution() returns 25 for 3840x2160 when
+Clear HDR is active at 16 bit, so availableFpsOptions() and
+maximumSelectableFps() end at 25 in that mode. 12-bit Clear HDR and SDR 4K
+keep 30.
+
+Tested: not built here (Qt is not on the host); one expression changed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ qml/CameraPage.qml | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/qml/CameraPage.qml b/qml/CameraPage.qml
+index 64fa395..0a4bf30 100644
+--- a/qml/CameraPage.qml
++++ b/qml/CameraPage.qml
+@@ -777,8 +777,9 @@ function maximumSupportedFpsForResolution(resolutionValue) {
+ 
+     if (root.imx585Detected) {
+         var imx585Max = 60.0
++        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if (resolutionValue === "3856x2180" || resolutionValue === "3840x2160")
+-            imx585Max = 30.0
++            imx585Max = root.clearHdrActive && root.rawBitDepthValue === "16-bit" ? 25.0 : 30.0
+         else if (resolutionValue === "3840x2024" ||
+                  resolutionValue === "3840x2076" ||
+                  resolutionValue === "3840x1920" ||
+-- 
+2.43.0
+
