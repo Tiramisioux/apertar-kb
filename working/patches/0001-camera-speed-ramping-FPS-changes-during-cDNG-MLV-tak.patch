@@ -1,4 +1,4 @@
-From 08d74e5317d6873f6ef0f85448c0b6b50bf28e0b Mon Sep 17 00:00:00 2001
+From 2736c1f47bdb11d09135e942b73f888cf6992170 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Mon, 26 Oct 2026 20:55:43 +0000
 Subject: [PATCH 1/3] camera: speed ramping, FPS changes during cDNG/MLV takes
@@ -50,7 +50,8 @@ post. Ported as an opt-in with the bookkeeping Core needs for it:
   ramp came back to the start rate; keep-exposure applies only with ramping
   on and its nominal resets on an explicit shutter, a policy change or a
   preset; a shutdown during a ramp take writes fps-ramp.txt and restores;
-  ramp_fps seconds clamped to 0..600; the session's recordingBaseFps()
+  ramp_fps seconds clamped to 0..600; in a take, ramp_fps refuses up front with
+  setFps's own messages when ramping is off or the take is H.264/ProRes/still; the session's recordingBaseFps()
   sits in its public section next to phaseLockStatus() (the 8f7dc39
   pattern; this branch has no friend declaration).
 - On cinemate-port: the WAV end in observeVideoFrame() uses the latest
@@ -67,14 +68,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
 ---
  include/apertar/core/Types.hpp      |   7 +
- src/ApertarCoreApp.cpp              | 109 +++++++-
+ src/ApertarCoreApp.cpp              | 123 ++++++++-
  src/ApertarCoreApp.hpp              |   9 +
  src/audio/AudioRecordingSession.cpp |   6 +-
  src/camera/CameraController.cpp     | 389 +++++++++++++++++++++++++++-
  src/camera/CameraController.hpp     |  12 +-
  src/cdng/CdngEncoder.cpp            |   3 +-
  src/cdng/CdngEncoder.hpp            |   3 +
- 8 files changed, 521 insertions(+), 17 deletions(-)
+ 8 files changed, 535 insertions(+), 17 deletions(-)
 
 diff --git a/include/apertar/core/Types.hpp b/include/apertar/core/Types.hpp
 index eafd5c9..eca4af5 100644
@@ -102,7 +103,7 @@ index eafd5c9..eca4af5 100644
  
  struct GyroRecordingOptions {
 diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
-index e430128..0c09025 100644
+index e430128..9373efd 100644
 --- a/src/ApertarCoreApp.cpp
 +++ b/src/ApertarCoreApp.cpp
 @@ -212,6 +212,8 @@ std::string settingsBody(const CaptureSettings &settings)
@@ -149,7 +150,7 @@ index e430128..0c09025 100644
          << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
          << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
          << ",\"hdr_blend\":" << settings.hdrBlend
-@@ -9224,6 +9231,71 @@ std::string mediaEventJson(const MediaSnapshot &snapshot)
+@@ -9224,6 +9231,85 @@ std::string mediaEventJson(const MediaSnapshot &snapshot)
  // only on its next frame, and the UI never. 1 s idle, 250 ms while recording.
  // This thread holds no lock anyone else waits for while it probes, so a probe
  // that blocks on a hung device blocks only this thread.
@@ -171,6 +172,20 @@ index e430128..0c09025 100644
 +            return false;
 +        }
 +        return true;
++    }
++    if (camera_.isRecording()) {
++        // Refuse now, as seconds == 0 does through setFps(), instead of answering ok
++        // and logging the refusal from the helper thread on its first step.
++        const CaptureSettings current = camera_.settings();
++        if (!current.fpsRampEnabled) {
++            if (error) *error = "Stop recording before changing FPS, or enable FPS ramping (set_fps_ramp) for cDNG/MLV takes.";
++            return false;
++        }
++        if (current.photoModeEnabled || current.recordingFormat == RecordingFormat::H264 ||
++            current.recordingFormat == RecordingFormat::Prores) {
++            if (error) *error = "FPS ramping works in cDNG and MLV takes only.";
++            return false;
++        }
 +    }
 +    fpsRampStop_.store(false);
 +    fpsRampThreadActive_.store(true);
@@ -221,7 +236,7 @@ index e430128..0c09025 100644
  void ApertarCoreApp::runMediaWatcher()
  {
      MediaSnapshot previous;
-@@ -9274,8 +9346,10 @@ void ApertarCoreApp::runMediaWatcher()
+@@ -9274,8 +9360,10 @@ void ApertarCoreApp::runMediaWatcher()
                      ? "Media removed during recording." : "Media was unmounted during recording.";
                  if (camera_.isRecording() && camera_.flagMediaFault(why, true)) {
                      std::lock_guard<std::mutex> commandLock(commandMutex_);
@@ -233,7 +248,7 @@ index e430128..0c09025 100644
                  }
              }
              // Only now the profile and the root helper: a sudo round-trip must not
-@@ -9401,7 +9475,7 @@ void ApertarCoreApp::applyMediaTuning(const MediaProfile &profile, bool apply)
+@@ -9401,7 +9489,7 @@ void ApertarCoreApp::applyMediaTuning(const MediaProfile &profile, bool apply)
  std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
  {
      std::lock_guard<std::mutex> commandLock(commandMutex_);
@@ -242,7 +257,7 @@ index e430128..0c09025 100644
      if ((command.name == "capture_photo" || command.name == "record_start" ||
           (command.name == "timelapse_start" && !camera_.timelapseActive())) && camera_.mediaWritesPending())
          return errorReply(command.id, "Wait for the current capture to finish writing to media.");
-@@ -9549,7 +9623,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -9549,7 +9637,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
      }
  
      if (command.name == "help")
@@ -251,7 +266,7 @@ index e430128..0c09025 100644
  
      if (command.name == "get_state") {
          const auto mediaWrite = camera_.mediaWriteStatus();
-@@ -9805,6 +9879,29 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -9805,6 +9893,29 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
              : errorReply(command.id, camera_.lastError());
      }
  
@@ -281,7 +296,7 @@ index e430128..0c09025 100644
      if (command.name == "set_timecode_mode") {
          const auto value = command.string("value");
          if (!value)
-@@ -11005,6 +11102,9 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -11005,6 +11116,9 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
      }
  
      if (command.name == "record_start") {
@@ -291,7 +306,7 @@ index e430128..0c09025 100644
          const SharedUiSettingsSnapshot uiSettings = readSharedUiSettings();
          const AudioDeviceSnapshot audioDevices = detectAudioDevices();
          AudioRecordingOptions audioOptions = audioRecordingOptionsFromUiSettings(uiSettings, audioDevices);
-@@ -11165,6 +11265,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+@@ -11165,6 +11279,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
      }
  
      if (command.name == "record_stop") {

@@ -1,7 +1,7 @@
-From 85923b2556b4b6264da48f06e03ce8e70357f1a3 Mon Sep 17 00:00:00 2001
+From 7c57dda811a1e5e30fed418827330015359ebeaa Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 27 Oct 2026 21:10:00 +0000
-Subject: [PATCH] web: speed-ramp block in the Recording format card
+Subject: [PATCH 3/3] web: speed-ramp block in the Recording format card
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
