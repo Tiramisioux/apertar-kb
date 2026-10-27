@@ -369,6 +369,16 @@ How the services set them (Pi, 2026-10-25): `apertar-core.service` runs `/home/p
 | `APERTAR_LOSSYDNG_*` | `WORKERS`, `WRITER_BYTES`, `ASYNCWRITE` (legacy `QRAW_LOSSYDNG_ASYNCWRITE`) | `CC:3345`; `Apertar-Core/src/lossydng/LossyDngEncoder.cpp:100`, `:325-327` |
 | `APERTAR_RAW_CACHED_DMABUF` | Cached DMA heap for PiSP-compressed RAW (default on) | `CC:6321` |
 | `APERTAR_MLV_ENABLE_NEON_PACKER`, `APERTAR_MLV_HAS_NEON` | MLV packer | `Apertar-Core/src/mlv/MlvEncoder.cpp:23-25` |
+| `APERTAR_MEDIA_SYNC_MS` | Fork `cinemate-port`: sync-thread interval, default 1000, `0` = off (fsync of files + clip folder) | `CC` `startAtFolder`/`syncLoop` |
+| `APERTAR_DNG_WRITEBACK` | Fork: start each DNG's writeback after writing it, default on | `CC` `startWritebackPerFrame` |
+| `APERTAR_WRITE_STALL_MS` | Fork: no frame written for this long with a full queue = medium gone, default 5000 | `CC` `writeStallLimitMs` |
+| `APERTAR_DEAD_MEDIUM_STOP_MS` | Fork: how long a dead-medium stop waits for writers, default 2000 | `CC` `DngRecordingQueue::stop` |
+| `APERTAR_MEDIA_TUNE` | Fork: `1` runs `/usr/local/libexec/apertar-media-tune` on mount (off by default; helper not installed) | `App` `applyMediaTuning` |
+| `APERTAR_MEDIA_REQUIRE_MOUNT` | Fork: `0` disables the record gate (development machine) | `App` `mediaGateError` |
+| `APERTAR_AUDIO_BUFFER_MS` | Fork: ALSA capture ring, default 100 (100-4000) | `AudioRecordingSession.cpp` `recordCaptureBufferUs` |
+| `APERTAR_PHASE_LOCK_LOG`, `_KP`, `_KI`, `_DEADBAND_US`, `_CLAMP_US` | Fork: phase-lock trace and gains (lock itself off by default) | `CC` `stepFramePhaseLock` |
+| `APERTAR_SENSOR_PROBE` | `0` skips the startup sensor-mode probe | `CC` `probeSensorModesOnce` |
+| `LIBCAMERA_LOG_LEVELS` | On the Pi: `IPARPI:ERROR` via drop-in `apertar-core.service.d/libcamera-log.conf` (the IPA warned every frame in Clear HDR and flooded the journal) | `working/diagnose.md` |
 
 ### 8.2 UI and scripts
 

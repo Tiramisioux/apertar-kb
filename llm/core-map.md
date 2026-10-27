@@ -540,7 +540,14 @@ Each row is one fact kept by hand in several places. Change one, change all. "Dr
 | Battery types / capacities / voltages | `normalizeBatteryTypeValue` `App:571`, `batteryCapacityFitsType` `App:618`, `batteryDefaultFullVoltage` `App:593`, `defaultBatteryCapacityForType` `App:607`; JS `batteryTypeOptions` `WCP:4089`, `batteryCapacityOptionsForType` `WCP:5978`, `defaultBatteryFullVoltageForType` `WCP:5998` | Values agree today |
 | Assist option labels (guides, centre marker, anamorphic, peaking colour, ext. monitor, false colour, sleep) | normalisers `App:639-726`; JS option arrays `WCP:4076-4090`; JS converters `WCP:4516-4590` | — |
 
-### 4.5 Sensor / mode / fps knowledge (three copies)
+### 4.5 Sensor / mode / fps knowledge (three copies; four with the touch UI)
+
+> Fork `cinemate-port` (2026-10-27): a frame-rate or limit change has to land in **four** places, and each of them filters
+> by the *current* mode: Core `tableMaximumFpsForResolution` + `enforceLosslessCaptureLimits` (CC), the hardware list
+> `availablePcfFpsOptions` / `maximumPcfFpsForSettings` (App), the WebUI `availableFpsOptionsForSnapshot` /
+> `maximumSupportedFpsForSnapshot`, and the touch UI `availableFpsOptions` / `maximumSupportedFpsForResolution`
+> (`Apertar-UI/qml/CameraPage.qml`). Tonight 33/50 fps was blocked by four separate 30-fps caps. The IMX585 list is now
+> 25/33/50 everywhere (**temp**).
 
 | Truth | Copies |
 | --- | --- |
@@ -560,7 +567,7 @@ Each row is one fact kept by hand in several places. Change one, change all. "Dr
 | INI helpers `parseConfigInteger` / `parseConfigBool` / `trimAscii` / `lowerAscii` / `stripInlineComment` | `App:4406`, `:4427`; one private copy per hardware `.cpp` (e.g. `Pcf8574Input.cpp:27`, `:37`, `:78`, `:98`); `stripInlineComment` only in `TriggerOutput.cpp:56`, `RecordingIndicatorOutput.cpp:53`, `Mpu6050RecordingSession.cpp:209` (comment stripping differs per class) |
 | `escapeJson` | `src/ipc/ControlProtocol.cpp:235`; `CC:95` |
 | UI.conf path (`$XDG_CONFIG_HOME` / `~/.config/CinePi/UI.conf`) | `App:341-348`; UI side QSettings |
-| Event names | emit sites: `App` (`camera_state` 6901/6913, `hardware_action` 8476…8950, `audio_level` 8383, `recording` 8394/8406, `prepare_recording` 10692/10705, `photo_capture` 10730) and `CC` (`settings` 139, `recording_health` 7582, `audio_level` 7592, `media_write_state` 7560, `still_exposure` 7570, `photo_capture` 7177, `photo_write_error` 5248/7029, `standby` 7688/7707, `timelapse_progress` 8443, `recording` 8792, `timelapse` 8804, `timelapse_frame` 8830); substring matchers: always-broadcast `App:10829-10838`, tally/trigger `App:10856-10886`; consumer `Apertar-UI/src/ApertarControlBridge.cpp` |
+| Event names | emit sites: `App` (`camera_state` 6901/6913, `hardware_action` 8476…8950, `audio_level` 8383, `recording` 8394/8406, `prepare_recording` 10692/10705, `photo_capture` 10730) and `CC` (`settings` 139, `recording_health` 7582, `audio_level` 7592, `media_write_state` 7560, `still_exposure` 7570, `photo_capture` 7177, `photo_write_error` 5248/7029, `standby` 7688/7707, `timelapse_progress` 8443, `recording` 8792, `timelapse` 8804, `timelapse_frame` 8830); substring matchers: always-broadcast `App:10829-10838` (fork: `recording` added, upstream issue #43), tally/trigger `App:10856-10886`; consumer `Apertar-UI/src/ApertarControlBridge.cpp` |
 | Media folder names | writers `CC:926` (`Photos`), `CC:943` (`Still_`), `CC:986` (`Timelapse_`), `CC:3646-3658` (`cDNG_`, `MLV_`, `H264_`, `cDNG_3to1_`/`cDNG_5to1_`, `ProRes_`), `App:1444`, `:1459` (`Audio/Audio_`); reader `discoverMediaLibraryItems` `App:6312`, `:6342`, `:6359`, `:6398`; `stillGroupFilesForId` `App:5962-5972` |
 | Plugin ABI symbol names | ProRes: `ProresPlugin.cpp:13-54` vs `ProresRecorder.cpp:36-40` (+ `kApertarProresAbi` `ProresPluginApi.hpp:5`); H.264: `LibavH264EncoderPlugin.cpp:464-522` vs `LibavH264EncoderClient.cpp:112-116` |
 | Plugin `.so` names / fallback dir `/home/pi/ApertarCore-build/` | `ProresRecorder.cpp:31-32`, `LibavH264EncoderClient.cpp:15`, `:28`; `CMakeLists.txt:143`, `:152`, `:192`, `:195` |

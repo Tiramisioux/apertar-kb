@@ -47,3 +47,14 @@ free -h; vcgencmd measure_temp; vcgencmd get_throttled
 | libcamera | `0.7.1+rpt20260609-1` (dev package) |
 | Image | Apertar-Beta 1.6.0 |
 | Host | `apertar.local` (192.168.2.2 on the Mac's network at setup), ssh alias `apertar` |
+
+## Pi facts (2026-10-26/27)
+
+| Fact | Check |
+| --- | --- |
+| The journal persists (`/etc/systemd/journald.conf.d/50-apertar-persistent.conf`, 200 MB); before, `/etc/machine-id` was missing and Raspberry Pi OS's `40-rpi-volatile-storage.conf` kept it in RAM | `journalctl --list-boots` shows more than one boot |
+| `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR` drop-in, else the IPA's per-frame "No HDR algorithm" warning rotates Core's lines away in minutes | `systemctl show apertar-core -p Environment` |
+| NVMe dropped twice at PCIe Gen 3 (`CSTS=0xffffffff`, 19:35 and 22:29); Gen 2 measured 437 MB/s (16-bit 4K25 needs ~425); now back on Gen 3 (`config.txt.bak-gen3`) | `dmesg \| grep -E 'link up\|CSTS'` |
+| A nearly full NVMe (77-81 %) lost frames at 16-bit 4K25 after 40-60 GB; after a format the same take was clean | `df -h /media/RAW` before long takes |
+| A crash 2.5 s after a re-insert (PCIe controller reset) at Gen 3 was seen once | `journalctl -b -1 \| tail` after an unplanned reboot |
+| Reading the Pi's clock: `CLOCK_BOOTTIME` is slewed by systemd-timesyncd (40-80 ppm right after a correction); compare with `CLOCK_MONOTONIC_RAW` before trusting a ppm figure | `timedatectl timesync-status` |

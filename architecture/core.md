@@ -536,3 +536,67 @@ Problems:
 | `python3-smbus` is installed (needed by the §8 watcher) | `python3 -c 'import smbus'` |
 | Core's watcher and the automounter really double-mount after an eject | eject in the WebUI, reinsert, then `journalctl -u apertar-cfe-automounter -n 50` and `ps aux \| grep 'python3 -c'` |
 | PCF8574 clobbering when input + LED share an expander | wire both, record, watch the button pins with `i2cget -y <bus> 0x20` |
+
+## 11. Fork branch `cinemate-port` (2026-10-26/27): what changed in Core
+
+Line numbers drift; anchors are function names. Status: everything below runs on the Pi; items marked **temp** are
+committed with a `temp:` subject and wait for Patrik's review (list in `working/handoff-T26-T30.md` §4).
+
+### 11.1 Media watcher (T28 + follow-ups)
+
+- `runMediaWatcher` (App) probes `/media/RAW` every 1 s (250 ms while recording): `probeMediaRoot` (`src/util/MediaProbe.hpp`)
+  answers from the mount table, `/sys/class/block/<node>`, `/sys/block/<root>/device/state` (NVMe) and `statvfs`.
+- **CFexpress HAT slot bit first** (`src/util/CfeHat.hpp`, `[cfexpress_hat]` bus/address; two agreeing reads, `0x69` ignored):
+  an empty slot makes an NVMe medium `removed` *before* `statvfs` touches it. A pulled card keeps the controller `live` until an
+  I/O times out (~24-30 s), so without the bit the probe said `mounted`.
+- **Pulled latch:** once the slot read empty for a mounted NVMe medium, that mount stays `removed` until
+  `/proc/self/mountinfo` shows a new mount id (a Pi 5 cannot use a re-inserted NVMe without PCIe remove + rescan).
+- Record gate `mediaGateError` refuses on `removed`/`error`; a loss during a take calls `flagMediaFault` +
+  `checkRecordingFailure`. State fields: `media_state`, `media_alive` (also in the socket's `get_state` since `227ea7b`),
+  `media_device`, `media_fstype`, `recording_fault`; `capture.storage` reads "Media Removed"/"Media Error" (T20 Step 4).
+- The automounter (UI repo) now lazy-unmounts and removes the PCIe device on a pull (see ui.md), so in practice Core sees
+  `state=none` 0.5 s after a pull and a re-insert remounts in 2-8 s.
+
+### 11.2 Write path: what a pull keeps (confirmed on the Pi)
+
+| Mechanism | Where | Why |
+| --- | --- | --- |
+| `sync_file_range(..., SYNC_FILE_RANGE_WRITE)` after each uncompressed/lossless DNG (`startWriteback`) | `DngRecordingQueue::dngWorkerLoop` | data leaves the page cache one file at a time |
+| 1 s sync thread: `fsync` each DNG written since the last tick (`noteWrittenFile`), then the clip folder; MLV fsyncs its file | `syncLoop` | a DNG's size/first cluster live in its exFAT entry; folder fsync alone left 0-byte files (C0010) |
+| `syncfs` at the end of a normal stop, after the WAV | `syncToMedium` | "stopped" means "on the card" (C0105 was lost 4 s after stop) |
+| Audio writer fsyncs `audio_capture.raw` once a second | `AudioRecordingSession::writerLoop` | raw PCM survives a pull (WAV is not finalised on a dead medium; `working/tools/raw2wav.py`) |
+| A full queue with no frame written for `APERTAR_WRITE_STALL_MS` (5 s) fails the take as `media_removed`; every stop applies the same stall test | `hasCapacityForFrame`, `DngRecordingQueue::stop` | writers stuck in `write()` on a vanished device |
+| On a dead medium the stop waits `APERTAR_DEAD_MEDIUM_STOP_MS` (2 s), then detaches stuck writers; the next take is refused until they return (`liveWorkers_`) | `DngRecordingQueue::stop`, `startAtFolder` | the old stop held the controller and command locks until the NVMe timeout (22.6 s) |
+
+Do **not** use a periodic `syncfs`: alone it cost ~12 capture frames per 3 min (memory-bandwidth burst), with per-file writeback
+it stalled the writers (782 queue drops, C0005). Result: a pull keeps all but the last ~1 s of picture and audio (C0011,
+2026-10-27 C0001); 3-min 16-bit 4K25 takes stay clean (C0007, 2026-10-27 C0002).
+
+### 11.3 Events
+
+`publishEvent` folds events raised during a command into that command's reply unless they are on its broadcast list.
+`recording` was not on it (upstream issue #43), so the touch UI heard takes started from the socket/WebUI/buttons only on
+its 30 s poll; fixed in `a070e1b`. Add an event to that list whenever another client must react at once.
+
+### 11.4 Sensor modes, Clear HDR and frame rates (**temp** `13a350f`, `315e390`, `3c2f2c5`, `eb9cc39`)
+
+- Binning per mode = crop width / output width (`binningFromProperties`; source `driver`/`inferred`/`unknown`), in
+  `list_sensor_modes` and `get_state` (`sensor_binning*`, `sensor_crop`). Needs the T26 driver for `driver`.
+- **Clear HDR rule (Patrik):** Clear HDR on → 16-bit-capable, cDNG **uncompressed**, ≤ 25 fps; Clear HDR off → 12-bit, cDNG
+  **lossless**; asking for > 25 fps in 16-bit Clear HDR switches to 12-bit SDR lossless at that rate; asking for ≤ 25 fps
+  after such a switch restores 16-bit Clear HDR (`clearHdrLeftForFps_`; any manual mode change clears it). The hardware
+  `resolution` input toggles 16-bit Clear HDR ↔ 12-bit SDR on the IMX585 (cDNG/MLV).
+- Frame-rate lists (IMX585 and others): **25, 33, 50** in the touch UI, the WebUI and the hardware inputs.
+- IMX585 4K limits: Clear HDR 30 (probe), SDR 60 when the probe confirms it (was 30 everywhere), lossless 50 (was 30;
+  **not measured above 25**), lossless ISO cap 1600 (was 800; lossless also forces manual ISO).
+- Phase lock (T27, `set_fps_phase_lock`) exists but stays **off**: the sensor runs within ~1.5 ppm of the Pi's crystal, and
+  on the lattice libcamera every push changes HMAX (flicker, drops).
+
+### 11.5 Audio, time left, media tuning
+
+- Audio: writer thread between capture and disk; ALSA ring 100 ms by default (`APERTAR_AUDIO_BUFFER_MS`; 1 s made the drift
+  figure jump); drift = least-squares slope over all blocks (log `points=`, `endpoint_ppm=`), applied only above 20 ppm.
+- Time left: `estimatedRawBytesPerSecond` is the touch UI's per-frame model (bit depth incl. 16, lossless/lossy/MLV/H.264/
+  ProRes); `time_left_label` names the format; minutes are truncated (tenth in JSON, whole minutes in both UIs).
+- T29 media profile: per filesystem writer table (exFAT kept at Core's 4 writers / queue 12 after measurement);
+  `apertar-media-tune` root helper is opt-in (`APERTAR_MEDIA_TUNE=1`) and not installed.

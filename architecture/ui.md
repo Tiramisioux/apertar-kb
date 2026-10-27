@@ -453,3 +453,17 @@ It notifies nobody. The UI sees the mount through its 1 s poll (`MediaStatusBrid
 | `hdmi_external_only` + `windowed` shows nothing | Set both in `[display]`, restart the UI, look at HDMI |
 | The network start-gate drop-in is installed | `systemctl cat apertar-network` |
 | `/usr/local/libexec/apertar-wait-ui-core-start` equals `wait_for_ui_core_start.sh` | `diff /usr/local/libexec/apertar-wait-ui-core-start ~/ApertarUI/wait_for_ui_core_start.sh` |
+
+## Fork branch `cinemate-port` (2026-10-27)
+
+- **Automounter surprise removal** (`dc471c1`, installed to `/usr/local/libexec`, backup `.bak-1.6.0`): on the slot's removal
+  edge while mounted: `umount2(MNT_DETACH)` (no `syncfs`: it blocks on a vanished device), PCIe `remove`
+  (`removePcieDevice`, shared with eject), `m_mounted = false`; the next insert edge resets the controller, rescans and mounts.
+  Confirmed on the Pi: pull → unmounted in 0.5 s, re-insert → mounted in 2-8 s, no reboot.
+- **Media state from Core** (`160898c`): `ApertarControlBridge` takes `media_state`/`media_alive` from the `media` event and
+  `get_state`; `MediaStatusBridge::setCoreMediaState` shows MEDIA REMOVED / MEDIA ERROR without calling `QStorageInfo`.
+- `currentRawBitDepthNumber()` returns 16 for "16-bit" (`2d27c46`; the time left was a third too long at 16-bit).
+- **temp:** frame rates 25/33/50, IMX585 4K SDR up to 60 and lossless 50 (`d8098d0`, `2464b60`); ISO 1600 in lossless
+  (`def5d45`); FORMAT line `16-bit · Clear HDR · Uncompressed` (`f149744`); HDMI `RESOLUTION · 16-BIT · CLEAR HDR` caption in
+  `ExternalMonitorWindow.qml` (`f23c243`; the HDMI monitor is a separate page and needs its own change); the quick-menu
+  resolution button toggles 16-bit Clear HDR ↔ 12-bit SDR on the IMX585 (`0165b70`).
