@@ -56,6 +56,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 | `315e390` | Clear HDR helpers moved above `setFps` (13a350f did not build); WebUI frame rates 25/33/50 for the IMX585 and others; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 | `3c2f2c5` | 25/33/50 fps for hardware inputs too; IMX585 4K SDR up to 60 (probe), lossless cap 50; rotary resolution press toggles 16-bit Clear HDR ↔ 12-bit SDR; back to ≤25 fps restores 16-bit Clear HDR after an automatic switch; WebUI shows 25/33/50 in Clear HDR; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `eb9cc39` | Clear HDR on = uncompressed cDNG, off = lossless, also by toggle (rotary, touch UI, WebUI); branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
