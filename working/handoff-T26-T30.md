@@ -103,8 +103,8 @@ Things the T22-T25 work changes for these notes:
 - **Temporary fixes to review (Patrik, 2026-10-27, all `temp:` in the subject, on GitHub `cinemate-port`):** Core `753f181` ISO
   1600 in lossless, `c5d0c37` 33 fps (superseded by `315e390`), `13a350f` 16-bit Clear HDR = 25 fps uncompressed (switches to
   12-bit SDR lossless above 25), `315e390` build fix + WebUI fps 25/33/50; UI `def5d45` ISO 1600, `f149744` FORMAT line bit
-  depth + Clear HDR, `0165b70` resolution button toggles Clear HDR 16 ↔ SDR 12, `2464b60` fps 25/33/50, `f23c243` HDMI RESOLUTION caption with bit depth + Clear HDR, Core `3c2f2c5` / UI `d8098d0` 25/33/50 everywhere incl. the rotary, rotary Clear HDR toggle, auto-return to 16-bit Clear HDR at ≤25 fps, IMX585 4K SDR 60, Core `eb9cc39` Clear HDR on = uncompressed / off = lossless however switched, **lossless cap 50 (unmeasured: 33/50 fps 12-bit lossless 4K may drop frames)**. Not yet run on the
-  Pi (built only): restart Core and UI to try them. 
+  depth + Clear HDR, `0165b70` resolution button toggles Clear HDR 16 ↔ SDR 12, `2464b60` fps 25/33/50, `f23c243` HDMI RESOLUTION caption with bit depth + Clear HDR, Core `3c2f2c5` / UI `d8098d0` 25/33/50 everywhere incl. the rotary, rotary Clear HDR toggle, auto-return to 16-bit Clear HDR at ≤25 fps, IMX585 4K SDR 60, Core `eb9cc39` Clear HDR on = uncompressed / off = lossless however switched, **lossless cap 50 (unmeasured: 33/50 fps 12-bit lossless 4K may drop frames)**. Running on the Pi since 23:08 and working
+  (Patrik); still marked `temp:` for his review. 
 
 ## 5. Read first
 
