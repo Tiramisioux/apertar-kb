@@ -472,5 +472,8 @@ Entry format:
   `time_left_percent` 30.6; by hand with the touch UI's model 8.69 MiB/frame → 36.7 min (old Core model: 24.9 min).
 - T30 (`e9dd6b2`): 70 s take C0013 (socket start/stop, no reconfigure): 1748 frames clean; `audio clock:
   measured_drift_ppm=-15 points=6968 endpoint_ppm=-15 correction=none`. Media-tune helper: no call since the restart.
-- Open: compare with the HDMI display; T20 Step 4 (pull while idle → "Media Removed").
-
+- HDMI (touch UI) 35 min vs WebUI 36 after the C0013 take: Core 35.96 min from 468 997 MiB free; the WebUI rounds,
+  the touch UI truncates whole seconds. **Confirmed**: the two models agree.
+- T20 pull while idle (Patrik, 22:24:37): automounter lazy-unmounts in 0.5 s, so Core reports `state=none` and the strip reads
+  "No Media Mounted"; "Media Removed" shows only while a dead mount stays (e.g. a USB stick, which the automounter does not
+  handle). Re-insert remounted at 22:24:47. Patrik: "yanking works fine".
