@@ -54,16 +54,18 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </button>
 </div>
 
-<div style="display: flex; flex-direction: column; gap: 8px;">
-<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">During a take</span>
-<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
-<sc-for list="{{ inTakeOptions }}" as="opt" hint-placeholder-count="2">
-<button type="button" onClick="{{ opt.pick }}" aria-pressed="{{ opt.pressed }}" style="{{ opt.style }}">
-<span style="display: block; font-size: 14px; font-weight: 600;">{{ opt.label }}</span>
-<span style="{{ opt.subStyle }}">{{ opt.sub }}</span>
-</button>
-</sc-for>
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 18px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72);">
+<div style="min-width: 0;">
+<div style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Running now</div>
+<div style="{{ nowStyle }}">{{ nowText }}</div>
+<div style="font-size: 13px; color: #a1a1aa; margin-top: 4px;">{{ nowNote }}</div>
 </div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 0 2px;">
+<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">During a take</span>
+<span style="font-size: 14px; color: #d4d4d8;">FPS stops at the running rung's ceiling. Rungs change between takes only, with a short preview blink. A switch inside a take (new clip, frame gap, look cut) is not built: it waits for the Pi measurements.</span>
+<span style="font-size: 13px; color: #a1a1aa;">While the ladder is on, Resolution, Bit Depth and Clear HDR are greyed in Recording format: the FPS picks the mode.</span>
 </div>
 
 <div style="display: flex; flex-direction: column; gap: 10px;">
@@ -112,6 +114,14 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </sc-for>
 </div>
 
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;">
+<span style="{{ draftStyle }}">{{ draftText }}</span>
+<div style="display: flex; gap: 8px;">
+<button type="button" disabled="{{ notDirty }}" onClick="{{ revert }}" style="{{ revertStyle }}">Revert</button>
+<button type="button" disabled="{{ notDirty }}" onClick="{{ save }}" style="{{ saveStyle }}">Save ladder</button>
+</div>
+</div>
+
 <div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72);">
 <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;">
 <span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">FPS coverage, 1 to {{ buildMax }}</span>
@@ -135,7 +145,7 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <div style="display: flex; flex-direction: column; gap: 8px;">
 <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;">
 <span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Quick access FPS (your list)</span>
-<span style="font-size: 12px; color: #a1a1aa;">The number under each value is the rung it runs on</span>
+<span style="font-size: 12px; color: #a1a1aa;">Under each value: the rung it runs on. Amber: picking it switches the mode (between takes)</span>
 </div>
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px;">
 <sc-for list="{{ quickFps }}" as="q" hint-placeholder-count="9">
@@ -145,6 +155,25 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </button>
 </sc-for>
 </div>
+</div>
+</section>
+
+<section aria-labelledby="rampTitle" style="border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1); background: #18181b; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; gap: 12px; justify-content: space-between; align-items: flex-start;">
+<div>
+<h2 id="rampTitle" style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Speed Ramp <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">(T32 block, in Recording format)</span></h2>
+<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">The ladder adds one row here. Ramp-ready makes the next ramp take start in the rung that reaches the ramp's top, so the whole ramp stays in one mode.</p>
+</div>
+<div style="{{ rampPill.style }}">{{ rampPill.label }}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Ramp-ready (new)</span>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 420px;">
+<sc-for list="{{ rampReadyOptions }}" as="rr" hint-placeholder-count="2">
+<button type="button" onClick="{{ rr.pick }}" aria-pressed="{{ rr.pressed }}" style="{{ rr.style }}">{{ rr.label }}</button>
+</sc-for>
+</div>
+<span style="{{ rampReadyNoteStyle }}">{{ rampReadyNote }}</span>
 </div>
 </section>
 
@@ -183,10 +212,12 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
+    const initial = [{ id: 'chdr16-3840x2160', thr: '' }, { id: 'sdr12-3840x2160', thr: '' }];
     this.state = {
       on: true,
-      inTake: 'hold',
-      rungs: [{ id: 'chdr16-3840x2160', thr: '' }, { id: 'sdr12-3840x2160', thr: '' }],
+      rampReady: false,
+      savedJson: JSON.stringify(initial),
+      rungs: initial,
       dragId: null,
       overIndex: -1,
       group: 'all',
@@ -285,8 +316,8 @@ class Component extends DCLogic {
         if (sizeChange) parts.push('picture ' + prevMode.size + ' → ' + m.size);
         if (!parts.length) parts.push('same class and size');
         const inTake = classChange || sizeChange
-          ? (st.inTake === 'hold' ? 'In a take: FPS stops at ' + from + ' and this rung starts after stop.' : 'In a take: a new clip starts here, with a short gap.')
-          : 'In a take: a ramp crosses without a switch.';
+          ? 'Switches between takes only, with a short preview blink; in a take FPS stops at ' + from + '.'
+          : 'Same mode: a ramp crosses without a switch, in a take too.';
         transitionText = 'Above ' + from + ' fps: ' + parts.join(', ') + '. ' + inTake;
       }
       const over = st.overIndex === i && st.dragId !== null && st.dragId !== r.id;
@@ -375,34 +406,62 @@ class Component extends DCLogic {
       for (const r of rungs) if (r._ok && fps > r._from && fps <= r._top) return r;
       return null;
     };
+    // what runs now: the picked FPS's rung, or with Ramp-ready the rung that reaches the top
+    const shortClass = (r) => {
+      if (!r) return '';
+      const m = this.mode(st.rungs[Number(r.number) - 1].id);
+      const base = (m.cls.indexOf('Clear HDR') === 0 ? 'HDR' : 'SDR') + m.depth;
+      return m.aspect === '16:9' ? base : base + ' ' + m.aspect;
+    };
+    const okRungs = rungs.filter((r) => r._ok);
+    const topRung = okRungs.length ? okRungs[okRungs.length - 1] : null;
+    const pickedRung = rungFor(st.pickedFps);
+    const runningRung = on ? (st.rampReady && topRung ? topRung : pickedRung) : null;
+
     const quickFps = quickList.map((fps) => {
       const r = rungFor(fps);
       const disabled = on ? !r : fps > 25;
       const active = st.pickedFps === fps;
+      const switches = on && r && runningRung && r !== runningRung;
       return {
         label: String(fps),
-        rungText: on ? (r ? 'rung ' + r.number : 'no rung') : 'mode only',
+        rungText: on ? (r ? 'rung ' + r.number + (switches ? ' · switch' : '') : 'no rung') : 'mode only',
         disabled,
         pressed: active ? 'true' : 'false',
         pick: () => this.setState({ pickedFps: fps }),
-        style: { ...pill(active), textAlign: 'center', opacity: disabled ? 0.45 : 1, cursor: disabled ? 'default' : 'pointer' },
-        rungStyle: { display: 'block', fontSize: '11px', marginTop: '3px', fontWeight: 600, color: active ? '#3f3f46' : (r ? r._color : '#a1a1aa') },
+        style: {
+          ...pill(active), textAlign: 'center', opacity: disabled ? 0.45 : 1, cursor: disabled ? 'default' : 'pointer',
+          border: active ? '1px solid rgba(255, 255, 255, 0.9)' : (switches ? '1px dashed #f59e0b' : '1px solid rgba(255, 255, 255, 0.1)'),
+        },
+        rungStyle: { display: 'block', fontSize: '11px', marginTop: '3px', fontWeight: 600, color: active ? '#3f3f46' : (switches ? '#fbbf24' : (r ? r._color : '#a1a1aa')) },
       };
     });
 
-    // in-take choice
-    const inTakeOptions = [
-      { key: 'hold', label: 'Hold the rung', sub: 'FPS stops at the rung’s threshold; the switch happens after stop (Cinemate’s rule).' },
-      { key: 'split', label: 'Switch with a new clip', sub: 'Crossing a class switch starts a new clip. Needs measuring on the Pi first.' },
-    ].map((o) => {
-      const active = st.inTake === o.key;
+    const nowText = !on
+      ? '4K · Clear HDR 16-bit · Uncompressed (ladder off)'
+      : (runningRung
+        ? 'Rung ' + runningRung.number + ' · ' + shortClass(runningRung) + ' · ≤' + runningRung._top + ' · Uncompressed' + (st.rampReady ? ' · RAMP' : '')
+        : 'No rung runs ' + st.pickedFps + ' fps');
+    const nowNote = !on
+      ? 'FPS stays inside the current mode.'
+      : (st.rampReady
+        ? 'Ramp-ready is on: the next ramp take records the whole ramp in rung ' + (topRung ? topRung.number : '?') + '. Turning it off switches back once.'
+        : 'Same line on the camera screen (FORMAT) and next to Frame rate in Camera settings.');
+
+    const dirty = JSON.stringify(st.rungs) !== st.savedJson;
+    const btn = (primary, enabled) => ({
+      minHeight: '44px', padding: '0 18px', borderRadius: '14px', fontFamily: 'inherit', fontSize: '14px', fontWeight: 600,
+      border: primary && enabled ? '1px solid rgba(255, 255, 255, 0.9)' : '1px solid #27272a',
+      background: primary && enabled ? '#ffffff' : 'rgba(9, 9, 11, 0.72)',
+      color: primary && enabled ? '#09090b' : (enabled ? '#f4f4f5' : '#71717a'), cursor: enabled ? 'pointer' : 'default',
+    });
+
+    const rampReadyOptions = [['off', 'Off'], ['on', 'On']].map(([k, label]) => {
+      const active = (k === 'on') === st.rampReady;
       return {
-        label: o.label,
-        sub: o.sub,
-        pressed: active ? 'true' : 'false',
-        pick: () => this.setState({ inTake: o.key }),
-        style: { ...pill(active), display: 'flex', flexDirection: 'column', gap: '4px' },
-        subStyle: { display: 'block', fontSize: '12px', color: active ? '#3f3f46' : '#a1a1aa', lineHeight: 1.35 },
+        label, pressed: active ? 'true' : 'false',
+        pick: () => this.setState({ rampReady: k === 'on' }),
+        style: { ...pill(active), textAlign: 'center' },
       };
     });
 
@@ -464,7 +523,25 @@ class Component extends DCLogic {
         position: 'absolute', top: '3px', left: on ? '27px' : '3px', width: '26px', height: '26px', borderRadius: '999px',
         background: '#ffffff', transition: 'left 0.15s ease',
       },
-      inTakeOptions,
+      nowText,
+      nowNote,
+      nowStyle: { fontSize: '18px', fontWeight: 700, marginTop: '4px', color: on && st.rampReady ? '#fbbf24' : '#ffffff' },
+      draftText: dirty ? 'Unsaved changes. Core checks the ladder when you save.' : 'Saved on the camera.',
+      draftStyle: { fontSize: '13px', color: dirty ? '#fbbf24' : '#a1a1aa' },
+      notDirty: !dirty,
+      save: () => this.setState({ savedJson: JSON.stringify(st.rungs) }),
+      revert: () => this.setState({ rungs: JSON.parse(st.savedJson) }),
+      saveStyle: btn(true, dirty),
+      revertStyle: btn(false, dirty),
+      rampPill: {
+        label: st.rampReady ? 'On · Angle · Ramp-ready' : 'On · Angle',
+        style: { borderRadius: '999px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' },
+      },
+      rampReadyOptions,
+      rampReadyNote: st.rampReady
+        ? (topRung ? 'Next ramp take starts in rung ' + topRung.number + ' (' + shortClass(topRung) + ', up to ' + topRung._top + ' fps): the whole take is ' + shortClass(topRung) + '.' : 'No rung to start in.')
+        : 'Off: a ramp take stays in its rung and stops at that rung’s ceiling (25 in HDR16).',
+      rampReadyNoteStyle: { fontSize: '13px', color: st.rampReady ? '#fbbf24' : '#a1a1aa' },
       noRungs: rungs.length === 0,
       rungs,
       buildMax,
