@@ -51,16 +51,19 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `e9dd6b2` | Media tuning helper opt-in (`APERTAR_MEDIA_TUNE=1`); audio drift = least-squares slope over all blocks, not two endpoints; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); tested: no helper call after restart; C0013 fit -15 ppm (6968 points) |
 | `6ae70b5` | Storage label "Media Removed"/"Media Error" from the watcher (T20 Step 4); time-left estimate follows format and bit depth, 16 included, truthful label (T21); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); T21 tested (agrees with HDMI up to rounding); T20 pull tested |
 | `87011d4` | Time left rounds down in Core (tenths) and the WebUI, like the touch UI (HDMI 35 vs WebUI 36); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); done (Patrik, 2026-10-27) |
-| `a0a6b7a` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
-| `8557306` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
+| `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `315e390` | Clear HDR helpers moved above `setFps` (13a350f did not build); WebUI frame rates 25/33/50 for the IMX585 and others; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
 | --- | --- | --- |
-| `0dff4d5` | Touch UI: resolution button toggles 4K 16-bit Clear HDR ↔ 12-bit SDR; 33 fps in the list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
-| `ae9ced5` | Touch UI FORMAT line: bit depth and Clear HDR for raw takes ("16-bit · Clear HDR · Uncompressed"); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
-| `303052a` | Touch UI: ISO 1600 in the lossless cDNG list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
+| `2464b60` | Touch UI frame rates 25/33/50 (IMX585 and others); branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `0165b70` | Touch UI: resolution button toggles 4K 16-bit Clear HDR ↔ 12-bit SDR; 33 fps in the list; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `f149744` | Touch UI FORMAT line: bit depth and Clear HDR for raw takes ("16-bit · Clear HDR · Uncompressed"); branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
+| `def5d45` | Touch UI: ISO 1600 in the lossless cDNG list; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 | `2d27c46` | Touch UI counts "16-bit" as 16 bits in the frame-size estimate (HDMI time left was a third too long: 50 vs 37 min); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); done (Patrik, 2026-10-27) |
 | `dc471c1` | CFE automounter: card pulled while mounted → lazy unmount + PCIe remove, so the next insert remounts (T18 step 5a); branch `cinemate-port` | fork-only; installed 22:59, tested on the Pi (pull + re-insert, no reboot) |
 | `160898c` | Touch UI follows Core's media state (MEDIA REMOVED / ERROR) instead of only the mount table; branch `cinemate-port` (created 2026-10-26 from `main` `4415a55`, on GitHub, Mac, Pi) | fork-only, on GitHub (`cinemate-port`); built 22:55, tested |

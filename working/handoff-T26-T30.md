@@ -100,6 +100,13 @@ Things the T22-T25 work changes for these notes:
   also for throughput at Gen 2/Gen 3). T29 `ffb87db` (no direct I/O, helper not installed) and T30 `a99691e` applied, built, untested.
 - **T28 not finished:** 5.1 eject gate, USB-stick pull, 5.3 eject intent; T29/T30 after it.
 
+- **Temporary fixes to review (Patrik, 2026-10-27, all `temp:` in the subject, on GitHub `cinemate-port`):** Core `753f181` ISO
+  1600 in lossless, `c5d0c37` 33 fps (superseded by `315e390`), `13a350f` 16-bit Clear HDR = 25 fps uncompressed (switches to
+  12-bit SDR lossless above 25), `315e390` build fix + WebUI fps 25/33/50; UI `def5d45` ISO 1600, `f149744` FORMAT line bit
+  depth + Clear HDR, `0165b70` resolution button toggles Clear HDR 16 ↔ SDR 12, `2464b60` fps 25/33/50. Not yet run on the
+  Pi (built only): restart Core and UI to try them. Note: IMX585 lossless is capped at 30 fps, so >25 → SDR lossless lands at
+  30 at most; 33 is reachable in SDR uncompressed.
+
 ## 5. Read first
 
 `llm/README.md` → `llm/tutoring.md` §7 → `working/mac-driven-loop.md` → `working/cinemate-lessons.md` (§4 yank, §5 media,
