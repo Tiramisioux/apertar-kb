@@ -52,11 +52,13 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `6ae70b5` | Storage label "Media Removed"/"Media Error" from the watcher (T20 Step 4); time-left estimate follows format and bit depth, 16 included, truthful label (T21); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); T21 tested (agrees with HDMI up to rounding); T20 pull tested |
 | `87011d4` | Time left rounds down in Core (tenths) and the WebUI, like the touch UI (HDMI 35 vs WebUI 36); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); done (Patrik, 2026-10-27) |
 | `a0a6b7a` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
+| `8557306` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `0dff4d5` | Touch UI: resolution button toggles 4K 16-bit Clear HDR ↔ 12-bit SDR; 33 fps in the list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
 | `ae9ced5` | Touch UI FORMAT line: bit depth and Clear HDR for raw takes ("16-bit · Clear HDR · Uncompressed"); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
 | `303052a` | Touch UI: ISO 1600 in the lossless cDNG list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
 | `2d27c46` | Touch UI counts "16-bit" as 16 bits in the frame-size estimate (HDMI time left was a third too long: 50 vs 37 min); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); done (Patrik, 2026-10-27) |
