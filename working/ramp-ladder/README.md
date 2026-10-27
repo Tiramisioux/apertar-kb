@@ -11,7 +11,8 @@ with the decisions taken so far.
 2. The selectable FPS values stay as code arrays for now; point him to them. Done: §4.
 3. "Come up with a plan, critique it, present how the system would work, how to implement it, and a tutorial."
 4. A Cinemate-inspired section in the WebUI settings for speed ramping, by expanding the Format section. Done: T32.
-5. **25 fps is the accepted maximum for 4K Clear HDR 16-bit.** Done: T32 (Core, WebUI and touch UI all stop at 25).
+5. **25 fps is the accepted maximum for 4K Clear HDR 16-bit.** Done: T32 (Core's clamp and its PCF pot/button list, the WebUI
+   and the touch UI all stop at 25).
 6. **His use case:** 25 fps is the first threshold. Above it, 4K Clear HDR 16-bit switches to 4K SDR 12-bit, up to 50. 50 is the
    maximum, set in the settings for this build.
 7. Set the arrays for ISO, shutter angle, FPS and WB Cinemate-style, adapted to the Apertar style. Not started: §3.1.
@@ -25,8 +26,8 @@ with the decisions taken so far.
 
 | Tutorial | Patches (apply in this order) | What |
 | --- | --- | --- |
-| T31 | Core `0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch` | FPS changes inside cDNG/MLV takes behind `fps_ramp` (count-based numbering, one `FrameRate`/timecode base, real-time WAV, shutter policy, grace, `fps-ramp.txt`, `ramp_fps` stepper). Rebased onto `cinemate-port` `7a545d9`; three steps differ from the first cloud version (tutorial status line) |
-| T32 | Core `0001-camera-cap-4K-Clear-HDR-16-bit-at-25-fps.patch`, `0001-web-speed-ramp-block-in-the-Recording-format-card.patch`; UI `0001-ui-4K-Clear-HDR-16-bit-offers-FPS-up-to-25.patch`, `0001-ui-FPS-picker-sends-only-set_fps-during-a-speed-ramp.patch` | 25 fps ceiling for 4K Clear HDR 16-bit in Core, WebUI and touch UI; Speed Ramp block under Bit Depth in Settings → Record → Recording format (On/Off, Shutter Sync Angle/Exposure, Ramp to … over …, ×2, Back); the touch UI picker leaves the shutter to Core in a ramp take |
+| T31 | Core `0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch` | FPS changes inside cDNG/MLV takes behind `fps_ramp` (count-based numbering, one `FrameRate`/timecode base, real-time WAV, shutter policy, grace, `fps-ramp.txt`, `ramp_fps` stepper, which refuses up front in a take it cannot ramp). Rebased onto `cinemate-port` `7a545d9`; three steps differ from the first cloud version (tutorial status line) |
+| T32 | Core `0001-camera-cap-4K-Clear-HDR-16-bit-at-25-fps.patch`, `0001-web-speed-ramp-block-in-the-Recording-format-card.patch`; UI `0001-ui-4K-Clear-HDR-16-bit-offers-FPS-up-to-25.patch`, `0001-ui-FPS-picker-sends-only-set_fps-during-a-speed-ramp.patch` | 25 fps ceiling for 4K Clear HDR 16-bit in Core (clamp and PCF pot/button list), WebUI and touch UI; Speed Ramp block under Bit Depth in Settings → Record → Recording format (On/Off, Shutter Sync Angle/Exposure, Ramp to … over …, ×2, Back); the touch UI picker leaves the shutter to Core in a camera ramp take (not in a sound-only take) |
 
 FPS controls during a take with `fps_ramp` on: WebUI pills and the Speed Ramp block, PCF pot, `fps:<n>`/`fps_up`/`fps_down` buttons
 (all `set_fps` or `ramp_fps`), touch UI picker (after T32 4.9). The touch UI's `ensureValidFpsSelection()` returns early with a
@@ -45,10 +46,13 @@ Today each list exists three times, and the copies already differ:
 
 | List | WebUI (`WebControlPage.cpp`, T32 tree) | Touch UI (`qml/CameraPage.qml`) | Core pots/buttons (`ApertarCoreApp.cpp`, T31 tree) |
 | --- | --- | --- | --- |
-| FPS | `fpsPresets` `:4071` | `presets` in `availableFpsOptions()` `:809-813` | `availablePcfFpsOptions()` `:1174-1192` |
+| FPS | `fpsPresets` `:4071` | `presets` in `availableFpsOptions()` `:808-812@dc471c1` | `availablePcfFpsOptions()` `:1174-1192` |
 | ISO | `isoOptions` `:4072` | `isoOptions` (KB `llm/ui-map.md:148`) | `pcfIsoOptions()` `:1303-1306` |
 | Shutter angle | `shutterOptions` `:4073` | `shutterOptions` (KB `llm/ui-map.md:148`) | `pcfShutterAngleOptions()` `:1308-1314` |
 | WB | `whiteBalanceOptions` `:4075` | WB list (KB `llm/ui-map.md`) | `pcfWhiteBalanceOptions()` |
+
+Core line numbers in this section are on the T31 tree. On the T32 tree those after `:1162` are one higher (the 25 fps cap
+adds a comment line in `maximumPcfFpsForSettings`).
 
 Cinemate keeps them in `settings.json` `arrays.{iso,shutter_a,fps,wb}.steps`, edited as chips in the settings editor, with a
 "free" toggle and an increment (`cinemate/src/module/app/templates/settings_editor.html:1970-1994@d6cc93e`).
@@ -59,7 +63,7 @@ Decided so far (not built):
   `~/.config/CinePi/UI.conf`, section `[General]` (`sharedUiSettingsPath()` `ApertarCoreApp.cpp:361-368`; Favorites live
   there as `favoritesOrder`). Keys: `isoSteps`, `shutterAngleSteps`, `fpsSteps`, `wbSteps`. Missing or empty means the
   built-in list.
-- **Core** reads them in `readSharedUiSettings()` (`:1664-1835`) and writes them with `updateSharedUiGeneralSettings()`
+- **Core** reads them in `readSharedUiSettings()` (`:1665-1837`) and writes them with `updateSharedUiGeneralSettings()`
   (`:1874`, takes the Qt INI lock). It validates the values (numbers, range, sorted, deduplicated), adds a command (for example
   `set_value_steps name=fps values=12,15,24,25,50`) and puts the lists in the state's `ui` object. The PCF pots and the
   `*_up`/`*_down` buttons use them.
@@ -71,7 +75,7 @@ Decided so far (not built):
   quick-access "Camera settings" pane (item 10) and the Speed Ramp targets then show his lists.
 - **Build maximum** ("50 … set as max in the settings for this particular build"): a new section in the per-build hardware
   config, which the WebUI Config panel already edits (`/api/config`, `ApertarCoreApp.cpp:7262-7289`; template
-  `defaultHardwareConfigTemplate()` `:4324`):
+  `defaultHardwareConfigTemplate()` `:4325`):
 
   ```ini
   [camera]
@@ -81,12 +85,17 @@ Decided so far (not built):
 
   Core clamps to it in the sanitiser, and publishes the effective ceiling for the current settings as `fps_max` in the state.
   The UIs cut their lists at `fps_max` instead of keeping their own tables. That also removes the "four copies of the ceiling"
-  risk (r1 Risks 9: `CameraController.cpp` table, `maximumPcfFpsForSettings` `App:1151-1160`, WebUI
+  risk (r1 Risks 9: `CameraController.cpp` table, `maximumPcfFpsForSettings` `App:1162-1171`, WebUI
   `maximumSupportedFpsForSnapshot`, QML `maximumSupportedFpsForResolution`).
 
 Open: Cinemate's "free" stepping (1-fps sweep) and increment. Not asked for explicitly; leave out of T33 unless Patrik wants it.
 
 ### 3.2 T34: the mode ladder
+
+> [!note] Design done 2026-10-27: `design/design-T34.md`. It recommends A + R below: rungs change between takes, and an
+> opt-in Ramp-ready switch starts a ramp take in the top rung. B is deferred until measured. It also proposes the numbering
+> T33 = build max, T34 = ladder, T35 = value lists (its Q12). Mockup of the editor:
+> https://claude.ai/artifact/YKbhhk8aMUS8sxEWa6UfRL (private to Patrik).
 
 Patrik's ladder for this build:
 
@@ -132,18 +141,23 @@ Recommendation to test first: A, plus a "ramp-ready" start. When the toggle is o
 starts in rung 2 and ramps 1 … 50 without a switch. B only if the hole and the look change are acceptable in the edit.
 
 UI notes for the editor: the WebUI has no drag and drop yet. Favorites reorder with ↑/↓ buttons (`moveFavoriteItem`,
-`WebControlPage.cpp:6670-6689`). Use pointer events for dragging (touch screens do not fire HTML5 drag events) and keep ↑/↓ as
-the fallback. The list of activated modes comes from Core's `list_sensor_modes` (`ApertarCoreApp.cpp:9607`, T31 tree).
+`WebControlPage.cpp:6670-6689`, T32 tree). Use pointer events for dragging (touch screens do not fire HTML5 drag events) and
+keep ↑/↓ as the fallback. The list of activated modes comes from Core's `list_sensor_modes` (`ApertarCoreApp.cpp:9618`, T31
+tree).
 
 ## 4. Where the selectable FPS values are (item 2)
 
 - WebUI: `fpsPresets`, `src/web/WebControlPage.cpp:4039` before T32, `:4071` after.
 - Touch UI: `availableFpsOptions()`, `qml/CameraPage.qml:807-832@dc471c1`, presets at `:808-812`. `fpsOptions` (`:503`) is
   the property the picker uses (`:2918`); `maximumSelectableFps()` (`:662-666`) takes its last entry.
-- Core pots and buttons: `availablePcfFpsOptions()`, `src/ApertarCoreApp.cpp:1174-1192` (T31 tree), presets at `:1177-1180`.
+- Core pots and buttons: `availablePcfFpsOptions()`, `src/ApertarCoreApp.cpp:1174-1192` (T31 tree), presets at `:1178-1181`.
 
 ## 5. Files in this folder
 
 - `../ramp-mode-ladder.md`: the first assessment (ceilings, ladders A-D, costs, measurements).
 - `r1-core.md`: every Core code path a ladder touches, with risks (reader report, Core `d4ad539`).
 - `r2-cinemate.md`: Cinemate's dynamic resolution and what it does mid-take (reader report, cinemate `d6cc93e`).
+- `design/design-T34.md`: the ladder design (A + R), measurements first, data model, implementation plan, tutorial outline,
+  open questions Q1-Q12. `design/changes-from-critique.md`: what the critics changed. `design/plan-v1.md`,
+  `design/critique-code.md`, `design/critique-operator.md`: the steps before it. `design/sketch/`: `ModeLadder.hpp` (no
+  libcamera) and its host test (`g++ -std=c++20 -Isketch sketch/mode_ladder_test.cpp`, 28 checks).

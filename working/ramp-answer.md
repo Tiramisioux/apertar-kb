@@ -84,15 +84,15 @@ Not changed: `trackRecordingCadence` outside the grace (nominal follows the fram
 
 ## 4. What to expect on the Pi
 
-Predictions to write down before the first test (T31 §5):
+What to expect in the first test (T31 §5):
 
 - 25 fps cDNG take, `ramp_fps to=50 seconds=5` at 10 s, `ramp_fps to=25 seconds=5` at 20 s, stop at 30 s: file count ≈ 25×10 + 50×5 (ramp mean ≈ 37.5 → ~188) + … ; more usefully, **contiguous numbering with no holes** and `fps-ramp.txt` with 50 lines (25 steps up, 25 down), each with an applied frame — **probable** (arithmetic).
 - `ApertarCore fps ramp: frame=N frame_us=20000 delta_us=... lag_frames=L superseded=S` lines: `lag_frames` about N+2 — 6 on ext4, 8 on exFAT, 10-12 with Clear HDR (**probable** ±1, critic K5); the stepper's 200 ms steps are 5-10 frames apart, so two requests can collapse into one period change (`superseded=1`). The `delta_us`/`frame_us` pair on the first transition line settles whether a delta spans the previous frame (critic K4).
 - No `drop[capture-gap]` lines caused by the ramp; `dropped_gap_estimate` unchanged from a non-ramp take.
 - WAV length = real elapsed (30 s ± one frame); the picture on a 25 fps timeline is longer (the 50 fps segment plays at half speed). In Resolve the sequence imports at 25 fps with one `FrameRate` throughout; RecRun TC continuous; FreeRun TC continuous and counting at 25.
-- Phase lock on: "released" at the first step, re-armed N+6 frames after the last step; `max_abs_err_us` at stop no worse than a non-ramp take after the settle.
-- `policy=exposure`: brightness constant through the ramp, motion blur halves at 50, until the exposure would exceed the frame — then the line says `(shutter clamped to the frame)`, the picture is as bright as the frame allows, and the ramp back down returns to the operator's exposure;
-- A take stopped while ramped: `take ended at 50 fps, restoring 25`, `get_state` shows 25, the settings file was written once at stop and not during the take; `policy=angle`: blur constant, half a stop darker at 50 (as Cinemate's doc describes for its mode 0, which its sensor does not actually do — §1.2).
+- Phase lock on: no "released" line (the release in applyControls is silent); "armed" N+6 frames after the last step up and again after the last step down; `max_abs_err_us` at stop no worse than a non-ramp take after the settle.
+- `policy=exposure`: brightness constant through the ramp, the same blur per frame (the angle doubles at 50), until the exposure would exceed the frame — then the line says `(shutter clamped to the frame)`, the picture is as bright as the frame allows, and the ramp back down returns to the operator's exposure;
+- A take stopped while ramped: `take ended at 50 fps, restoring 25`, `get_state` shows 25, the settings file was written once at stop and not during the take; `policy=angle`: blur constant, one stop darker at 50 (as Cinemate's doc describes for its mode 0, which its sensor does not actually do — §1.2).
 
 ## 5. Limits and unknowns
 

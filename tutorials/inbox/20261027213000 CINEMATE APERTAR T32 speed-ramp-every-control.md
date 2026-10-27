@@ -14,15 +14,15 @@ Status: written 2026-10-27 (cloud session). Patches, applied after T31 on Core `
 `dc471c1`, in this order: `working/patches/0001-ui-4K-Clear-HDR-16-bit-offers-FPS-up-to-25.patch`,
 `working/patches/0001-ui-FPS-picker-sends-only-set_fps-during-a-speed-ramp.patch`. Line numbers are on those trees with the
 patches applied, unless marked `@T31` (Core with T31 only) or `@dc471c1` (UI before the patches). Checked in the cloud: host
-`g++ -fsyntax-only` of `WebControlPage.cpp`, `node --check` of the page script, and the page driven in Chromium against a mocked
-`/api/state` (seven states, the commands each button sends, no console errors, no sideways scroll at 390 px); the whole touch UI built with
-Qt 6.4.2 on the host, QML compiled ahead of time. **Not run against Core on the Pi.** `CameraController.cpp` was not compiled
-(libcamera).
+`g++ -fsyntax-only` of `WebControlPage.cpp` and `ApertarCoreApp.cpp`, `node --check` of the page script, and the page driven
+in Chromium against a mocked `/api/state` (seven states, the commands each button sends, no console errors, no sideways
+scroll at 390 px); the whole touch UI built with Qt 6.4.2 on the host, QML compiled ahead of time. **Not run against Core on
+the Pi.** `CameraController.cpp` was not compiled (libcamera).
 
 **You will learn**
 - How a WebUI control reaches Core: the page lives in a C++ raw string, `renderSnapshot` redraws it from `/api/state`, a button
   calls `sendCommand`, which posts to `/api/command`.
-- Where the FPS ceiling of a mode lives (three places: Core, WebUI, touch UI) and why they must agree.
+- Where the FPS ceiling of a mode lives (four places: Core's clamp, Core's PCF list, WebUI, touch UI) and why they must agree.
 - Where the selectable FPS values live. They are the same arrays that the speed-ramp targets use.
 - How Cinemate lays out the same controls (SHUTTER SYNC, FPS DOUBLE, the ramp stepper) and what was kept.
 - Why every FPS control must leave the shutter to Core during a ramp take, and which one did not.
@@ -36,17 +36,18 @@ On, and the touch UI picker behaves as before outside ramp takes. The 25 fps cap
 - T31 made speed ramping work, but only through socket commands (`core.py set_fps_ramp`, `ramp_fps`). Nothing in the WebUI
   shows whether it is on, which shutter policy runs, or lets you start a ramp.
 - Every FPS control becomes a ramp control in a cDNG/MLV take once `fps_ramp` is on. Four send FPS to Core: the WebUI pills,
-  the PCF pot and the `fps:<n>` / `fps_up` buttons (`ApertarCoreApp.cpp:8623-8630@T31`, `:8812-8816@T31`) send only
-  `set_fps`, which T31 handles. The touch UI picker does more. `ApertarControlBridge::applyFps()`
-  (`src/ApertarControlBridge.cpp:255-287@dc471c1`) sends `set_fps`, then its own `set_shutter_us` to keep the angle, then
-  saves both. In a ramp take with Shutter Sync = Exposure, that second command undoes the policy, and the save makes a ramp
-  step your setting (the mistake Cinemate fixed in `ff59dd8`; Core avoids it since T31).
+  the PCF pot and the `fps:<n>` / `fps_up` / `fps_down` buttons (`ApertarCoreApp.cpp:8630-8638@T31` pot, `:8819-8824@T31`
+  `fps:<n>`, `:8891-8897@T31` `fps` / `fps_up` / `fps_down`) send only `set_fps`, which T31 handles. The touch UI picker does
+  more. `ApertarControlBridge::applyFps()` (`src/ApertarControlBridge.cpp:255-289@dc471c1`) sends `set_fps`, then its own
+  `set_shutter_us` to keep the angle, then saves both. In a ramp take with Shutter Sync = Exposure, that second command undoes
+  the policy, and the save makes a ramp step your setting (the mistake Cinemate fixed in `ff59dd8`; Core avoids it since T31).
 - 4K Clear HDR 16-bit is clean at 25 fps. At 30 it delivers about 28 and drops frames (`working/research-30fps-answer.md`).
-  25 is now the accepted maximum (Patrik, 2026-10-27). All three layers still offer 30:
+  25 is now the accepted maximum (Patrik, 2026-10-27). Four places still allow 30, and T32 changes all four:
 
 | Layer | Where @T31 / @dc471c1 | 4K Clear HDR 16-bit today |
 | --- | --- | --- |
 | Core clamp | `CameraController.cpp:2778-2780@T31`, `tableMaximumFpsForResolution` | 30 (25 only before the sensor probe) |
+| Core PCF list (pot, `fps` / `fps_up` / `fps_down`) | `ApertarCoreApp.cpp:1162-1165@T31`, `maximumPcfFpsForSettings` | 30 |
 | WebUI FPS pills | `WebControlPage.cpp:4977-4978@T31`, `maximumSupportedFpsForSnapshot` | 30 |
 | Touch UI FPS list | `qml/CameraPage.qml:780-781@dc471c1`, `maximumSupportedFpsForResolution` | 30 |
 
@@ -87,8 +88,8 @@ lists (for example `12.000, 15.000, 18.000, 20.000`). That also adds them to the
 mode's ceiling.
 
 Reading assignments: `WebControlPage.cpp:9291-9326` (`sendCommand`), `:9328-9348` (`buildOptionButtons`), `:9509-9550`
-(`renderSnapshot`'s first lines), `:5027-5054` (`availableFpsOptionsForSnapshot`); `CameraController.cpp:2736-2834` (the
-table and the probe), `:2835-2880` (the sanitiser); `ApertarCoreApp.cpp:9882-9903` (the two T31 commands).
+(`renderSnapshot`'s first lines), `:5027-5056` (`availableFpsOptionsForSnapshot`); `CameraController.cpp:2736-2834` (the
+table and the probe), `:2835-2881` (the sanitiser); `ApertarCoreApp.cpp:9897-9918` (the two T31 commands).
 
 ## 3. Find it yourself
 
@@ -104,22 +105,24 @@ grep -n -A6 'function availableFpsOptions()' ~/ApertarUI/qml/CameraPage.qml     
 
 > [!tip]- Answer
 > WebUI: one line, `const fpsPresets = [24.000, 25.000, 30.000, ... 280.000];` (`:4039@T31`).
-> Touch UI: `fpsOptions` at `:503` (the property), `:663-665` (`maximumSelectableFps()` takes its last entry) and `:2918` (the
-> picker); the array itself is in `availableFpsOptions()` at `:808-812@dc471c1`: one list for IMX477, one for IMX577, and
-> `[24.000, 25.000, 30.000, 50.000, 60.000]` for everything else, including the IMX585.
+> Touch UI: `fpsOptions` at `:503` (the property), `:663-665` (`maximumSelectableFps()` takes its last entry) and
+> `:2918@dc471c1` (the picker); the array itself is in `availableFpsOptions()` at `:808-812@dc471c1`: one list for IMX477,
+> one for IMX577, and `[24.000, 25.000, 30.000, 50.000, 60.000]` for everything else, including the IMX585.
 > The two lists differ: the WebUI offers 35, 40 and 45, the touch UI does not.
 
 **3.2 What does each layer allow at 4K Clear HDR 16-bit?**
 
 ```bash
 grep -n -A3 'normalized.width == 3840 && normalized.height == 2160' ~/ApertarCore/src/camera/CameraController.cpp | head -5   # Core
-grep -n -A2 '(width === 3856 && height === 2180) || (width === 3840 && height === 2160)' ~/ApertarCore/src/web/WebControlPage.cpp | head -4   # WebUI
-grep -n -A1 'resolutionValue === "3856x2180" || resolutionValue === "3840x2160"' ~/ApertarUI/qml/CameraPage.qml | head -4   # touch UI
+grep -n -A3 'if (sensor.find("imx585")' ~/ApertarCore/src/ApertarCoreApp.cpp | head -4   # Core's PCF list
+grep -n -A1 'if ((width === 3856 && height === 2180) || (width === 3840 && height === 2160))' ~/ApertarCore/src/web/WebControlPage.cpp   # WebUI
+grep -n -A1 'if (resolutionValue === "3856x2180" || resolutionValue === "3840x2160")' ~/ApertarUI/qml/CameraPage.qml | head -2   # touch UI
 ```
 
 > [!tip]- Answer
 > Core: `return clearHdr && !sensorLimitKnown ? 25.0 : 30.0;`. Once the sensor probe knows the mode (it does on your Pi: link
-> 891 MHz), Clear HDR gets 30. WebUI and touch UI: `30.0`, with no Clear HDR or bit-depth test at all.
+> 891 MHz), Clear HDR gets 30. Core's PCF list, WebUI and touch UI: `30.0`, with no Clear HDR or bit-depth test at all
+> (`ApertarCoreApp.cpp:1165@T31`, `WebControlPage.cpp:4978@T31`, `qml/CameraPage.qml:781@dc471c1`).
 
 **3.3 What does a WebUI FPS pill send?** Open the WebUI in a desktop browser, open the developer tools on the Network tab, and
 press an FPS pill.
@@ -130,8 +133,8 @@ press an FPS pill.
 
 ## 4. Make the change
 
-**4.1 Core: 25 fps for 4K Clear HDR 16-bit** — `src/camera/CameraController.cpp:2778-2785`, in `tableMaximumFpsForResolution`,
-search `Clear HDR doubles VMAX`. Turn the one-line `if` into a block:
+**4.1 Core: 25 fps for 4K Clear HDR 16-bit** — two places. First `src/camera/CameraController.cpp:2778-2785`, in
+`tableMaximumFpsForResolution`, search `Clear HDR doubles VMAX`. Turn the one-line `if` into a block:
 
 ```cpp
         if (normalized.width == 3840 && normalized.height == 2160) {
@@ -147,7 +150,23 @@ search `Clear HDR doubles VMAX`. Turn the one-line `if` into a block:
 Why here: `maximumSupportedFpsForResolution()` (`:2799`) takes the smaller of this table and the sensor probe, so 25 wins.
 `sanitizeSettingsForSensor()` (`:2877`) then clamps every `set_fps`, every `ramp_fps` step and the setting loaded at start.
 `normalizeRawBitDepth()` is defined at `:256`, above this function.
-**Check:** `grep -c 'normalizeRawBitDepth(rawBitDepth) == 16' src/camera/CameraController.cpp` → 1.
+
+Then Core's own FPS list for the PCF pot and the `fps` / `fps_up` / `fps_down` buttons — `src/ApertarCoreApp.cpp:1163-1166`,
+in `maximumPcfFpsForSettings`, the IMX585 branch (search `if (sensor.find("imx585")`, the first hit). Add the comment and change
+the `return`:
+
+```cpp
+        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+        if ((width == 3856 && height == 2180) ||
+            (width == 3840 && height == 2160))
+            return settings.clearHdr && settings.rawBitDepth == 16 ? 25.0 : 30.0;
+```
+
+Why: `availablePcfFpsOptions()` (`:1175-1193`) cuts `{24, 25, 30, 50, 60}` at this value. Left at 30, the `fps` button at 25
+asks for 30, Core clamps it to 25, and the cycle never wraps back to 24; the pot's top end asks for 30 on every move.
+`settings` is Core's own sanitised copy, so in Clear HDR the bit depth is already 12 or 16.
+**Check:** `grep -c 'normalizeRawBitDepth(rawBitDepth) == 16' src/camera/CameraController.cpp` → 1, and
+`grep -c 'settings.clearHdr && settings.rawBitDepth == 16 ? 25.0' src/ApertarCoreApp.cpp` → 1.
 
 **4.2 WebUI: the same ceiling** — `src/web/WebControlPage.cpp:5011-5013`, in `maximumSupportedFpsForSnapshot`, the first IMX585
 `if`:
@@ -169,10 +188,10 @@ Why here: `maximumSupportedFpsForResolution()` (`:2799`) takes the smaller of th
             imx585Max = root.clearHdrActive && root.rawBitDepthValue === "16-bit" ? 25.0 : 30.0
 ```
 
-`clearHdrActive` (`:454`) and `rawBitDepthValue` (`:357`, formatted `"16-bit"` by `ApertarControlBridge.cpp:1760`) already exist.
+`clearHdrActive` (`:454`) and `rawBitDepthValue` (`:357`, formatted `"16-bit"` by `ApertarControlBridge.cpp:1767`) already exist.
 **Check:** `grep -c 'rawBitDepthValue === "16-bit" ? 25.0' qml/CameraPage.qml` → 1.
 
-**4.4 The block's HTML** — `WebControlPage.cpp:2918-2951`. In the "Recording format" card, right after the Bit Depth pills
+**4.4 The block's HTML** — `WebControlPage.cpp:2919-2950`. In the "Recording format" card, right after the Bit Depth pills
 (search `id="settingsRawBitDepthOptions"`) and before the card's closing `</div>`. It reuses the card's own classes, so it looks
 like the Bit Depth block above it:
 
@@ -221,9 +240,10 @@ What each part is, against Cinemate:
 | ×2 → 50 fps / Back → 25 fps | `ramp_fps to=2×base` / `to=base` | FPS DOUBLE (`set_fps_double`) |
 | Pill: Off, On · Angle, On · Exposure, Ramping | reads `fps_ramp`, `fps_ramp_keep_exposure`, `fps_ramp_stepping` | the tinted FPS/shutter group |
 
-**Check:** `grep -c 'settingsSpeedRamp' src/web/WebControlPage.cpp` → 8 after this step (17 after 4.8).
+**Check:** `grep -c 'id="settingsSpeedRamp' src/web/WebControlPage.cpp` → 8. Only the HTML has these ids, so it stays 8 after
+4.5-4.8.
 
-**4.5 The render function** — `WebControlPage.cpp:5058-5156`. Insert it just above `function availableIsoOptionsForSnapshot`
+**4.5 The render function** — `WebControlPage.cpp:5058-5155`. Insert it just above `function availableIsoOptionsForSnapshot`
 (search for it). This is the longest step. Type it in four parts and read each part before you go on.
 
 Part 1, three helpers. Core refuses a mid-take FPS change for H.264, ProRes and stills; the block says so instead of failing.
@@ -360,8 +380,8 @@ call ends (`}, 3);`) and before `buildOptionButtons("settingsGyroDataOptions"`:
 **4.7 Redraw at once after a click** — two places. Without them the pills only change on the next state poll, about
 150 ms later.
 
-In `mergeCameraStateFields` (`:8761`), at the end, after the `recording_elapsed_seconds` lines (`:8843-8846`). Command replies
-carry the settings JSON, which has the two ramp fields since T31:
+In `mergeCameraStateFields` (`:8761`), at the end, after the `recording_elapsed_seconds` lines (`:8840-8841`; the new lines
+land at `:8842-8845`). Command replies carry the settings JSON, which has the two ramp fields since T31:
 
 ```js
       if (typeof source.fps_ramp === "boolean")
@@ -370,7 +390,7 @@ carry the settings JSON, which has the two ramp fields since T31:
         snapshot.fps_ramp_keep_exposure = source.fps_ramp_keep_exposure;
 ```
 
-In `applyCommandSnapshotPatch` (`:8848`), after `case "set_fps":` (`:8880-8892`):
+In `applyCommandSnapshotPatch` (`:8848`), after `case "set_fps":` (`:8876-8879`; the new cases land at `:8880-8890`):
 
 ```js
         case "set_fps_ramp":
@@ -403,41 +423,63 @@ Next to the other settings listeners (search `settingsRecordResolutionSelect").a
       });
 ```
 
-**Check:** `grep -c 'settingsSpeedRamp' src/web/WebControlPage.cpp` → 17.
+**Check:** `grep -c 'settingsSpeedRamp' src/web/WebControlPage.cpp` → 18 (8 HTML lines from 4.4, 9 from 4.5, the listener).
 
-**4.9 Touch UI: the picker leaves the shutter to Core in a ramp take** (Apertar-UI) — two places in
-`src/ApertarControlBridge.cpp` and one member.
+**4.9 Touch UI: the picker leaves the shutter to Core in a ramp take** (Apertar-UI) — three places in
+`src/ApertarControlBridge.cpp` and two members.
 
-In `src/ApertarControlBridge.hpp:318`, below `bool m_recording = false;`:
+In `src/ApertarControlBridge.hpp:318-319`, below `bool m_recording = false;`:
 
 ```cpp
     bool m_fpsRamp = false; // Core's fps_ramp (T31): FPS may change during a raw take
+    bool m_soundRecording = false; // a sound-only take: recording, but not the camera
 ```
 
-In `applyCoreState` (`:1368-1369`), right after the two `shutter_auto` lines (search `m_shutterAuto = state.value`). Core's
-state, its settings events and every command reply carry `fps_ramp` since T31:
+In `applyCoreState` (`:1372-1376`), right after the two `shutter_auto` lines (search `m_shutterAuto = state.value`). Core's
+state, its settings events and every command reply carry `fps_ramp` since T31. `get_state`, `/api/state` and the
+`record_start` / `record_stop` replies carry `sound_recording`:
 
 ```cpp
     if (state.contains(QStringLiteral("fps_ramp")))
         m_fpsRamp = state.value(QStringLiteral("fps_ramp")).toBool(m_fpsRamp);
+
+    if (state.contains(QStringLiteral("sound_recording")))
+        m_soundRecording = state.value(QStringLiteral("sound_recording")).toBool(m_soundRecording);
+```
+
+In `applyCoreMessage`, the `recording` event branch (`:1229-1232`, search `event == QStringLiteral("recording")`), right after
+`applyCoreState(message);`. Core's event for a sound-only take carries `sound_only`, not `sound_recording`
+(`ApertarCoreApp.cpp:8516`, `:8528`):
+
+```cpp
+        // Core's sound-only take sends sound_only in its event instead of sound_recording.
+        if (message.contains(QStringLiteral("sound_only")))
+            m_soundRecording = message.value(QStringLiteral("active")).toBool(false)
+                               && message.value(QStringLiteral("sound_only")).toBool(false);
 ```
 
 In `applyFps` (`:273-278`), right after the `set_fps` call succeeds and before `setFps(formatFpsValue(fpsValue));`:
 
 ```cpp
-    // A ramp step in a take (T31): Core applies the shutter policy (angle or
+    // A ramp step in a camera take (T31): Core applies the shutter policy (angle or
     // exposure) and restores the take's start rate at stop, and sendCoreCommand has
     // already applied its reply. Send nothing more: a set_shutter_us here would undo
     // the exposure policy, and saving would make a take-scoped rate the setting.
-    if (m_recording && m_fpsRamp)
+    if (m_recording && !m_soundRecording && m_fpsRamp)
         return true;
 ```
 
+Why `m_soundRecording`: `m_recording` is also true in a sound-only take (`get_state`'s `recording` is
+`camera_.isRecording() || soundRecording`, `ApertarCoreApp.cpp:9648`). Core does not ramp then: it commits the FPS change as a
+normal one, so the picker must still send its own `set_shutter_us` and save.
+
 Why this is enough: `sendCoreCommand` runs every message, including the reply, through `applyCoreMessage` (`:1095`), so FPS and
-shutter on screen already show what Core set. Outside ramp takes the function runs as before. `ensureValidFpsSelection()`
+shutter on screen already show what Core set. Outside camera ramp takes (a sound-only take included) the function runs as
+before. `ensureValidFpsSelection()`
 (`qml/CameraPage.qml:1557-1558`) returns at once when the bridge exists, so the in-between rates of a stepper (26, 27 …) are
 not "corrected" by the UI.
-**Check:** `grep -c 'm_fpsRamp' src/ApertarControlBridge.cpp` → 2.
+**Check:** `grep -c 'm_fpsRamp' src/ApertarControlBridge.cpp` → 2, and `grep -c 'm_soundRecording' src/ApertarControlBridge.cpp`
+→ 3.
 
 **4.10 Host checks before the Pi build** (Mac or Pi). The C++ compiler only sees one long string, so check the JavaScript on
 its own too:
@@ -471,11 +513,12 @@ sudo systemctl restart apertar-ui-direct               # Patrik
 
 ```bash
 python3 -I ~/apertar-kb/working/tools/core.py set_fps value=30          # ask for 30
-python3 -I ~/apertar-kb/working/tools/core.py get_state | grep -o '"fps":[0-9.]*'   # Core keeps 25
+python3 -I ~/apertar-kb/working/tools/core.py get_state | grep -o '"fps":[0-9.]*'   # Core keeps 25.000
 ```
 
-What you see: `"fps":25`. The WebUI FPS pills end at 25, and so does the touch UI picker. Switch Clear HDR off or to 12-bit: 30
-comes back in all three.
+What you see: `"fps":25.000`. The WebUI FPS pills end at 25, and so does the touch UI picker. A PCF button mapped to `fps`
+(if your rig has one) cycles 24 → 25 → 24. Switch Clear HDR off or to 12-bit: 30 comes back in all four (the PCF `fps` button
+cycles 24, 25, 30 again).
 
 **5.2 The block.** WebUI → Settings → Record → Recording format, below Bit Depth:
 
@@ -500,32 +543,72 @@ journalctl -u apertar-core -b --no-pager | grep -E 'fps ramp (stats|stopped)' | 
 
 The rest of the take is judged as in T31 §5.1-§5.2 (`fps-ramp.txt`, `FrameRate`, Resolve).
 
-**5.4 Touch UI picker in a ramp take.** Shutter Sync `Exposure`, 2K cDNG at 25 fps, 180°. Record, pick 50 on the touch UI
-FPS picker, then 25, then stop.
+**5.4 Touch UI picker in a ramp take.** Shutter Sync `Exposure`, 2K cDNG at 25 fps, 180°. Record and pick 50 on the touch UI
+FPS picker. While the take is at 50:
 
 ```bash
-journalctl -u apertar-core -b --no-pager | grep -E 'fps ramp: 25 -> 50|fps ramp: 50 -> 25|set_shutter_us' | tail -4
+python3 -I ~/apertar-kb/working/tools/core.py get_state | grep -oE '"(fps|shutter_us)":[0-9.]+'   # "fps":50.000, "shutter_us":20000 with 4.9; 10000 if the UI still sends its own set_shutter_us
 ```
 
-What you see: two `fps ramp:` request lines and no `set_shutter_us` from the UI during the take. The shutter readout stays at
-20 ms (Exposure keeps it; at 50 fps the angle reads 360°). After stop, the picker shows 25 again. Repeat with `Angle`: the
-shutter readout halves at 50 and the angle stays 180°.
+Then pick 25 and stop.
+
+```bash
+journalctl -u apertar-core -b --no-pager | grep -E 'fps ramp: (25 -> 50|50 -> 25) ' | tail -2   # two request lines, policy=exposure
+```
+
+What you see: `"fps":50.000` and `"shutter_us":20000` during the take, then two `fps ramp:` request lines with
+`shutter_us=20000 policy=exposure`. Neither Core nor the UI logs the commands it receives, so the journal cannot show a missing
+`set_shutter_us`; the shutter value can. The shutter readout stays at 20 ms (Exposure keeps it; at 50 fps the angle reads
+360°). After stop, the picker shows 25 again. Repeat with `Angle`: the shutter readout halves at 50 and the angle stays 180°
+(`"shutter_us":10000` with or without 4.9, so only the Exposure run tests 4.9).
 
 **5.5 Phone.** Open the WebUI on the phone: the block fits the width; the three actions wrap to two columns.
 
 ## 6. Commit
 
-Core, two commits on `cinemate-port` (messages as in the two patches):
+Core and touch UI, two commits each on `cinemate-port`. No `Co-Authored-By` on your commits.
 
 ```bash
-git -C ~/ApertarCore add src/camera/CameraController.cpp src/web/WebControlPage.cpp   # only the 4.1 and 4.2 hunks: git add -p
-git -C ~/ApertarCore commit                                                        # "camera: cap 4K Clear HDR 16-bit at 25 fps"
-git -C ~/ApertarCore add src/web/WebControlPage.cpp
-git -C ~/ApertarCore commit                                                        # "web: speed-ramp block in the Recording format card"
-git -C ~/ApertarUI add qml/CameraPage.qml
-git -C ~/ApertarUI commit                                                          # "ui: 4K Clear HDR 16-bit offers FPS up to 25"
-git -C ~/ApertarUI add src/ApertarControlBridge.cpp src/ApertarControlBridge.hpp
-git -C ~/ApertarUI commit                                                          # "ui: FPS picker sends only set_fps during a speed-ramp take"
+git -C ~/ApertarCore add src/camera/CameraController.cpp src/ApertarCoreApp.cpp   # 4.1, both places (whole files)
+git -C ~/ApertarCore add -p src/web/WebControlPage.cpp                            # 4.2 only: y on the maximumSupportedFpsForSnapshot hunk (3rd of 8, '? 25.0 : 30.0'), n on the other seven
+git -C ~/ApertarCore diff --cached --stat                                         # 3 files changed, 10 insertions(+), 3 deletions(-)
+git -C ~/ApertarCore commit -m "camera: cap 4K Clear HDR 16-bit at 25 fps
+
+Why: at 30 fps the 16-bit Clear HDR stream delivers about 28 fps and drops
+frames; the back end is the limit (KB working/research-30fps-answer.md).
+25 is the accepted maximum (2026-10-27).
+What: tableMaximumFpsForResolution() returns 25 for 3840x2160 Clear HDR at
+16 bit, so the sanitiser, set_fps and ramp_fps stop there. The WebUI's
+maximumSupportedFpsForSnapshot() and Core's PCF list
+(maximumPcfFpsForSettings(): the pot and the fps/fps_up/fps_down buttons)
+follow. Clear HDR 12-bit and SDR 4K keep 30.
+Tested: <5.1 result>."
+git -C ~/ApertarCore add src/web/WebControlPage.cpp                               # 4.4-4.8: the rest of the file
+git -C ~/ApertarCore commit -m "web: speed-ramp block in the Recording format card
+
+Why: speed ramping (T31) had only socket commands; Cinemate has the same
+controls on its web UI.
+What: under Bit Depth: Speed Ramp On/Off, Shutter Sync Angle/Exposure, Ramp to
+<fps> over Cut..20 s, x2 and Back, a note on format and take rate. Command
+replies and the optimistic patch carry fps_ramp and fps_ramp_keep_exposure.
+Tested: <5.2, 5.3, 5.5 results>."
+git -C ~/ApertarUI add qml/CameraPage.qml                                         # 4.3
+git -C ~/ApertarUI commit -m "ui: 4K Clear HDR 16-bit offers FPS up to 25
+
+Why: Core caps 4K Clear HDR 16-bit at 25 fps; the touch UI still offered 30.
+What: maximumSupportedFpsForResolution() returns 25 for 3840x2160 Clear HDR at
+16 bit. 12-bit Clear HDR and SDR 4K keep 30.
+Tested: <5.1 touch UI picker ends at 25>."
+git -C ~/ApertarUI add src/ApertarControlBridge.cpp src/ApertarControlBridge.hpp  # 4.9
+git -C ~/ApertarUI commit -m "ui: FPS picker sends only set_fps during a speed-ramp take
+
+Why: applyFps() followed set_fps with its own set_shutter_us and saved the
+rate, which undoes Core's Exposure policy and persists a take-scoped rate.
+What: the bridge reads fps_ramp, and sound_recording plus the recording
+event's sound_only flag; in a camera take with fps_ramp on, applyFps()
+sends set_fps only. Outside camera ramp takes (a sound-only take included)
+nothing changes.
+Tested: <5.4 result>."
 ```
 
 Add fork-log rows for the four commits. Pushing follows `working/mac-driven-loop.md` and happens only when you decide.
@@ -534,16 +617,18 @@ Add fork-log rows for the four commits. Pushing follows `working/mac-driven-loop
 
 | You see | It means | Do |
 | --- | --- | --- |
-| WebUI blank, console says `Unexpected token` | a JS typo in 4.5-4.8 | run the 4.9 `node --check`; it names the line in `/tmp/page.js` |
-| Build error `unterminated raw string` | `)APERTAR"` was typed into the page | the page must not contain that sequence; remove it |
+| WebUI blank, console says `Unexpected token` | a JS typo in 4.5-4.8 | run the 4.10 `node --check`; it names the line in `/tmp/page.js` |
+| Build fails with hundreds of errors (`stray '#' in program`, `stray '\' in program`, `'function' does not name a type`) and `missing terminating " character` on the `)APERTAR";` line | `)APERTAR"` was typed into the page, so the raw string closes early | the page must not contain that sequence; remove it |
+| Build error `unterminated raw string` at `R"APERTAR(` (line 7) | the closing `)APERTAR";` at the end of the page was deleted or changed | put `)APERTAR";` back as the page's last line |
 | No Speed Ramp block | 4.4 placed outside the Recording format card | it goes before the card's closing `</div>`, after `settingsRawBitDepthOptions` |
 | Block shows, pills empty | 4.6 missing or after a `return` | `renderSpeedRamp(snapshot, fpsOptions);` right after the bit-depth buttons |
 | `Stop recording before turning FPS ramping on or off.` toast | pressed On/Off in a take | expected: turn it on before the take |
-| `FPS ramping works in cDNG and MLV takes only.` toast | ramp pressed during an H.264/ProRes take | expected; the buttons should be grey, so check `speedRampFormatSupported` |
+| `FPS ramping works in cDNG and MLV takes only.` toast | an FPS pill pressed during an H.264/ProRes take with ramping on (the pills send `set_fps` and are never grey) | expected: ramping works only in cDNG/MLV; stop the take to change FPS. The block's Ramp, ×2 and Back are grey in such a take; if one was not, check `speedRampFormatSupported` |
 | Core still accepts 30 in Clear HDR 16-bit | 4.1 not built, or `rawBitDepth` is not 16 | `get_state` → `raw_bit_depth`; rebuild Core |
+| PCF `fps` button stays at 25 in Clear HDR 16-bit, never back to 24 | 4.1's second place missing: the PCF list still ends at 30, Core clamps it to 25 | `grep -c 'settings.clearHdr && settings.rawBitDepth == 16 ? 25.0' src/ApertarCoreApp.cpp` → 1; rebuild Core |
 | WebUI shows 30, Core keeps 25 | 4.2 missing | the pill snaps back to 25 on the next poll; add 4.2 |
 | Touch UI shows 30 | 4.3 not built (QML needs the UI build) | `cmake --build /home/pi/ApertarUI/build -j2`, restart |
-| Exposure policy, but the shutter rescales when you use the touch UI picker | 4.9 missing, or the UI not rebuilt | `grep -c m_fpsRamp src/ApertarControlBridge.cpp` → 2; rebuild the UI |
+| Exposure policy, but the shutter rescales when you use the touch UI picker | 4.9 missing, or the UI not rebuilt | `grep -c m_fpsRamp src/ApertarControlBridge.cpp` → 2 and `grep -c m_soundRecording src/ApertarControlBridge.cpp` → 3; rebuild the UI |
 | `Ramp to` jumps back to the highest value | the target equals the current rate, so it left the list | expected; pick another value |
 
 Undo: `git revert` the two Core commits and the two UI commits, rebuild both. A Clear HDR 16-bit setting stays at 25 until you set it.
@@ -552,50 +637,63 @@ Undo: `git revert` the two Core commits and the two UI commits, rebuild both. A 
 
 - A WebUI control is three things in one file: HTML in the raw string, a render function fed by `/api/state`, and a
   `sendCommand` call that Core answers. The optimistic patch makes the click feel instant; the next poll corrects it.
-- One ceiling, three copies. Core is the authority, because its sanitiser clamps whatever arrives. The two UIs only decide what
-  they offer. When they disagree, a pill snaps back.
+- One ceiling, four copies. Core is the authority, because its sanitiser clamps whatever arrives. The two UIs and Core's PCF
+  list (`maximumPcfFpsForSettings`) only decide what they offer. When they disagree, a pill snaps back, or the PCF `fps`
+  button sticks.
 - The selectable FPS values are code arrays: `fpsPresets` in the WebUI and `presets` in the touch UI's `availableFpsOptions()`.
   They already differ (35/40/45). Keeping them in step is a choice you make.
 - Exercise: add `12.000, 15.000, 18.000, 20.000` to both lists. Then ramp a 4K Clear HDR 16-bit take from 12 to 25 and back.
-- Next: the mode ladder (T33). Clear HDR 16-bit up to 25, then 4K SDR 12-bit up to a maximum of 50 set in the settings. Its
-  rows go into this same block. Cinemate's equivalents are the Dynamic Resolution card and the per-mode FPS ceiling overrides
-  (`settings_editor.html:2038-2045`, `:3835-3850`).
+- Next: the editable value lists and the build's maximum, `max_fps=50` (T33), then the mode ladder (T34): 4K Clear HDR 16-bit
+  up to 25, then 4K SDR 12-bit up to that maximum of 50. The ladder's rows go into this same block. Cinemate's equivalents are
+  the Dynamic Resolution card and the per-mode FPS ceiling overrides (`settings_editor.html:2038-2045`, `:3835-3850`).
 
 ## 9. Sources
 
-- Apertar-Core `cinemate-port` `7a545d9` + T31 + this patch: `CameraController.cpp:2736-2834`, `:2835-2880`, `:256`;
-  `WebControlPage.cpp:2918-2951`, `:4071`, `:4236-4239`, `:4962-5054`, `:5058-5156`, `:6386`, `:8761-8846`, `:8848-8895`,
-  `:9291-9348`, `:9509-9550`, `:10149`, `:11578-11581`; `ApertarCoreApp.cpp:7248-7253`, `:7731`, `:7805`, `:7947-7948`,
-  `:9882-9903`; `include/apertar/core/Types.hpp:272-275`.
-- Apertar-UI `cinemate-port` `dc471c1` + these patches: `qml/CameraPage.qml:357`, `:454`, `:503`, `:662-666`, `:738-806`,
-  `:808-833`, `:1557-1570`, `:2919`; `src/ApertarControlBridge.cpp:255-294`, `:1033-1110`, `:1365-1369`, `:1756-1761`;
-  `src/ApertarControlBridge.hpp:317-318`.
+- Apertar-Core `cinemate-port` `7a545d9` + T31 + these patches: `CameraController.cpp:2736-2834`, `:2835-2881`, `:256`;
+  `WebControlPage.cpp:2919-2950`, `:4071`, `:4236-4239`, `:4962-5056`, `:5058-5155`, `:6386`, `:8761-8846`, `:8848-8890`,
+  `:9291-9348`, `:9509-9550`, `:10149`, `:11578-11581`; `ApertarCoreApp.cpp:1100-1193`, `:7249-7254`, `:7732`, `:7806`,
+  `:7948-7949`, `:8516`, `:8528`, `:9648`, `:9897-9918`; `include/apertar/core/Types.hpp:272-275`.
+- Apertar-UI `cinemate-port` `dc471c1` + these patches: `qml/CameraPage.qml:357`, `:454`, `:503`, `:662-667`, `:738-806`,
+  `:808-833`, `:1557-1571`, `:2919`; `src/ApertarControlBridge.cpp:255-296`, `:1033-1110`, `:1227-1233`, `:1369-1376`,
+  `:1762-1769`; `src/ApertarControlBridge.hpp:317-319`.
 - cinemate `d6cc93e`: `src/module/app/templates/template.html:1799-1841`, `settings_editor.html:1970-1994`, `:2038-2045`,
   `:3835-3850`, `:4256-4320`; `src/module/cinepi_controller.py:4074-4136` (`set_fps_double`, `_ramp_fps`).
 - `working/research-30fps-answer.md` (why 25), T31 and `working/ramp-answer.md` (what the commands do).
 
 %% tutor
 ref core src/camera/CameraController.cpp 2781 if (clearHdr && normalizeRawBitDepth(rawBitDepth) == 16)
+ref core src/ApertarCoreApp.cpp 1166 return settings.clearHdr && settings.rawBitDepth == 16 ? 25.0 : 30.0;
 ref core src/web/WebControlPage.cpp 4071 const fpsPresets = [24.000, 25.000, 30.000, 35.000
 ref core src/web/WebControlPage.cpp 5013 return snapshot.clear_hdr && Number(snapshot.raw_bit_depth) === 16 ? 25.0 : 30.0;
 ref core src/web/WebControlPage.cpp 2921 <h3 class="settings-card-title">Speed Ramp</h3>
 ref core src/web/WebControlPage.cpp 5079 function renderSpeedRamp(snapshot, fpsOptions) {
 ref core src/web/WebControlPage.cpp 10149 renderSpeedRamp(snapshot, fpsOptions);
+ref core src/web/WebControlPage.cpp 8842 if (typeof source.fps_ramp === "boolean")
 ref core src/web/WebControlPage.cpp 8880 case "set_fps_ramp":
+ref core src/web/WebControlPage.cpp 4238 speedRampTarget: "",
+ref core src/web/WebControlPage.cpp 11579 document.getElementById("settingsSpeedRampTargetSelect").addEventListener
 ref core src/web/WebControlPage.cpp 9291 async function sendCommand(payload) {
 ref ui qml/CameraPage.qml 782 imx585Max = root.clearHdrActive && root.rawBitDepthValue === "16-bit" ? 25.0 : 30.0
 ref ui qml/CameraPage.qml 809 var presets = root.imx477Detected
-ref ui src/ApertarControlBridge.cpp 277 if (m_recording && m_fpsRamp)
+ref ui src/ApertarControlBridge.hpp 318 bool m_fpsRamp = false;
+ref ui src/ApertarControlBridge.hpp 319 bool m_soundRecording = false;
+ref ui src/ApertarControlBridge.cpp 1372 if (state.contains(QStringLiteral("fps_ramp")))
+ref ui src/ApertarControlBridge.cpp 1375 if (state.contains(QStringLiteral("sound_recording")))
+ref ui src/ApertarControlBridge.cpp 1230 if (message.contains(QStringLiteral("sound_only")))
+ref ui src/ApertarControlBridge.cpp 277 if (m_recording && !m_soundRecording && m_fpsRamp)
 check 3.1 | grep -c 'const fpsPresets' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^1$
 check 4.1 | grep -c 'normalizeRawBitDepth(rawBitDepth) == 16' /home/pi/ApertarCore/src/camera/CameraController.cpp | ^1$
+check 4.1 | grep -c 'settings.clearHdr && settings.rawBitDepth == 16 ? 25.0' /home/pi/ApertarCore/src/ApertarCoreApp.cpp | ^1$
 check 4.2 | grep -c 'Number(snapshot.raw_bit_depth) === 16 ? 25.0' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^1$
 check 4.3 | grep -c 'rawBitDepthValue === "16-bit" ? 25.0' /home/pi/ApertarUI/qml/CameraPage.qml | ^1$
+check 4.4 | grep -c 'id="settingsSpeedRamp' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^8$
 check 4.5 | grep -c 'function renderSpeedRamp\|function startSpeedRamp\|function speedRampFormatSupported' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^3$
 check 4.6 | grep -c 'renderSpeedRamp(snapshot, fpsOptions);' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^1$
 check 4.7 | grep -c 'case "set_fps_ramp":\|case "ramp_fps":' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^2$
-check 4.8 | grep -c 'settingsSpeedRamp' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^17$
+check 4.8 | grep -c 'settingsSpeedRamp' /home/pi/ApertarCore/src/web/WebControlPage.cpp | ^18$
 check 4.9 | grep -c 'm_fpsRamp' /home/pi/ApertarUI/src/ApertarControlBridge.cpp | ^2$
-check 5.1 | curl -s -m 3 http://127.0.0.1:8000/api/state | grep -o '"fps":[0-9.]*' | "fps":
+check 4.9 | grep -c 'm_soundRecording' /home/pi/ApertarUI/src/ApertarControlBridge.cpp | ^3$
+check 5.1 | curl -s -m 3 http://127.0.0.1:8000/api/state | "fps":25\.000
 %%
 
 #CINEMATE

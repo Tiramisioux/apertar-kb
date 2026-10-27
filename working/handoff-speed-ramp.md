@@ -14,7 +14,7 @@ the pages it points to, before touching anything.
 | T32 speed ramping from every control | written; not on GitHub. Point 1 checks the Pi |
 | T33 value lists + build `max_fps` | requirements and decisions only (`working/ramp-ladder/README.md` §3.1); no tutorial, no patch |
 | T34 mode ladder | requirements, facts and two designs (`working/ramp-ladder/README.md` §3.2); no tutorial, no patch |
-| 4K Clear HDR 16-bit | 25 fps is the accepted maximum (Patrik, 2026-10-27); T32 makes Core and both UIs stop there |
+| 4K Clear HDR 16-bit | 25 fps is the accepted maximum (Patrik, 2026-10-27); T32 makes Core (its clamp and its PCF pot/button list) and both UIs stop there |
 
 What the Pi runs today is not known from the cloud. Check first: `ssh apertar 'git -C ~/ApertarCore log --oneline -1; git -C ~/ApertarUI log --oneline -1'`.
 
@@ -32,7 +32,8 @@ not recorded in this export.
 - Commits: `<area>: <imperative>`, Why/What, `Tested:` line, Co-Authored-By trailer. A fork-log row for every Core/UI commit.
   Tutorial progress: `tutorial.py log`.
 - Before each tutorial: `python3 tutorials/tutorial.py refs T31` (or `T32`). T31's refs are exact on a tree with T31 only. After
-  T32 they show MOVED +5, because the 25 fps cap adds five lines above them.
+  T32 they show MOVED: +5 in `CameraController.cpp` (the 25 fps cap adds five lines above them) and +1 in `ApertarCoreApp.cpp`
+  (one comment line in Core's PCF list).
 
 ## 3. The points, in order
 
@@ -40,7 +41,9 @@ Take Patrik through one at a time. Finish each with his result in the right log 
 
 **0. Install the export.** Follow `INSTALL.md` from the zip: check the four replaced files against `d65b2ef`, copy `kb/.`, look
 at `git status`, commit when he is happy. Move the two inbox notes (T31, T32) into Obsidian and add them to the learning-path
-note. The older `apertar-kb-additions-2026-10-27.zip` is superseded; do not install it.
+note. If he wants the patches on the Pi, sync the KB when he says so (`working/sync.md`: `pull pi main`, `push pi main` from
+the Mac); the Pi's `~/apertar-kb` is behind and has none of the five patches until then. The older
+`apertar-kb-additions-2026-10-27.zip` is superseded; do not install it.
 
 **1. T31 and T32: check the Pi, then do what is missing.** Neither is on GitHub `cinemate-port`. Check what the Pi has,
 read-only:
@@ -48,14 +51,18 @@ read-only:
 ```bash
 ssh apertar 'git -C ~/ApertarCore log --oneline -8; git -C ~/ApertarUI log --oneline -5'
 ssh apertar 'grep -c fpsRampEnabled ~/ApertarCore/src/camera/CameraController.cpp'        # T31: 11
-ssh apertar 'grep -c "normalizeRawBitDepth(rawBitDepth) == 16" ~/ApertarCore/src/camera/CameraController.cpp'  # T32 cap: 1
-ssh apertar 'grep -c settingsSpeedRamp ~/ApertarCore/src/web/WebControlPage.cpp'          # T32 WebUI block: 17
+ssh apertar 'grep -c "FPS ramping works in cDNG and MLV takes only." ~/ApertarCore/src/ApertarCoreApp.cpp'  # T31, ramp_fps refuses up front: 1
+ssh apertar 'grep -c "normalizeRawBitDepth(rawBitDepth) == 16" ~/ApertarCore/src/camera/CameraController.cpp'  # T32 cap, Core clamp: 1
+ssh apertar 'grep -c "settings.clearHdr && settings.rawBitDepth == 16 ? 25.0" ~/ApertarCore/src/ApertarCoreApp.cpp'  # T32 cap, PCF list: 1
+ssh apertar 'grep -c settingsSpeedRamp ~/ApertarCore/src/web/WebControlPage.cpp'          # T32 WebUI block: 18
 ssh apertar 'grep -c m_fpsRamp ~/ApertarUI/src/ApertarControlBridge.cpp'                  # T32 touch UI picker: 2
+ssh apertar 'grep -c m_soundRecording ~/ApertarUI/src/ApertarControlBridge.cpp'           # T32 picker, camera takes only: 3
 ```
 
-Counts of 0 mean the tutorial is not done. Take him through T31 (tutorial `20261026210000 CINEMATE APERTAR T31 speed-ramping`,
-steps 4.1-4.8, build, §5 on the Pi), then T32 (tutorial `20261027213000 CINEMATE APERTAR T32 speed-ramp-every-control`, steps
-4.1-4.10, build Core and UI, §5). The patches in `working/patches/` are the reference if a step will not build. After each:
+Counts of 0 mean the tutorial is not done. Any other count that differs means a step is missing or differs from the patch.
+Take him through T31 (tutorial `20261026210000 CINEMATE APERTAR T31 speed-ramping`, steps 4.1-4.8, build, §5 on the Pi), then
+T32 (tutorial `20261027213000 CINEMATE APERTAR T32 speed-ramp-every-control`, steps 4.1-4.10, build Core and UI, §5). The
+patches in `working/patches/` are the reference if a step will not build. After each:
 - add fork-log rows for the commits;
 - set the tutorial's status in both indexes and in the learning-path note;
 - log `tutorial.py` progress.
@@ -80,10 +87,12 @@ is not replaced. Ask him before building whether he wants Cinemate's "free" step
 to 50. The editor: drag and drop the activated modes into order, an optional threshold per rung, a toggle that makes Core
 honour it.
 
-Before writing anything, present design A (switch between takes, Cinemate's rule) and B (switch mid-take with a clip split),
-with the critique in `working/ramp-ladder/README.md` §3.2 and the reader reports beside it. He chooses.
+The design is done: `working/ramp-ladder/design/design-T34.md`. It recommends A + R. Rungs change between takes, and an opt-in
+Ramp-ready switch starts a ramp take in the top rung. B, switching mid-take with a clip split, is deferred. Before writing
+anything, present its §0 and §2 and the open questions Q1, Q2, Q9, Q10 and Q12 (numbering). He chooses. The mockup of the editor:
+https://claude.ai/artifact/YKbhhk8aMUS8sxEWa6UfRL.
 
-Measure first on the Pi, because the numbers decide A or B:
+Measure first on the Pi (the design's §6 has the full list, M0-M8), because the numbers decide what is built:
 - **4K SDR 12-bit at 50.** Core caps 4K SDR at 30 today and the probe says 60. Lift the cap on a test branch, then take
   uncompressed, lossy DNG 3:1 and MLV at 50 with `takes.sh`. 4K 12-bit uncompressed at 50 needs about 622 MB/s; the NVMe gave
   437 MB/s on Gen 2.
@@ -97,6 +106,7 @@ Measure first on the Pi, because the numbers decide A or B:
 - `working/ramp-answer.md` §0 and §3: what speed ramping does to the DNGs, timecode, WAV and phase lock. It cites the cloud
   commit `d4ad539`; T31 cites `cinemate-port`.
 - `working/patches/README.md`, section "Speed-ramp series": the five patches and their order.
+- `working/ramp-ladder/design/design-T34.md` §0-§2 and §6 (before T34).
 - `working/ramp-ladder/r1-core.md` "What a ladder implementation must touch" and "Risks", and `r2-cinemate.md` §0 and "Port to
   Apertar" (both before T34).
 - `working/research-30fps-answer.md`: why 25 is the Clear HDR 16-bit ceiling.

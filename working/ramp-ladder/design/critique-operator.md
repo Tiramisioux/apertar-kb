@@ -9,7 +9,7 @@ Trees I opened for this critique (every `path:line` below is at these commits):
 | `CC`, `App`, `Web`, `RC` | Core `scratchpad/tip-core`: `src/camera/CameraController.cpp`, `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `include/apertar/core/RecordingCapabilities.hpp` | `119d0bb` (= `6ae70b5` + T31 + T32) |
 | `GAI` | `src/hardware/GroveAnalogInput.cpp` | same |
 | `QML`, `SP`, `CB` | Apertar-UI `scratchpad/verify2/home/ApertarUI`: `qml/CameraPage.qml`, `qml/SettingsPage.qml`, `src/ApertarControlBridge.cpp` | `34499f1` |
-| cinemate | `/home/user/tiramisioux/cinemate` | `d6cc93e` |
+| cinemate | cinemate repository (`d6cc93e`) | `d6cc93e` |
 | `HL` | KB `scratchpad/verify3/lessons/hardware-log.md` | `8b655da` |
 | KB export | `scratchpad/apertar-kb-speed-ramp-2026-10-27/kb/...` (T31/T32 tutorials, `working/ramp-answer.md`, `working/ramp-ladder/*`) | no git; export of 2026-10-27 |
 
