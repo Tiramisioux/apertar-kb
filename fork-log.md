@@ -57,6 +57,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `ae9ced5` | Touch UI FORMAT line: bit depth and Clear HDR for raw takes ("16-bit · Clear HDR · Uncompressed"); branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
 | `303052a` | Touch UI: ISO 1600 in the lossless cDNG list; branch `cinemate-port` | fork-only, Mac + Pi (not on GitHub yet); built, not tested |
 | `2d27c46` | Touch UI counts "16-bit" as 16 bits in the frame-size estimate (HDMI time left was a third too long: 50 vs 37 min); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`); done (Patrik, 2026-10-27) |
 | `dc471c1` | CFE automounter: card pulled while mounted → lazy unmount + PCIe remove, so the next insert remounts (T18 step 5a); branch `cinemate-port` | fork-only; installed 22:59, tested on the Pi (pull + re-insert, no reboot) |
