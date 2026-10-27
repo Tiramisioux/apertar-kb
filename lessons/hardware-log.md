@@ -477,3 +477,10 @@ Entry format:
 - T20 pull while idle (Patrik, 22:24:37): automounter lazy-unmounts in 0.5 s, so Core reports `state=none` and the strip reads
   "No Media Mounted"; "Media Removed" shows only while a dead mount stays (e.g. a USB stick, which the automounter does not
   handle). Re-insert remounted at 22:24:47. Patrik: "yanking works fine".
+
+## 2026-10-27: 16-bit time left: WebUI 37 min (right), HDMI 50 min (touch UI read 16-bit as 12)
+
+- Tested: Core `6ae70b5`, cDNG 16-bit uncompressed Clear HDR 4K25, 997.6 GB free (Patrik's WebUI screenshot + HDMI).
+- Core 37.7 min (16.8 MiB/frame; C0101's DNGs are ~17 MB). Touch UI `currentRawBitDepthNumber()` returned 12 for "16-bit"
+  → 12.6 MiB/frame → 50.3 min. **Confirmed** by the arithmetic and the code. Fix UI `2d27c46`; rounding `87011d4`.
+
