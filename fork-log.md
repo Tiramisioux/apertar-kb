@@ -60,6 +60,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `f23c243` | HDMI monitor: RESOLUTION caption shows bit depth and Clear HDR for raw takes; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 | `2464b60` | Touch UI frame rates 25/33/50 (IMX585 and others); branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 | `0165b70` | Touch UI: resolution button toggles 4K 16-bit Clear HDR ↔ 12-bit SDR; 33 fps in the list; branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
 | `f149744` | Touch UI FORMAT line: bit depth and Clear HDR for raw takes ("16-bit · Clear HDR · Uncompressed"); branch `cinemate-port` | **temp** (to review), on GitHub (`cinemate-port`); built |
