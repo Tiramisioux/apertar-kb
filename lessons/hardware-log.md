@@ -499,3 +499,16 @@ Entry format:
   ExposureTime 1/42 at 25, 1/83 at 50 (angle kept). WAV 32.8 s real time; picture 1107/25 = 44.3 s on a 25 timeline.
   The settings ended at 25 (no restore needed). **Confirmed**: the T31 mechanics on hardware. Not checked yet: Resolve import,
   the `exposure` policy, MLV, a 2× step in one request.
+
+## 2026-10-28: Clear HDR ISO → gain code; 12-bit cap at ISO 720 (request 18)
+
+- Tested: Core `0109316`, driver `cinemate-port` `24172e6`, 4K Clear HDR 12-bit lossless, preview only; `set_iso` then
+  `v4l2-ctl -d /dev/v4l-subdev2 --get-ctrl analogue_gain`. SDR ISO 800 → code 60.
+- Clear HDR 12-bit: ISO 600 → 51, 640 → 53, 680 → 55, 700/716 → 56, **720 → 57**, 750 → 58, 800 → 60; 900, 1600, 2000 → Core
+  clamps to 800 (the lossless ISO cap, `CC:2572`), code 60. Mapping: code = 20·log10(ISO/100) / 0.3 dB. **Confirmed.**
+- So Apertar's 12-bit Clear HDR ceiling for the sensor's combine window (GAIN ≤ 17.1 dB = code 57, `imx585.c:164-165`) is
+  **ISO 720**; 16-bit's is the driver's code 80 (`IMX585_ANA_GAIN_MAX_HDR`, `imx585.c:169`) = **ISO 1585**. Cinemate's 799/1585
+  (`docs/clear-hdr.md`) are the same limits in its ISO scale.
+- Apertar writes a fixed DNG WhiteLevel (`CdngEncoder.cpp:1373-1374`: 65535 in 16-bit, the CCMP table's end in 12-bit), so
+  Cinemate's reason to hold ISO during a Clear HDR take (WhiteLevel from the first frame) does not apply; no hold. Unmeasured
+  here: whether the 16-bit merge clamps below 65535 at high gain, as Cinemate measured (code 80 → ~48600).
