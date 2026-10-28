@@ -555,3 +555,11 @@ Entry format:
 - Patrik's hand-driven ramp take `cDNG_26-10-28_C0022` (4K lossless, WebUI block + FPS controls): 25 → 30 → 25 in 1 fps steps,
   10/10 changes applied, 439 DNGs, 0 missing, no drops; `_stretched.wav` 17.56 s (= 439/25), real WAV 16.06 s; back at 25 after
   stop. Patrik: "ramp works". **Confirmed**: T32 from the controls.
+
+## 2026-10-28: T33 Core (6c34e8a), restart 21:35:30
+
+- Socket: `help` lists `set_value_steps`; built-in lists in the web state's `ui` object; `set_value_steps` writes `fpsSteps`,
+  `shutterAngleSteps`, `flickerFreeShutterAngles`, `mainsHz`, `fpsFree`, `fpsFreeIncrement` to UI.conf and the state follows;
+  refused: no usable values, increment out of range, `mains_hz=55`, unknown name. **Confirmed.**
+- Bug seen by Patrik: ISO green in SDR lossless. `iso_max` 800 = the operator's ISO 800, and the UIs' "on the ceiling" rule
+  fired. Fix with T33 steps 2-3: green only when the cap is a system-added value (not in the operator's list).
