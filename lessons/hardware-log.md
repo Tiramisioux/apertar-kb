@@ -569,3 +569,12 @@ Entry format:
 - Core up to `b017004`, UI up to `632d840`. Patrik confirmed on the touch screen, HDMI and WebUI: value lists with greyed
   values above the ceiling and green caps / flicker-free angles, the WebUI Value Lists card, ISO up to 1585 in Clear HDR
   16-bit lossless, the recording frame and the red-timecode switches. **Confirmed.**
+
+## 2026-10-28: T34 M1, how long a class switch takes (preview, Standard preview profile)
+
+- Core `b017004`, 4K, uncompressed; `set_clear_hdr` / `set_raw_bit_depth` timed from command to reply, three rounds, minus
+  the ~45 ms `get_state` round trip: HDR16 → SDR12 45-65 ms, SDR12 → HDR12 80-110 ms, HDR12 → HDR16 90-110 ms. Each
+  reconfigure logs `camera configured` right after. **Confirmed as a lower bound**: the reply comes when the new mode is
+  queued, before its first frame; the visible blink (first frame) is not measured (M2). Far below the ~1 s the design would
+  answer with a settle delay.
+- Drive at 78 % (727 GB used, 206 GB free) before M3; this morning 65 %.
