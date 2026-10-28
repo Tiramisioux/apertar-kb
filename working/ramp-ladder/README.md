@@ -83,6 +83,10 @@ with the decisions taken so far.
     never); with it off all three stay white. Same commits as 25. Also 2026-10-28: lossless ISO cap 1600 (`40747b9`, as temp
     753f181), and the resolution line says "16-bit" again (16 b tried and reverted).
 
+28. **(2026-10-28) T34 decisions:** A + R; a manual mode change turns the ladder off; Ramp-ready sticky; a preset naming
+    another mode is refused. Next: measurements M1 (switch blink) and M3 (4K SDR 12-bit at 50 for 3 min, needs the 30 cap lifted
+    on a test branch).
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
