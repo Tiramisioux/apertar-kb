@@ -64,6 +64,18 @@ with the decisions taken so far.
     during a Clear HDR take (WhiteLevel from the first frame); whether Apertar needs that is open (its 16-bit path uses fixed
     CCMP levels, `ccmp::kBlack16`).
 
+22. **(2026-10-28) Resolution line** shows bit depth and Clear HDR on the same line and size as the pixels, in all three
+    displays (raw takes): Core `8492488`, UI `b36891d`. The "storage indicator fix" Patrik meant is already on `cinemate-port`
+    (`6ae70b5`, `87011d4`, UI `2d27c46`); no temp commit touched storage.
+23. **(2026-10-28) T33 scope (Patrik):** ISO, shutter-angle, FPS and WB arrays; free stepping with an increment for all four;
+    flicker-free shutter angles switchable at run time, as in Cinemate. **No `[camera] max_fps`** (`c55c453` reverted by
+    `a55230a`); `fps_max` stays in the state as the mode's own ceiling. Cinemate (`cinepi_controller.py:1450-1459`,
+    `:3286-3299`, worktree `raw-pane-bulk-download`) adds flicker-free angles for `settings.light_hz` [50, 60] on every fps
+    change, with two formulas, both off: 1/mains misses half the angles, `hz/(fps*k)*360` yields non-flicker-free ones
+    (240° at 25/50). Physics: lamps flicker at 2 x mains, so exposure = k/(2 x mains): 25 fps/50 Hz → 90, 180, 270, 360°.
+24. **(2026-10-28) Arrays work across sensors:** values above the mode's ceiling stay visible but greyed out, and the system
+    adds the capped value (`fps_max`) as the top selectable entry, marked as camera-set. Same for ISO with `iso_max`.
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
