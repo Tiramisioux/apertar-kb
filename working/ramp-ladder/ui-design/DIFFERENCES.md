@@ -65,3 +65,11 @@ State: `ladder_enabled`, `ladder_count`, `ladder_text` (running line `Resolution
 `mode_ladder` reply: pool crop window + binning, ceiling per compression with reason. Commands present: `get_mode_ladder`,
 `set_mode_ladder` (`resolutions`, `enabled`, `ramp_ready`, `dry_run`). The cloud's names differ (`rungs`, `ladder_rung`); ours are
 Patrik's.
+
+## Patrik's answers (2026-10-28)
+
+- The "16-bit Clear HDR" and "12-bit Clear HDR" pills go with the **bit-depth pills of the Activated sensor modes card**.
+- **Locks: Q2 stays.** A manual resolution / bit depth / Clear HDR change turns the ladder off; those controls are not greyed.
+  Compression stays locked while the ladder is on.
+- The touch FORMAT row **drops the size** in the square layout.
+- Claude builds step by step (not tutor mode); Patrik restarts, looks and decides.
