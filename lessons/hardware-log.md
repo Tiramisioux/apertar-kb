@@ -533,3 +533,15 @@ Entry format:
   Core 69-84 % of one core. **Confirmed**: the encoder is not the limit; Core's H.264 capture choice is.
 - The H.264 MP4 and the ProRes MOV are video-only (one stream: `LibavH264EncoderPlugin.cpp:124`, `ProresEncoder.cpp:929`);
   audio is the clip folder's WAV, as for cDNG. Speed ramping in H.264 stays refused (Patrik): 25 → 30 is too little.
+
+## 2026-10-28: experimental stretched WAV (78c980d), camera-wide switches, conform_fps
+
+- Rubber Band: `rubberband-cli` 3.3.0 installed by Patrik (`apt update` first: the image has no apt lists). Click test
+  (real 4 s → 4 s, 6 s → 8 s, `-D 12 --timemap`): output 12.0000 s, clicks 1.0 / 5.976 / 10.0002 s. Key frames are exact; inside a
+  re-timed stretch Rubber Band smooths by ~25 ms; nothing accumulates. ffmpeg `rubberband`/`atempo` with `asendcmd`: 20-50 ms off
+  per change, accumulating. A `0 0` map line makes Rubber Band warn about a NaN ratio (dropped in the follow-up commit).
+- Core 78c980d (restart 20:54:18): `conform_fps` 25 by default, 24 accepted, 0 refused. Ramp, stretch and phase lock turned on in
+  H.264 stay on after switching to cDNG (84081f7, a56eae7).
+- `C0034` 1080p uncompressed 25 → 50 → 25 (set_fps steps): 909 DNGs = 36.36 s at 25; real-time WAV 25.809 s;
+  `C0034_stretched.wav` 36.360 s, 48 kHz, written seconds after stop (50 key frames); `fps-ramp.txt` `applied_us` 5038579 for frame
+  126 (= 5.04 s at 25). **Confirmed** length and pitch; how it sounds is for Patrik to judge.
