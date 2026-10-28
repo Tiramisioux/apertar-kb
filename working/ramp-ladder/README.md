@@ -22,6 +22,16 @@ with the decisions taken so far.
 10. **Keep the WebUI "Camera settings" pane** (FPS / ISO / shutter-angle pills, `WebControlPage.cpp:2538-2560`). It fronts the
     selectable values and works as a quick-access menu in the field. §3.1 feeds it; it is not replaced.
 
+11. **(2026-10-28) Least API change.** T31 on the Pi is `76094a9`: switch `set_fps_speed_ramp enabled= [shutter=angle|exposure]`,
+    state `fps_speed_ramp`, `fps_speed_ramp_keep_exposure`; no `ramp_fps` stepper. T32's "Ramp to … over …" steps with `set_fps`
+    from the page.
+12. **(2026-10-28) System-controlled values are green** in the WebUI and the touch UI (auto ISO, a shutter the ramp rescales or
+    clamps, the FPS restored at stop, later the ladder's mode). Neither UI has this convention yet.
+13. **(2026-10-28) Auto on the ISO dial**, at its lowest position, when the operator changes ISO.
+14. **(2026-10-28) Clear HDR log spam.** Candidate: the driver's `Update minimum HMAX: base= lane_scale= hdr_scale=` (186 lines
+    this boot, one per mode set); to confirm with Patrik.
+15. **(2026-10-28) Open question:** must H.264 refuse ramping? See the answer in the session; decision pending.
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
