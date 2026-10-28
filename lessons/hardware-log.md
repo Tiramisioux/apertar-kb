@@ -593,3 +593,10 @@ Entry format:
   **Confirmed: not raw-buffer starvation.** About 6 frames/s never arrive (~44 of 50): probably the sensor/capture side at
   3840x2076 (frame timing or CSI rate) rather than Core; unmeasured. Parked by Patrik for a longer test later (card nearly
   full). 1080p at 50 is clean (`C0030`).
+
+## 2026-10-28: ISO/WB dials to Auto, auto ISO in lossless (Core 12c9075, UI bd0e54d) — Patrik: "dial works"
+
+- ISO dial below the first value → Auto; WB dial below the lowest → Auto; shutter Auto white. **Confirmed.**
+- Auto ISO in IMX585 lossless: highest value seen **767** (gain 7.67), under the lossless cap 1600 and under the tuning's
+  gain limit 8. **Confirmed for the default tuning in the scene tried** (`working/unverified-speed-ramp-port.md` #1: a dark
+  scene and the `long` exposure mode are still untried).
