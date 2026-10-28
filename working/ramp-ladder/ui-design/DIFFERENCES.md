@@ -76,3 +76,21 @@ Patrik's.
 - **Changed later the same day (Patrik): an active ladder blocks manual resolution changes** (the design's lock), replacing the Q2 answer
   above: Core refuses `set_resolution`, `set_raw_bit_depth`, `set_clear_hdr`; the UIs grey Resolution, Crop, Bit Depth and
   Clear HDR with "Mode Ladder on: the FPS picks the resolution." and the line links to the Mode Ladder card (`dd4cb24`).
+
+## WebUI built (2026-10-29, Core `cbeeb9d`..`a9abd76`, Pi `cinemate-port`)
+
+The WebUI part of the design is done. Where it ended up differing from `UI-DESIGN.md` (all Patrik's calls):
+
+| Part | Design | Built |
+| --- | --- | --- |
+| Saving | Revert / Save ladder, draft line, Core's warnings | none of them: every legal edit saves at once (`mode_ladder.conf`); a refused edit shows a toast and reloads; locked while recording |
+| Order | draggable rows, arrows | none: the ladder orders itself by quality (picture size, Clear HDR before SDR, bit depth); no drag and drop anywhere |
+| Maxes | "Max (fps)" box in each row | the box sits between the rows (a chip = the max of the row above; after the last row, where FPS stops); defaults 25, 33, 50, then +25, cut to the mode's ceiling and to one under the row below; a hand-set max stays |
+| Activated sensor modes | bit-depth pills, Add / Remove | aspect-ratio pills (All, 16:9, 1.85:1 ...), no depth filter; Activate / Deactivate; tiles not on the ladder are dimmed; the reason shows on a tile that cannot be activated |
+| Section names | Clear HDR, 4K SDR, 3840 wide crops, 2K binned | 4K Clear HDR, 4K SDR, 4K SDR crops, 2K SDR binned; mode names: size, class, aspect (if not 16:9), depth |
+| Coverage bar | FPS coverage, 1 to 50 | removed |
+| Speed Ramp | own card after the ladder | own card after Value Lists; Shutter Sync and Audio rows kept |
+| Locks | one line | "Mode Ladder on: the FPS picks the resolution." with a link to the Mode Ladder card (Camera settings, Recording format, Favorites > Format) |
+| FPS pills | "Resolution n" | also the picture size and class under it |
+
+Still to do: the touch UI (FORMAT running line without the size on the square layout, Settings > Mode Ladder row Off | On, greyed controls with the caption).
