@@ -82,7 +82,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `5778b70` | WB dial (encoder/buttons) reaches Auto below the lowest value, as ISO; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `12c9075` | Auto ISO kept in IMX585 lossless (AGC stops at gain 8 in the default tuning; **unverified**); ISO dial/pickers offer Auto wherever Clear HDR is off; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `3314cc3` | T34 `ModeLadder.hpp`: the mode ladder's pure logic (rungs, chooser, validation, JSON, file), host test `working/tools/mode_ladder_test.cpp` 28/28; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
-| `aa74421` | T34 Core: `mode_ladder.conf`, `get_mode_ladder`, `set_mode_ladder`; FPS picks the rung between takes, rung ceiling in a take, Ramp-ready, manual mode change switches the ladder off (Q2), presets must match the rung (Q10); state `fps_take_max`, `ladder_*`; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28, not tested |
+| `aa74421` | T34 Core: `mode_ladder.conf`, `get_mode_ladder`, `set_mode_ladder`; FPS picks the rung between takes, rung ceiling in a take, Ramp-ready, manual mode change switches the ladder off (Q2), presets must match the rung (Q10); state `fps_take_max`, `ladder_*`; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (socket, two takes, presets) |
+| `9b42ecf` `397d751` `901e5cf` | WebUI: no text under Value Lists; Stepping/Increment labels; system-decided values in italics instead of green; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -94,6 +95,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `fcbe030` | Touch screen + HDMI: system-decided values in italics instead of green (`TopDropdownStat.valueItalic`); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `bd0e54d` | QML: ISO Auto offered everywhere but Clear HDR; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `1509cab` | Touch UI + HDMI: auto values white; cap green only when the camera added it (fixes ISO 800 green in lossless); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `632d840` | Touch UI + HDMI: recording frame and red timecode switches (Settings → Monitoring), red border during takes, timecode red only with the switch on; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |

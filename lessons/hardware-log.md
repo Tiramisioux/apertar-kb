@@ -618,3 +618,10 @@ Entry format:
 - Power cut while changing the battery (22:43): the Pi rebooted twice, the test script's restore did not run; exFAT on the
   NVMe logged "Volume was not properly unmounted… run fsck"; mounted and readable, 206 GB free. Run `fsck.exfat` when
   convenient (unmount first).
+- Correction: the Pi (CM5 + carrier) has a working RTC (`rpi-rtc` set the clock at boot, 22:49:22); journal times are reliable.
+- Take A rerun, alone, polled every 0.5 s (Core `aa74421`): rung 1 (HDR16 lossless) at 24 fps; `set_fps 50` at +4.5 s in the take →
+  **25**, the take carried on, restored to 24 at stop. **Confirmed.** Take B (Ramp-ready) and the preset check also passed
+  (the matching preset loads; one naming another mode is refused with the message). The first run's take A had ended ~16 ms
+  before the request (the request then switched to rung 2, by design); cause unknown, not reproduced; two takes of 3.0 and
+  3.85 s ran just before it. Possibly a record/stop pressed on the camera during the run; leave the camera alone during tests.
+- Clear HDR 16-bit **lossless** overflows the queue: `dropped_queue_full=19`, `peak_queue=24/24` in a 6.5 s take at 24 fps.
