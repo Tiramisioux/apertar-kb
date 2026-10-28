@@ -488,7 +488,7 @@ Entry format:
 
 ## 2026-10-28: T31 speed ramping, first ramp take (1080p uncompressed, 25 → 50 → 25)
 
-- Tested: Core `76094a9` (T31 without the `ramp_fps` stepper; restart 19:06:45), IMX585 1920x1080 (2×2 binned), cDNG
+- Tested: Core `47d44ff` (T31 without the `ramp_fps` stepper; restart 19:06:45), IMX585 1920x1080 (2×2 binned), cDNG
   uncompressed, `fps_speed_ramp` on, shutter `angle`, 24000 µs at 25; pi-nvme exFAT. 25 `set_fps` steps of 1 fps every
   ~0.25 s up to 50, 5 s hold, 25 steps down, 5 s at 25; socket-driven (`/tmp/ramp-take.sh`).
 - `cDNG_26-10-28_C0030`: 1107 DNGs, 0 missing, `dropped_queue_full=0`, no `drop[...]` lines; stats `changes=50 base_fps=25
@@ -502,7 +502,7 @@ Entry format:
 
 ## 2026-10-28: Clear HDR ISO → gain code; 12-bit cap at ISO 720 (request 18)
 
-- Tested: Core `0109316`, driver `cinemate-port` `24172e6`, 4K Clear HDR 12-bit lossless, preview only; `set_iso` then
+- Tested: Core `28bd441`, driver `cinemate-port` `24172e6`, 4K Clear HDR 12-bit lossless, preview only; `set_iso` then
   `v4l2-ctl -d /dev/v4l-subdev2 --get-ctrl analogue_gain`. SDR ISO 800 → code 60.
 - Clear HDR 12-bit: ISO 600 → 51, 640 → 53, 680 → 55, 700/716 → 56, **720 → 57**, 750 → 58, 800 → 60; 900, 1600, 2000 → Core
   clamps to 800 (the lossless ISO cap, `CC:2572`), code 60. Mapping: code = 20·log10(ISO/100) / 0.3 dB. **Confirmed.**
@@ -515,9 +515,9 @@ Entry format:
 - Build note (2026-10-28): g++ 14 warns `-Warray-bounds` in `CdngEncoder::writeRawPayload` (`vld1q_u16` on a `uint16_t[8]`)
   whenever `CdngEncoder.cpp` is rebuilt; existing code, not from the speed-ramp/Clear HDR commits. Probably a false positive; unexamined.
 
-## 2026-10-28: Clear HDR holds ISO/WB and caps ISO (435289b), preview test
+## 2026-10-28: Clear HDR holds ISO/WB and caps ISO (a89a5df), preview test
 
-- Tested: Core `435289b` (restart 20:09:09), 4K uncompressed, preview only (`/tmp/hdr-hold-test.sh`), dark desk scene.
+- Tested: Core `a89a5df` (restart 20:09:09), 4K uncompressed, preview only (`/tmp/hdr-hold-test.sh`), dark desk scene.
 - SDR auto ISO + WB (code 60) → Clear HDR 12-bit: `iso_auto`/`wb_auto` false, `iso_auto_after_clear_hdr`/`wb_auto_after_clear_hdr`
   true, ISO held and capped to 720 (code 57), WB held at the measured 2815 K. `set_iso_auto`/`set_wb_auto` refused with the info
   message. `set_iso 1600`: 12-bit → 720 (code 57), 16-bit → 1585 (code 80); 3200 → 1585. A manual ISO in Clear HDR cleared the ISO

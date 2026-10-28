@@ -22,7 +22,7 @@ with the decisions taken so far.
 10. **Keep the WebUI "Camera settings" pane** (FPS / ISO / shutter-angle pills, `WebControlPage.cpp:2538-2560`). It fronts the
     selectable values and works as a quick-access menu in the field. §3.1 feeds it; it is not replaced.
 
-11. **(2026-10-28) Least API change.** T31 on the Pi is `76094a9`: switch `set_fps_speed_ramp enabled= [shutter=angle|exposure]`,
+11. **(2026-10-28) Least API change.** T31 on the Pi is `47d44ff`: switch `set_fps_speed_ramp enabled= [shutter=angle|exposure]`,
     state `fps_speed_ramp`, `fps_speed_ramp_keep_exposure`; no `ramp_fps` stepper. T32's "Ramp to … over …" steps with `set_fps`
     from the page.
 12. **(2026-10-28) System-controlled values are green** in the WebUI and the touch UI (auto ISO, a shutter the ramp rescales or
