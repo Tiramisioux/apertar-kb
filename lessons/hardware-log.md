@@ -514,3 +514,13 @@ Entry format:
   here: whether the 16-bit merge clamps below 65535 at high gain, as Cinemate measured (code 80 → ~48600).
 - Build note (2026-10-28): g++ 14 warns `-Warray-bounds` in `CdngEncoder::writeRawPayload` (`vld1q_u16` on a `uint16_t[8]`)
   whenever `CdngEncoder.cpp` is rebuilt; existing code, not from the speed-ramp/Clear HDR commits. Probably a false positive; unexamined.
+
+## 2026-10-28: Clear HDR holds ISO/WB and caps ISO (435289b), preview test
+
+- Tested: Core `435289b` (restart 20:09:09), 4K uncompressed, preview only (`/tmp/hdr-hold-test.sh`), dark desk scene.
+- SDR auto ISO + WB (code 60) → Clear HDR 12-bit: `iso_auto`/`wb_auto` false, `iso_auto_after_clear_hdr`/`wb_auto_after_clear_hdr`
+  true, ISO held and capped to 720 (code 57), WB held at the measured 2815 K. `set_iso_auto`/`set_wb_auto` refused with the info
+  message. `set_iso 1600`: 12-bit → 720 (code 57), 16-bit → 1585 (code 80); 3200 → 1585. A manual ISO in Clear HDR cleared the ISO
+  flag, so SDR kept ISO 720 manual while WB went back to auto. Round trip with both auto: held in Clear HDR, auto again in SDR;
+  flags persisted. **Confirmed.**
+- Seen: while auto ISO runs, the state's `iso` is the stored value (720 after the round trip), not the live gain; request 16.
