@@ -76,6 +76,13 @@ with the decisions taken so far.
 24. **(2026-10-28) Arrays work across sensors:** values above the mode's ceiling stay visible but greyed out, and the system
     adds the capped value (`fps_max`) as the top selectable entry, marked as camera-set. Same for ISO with `iso_max`.
 
+25. **(2026-10-28) Recording frame**: optional red frame at the edges of the touch screen, HDMI and WebUI preview during a take,
+    next to REC; default off; switches in touch Settings → Monitoring and WebUI Live preview. Core `cded727`, UI `632d840`.
+26. **(2026-10-28) Only the flicker-free angles the system adds are green** in the shutter lists (as built in `8fd44e3`, `07cd559`).
+27. **(2026-10-28) Red timecode while recording as an option**, default on (the touch screen and WebUI were always red, HDMI
+    never); with it off all three stay white. Same commits as 25. Also 2026-10-28: lossless ISO cap 1600 (`40747b9`, as temp
+    753f181), and the resolution line says "16-bit" again (16 b tried and reverted).
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |

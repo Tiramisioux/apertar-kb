@@ -74,6 +74,9 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `6c34e8a` | T33 Core: value lists in UI.conf (`isoSteps`, `shutterAngleSteps`, `fpsSteps`, `wbSteps`), free stepping + increments, flicker-free angles k/(2×mains), `set_value_steps`, lists in the web `ui` state; pots/encoders/buttons use them, cut at `iso_max`/`fps_max` with the cap offered; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `8fd44e3` | T33 WebUI: Value Lists card (chips, Add/Reset, List/Free + increment, flicker-free on/off, mains 50/60); FPS/ISO/shutter pills from `ui.*_steps`, greyed above `fps_max`/`iso_max` with the cap added green, flicker-free angles green; ISO green only on a camera-added cap; exact angle and Kelvin shown; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `5d06b67` | WebUI resolution badge "16 b" instead of "16-bit"; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `db3ca00` | WebUI resolution badge back to "16-bit" (reverts 5d06b67, Patrik); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `40747b9` | Lossless cDNG ISO cap 1600 (was 800), as temp 753f181; Clear HDR 16-bit lossless now tops at 1585; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `cded727` | Recording frame (default off) and red timecode (default on) switches: UI.conf keys, `set_recording_frame_enabled`, `set_recording_red_timecode_enabled`, web state, presets; WebUI switches in Live preview, red border on the preview (requests 25, 27); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -85,6 +88,9 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `632d840` | Touch UI + HDMI: recording frame and red timecode switches (Settings → Monitoring), red border during takes, timecode red only with the switch on; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `b823e17` | QML lossless ISO fallback 1600, as Core; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `696aaf0` | Touch screen + HDMI resolution line back to "16-bit" (reverts c1d393b); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `07cd559` | T33 touch UI: SettingsBridge lists from UI.conf, `fpsMax` in the control bridge; FPS/ISO/shutter/WB pickers from the lists, greyed above the ceiling, cap and flicker-free angles green; `TopDropdownStat` takes `{value, enabled, cameraSet}`; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `c1d393b` | Touch screen + HDMI resolution line "16 b" instead of "16-bit"; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `b36891d` | Touch screen format box + HDMI RESOLUTION value: "3840x2160 · 16-bit · Clear HDR" for raw takes, same size (request 22); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
