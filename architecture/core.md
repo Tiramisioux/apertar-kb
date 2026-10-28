@@ -580,6 +580,10 @@ its 30 s poll; fixed in `a070e1b`. Add an event to that list whenever another cl
 
 ### 11.4 Sensor modes, Clear HDR and frame rates (**temp** `13a350f`, `315e390`, `3c2f2c5`, `eb9cc39`)
 
+> Since 2026-10-28 these `temp:` commits are on the Pi-local branch `cinemate-port-temp`, **not** on `cinemate-port`
+> (reset to `87011d4`). Their `setFps` Clear HDR 16 → SDR 12 switch reconfigures without a take check; it must refuse or cap
+> in a take before it comes back (T31 ramps would otherwise reconfigure mid-take).
+
 - Binning per mode = crop width / output width (`binningFromProperties`; source `driver`/`inferred`/`unknown`), in
   `list_sensor_modes` and `get_state` (`sensor_binning*`, `sensor_crop`). Needs the T26 driver for `driver`.
 - **Clear HDR rule (Patrik):** Clear HDR on → 16-bit-capable, cDNG **uncompressed**, ≤ 25 fps; Clear HDR off → 12-bit, cDNG
@@ -600,3 +604,22 @@ its 30 s poll; fixed in `a070e1b`. Add an event to that list whenever another cl
   ProRes); `time_left_label` names the format; minutes are truncated (tenth in JSON, whole minutes in both UIs).
 - T29 media profile: per filesystem writer table (exFAT kept at Core's 4 writers / queue 12 after measurement);
   `apertar-media-tune` root helper is opt-in (`APERTAR_MEDIA_TUNE=1`) and not installed.
+
+### 11.6 Speed ramping, Clear HDR exposure rules, presets (2026-10-28, Pi `cinemate-port`, not on GitHub)
+
+`47d44ff`..`bcad104` on `87011d4`; tests in `lessons/hardware-log.md` 2026-10-28.
+- **Speed ramping** (`47d44ff`, T31 without its `ramp_fps` stepper): `set_fps_speed_ramp enabled=true|false
+  [shutter=angle|exposure]`; settings/state `fps_speed_ramp`, `fps_speed_ramp_keep_exposure` (per format profile, like every
+  capture setting). With it on, any `set_fps` (WebUI, touch UI, pot, buttons) changes the rate inside a cDNG/MLV take; H.264,
+  ProRes and stills refuse. Count-based frame numbers, one `FrameRate`/timecode base, real-time WAV, grace N+6 frames,
+  `fps-ramp.txt`, restore at stop. Measured `lag_frames=7` (1080p uncompressed, NVMe exFAT).
+- **25 fps ceiling** for 4K Clear HDR 16-bit (`5aee785`) in the table, the PCF/button list and the WebUI ceiling.
+- **Clear HDR exposure rules** (`a89a5df`, one function in the sanitiser): auto ISO/WB off in Clear HDR, held at the measured
+  values, `iso_auto_after_clear_hdr` / `wb_auto_after_clear_hdr` give auto back in SDR; `set_iso_auto` / `set_wb_auto` refused
+  there with a message; a manual value clears the flag. ISO cap per mode from `[camera]` (`config.md`): 12-bit 720 (gain code
+  57, the sensor's combine window), 16-bit 1585 (code 80, the driver's cap). Gain code = 20·log10(ISO/100) / 0.3 dB.
+- **Auto ISO lock** (`fafc477`, `bcad104`): `iso_actual` = gain in use × 100 (like `wb_actual_kelvin`); `set_iso_auto
+  enabled=false` locks there, rounded up so the sensor keeps its gain code.
+- **Presets** (`71487c5`) carry Clear HDR + knobs, phase lock, timecode mode, speed ramp + policy; knobs-only presets push to
+  the sensor. The WebUI preset allow-list does not have the new keys yet.
+

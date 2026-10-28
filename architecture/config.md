@@ -45,6 +45,7 @@ Two file-selection rules exist:
 | --- | --- | --- |
 | Core inputs and outputs (PCF, GPIO, NeoRotary4, Grove, trigger, LED) | `ApertarCoreApp::start()` only. **Restart Core after editing** (`sudo systemctl restart apertar-core`) | `App:6881-6893` |
 | Core INA219 | once per process (`static const`) | `App:4602` |
+| Core `[camera]` (`cinemate-port` `a89a5df`) | once per process (`static const`, first use). **Restart Core after editing** | `CC` `clearHdrIsoLimits()` |
 | Core IMU | every recording, calibration and IMU command | `Apertar-Core/src/hardware/Mpu6050RecordingSession.cpp:1040`, `:1176`, `:1297` |
 | Core `run_script` | every script action | `Apertar-Core/src/hardware/HardwareScriptRunner.cpp:38-96` |
 | Core NVMe watcher (Python) | each NVMe eject | `App:3568` |
@@ -112,6 +113,17 @@ Core and UI open the chip independently and both rewrite its config/calibration 
 | `storage.pcie_controller` | `1000110000.pcie` | AM, Py | `CfeAutomounter.cpp:176-179`; `App:3395` |
 
 The C++ Core never reads these sections. Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
+
+#### `[camera]` (Core, `cinemate-port` `a89a5df`, 2026-10-28)
+
+| Key | Default | Ref |
+| --- | --- | --- |
+| `clear_hdr_iso_max_12bit` | **720**: gain code 57 = 17.1 dB, the top of the sensor's HG/LG combine window with the driver's +12 dB `EXP_GAIN` (`imx585.c:164-165`). 0 = no cap | `CC` `loadClearHdrIsoLimits()` |
+| `clear_hdr_iso_max_16bit` | **1585**: gain code 80 = 24 dB, `IMX585_ANA_GAIN_MAX_HDR` (`imx585.c:169`). 0 = no cap | same |
+
+SDR is never capped. Missing section or key = these defaults. Own parser (copy of the per-module pattern): first file found
+wins, inline `#`/`;` comments stripped. In the Core template only; the UI first-run template does not have it yet.
+Planned in the same section (T33): `max_fps=50`.
 
 #### `[run_script]` (Core)
 
