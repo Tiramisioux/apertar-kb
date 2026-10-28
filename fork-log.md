@@ -72,6 +72,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `a55230a` | No `[camera] max_fps` after all (Patrik); `fps_max` = sensor/probe and lossless ceiling; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `8492488` | WebUI resolution badge: "4K · 16-bit · Clear HDR" for raw takes (request 22); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `6c34e8a` | T33 Core: value lists in UI.conf (`isoSteps`, `shutterAngleSteps`, `fpsSteps`, `wbSteps`), free stepping + increments, flicker-free angles k/(2×mains), `set_value_steps`, lists in the web `ui` state; pots/encoders/buttons use them, cut at `iso_max`/`fps_max` with the cap offered; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `8fd44e3` | T33 WebUI: Value Lists card (chips, Add/Reset, List/Free + increment, flicker-free on/off, mains 50/60); FPS/ISO/shutter pills from `ui.*_steps`, greyed above `fps_max`/`iso_max` with the cap added green, flicker-free angles green; ISO green only on a camera-added cap; exact angle and Kelvin shown; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `5d06b67` | WebUI resolution badge "16 b" instead of "16-bit"; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -83,6 +85,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `c1d393b` | Touch screen + HDMI resolution line "16 b" instead of "16-bit"; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `b36891d` | Touch screen format box + HDMI RESOLUTION value: "3840x2160 · 16-bit · Clear HDR" for raw takes, same size (request 22); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
 | `79b9c2c` | Touch UI FPS picker sends only `set_fps` in a camera ramp take (Core applies the shutter policy); tracks `fps_speed_ramp`, `sound_recording` (T32); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (C0022) |
