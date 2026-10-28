@@ -41,6 +41,13 @@ with the decisions taken so far.
     Both UIs show the held ISO and WB values (the numbers in use, not "Auto") in green: set by the camera when Clear HDR was
     switched on (request 12's rule).
 
+18. **(2026-10-28) Clear HDR ISO caps, as in Cinemate** (`cinemate docs/clear-hdr.md` "ISO is capped", worktree
+    `raw-pane-bulk-download`): 16-bit 1585 (driver `IMX585_ANA_GAIN_MAX_HDR 80`, `imx585.c:169` on the Pi's driver), 12-bit at the
+    combine window (`imx585.c:164-165`, GAIN ≤ 17.1 dB = code 57: ISO ~716 with Apertar's gain = ISO/100, Cinemate's 799 uses its
+    own mapping; measure). First step above the cap lands on it and shows green; steps beyond are dropped. Cinemate also holds ISO
+    during a Clear HDR take (WhiteLevel from the first frame); whether Apertar needs that is open (its 16-bit path uses fixed
+    CCMP levels, `ccmp::kBlack16`).
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
