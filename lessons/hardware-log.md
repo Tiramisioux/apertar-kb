@@ -636,3 +636,13 @@ Entry format:
   ladder message; MLV is still allowed with the ladder on. **Confirmed.**
 - Short take at 24 fps in Clear HDR 16-bit uncompressed: 137 DNGs, `dropped_queue_full=0`, `peak_queue=2/12` (lossless in the
   same mode dropped 19 in 6.5 s). **Confirmed.**
+
+## 2026-10-28: ladder data for the approved UI (Core baa5fd6), restart 23:31:36
+
+- `ladder_text`: "Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed", "Resolution 2 · 3840×2160 · SDR12 · ≤30 · Uncompressed",
+  ladder off: "3840×2160 · SDR12 · Uncompressed (ladder off)"; `ladder_tops` [25, 30]; `ladder_enabled`, `ladder_count`. **Confirmed.**
+- `get_mode_ladder`: every resolution and all 42 pool modes carry `window_w/window_h/binning` (e.g. 1920x752 SDR 12-bit: window
+  3840x1504, binning 2; 4K SDR 12-bit: 3840x2160, binning 1) and `ceilings` per compression (4K SDR: 30 in all four; 1920x752: 60,
+  lossless 30; Clear HDR 16-bit: 25, lossy 0). **Confirmed.**
+- An active ladder refuses `set_resolution`, `set_raw_bit_depth`, `set_clear_hdr` with the ladder message; with the ladder off they
+  work again. **Confirmed.**
