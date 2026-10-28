@@ -600,3 +600,21 @@ Entry format:
 - Auto ISO in IMX585 lossless: highest value seen **767** (gain 7.67), under the lossless cap 1600 and under the tuning's
   gain limit 8. **Confirmed for the default tuning in the scene tried** (`working/unverified-speed-ramp-port.md` #1: a dark
   scene and the `long` exposure mode are still untried).
+
+## 2026-10-28: T34 Core (aa74421, restart 22:42:48), first tests
+
+- Socket: `get_mode_ladder` lists the probe's 40 modes as the pool; `set_mode_ladder … dry_run=true` with Patrik's ladder:
+  rungs HDR16 ≤25 and SDR12 ≤30 (the 4K SDR cap), one warning (the look changes), no errors; bad rung text and falling
+  thresholds refused with clear messages. **Confirmed.**
+- Ladder on: 25 fps → rung 1 (Clear HDR 16-bit), `set_fps 30` → rung 2 (4K SDR 12-bit) in one reconfigure, 50 → 30, 24 →
+  rung 1 again; `fps_max` = ladder ceiling (30), `fps_take_max` 25 / 30; a manual `set_clear_hdr` switches the ladder off
+  (journal: "switched off by a manual mode change"). **Confirmed.**
+- Take A (rung 1, 24 fps, `set_fps 50` in the take): FPS went 24 → 25 and stopped (`fps_take_max`), restored to 24 at stop.
+  **Confirmed.** Take B (Ramp-ready + Speed Ramp, 24 fps): the camera was in rung 2 (SDR12) from the start, 24 → 30 in the
+  take, no drops, back to 24. **Confirmed.**
+- Seen: take A, Clear HDR 16-bit **lossless**, 24 fps: `dropped_queue_full=20` in ~6 s (149 DNGs). The `temp:` branch made
+  Clear HDR imply uncompressed for this reason (T22: lossless was encoder-bound). Not a ladder fault; open: Clear HDR
+  should force uncompressed again? (asked of Patrik)
+- Power cut while changing the battery (22:43): the Pi rebooted twice, the test script's restore did not run; exFAT on the
+  NVMe logged "Volume was not properly unmounted… run fsck"; mounted and readable, 206 GB free. Run `fsck.exfat` when
+  convenient (unmount first).
