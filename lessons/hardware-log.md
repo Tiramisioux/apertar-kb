@@ -485,3 +485,17 @@ Entry format:
   → 12.6 MiB/frame → 50.3 min. **Confirmed** by the arithmetic and the code. Fix UI `2d27c46`; rounding `87011d4`.
 - After `87011d4` + `2d27c46` (Core and UI restarted 22:35): Core 37.8 min, WebUI and HDMI both 37 (Patrik: done).
 
+
+## 2026-10-28: T31 speed ramping, first ramp take (1080p uncompressed, 25 → 50 → 25)
+
+- Tested: Core `76094a9` (T31 without the `ramp_fps` stepper; restart 19:06:45), IMX585 1920x1080 (2×2 binned), cDNG
+  uncompressed, `fps_speed_ramp` on, shutter `angle`, 24000 µs at 25; pi-nvme exFAT. 25 `set_fps` steps of 1 fps every
+  ~0.25 s up to 50, 5 s hold, 25 steps down, 5 s at 25; socket-driven (`/tmp/ramp-take.sh`).
+- `cDNG_26-10-28_C0030`: 1107 DNGs, 0 missing, `dropped_queue_full=0`, no `drop[...]` lines; stats `changes=50 base_fps=25
+  min_fps=25 max_fps=50`; `fps-ramp.txt` 50 lines, all applied and seen (`superseded=0`).
+- `lag_frames=7` on all 50 steps, request to the first frame at the new period. Grace = max(10, N+6) covers it.
+  **Confirmed** for this mode and medium (handoff question 2); Clear HDR (more requests) not measured yet.
+- DNG `FrameRate` 25 on frames 100, 600 (inside the 50 fps segment), 1100; timecode = frame/25 (`00:00:24:00` at 600);
+  ExposureTime 1/42 at 25, 1/83 at 50 (angle kept). WAV 32.8 s real time; picture 1107/25 = 44.3 s on a 25 timeline.
+  The settings ended at 25 (no restore needed). **Confirmed**: the T31 mechanics on hardware. Not checked yet: Resolve import,
+  the `exposure` policy, MLV, a 2× step in one request.
