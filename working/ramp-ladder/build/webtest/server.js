@@ -103,9 +103,13 @@ const compressionApplies = () => st.recording_format === "cdng" || st.recording_
 function rungState(r, own) {
   const comp = own || compressionApplies() ? r.compression : "none";
   const valid = !!poolEntry(r);
-  const { ceiling, reason } = ceilingIn(r, comp);
   const p = poolEntry(r);
-  return { valid, usable: valid && ceiling > 0, modeCeiling: ceiling, reason, crop: p ? p.crop : null, binning: p ? p.binning : 0 };
+  const crop = probeOff || !p ? null : p.crop, binning = probeOff || !p ? 0 : p.binning;
+  // H.264 and ProRes: the sanitiser turns every resolution into the processed-video mode (4K 10-bit SDR, 30 fps without the probe).
+  if (!own && ["h264", "prores"].includes(st.recording_format))
+    return { valid, usable: false, modeCeiling: Math.min(30, buildMax || 280), reason: "The Mode Ladder works in CinemaDNG and MLV video.", crop, binning };
+  const { ceiling, reason } = ceilingIn(r, comp);
+  return { valid, usable: valid && ceiling > 0, modeCeiling: ceiling, reason, crop, binning };
 }
 const rungCeiling = (r, s) => (!s.usable ? 0 : r.threshold > 0 ? Math.min(r.threshold, s.modeCeiling) : s.modeCeiling);
 
@@ -214,7 +218,7 @@ function modeLadderJson(rungs, enabled, extra) {
   return {
     enabled, active: active(), rungs_text: rungsText(rungs), format: st.recording_format, compression_applies: compressionApplies(),
     build_max: buildMax, ceiling: Math.max(0, ...rungs.map((r, i) => rungCeiling(r, states[i]))),
-    running_rung: runIndex + 1, running_text: st.ladder_text, sensor_area: AREA,
+    running_rung: runIndex + 1, running_text: st.ladder_text, sensor_area: probeOff ? { width: 0, height: 0 } : AREA,
     rungs: rungs.map((r, i) => {
       const s = states[i], c = rungCeiling(r, s);
       const out = { width: r.width, height: r.height, bits: r.bits, clear_hdr: r.clear_hdr, label: label(r), class: classLabel(r),

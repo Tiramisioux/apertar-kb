@@ -71,76 +71,23 @@ h264: speed ramp: disabled=true / Not in H.264 or ProRes: they keep one rate per
 core dry-run error: error: Resolution 2 (4K SDR 12-bit, Uncompressed) cannot record: test error from Core. || warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25. || warning: Above 35 fps: picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 35. / save disabled=true
 mlv: now: Resolution 2 · 3840×2160 · SDR12 · ≤40 · MLV / messages warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25. || warning: Above 40 fps: picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 40. || warning: MLV records uncompressed: each resolution's compression applies in cDNG and lossy DNG.
 probe off: copy: Sensor probe off: add modes with core.py (set_mode_ladder rungs=…). / filters hidden=true / items 0
-probe off: rows: 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit / ceilings Ceiling 25 (sensor mode) | Ceiling 50 (build max) | Ceiling 50 (build max)
-probe off: crop: descriptions 3 / titles Full sensor area 3840×2200 of 3840×2200 | Full width 3840×2160 of 3840×2200 | Crop in 2560×1440 of 3840×2200 / running now Full width 3840×2160 of 3840×2200
-probe off, h264: ceilings: Ceiling: Core checks it | Ceiling: Core checks it | Ceiling: Core checks it / problems 2
-probe off, h264: edit: Resolution 3 (2560×1440 crop in, 12-bit) would never be used: the ones above already reach 280 fps.
-node:internal/process/promises:394
-    triggerUncaughtException(err, true /* fromPromise */);
-    ^
-
-page.click: Target page, context or browser has been closed
-Browser logs:
-
-<launching> /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-TQmXiL --remote-debugging-pipe --no-startup-window
-<launched> pid=20766
-[pid=20766][err] [1028/204813.644679:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
-[pid=20766][err] [1028/204813.644757:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[pid=20766][err] [1028/204813.646270:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
-[pid=20766][err] [1028/204813.646367:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
-[pid=20766][err] [1028/204813.661563:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[pid=20766][err] [1028/204813.661652:WARNING:device/bluetooth/dbus/bluez_dbus_manager.cc:209] Floss manager service not available, cannot set Floss enable/disable.
-[pid=20766][err] [1028/204813.659934:WARNING:media/gpu/vaapi/vaapi_wrapper.cc:1660] drmGetDevices2() has not found any devices
-[pid=20766][err] [1028/204813.666129:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
-[pid=20766][err] [1028/204813.666483:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
-[pid=20766][err] [1028/204813.669232:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
-[pid=20766][err] [1028/204813.743070:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204813.761895:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204813.766914:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204813.767339:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204813.768066:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204813.768499:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204834.812790:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766][err] [1028/204844.782672:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
-[pid=20766] <gracefully close start>
-[pid=20766] <forcefully close>
-[pid=20766] <kill>
-[pid=20766] <will force kill>
-Call log:
-[2m  - waiting for locator('#settingsModeLadderRevert')[22m
-[2m    - locator resolved to <button disabled type="button" class="secondary-button" id="settingsModeLadderRevert">Revert</button>[22m
-[2m  - attempting click action[22m
-[2m    2 × waiting for element to be visible, enabled and stable[22m
-[2m      - element is not enabled[22m
-[2m    - retrying click action[22m
-[2m    - waiting 20ms[22m
-[2m    2 × waiting for element to be visible, enabled and stable[22m
-[2m      - element is not enabled[22m
-[2m    - retrying click action[22m
-[2m      - waiting 100ms[22m
-[2m    18 × waiting for element to be visible, enabled and stable[22m
-[2m       - element is not enabled[22m
-[2m     - retrying click action[22m
-[2m       - waiting 500ms[22m
-
-    at /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34/webtest/drive.js:359:14 {
-  log: [
-    "  - waiting for locator('#settingsModeLadderRevert')",
-    '    - locator resolved to <button disabled type="button" class="secondary-button" id="settingsModeLadderRevert">Revert</button>',
-    '  - attempting click action',
-    '    2 × waiting for element to be visible, enabled and stable',
-    '      - element is not enabled',
-    '    - retrying click action',
-    '    - waiting 20ms',
-    '    2 × waiting for element to be visible, enabled and stable',
-    '      - element is not enabled',
-    '    - retrying click action',
-    '      - waiting 100ms',
-    '    18 × waiting for element to be visible, enabled and stable',
-    '       - element is not enabled',
-    '     - retrying click action',
-    '       - waiting 500ms'
-  ]
-}
-
-Node.js v22.22.0
+probe off: rows: 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440, 12-bit / ceilings Ceiling 25 (sensor mode) | Ceiling 50 (build max) | Ceiling 50 (build max)
+probe off: crop: descriptions 0 / crop-in tags 0 / titles 3840×2160 | 3840×2160 | 2560×1440 / running now 3840×2160
+probe off, row 1 lossless: Unsaved changes. Core checks the ladder again when you save. / ceilings Ceiling: Core checks it | Ceiling 50 (build max) | Ceiling 50 (build max) / ranges Lowest FPS up to its ceiling | Above Resolution 1 up to 40 fps | Above 40 up to 50 fps / problems  / gap 'The bar stops at Resolution 1: without the sensor probe its ceiling is unknown here. Core checks it.' / messages warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit, Lossless JPEG → Uncompressed. Switches between takes only; in a take FPS stops at 25. || warning: Above 40 fps: picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 40. || warning: Lossless JPEG caps ISO at 800 on this sensor.
+probe off, h264: ceilings Ceiling: Core checks it | Ceiling: Core checks it / ranges Lowest FPS up to its ceiling | Above Resolution 1 up to its ceiling / problems  / gap 'The bar stops at Resolution 1: without the sensor probe its ceiling is unknown here. Core checks it.'
+probe off, h264: Up to 20 on resolution 1: Unsaved changes. Core checks the ladder again when you save. / ceilings Ceiling: Core checks it | Ceiling: Core checks it / ranges Lowest FPS up to 20 fps | Above 20 up to its ceiling / problems  / gap 'The bar stops at Resolution 2: without the sensor probe its ceiling is unknown here. Core checks it.' / transition Above 20 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only, with a short preview blink; in a take FPS stops at 20. / messages warning: Above 20 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 20.
+shot: desktop-17-ladder-probe-off-h264.png
+probe off, h264: reverted: Saved on the camera.
+shot: desktop-15-sensor-modes-probe-off.png
+horizontal overflow (1280): none
+horizontal overflow (390 main page): none
+shot: phone-01-camera-ladder-on.png
+horizontal overflow (390 favorites format): none
+horizontal overflow (390 record panel): none
+shot: phone-02-ladder.png
+shot: phone-03-speed-ramp.png
+shot: phone-04-sensor-modes.png
+shot: phone-05-record-format.png
+phone: typing 70: Resolution 3 (2560×1440 crop in, 12-bit) would never be used: the ones above already reach 50 fps.
+horizontal overflow (390 after edit): none
+console errors: none

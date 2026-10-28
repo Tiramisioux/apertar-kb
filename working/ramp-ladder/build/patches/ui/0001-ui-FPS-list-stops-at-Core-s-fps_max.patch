@@ -1,7 +1,7 @@
 From e3a1a0438027d4f2973823f70bffcfd0dab5b50b Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Wed, 28 Oct 2026 19:01:21 +0000
-Subject: [PATCH] ui: FPS list stops at Core's fps_max
+Subject: [PATCH 1/2] ui: FPS list stops at Core's fps_max
 
 Why: Core now publishes its own FPS ceiling, fps_max (T33): the mode's
 limit from its table and the sensor probe, capped at the build maximum

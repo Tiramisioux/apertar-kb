@@ -344,19 +344,37 @@ async function overflow(page, label) {
   note("probe off: copy", await page.locator("#settingsSensorModesCopy").innerText() + " / filters hidden=" + await page.locator("#settingsSensorModeFilters").evaluate((e) => e.classList.contains("hidden")) + " / items " + await page.locator("#settingsSensorModeList .ladder-pool-item").count());
   note("probe off: rows", await rowNames(page) + " / ceilings " + await page.$$eval("#settingsModeLadderList .ladder-thr .ladder-note", (e) => e.map((x) => x.textContent).join(" | ")));
   note("probe off: crop", "descriptions " + await page.$$eval("#settingsModeLadderList .ladder-row-desc", (e) => e.length)
+    + " / crop-in tags " + await page.$$eval("#settingsModeLadderList .crop-tag", (e) => e.length)
     + " / titles " + await page.$$eval("#settingsModeLadderList .crop-frame", (e) => e.map((x) => x.title).join(" | "))
     + " / running now " + await page.locator("#settingsModeLadderNowCrop").getAttribute("title"));
+  const ladderView = async () => "ceilings " + await page.$$eval("#settingsModeLadderList .ladder-thr .ladder-note", (e) => e.map((x) => x.textContent).join(" | "))
+    + " / ranges " + await page.$$eval("#settingsModeLadderList .ladder-row-range", (e) => e.map((x) => x.textContent).join(" | "))
+    + " / problems " + await page.$$eval("#settingsModeLadderList .ladder-problem", (e) => e.map((x) => x.textContent).join(" | "))
+    + " / gap '" + await page.locator("#settingsModeLadderGap").innerText() + "'";
+  // cDNG, a compression changed in the draft: that resolution's ceiling is unknown, the ones below stay usable
+  await page.selectOption("#settingsModeLadderComp0", "lossless_jpeg");
+  await page.waitForTimeout(700);
+  note("probe off, row 1 lossless", await draftLine(page) + " / " + await ladderView() + " / messages " + await messages(page));
+  await page.click("#settingsModeLadderRevert");
+  // H.264: Core's mode_ceiling values are H.264's, so no ceiling is known; the editor's own ladder
+  // (empty "Up to" on resolution 1) shows no "Never used" and takes edits
+  const probeOffRungs = (await api("/api/command", { cmd: "get_mode_ladder" })).mode_ladder.rungs_text;
+  await api("/__ladder", { rungs: "3840x2160:16:hdr:none,3840x2160:12:sdr:none", enabled: true });
   await api("/__set", { recording_format: "h264" });
   await page.click('.settings-nav-item[data-panel="audio"]');
   await page.click('.settings-nav-item[data-panel="record"]');
   await page.waitForTimeout(800);
-  note("probe off, h264: ceilings", await page.$$eval("#settingsModeLadderList .ladder-thr .ladder-note", (e) => e.map((x) => x.textContent).join(" | "))
-    + " / problems " + await page.$$eval("#settingsModeLadderList .ladder-problem", (e) => e.length));
+  note("probe off, h264", await ladderView());
   await page.fill("#settingsModeLadderThr0", "20");
   await page.press("#settingsModeLadderThr0", "Enter");
-  await page.waitForTimeout(200);
-  note("probe off, h264: edit", await draftLine(page));
+  await page.waitForTimeout(700);
+  note("probe off, h264: Up to 20 on resolution 1", await draftLine(page) + " / " + await ladderView()
+    + " / transition " + await page.locator("#settingsModeLadderList .ladder-transition").first().innerText() + " / messages " + await messages(page));
+  await shot(page, card(page, "settingsModeLadderList"), "desktop-17-ladder-probe-off-h264.png");
   await page.click("#settingsModeLadderRevert");
+  await page.waitForTimeout(200);
+  note("probe off, h264: reverted", await draftLine(page));
+  await api("/__ladder", { rungs: probeOffRungs, enabled: true });
   await api("/__set", { recording_format: "cdng" });
   await shot(page, card(page, "settingsSensorModeList"), "desktop-15-sensor-modes-probe-off.png");
   await api("/__set", { probe_off: false });
