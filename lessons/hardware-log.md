@@ -563,3 +563,9 @@ Entry format:
   refused: no usable values, increment out of range, `mains_hz=55`, unknown name. **Confirmed.**
 - Bug seen by Patrik: ISO green in SDR lossless. `iso_max` 800 = the operator's ISO 800, and the UIs' "on the ceiling" rule
   fired. Fix with T33 steps 2-3: green only when the cap is a system-added value (not in the operator's list).
+
+## 2026-10-28: T33 lists, lossless ISO 1600, recording frame and red timecode (Patrik: "now it works")
+
+- Core up to `b017004`, UI up to `632d840`. Patrik confirmed on the touch screen, HDMI and WebUI: value lists with greyed
+  values above the ceiling and green caps / flicker-free angles, the WebUI Value Lists card, ISO up to 1585 in Clear HDR
+  16-bit lossless, the recording frame and the red-timecode switches. **Confirmed.**
