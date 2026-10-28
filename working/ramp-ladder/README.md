@@ -33,7 +33,17 @@ with the decisions taken so far.
 15. **(2026-10-28) H.264 ramping stays refused** (Patrik): H.264 captures from 4K only and Core caps it at 30
     (hardware-log 2026-10-28); the MP4/MOV are video-only, so audio was never the obstacle.
 19. **(2026-10-28) Audio stretch switch.** A real-time WAV of another length is acceptable. With a switch on, also write a WAV
-    conformed to the clip timeline: tempo follows the ramp (base/capture fps), pitch unchanged. Built before T32.
+    conformed to the clip timeline: tempo follows the ramp (base/capture fps), pitch unchanged. **Separate file**; the
+    real-time `<clip>.wav` stays. Measured on the Pi 2026-10-28: ffmpeg `rubberband`/`atempo` driven by `asendcmd` keep pitch
+    (1000 Hz test tone) but land 20-50 ms off per tempo change (clicks at 5 s/8 s → 6.032/10.048 s with rubberband,
+    5.949/9.963 with atempo), so a stepped ramp (~50 changes) would drift. Exact options: `rubberband-cli --timemap`
+    (apt package; only `librubberband2` 3.3.0 is installed, no CLI, no headers), own WSOLA in Core, or ffmpeg per segment.
+    Engine not chosen yet.
+20. **(2026-10-28) Ramp button** ("ramps up to a set fps and back"): the WebUI block's Ramp / Back is liked; a hardware
+    button for it is not asked for yet.
+21. **(2026-10-28) `conform_fps`**, the project's timeline rate, default 25: `61d5bd0`. Nothing uses it yet.
+13 (status). The hardware ISO dial already has Auto at position 0 (`App` `pcfSettingStepMode(action, "iso")`); the touch UI
+    and WebUI lists are still to check.
 
 16. **(2026-10-28) Auto ISO: lock or off, in the ISO array and the API.** Proposal (least API): `set_iso_auto [enabled=true|false]`
     (the `set_fps_phase_lock` pattern); `false` locks at the live gain (`measuredAnalogueGain_`, `CC:7704`); `set_iso value=N` stays
