@@ -85,6 +85,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `07cd559` | T33 touch UI: SettingsBridge lists from UI.conf, `fpsMax` in the control bridge; FPS/ISO/shutter/WB pickers from the lists, greyed above the ceiling, cap and flicker-free angles green; `TopDropdownStat` takes `{value, enabled, cameraSet}`; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `c1d393b` | Touch screen + HDMI resolution line "16 b" instead of "16-bit"; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `b36891d` | Touch screen format box + HDMI RESOLUTION value: "3840x2160 · 16-bit · Clear HDR" for raw takes, same size (request 22); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
