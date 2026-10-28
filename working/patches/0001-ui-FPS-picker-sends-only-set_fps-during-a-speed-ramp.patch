@@ -1,0 +1,90 @@
+From 460ac3cf225a9efb71e4fc5c024d0ee70e4d37e6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 27 Oct 2026 21:27:03 +0000
+Subject: [PATCH 2/2] ui: FPS picker sends only set_fps during a speed-ramp
+ take
+
+Why: with Core's fps_ramp on (T31), the FPS picker is a ramp control in
+cDNG and MLV takes. applyFps() followed every set_fps with its own
+set_shutter_us to keep the angle and saved the result. In a ramp take that
+undoes Core's Exposure shutter policy (setShutterUs also clears the
+nominal exposure Core keeps across the ramp) and saves a take-scoped rate
+as the operator's setting, which Core avoids since T31 (Cinemate ff59dd8).
+What: the bridge reads fps_ramp from Core's state and settings replies.
+In a camera take with fps_ramp on, applyFps() sends set_fps and stops (a
+sound-only take is not one: the bridge tracks sound_recording and the
+sound_only flag of Core's recording event); Core sets
+the shutter by its policy, the reply (already applied by sendCoreCommand)
+updates FPS and shutter on screen, and Core restores and persists the
+take's start rate at stop. Outside ramp takes nothing changes.
+ensureValidFpsSelection() returns early with a bridge, so in-between rates
+from a stepper (26, 27 ...) are not "corrected" by the UI.
+
+Tested: host build of the whole UI with Qt 6.4.2 (QML compiled ahead of
+time). Not run on the Pi.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/ApertarControlBridge.cpp | 17 +++++++++++++++++
+ src/ApertarControlBridge.hpp |  2 ++
+ 2 files changed, 19 insertions(+)
+
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 3a4a59a..33e67fa 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -270,6 +270,13 @@ bool ApertarControlBridge::applyFps(const QString &displayValue)
+     if (!sendCoreCommand(QStringLiteral("set_fps"), { { QStringLiteral("value"), fpsValue } }, &fpsReply))
+         return false;
+ 
++    // A ramp step in a camera take (T31): Core applies the shutter policy (angle or
++    // exposure) and restores the take's start rate at stop, and sendCoreCommand has
++    // already applied its reply. Send nothing more: a set_shutter_us here would undo
++    // the exposure policy, and saving would make a take-scoped rate the setting.
++    if (m_recording && !m_soundRecording && m_fpsRamp)
++        return true;
++
+     setFps(formatFpsValue(fpsValue));
+     if (m_shutterAuto) {
+         setShutterAngle(QStringLiteral("Auto"));
+@@ -1219,6 +1226,10 @@ void ApertarControlBridge::applyCoreMessage(const QJsonObject &message)
+ 
+     if (event == QStringLiteral("recording")) {
+         applyCoreState(message);
++        // Core's sound-only take sends sound_only in its event instead of sound_recording.
++        if (message.contains(QStringLiteral("sound_only")))
++            m_soundRecording = message.value(QStringLiteral("active")).toBool(false)
++                               && message.value(QStringLiteral("sound_only")).toBool(false);
+         setRecordingState(message.value(QStringLiteral("active")).toBool(false));
+         const auto error = message.value(QStringLiteral("error")).toString();
+         m_lastRecordingError = error;
+@@ -1358,6 +1369,12 @@ void ApertarControlBridge::applyCoreState(const QJsonObject &state)
+     if (state.contains(QStringLiteral("shutter_auto")))
+         m_shutterAuto = state.value(QStringLiteral("shutter_auto")).toBool(m_shutterAuto);
+ 
++    if (state.contains(QStringLiteral("fps_ramp")))
++        m_fpsRamp = state.value(QStringLiteral("fps_ramp")).toBool(m_fpsRamp);
++
++    if (state.contains(QStringLiteral("sound_recording")))
++        m_soundRecording = state.value(QStringLiteral("sound_recording")).toBool(m_soundRecording);
++
+     const double ev = state.value(QStringLiteral("exposure_compensation")).toDouble(m_exposureCompensation);
+     const bool evAvailable = state.value(QStringLiteral("exposure_compensation_available")).toBool(m_exposureCompensationAvailable);
+     if (ev != m_exposureCompensation || evAvailable != m_exposureCompensationAvailable || previousAutoExposure != autoExposureEnabled()) {
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 9a5bcf0..f4d240a 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -315,6 +315,8 @@ private:
+     QString m_exposureMetering = QStringLiteral("centre-weighted");
+     QVariantList m_exposureMeteringOptions;
+     bool m_recording = false;
++    bool m_fpsRamp = false; // Core's fps_ramp (T31): FPS may change during a raw take
++    bool m_soundRecording = false; // a sound-only take: recording, but not the camera
+     bool m_recordingHasDroppedFrames = false;
+     bool m_standby = false;
+     QString m_coreMediaState;
+-- 
+2.43.0
+

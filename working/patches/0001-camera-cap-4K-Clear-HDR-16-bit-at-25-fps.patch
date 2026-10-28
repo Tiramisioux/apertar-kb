@@ -1,0 +1,83 @@
+From 80b39e932f2d5bc92fc67cf892d5d08ab10e3615 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 27 Oct 2026 21:03:35 +0000
+Subject: [PATCH 2/3] camera: cap 4K Clear HDR 16-bit at 25 fps
+
+Why: at 30 fps the 16-bit Clear HDR stream delivers about 28 fps and
+drops frames; the back end is the limit (KB
+working/research-30fps-answer.md). Patrik accepted 25 fps as the
+observed maximum on 2026-10-27.
+What: tableMaximumFpsForResolution() returns 25 for 3840x2160 Clear HDR
+at 16 bit, so sanitizeSettingsForSensor(), set_fps and the ramp_fps
+stepper all stop there. The WebUI's maximumSupportedFpsForSnapshot()
+follows, so its FPS pills end at 25 in that mode, and so does Core's own
+list for the PCF pot and the fps/fps_up/fps_down buttons
+(maximumPcfFpsForSettings in ApertarCoreApp.cpp): at 30 the fps cycle
+button would stick at 25, because Core clamps the 30 it asks for. Clear HDR 12-bit and
+SDR 4K keep 30.
+
+Tested: host g++ -fsyntax-only of WebControlPage.cpp and ApertarCoreApp.cpp; CameraController.cpp
+needs libcamera (Pi build).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/ApertarCoreApp.cpp          | 3 ++-
+ src/camera/CameraController.cpp | 7 ++++++-
+ src/web/WebControlPage.cpp      | 3 ++-
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 9373efd..cfa6a88 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -1160,9 +1160,10 @@ double maximumPcfFpsForSettings(const CaptureSettings &settings, const std::stri
+     }
+ 
+     if (sensor.find("imx585") != std::string::npos) {
++        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if ((width == 3856 && height == 2180) ||
+             (width == 3840 && height == 2160))
+-            return 30.0;
++            return settings.clearHdr && settings.rawBitDepth == 16 ? 25.0 : 30.0;
+         if ((width == 1928 && height == 1090) ||
+             (width == 1920 && height == 1080))
+             return 60.0;
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index b1d5d6f..dad83e8 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -2775,9 +2775,14 @@ double tableMaximumFpsForResolution(SensorFamily sensorFamily, Resolution reques
+             return 11.72;
+         break;
+     case SensorFamily::Imx585:
+-        if (normalized.width == 3840 && normalized.height == 2160)
++        if (normalized.width == 3840 && normalized.height == 2160) {
++            // Clear HDR 16-bit: 25 fps is the accepted ceiling. At 30 the back end
++            // delivers about 28 and drops frames (KB working/research-30fps-answer.md).
++            if (clearHdr && normalizeRawBitDepth(rawBitDepth) == 16)
++                return 25.0;
+             // Clear HDR doubles VMAX: 30 fps at link 891 MHz, 25 at the driver's default 720 MHz.
+             return clearHdr && !sensorLimitKnown ? 25.0 : 30.0;
++        }
+         if (isImx585Raw12CropResolution(normalized))
+             return 60.0;
+         if ((normalized.width == 1920 && normalized.height == 1080) ||
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 1bcc9ef..d6c8b6f 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -4974,8 +4974,9 @@ std::string_view webControlPageHtml()
+       }
+ 
+       if (sensorLower.indexOf("imx585") !== -1) {
++        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if ((width === 3856 && height === 2180) || (width === 3840 && height === 2160))
+-          return 30.0;
++          return snapshot.clear_hdr && Number(snapshot.raw_bit_depth) === 16 ? 25.0 : 30.0;
+         if (width === 3840 && (height === 2076 || height === 2024 || height === 1920 || height === 1744
+             || height === 1728 || height === 1632 || height === 1608 || height === 1536 || height === 1504))
+           return 60.0;
+-- 
+2.43.0
+
