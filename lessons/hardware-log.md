@@ -512,3 +512,5 @@ Entry format:
 - Apertar writes a fixed DNG WhiteLevel (`CdngEncoder.cpp:1373-1374`: 65535 in 16-bit, the CCMP table's end in 12-bit), so
   Cinemate's reason to hold ISO during a Clear HDR take (WhiteLevel from the first frame) does not apply; no hold. Unmeasured
   here: whether the 16-bit merge clamps below 65535 at high gain, as Cinemate measured (code 80 → ~48600).
+- Build note (2026-10-28): g++ 14 warns `-Warray-bounds` in `CdngEncoder::writeRawPayload` (`vld1q_u16` on a `uint16_t[8]`)
+  whenever `CdngEncoder.cpp` is rebuilt; existing code, not from the speed-ramp/Clear HDR commits. Probably a false positive; unexamined.
