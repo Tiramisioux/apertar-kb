@@ -1,0 +1,518 @@
+From d5ebde445068874054a8afc9e57e71f4dc994b18 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 28 Oct 2026 21:03:40 +0000
+Subject: [PATCH 2/2] ui: Mode Ladder, its line on the FORMAT row, mode
+ controls follow the ladder
+
+Why: on the camera screen the operator must see which resolution the
+ladder runs and must not be offered mode controls that Core refuses.
+
+What: bridge properties fpsTakeMax, ladderEnabled, ladderActive,
+ladderRung, ladderCount and ladderText from Core's state; the FORMAT row
+shows Core's running line (wrapping inside its column); the FPS picker
+stops at fps_take_max in a take; resolution, crop, bit depth and
+compression controls are disabled while the ladder is active; a Mode
+Ladder switch in Settings shows Core's reason when it is refused;
+set_fps and set_mode_ladder get the 10 s reply time; applyFps shows the
+FPS Core accepted.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ qml/CameraPage.qml           | 84 +++++++++++++++++++++++++++--------
+ qml/InfoLine.qml             | 11 ++++-
+ qml/SettingsPage.qml         | 85 +++++++++++++++++++++++++++++++++++-
+ src/ApertarControlBridge.cpp | 41 +++++++++++++++--
+ src/ApertarControlBridge.hpp | 21 +++++++++
+ 5 files changed, 217 insertions(+), 25 deletions(-)
+
+diff --git a/qml/CameraPage.qml b/qml/CameraPage.qml
+index e82d7cf..c3aed75 100644
+--- a/qml/CameraPage.qml
++++ b/qml/CameraPage.qml
+@@ -452,10 +452,13 @@ Item {
+     readonly property bool sensorCropControlsAvailable: root.imx585Detected || root.imx477Detected || root.imx294Detected
+     // 4K Clear HDR (IMX585, cDNG/MLV video) is a resolution choice of its own: Core forces 4K, no crops.
+     readonly property bool clearHdrActive: !!root.controlBridge && root.controlBridge.clearHdr
++    // The Mode Ladder (T34): while it is active, the FPS picks resolution, bit depth and Clear HDR.
++    readonly property bool ladderActive: !!root.controlBridge && root.controlBridge.ladderActive
++    readonly property string ladderModeCaption: "Mode Ladder on: the FPS picks the resolution."
+     readonly property bool clearHdrAvailable: root.imx585Detected && !root.photoModeEnabled
+                                               && (root.recordingFormat === "cDNG" || root.recordingFormat === "MLV")
+     readonly property bool cropControlsVisible: root.processedVideoRecordFormat || root.sensorCropControlsAvailable
+-    readonly property bool cropControlsEnabled: root.processedVideoRecordFormat || !root.clearHdrActive
++    readonly property bool cropControlsEnabled: root.processedVideoRecordFormat || (!root.clearHdrActive && !root.ladderActive)
+     readonly property var sensorBaseResolutionOptions: root.imx294Detected ? root.imx294BaseResolutionOptions
+                                                       : root.imx477Detected ? root.imx477BaseResolutionOptions : root.imx585BaseResolutionOptions
+     readonly property var sensorActiveCropOptions: root.sensorCropControlsAvailable
+@@ -519,7 +522,16 @@ Item {
+     readonly property string formatDisplayValue: root.processedVideoRecordFormat
+                                                  ? root.h264OutputResolutionValue
+                                                  : root.resolution
+-    readonly property string formatDisplaySubtext: root.photoModeEnabled ? root.photoFormatSetting : root.recordingFormat.indexOf("ProRes") === 0 ? root.recordingFormat : root.h264RecordFormat ? "H.264"
++    // With the Mode Ladder on, Core's running line ("Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed").
++    // On a resolution each part keeps its spaces (no-break), so the FORMAT row wraps the line only at " · ".
++    readonly property string formatLadderSubtext: !root.controlBridge ? ""
++                                                  : (root.controlBridge.ladderRung > 0
++                                                     ? root.controlBridge.ladderText.split(" · ").map(function(part) {
++                                                           return part.replace(/ /g, " ")
++                                                       }).join(" · ")
++                                                     : root.controlBridge.ladderText)
++    readonly property string formatDisplaySubtext: root.formatLadderSubtext.length > 0 ? root.formatLadderSubtext
++                                                   : root.photoModeEnabled ? root.photoFormatSetting : root.recordingFormat.indexOf("ProRes") === 0 ? root.recordingFormat : root.h264RecordFormat ? "H.264"
+                                                    : (root.recordingFormat === "MLV" ? "MLV RAW"
+                                                          : (root.cdngCompressionValue === "lossless_jpeg" ? "Lossless"
+                                                             : (root.cdngCompressionValue === "lossy_3to1" ? "Lossy 3:1"
+@@ -811,22 +823,27 @@ function availableFpsOptions() {
+                   : ((root.imx577Detected)
+                      ? [24.000, 25.000, 30.000, 50.000, 60.000, 100.000]
+                      : [24.000, 25.000, 30.000, 50.000, 60.000])
+-    // Core's own ceiling (fps_max: the mode, the sensor probe, the build maximum) when it sends one.
+-    var max = root.controlBridge && root.controlBridge.fpsMax > 0
+-              ? root.controlBridge.fpsMax
+-              : root.maximumSupportedFpsForResolution(root.resolution)
++    // Core's own ceiling when it sends one: in a take fps_take_max (with the Mode Ladder on, the running
++    // resolution's), else fps_max (the mode or the ladder, the sensor probe, the build maximum).
++    var coreMax = !root.controlBridge ? 0
++                  : (root.recording && root.controlBridge.fpsTakeMax > 0 ? root.controlBridge.fpsTakeMax : root.controlBridge.fpsMax)
++    var max = coreMax > 0 ? coreMax : root.maximumSupportedFpsForResolution(root.resolution)
+     if (root.h264RecordFormat && root.controlBridge && root.controlBridge.h264MaxFps > 0)
+         max = Math.min(max, root.controlBridge.h264MaxFps)
+-    if (!root.photoModeEnabled && root.imx477Detected && root.recordingFormat === "cDNG" && root.cdngCompressionValue === "none") {
+-        var normalizedResolution = root.normalizedResolutionForCurrentSensor(root.resolution)
+-        max = Math.min(max, root.imx477MaximumUncompressedFpsForResolution(normalizedResolution))
++    // The current mode's caps. With the Mode Ladder on, Core's ceiling already holds each resolution's own,
++    // and a higher FPS may switch to a resolution without them.
++    if (!root.ladderActive) {
++        if (!root.photoModeEnabled && root.imx477Detected && root.recordingFormat === "cDNG" && root.cdngCompressionValue === "none") {
++            var normalizedResolution = root.normalizedResolutionForCurrentSensor(root.resolution)
++            max = Math.min(max, root.imx477MaximumUncompressedFpsForResolution(normalizedResolution))
++        }
++        if (root.losslessImx585Mode)
++            max = Math.min(max, 30.0)
++        else if (root.losslessFourKMode)
++            max = Math.min(max, root.isApproximatelyFourThree(root.resolution) ? 24.0 : 30.0)
++        else if (root.losslessTwoKMode)
++            max = Math.min(max, 60.0)
+     }
+-    if (root.losslessImx585Mode)
+-        max = Math.min(max, 30.0)
+-    else if (root.losslessFourKMode)
+-        max = Math.min(max, root.isApproximatelyFourThree(root.resolution) ? 24.0 : 30.0)
+-    else if (root.losslessTwoKMode)
+-        max = Math.min(max, 60.0)
+     var filtered = []
+     for (var i = 0; i < presets.length; ++i) {
+         if (presets[i] <= max + 0.0005)
+@@ -1214,7 +1231,18 @@ function h264ResolutionForBaseAndRatio(baseValue, ratioLabel) {
+     return baseValue
+ }
+ 
++// Core refuses resolution, bit depth and Clear HDR changes while the Mode Ladder is active (T34).
++function ladderBlocksModeChange() {
++    if (!root.ladderActive)
++        return false
++    root.showRecordWarning("Resolution Not Changed", root.ladderModeCaption,
++                           "The Mode Ladder is on", "Turn it off in Settings > Record > Format to choose by hand.")
++    return true
++}
++
+ function applyResolutionValue(resolutionValue) {
++    if (root.ladderBlocksModeChange())
++        return
+     var normalized = root.normalizedResolutionForCurrentSensor(resolutionValue)
+     if (root.controlBridge) {
+         if (root.controlBridge.applyResolution(normalized))
+@@ -1243,6 +1271,8 @@ function applyResolutionBase(resolutionValue) {
+ 
+ // "clearhdr" turns 4K Clear HDR on; any other resolution turns it off first.
+ function applyQuickResolution(resolutionValue) {
++    if (root.ladderBlocksModeChange())
++        return
+     if (resolutionValue === "clearhdr") {
+         if (root.controlBridge && !root.clearHdrActive)
+             root.controlBridge.applyClearHdr(true)
+@@ -2928,7 +2958,9 @@ Text {
+                 }
+                 onOptionSelected: function(v) {
+                     if (root.controlBridge) {
+-                        root.controlBridge.applyFps(v)
++                        if (!root.controlBridge.applyFps(v))
++                            root.showRecordWarning("FPS Not Changed", root.controlBridge.lastError,
++                                                   "Frame rate was not changed", "Pick another frame rate, or try again.")
+                     } else {
+                         root.fps = v
+                     }
+@@ -3305,6 +3337,18 @@ Text {
+                                     width: quickResolutionFlick.width
+                                     spacing: 6
+ 
++                                    Text {
++                                        width: quickResolutionOptions.width
++                                        visible: root.ladderActive
++                                        text: root.ladderModeCaption
++                                        color: "#8f9096"
++                                        font.family: interRegular.font.family
++                                        font.pixelSize: root.quickMenuResolutionValueFontSize
++                                        horizontalAlignment: Text.AlignHCenter
++                                        wrapMode: Text.WordWrap
++                                        renderType: Text.NativeRendering
++                                    }
++
+                                     Repeater {
+                                         model: root.quickMenuOpen
+                                                ? root.safeOptionList(root.processedVideoRecordFormat
+@@ -3322,7 +3366,7 @@ Text {
+                                             width: quickResolutionOptions.width
+                                             height: root.quickMenuPopupOptionHeight
+                                             radius: 12
+-                                            readonly property bool itemEnabled: modelData.enabled !== false
++                                            readonly property bool itemEnabled: modelData.enabled !== false && !root.ladderActive
+                                             readonly property bool itemSelected: itemValue === "clearhdr"
+                                                                                  ? root.clearHdrActive
+                                                                                  : (!root.clearHdrActive && itemValue === root.resolutionBaseValue)
+@@ -3599,7 +3643,8 @@ Text {
+     anchors.left: parent.left
+     anchors.bottom: root.compactLandscapeLayout ? undefined : parent.bottom
+     anchors.verticalCenter: root.compactLandscapeLayout ? bottomControlsRow.verticalCenter : undefined
+-    anchors.verticalCenterOffset: root.bottomStatsVerticalOffset
++    // The FORMAT row's extra lines grow the column upward only, also where it is centred.
++    anchors.verticalCenterOffset: root.bottomStatsVerticalOffset - formatInfoLine.subExtraHeight / 2
+     anchors.leftMargin: root.bottomStatsSideMargin
+     anchors.bottomMargin: root.bottomStatsBottomMargin
+     spacing: root.bottomStatsSpacing
+@@ -3607,10 +3652,13 @@ Text {
+     visible: root.showCornerStats
+ 
+     InfoLine {
++        id: formatInfoLine
+         width: parent.width
+         label: "FORMAT"
+         value: root.formatDisplayValue
+         sub: root.formatDisplaySubtext
++        // The Mode Ladder's running line is several times the column's width: it wraps within the column.
++        subMaximumLineCount: 4
+         iconSource: "qrc:/qml/icons/camera.png"
+         iconSize: root.bottomStatsIconSize
+         rowSpacing: root.bottomStatsRowSpacing
+diff --git a/qml/InfoLine.qml b/qml/InfoLine.qml
+index eca3406..a82635e 100644
+--- a/qml/InfoLine.qml
++++ b/qml/InfoLine.qml
+@@ -14,11 +14,16 @@ Item {
+     property int labelFontSize: 13
+     property int valueFontSize: 18
+     property int subFontSize: 13
++    // Above 1 the sub wraps within its column up to this many lines, eliding the last; the row grows by the
++    // extra lines (the FORMAT row's Mode Ladder line). 1 keeps it one line.
++    property int subMaximumLineCount: 1
+     property int heightWithSub: 56
+     property int heightWithoutSub: 46
++    readonly property real subExtraHeight: subText.visible && subText.lineCount > 1
++                                           ? subText.height * (subText.lineCount - 1) / subText.lineCount : 0
+ 
+     width: 180
+-    height: sub.length > 0 ? heightWithSub : heightWithoutSub
++    height: (sub.length > 0 ? heightWithSub : heightWithoutSub) + subExtraHeight
+ 
+     Row {
+         anchors.fill: parent
+@@ -62,12 +67,16 @@ Item {
+             }
+ 
+             Text {
++                id: subText
+                 visible: root.sub.length > 0
+                 text: root.sub
+                 color: "#80ffffff"
+                 font.pixelSize: root.subFontSize
+                 horizontalAlignment: root.alignRight ? Text.AlignRight : Text.AlignLeft
+                 width: parent.width
++                wrapMode: root.subMaximumLineCount > 1 ? Text.Wrap : Text.NoWrap
++                maximumLineCount: root.subMaximumLineCount
++                elide: root.subMaximumLineCount > 1 ? Text.ElideRight : Text.ElideNone
+                 renderType: Text.NativeRendering
+             }
+         }
+diff --git a/qml/SettingsPage.qml b/qml/SettingsPage.qml
+index 9d611c1..153f40c 100644
+--- a/qml/SettingsPage.qml
++++ b/qml/SettingsPage.qml
+@@ -103,6 +103,9 @@ Item {
+     // and the bit depth is 12 or 16.
+     readonly property bool clearHdrActive: typeof apertarControlBridge !== "undefined" && !!apertarControlBridge
+                                            && apertarControlBridge.clearHdr
++    // The Mode Ladder (T34): while it is active, the FPS picks resolution, bit depth, Clear HDR and compression.
++    readonly property bool ladderActive: typeof apertarControlBridge !== "undefined" && !!apertarControlBridge
++                                         && apertarControlBridge.ladderActive
+     readonly property bool clearHdrAvailable: root.imx585Detected && !root.stillCaptureMode
+                                               && (root.recordFormat === "cDNG" || root.recordFormat === "MLV")
+     readonly property bool stillCaptureMode: root.settingsState && root.settingsState.photoModeEnabled
+@@ -631,7 +634,8 @@ Item {
+     }
+ 
+     function applyRecordResolutionValue(resolutionValue) {
+-        if (typeof apertarControlBridge === "undefined" || !apertarControlBridge)
++        // Core refuses it while the Mode Ladder is active; the Format card says why.
++        if (typeof apertarControlBridge === "undefined" || !apertarControlBridge || root.ladderActive)
+             return
+         apertarControlBridge.applyResolution(root.normalizedRecordResolution(resolutionValue))
+     }
+@@ -3173,6 +3177,7 @@ Item {
+                                                  : (root.sensorCropControlsAvailable ? root.sensorBaseResolutionOptions : root.resolutionOptions))
+                              .concat(root.imx585Detected ? [{ value: "clearhdr", label: "4K Clear HDR",
+                                                               enabled: root.clearHdrAvailable }] : [])
++                    fieldEnabled: !root.ladderActive
+                     popupParent: dropdownOverlay
+                     dropdownController: sharedDropdownController
+                     onValueSelected: function(v) {
+@@ -3203,7 +3208,7 @@ Item {
+                     value: root.recordCropModeValue
+                     displayValue: root.recordCropRatioLabel
+                     options: root.safeOptionList(root.processedVideoRecordFormat ? root.h264ActiveCropOptions : root.sensorActiveCropOptions)
+-                    fieldEnabled: root.processedVideoRecordFormat || (root.sensorCropControlsAvailable && !root.clearHdrActive)
++                    fieldEnabled: root.processedVideoRecordFormat || (root.sensorCropControlsAvailable && !root.clearHdrActive && !root.ladderActive)
+                     popupParent: dropdownOverlay
+                     dropdownController: sharedDropdownController
+                     onValueSelected: function(v) {
+@@ -3252,6 +3257,7 @@ Item {
+                         { value: "8-bit", label: "8-bit", enabled: root.rawBitDepthOptionEnabled("8-bit") }
+                     ]
+                     fieldEnabled: apertarControlBridge && !apertarControlBridge.recording && (root.proresClipFormat || !root.fixedTenBitRecordFormat)
++                                  && !root.ladderActive
+                     popupParent: dropdownOverlay
+                     dropdownController: sharedDropdownController
+                     onValueSelected: function(v) {
+@@ -3279,6 +3285,7 @@ Item {
+                         { value: "lossy_5to1", label: "Lossy 5:1" }
+                     ] : [])
+                     fieldEnabled: apertarControlBridge && !apertarControlBridge.recording && apertarControlBridge.rawCompressionSupported
++                                  && !root.ladderActive
+                     popupParent: dropdownOverlay
+                     dropdownController: sharedDropdownController
+                     onValueSelected: function(v) { apertarControlBridge.applyCdngCompression(v) }
+@@ -3286,6 +3293,80 @@ Item {
+ 
+             }
+ 
++            // The Mode Ladder (T34) is set up in the WebUI; here it is only switched on and off.
++            Row {
++                id: modeLadderRow
++                width: parent.width
++                spacing: 12
++                // Core's reason when it refuses the switch (e.g. a saved resolution that would never be used).
++                property string errorText: ""
++
++                Connections {
++                    target: typeof apertarControlBridge !== "undefined" ? apertarControlBridge : null
++
++                    function onLadderChanged() {
++                        modeLadderRow.errorText = ""
++                    }
++                }
++
++                Column {
++                    width: Math.max(0, parent.width - modeLadderToggle.width - parent.spacing)
++                    anchors.verticalCenter: parent.verticalCenter
++                    spacing: root.largeLandscapeLayout ? 6 : (root.standardLandscapeLayout ? 4 : (root.compactLandscapeLayout ? 2 : 4))
++
++                    Text {
++                        width: parent.width
++                        text: "Mode Ladder"
++                        color: "white"
++                        font.family: interBold.font.family
++                        font.pixelSize: root.largeLandscapeLayout ? 24 : (root.standardLandscapeLayout ? 18 : (root.compactLandscapeLayout ? 14 : 17))
++                        renderType: Text.NativeRendering
++                        elide: Text.ElideRight
++                    }
++
++                    Text {
++                        width: parent.width
++                        text: !apertarControlBridge || apertarControlBridge.ladderCount === 0
++                              ? "Set up the ladder in the WebUI (Settings > Record > Mode Ladder)."
++                              : root.ladderActive ? "Mode Ladder on: the FPS picks the resolution."
++                              : apertarControlBridge.recording ? "Stop recording before changing the Mode Ladder."
++                              : apertarControlBridge.ladderEnabled ? "On, but not used with this format."
++                              : "Switches resolution automatically when you change FPS."
++                        color: "#8cffffff"
++                        font.family: interRegular.font.family
++                        font.pixelSize: root.largeLandscapeLayout ? 18 : (root.standardLandscapeLayout ? 13 : (root.compactLandscapeLayout ? 10 : 13))
++                        wrapMode: Text.WordWrap
++                        renderType: Text.NativeRendering
++                    }
++
++                    Text {
++                        width: parent.width
++                        visible: modeLadderRow.errorText.length > 0
++                        text: modeLadderRow.errorText
++                        color: "#ffb097"
++                        font.family: interRegular.font.family
++                        font.pixelSize: root.largeLandscapeLayout ? 18 : (root.standardLandscapeLayout ? 13 : (root.compactLandscapeLayout ? 10 : 13))
++                        wrapMode: Text.WordWrap
++                        renderType: Text.NativeRendering
++                    }
++                }
++
++                TogglePill {
++                    id: modeLadderToggle
++                    anchors.verticalCenter: parent.verticalCenter
++                    // Core turns it on only with resolutions saved, and changes nothing in a take; off always works.
++                    enabled: !!apertarControlBridge && !apertarControlBridge.recording
++                             && (apertarControlBridge.ladderCount > 0 || apertarControlBridge.ladderEnabled)
++                    opacity: enabled ? 1.0 : 0.4
++                    // Bound to Core's state: on a refusal the switch stays where Core is, and the line above says why.
++                    checked: !!apertarControlBridge && apertarControlBridge.ladderEnabled
++                    onToggled: function(value) {
++                        modeLadderRow.errorText = apertarControlBridge.applyModeLadderEnabled(value)
++                                                  ? "" : apertarControlBridge.lastError
++                    }
++                }
++            }
++
+             InlineDropdownField {
+                 width: parent.width
+                 visible: root.proresClipFormat
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 469cfcd..44f93af 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -277,7 +277,9 @@ bool ApertarControlBridge::applyFps(const QString &displayValue)
+     if (m_recording && !m_soundRecording && m_fpsRamp)
+         return true;
+ 
+-    setFps(formatFpsValue(fpsValue));
++    // Core may accept less than asked (the mode's ceiling, or the running resolution's in a take).
++    const double acceptedFps = fpsReply.value(QStringLiteral("fps")).toDouble(fpsValue);
++    setFps(formatFpsValue(acceptedFps));
+     if (m_shutterAuto) {
+         setShutterAngle(QStringLiteral("Auto"));
+         setShutterSpeed(QStringLiteral("Auto"));
+@@ -285,16 +287,24 @@ bool ApertarControlBridge::applyFps(const QString &displayValue)
+         return true;
+     }
+ 
+-    const int shutterUs = shutterUsForAngle(preservedAngleValue, fpsValue);
++    const int shutterUs = shutterUsForAngle(preservedAngleValue, acceptedFps);
+     QJsonObject shutterReply;
+     if (!sendCoreCommand(QStringLiteral("set_shutter_us"), { { QStringLiteral("value"), shutterUs } }, &shutterReply))
+         return false;
+ 
+-    applyShutterFromMicroseconds(shutterUs, fpsValue);
++    applyShutterFromMicroseconds(shutterUs, acceptedFps);
+     saveCurrentCameraSettings(shutterUs);
+     return true;
+ }
+ 
++bool ApertarControlBridge::applyModeLadderEnabled(bool enabled)
++{
++    // Turning it on may move the camera onto the ladder at once; the reply brings the new mode and ladder state.
++    return sendCoreCommand(QStringLiteral("set_mode_ladder"), {
++        { QStringLiteral("enabled"), enabled ? QStringLiteral("true") : QStringLiteral("false") }
++    });
++}
++
+ bool ApertarControlBridge::applyIso(const QString &displayValue)
+ {
+     if (isAutoSelection(displayValue)) {
+@@ -1046,7 +1056,10 @@ bool ApertarControlBridge::sendCoreCommand(const QString &commandName, const QJs
+                                     commandName == QStringLiteral("timelapse_start") ||
+                                     commandName == QStringLiteral("wake") ||
+                                     commandName == QStringLiteral("enter_standby") ||
+-                                    commandName == QStringLiteral("apply_preset");
++                                    commandName == QStringLiteral("apply_preset") ||
++                                    // With the Mode Ladder on, both may switch the resolution (T34).
++                                    commandName == QStringLiteral("set_fps") ||
++                                    commandName == QStringLiteral("set_mode_ladder");
+     const int replyTimeoutMs = commandName == QStringLiteral("record_stop") ? 60000
+         : commandName == QStringLiteral("calibrate_gyro") ? 8000
+         : (reconfigureCommand ? 10000 : 3000);
+@@ -1380,6 +1393,26 @@ void ApertarControlBridge::applyCoreState(const QJsonObject &state)
+         }
+     }
+ 
++    // The Mode Ladder (T34): Core sends these fields together, in get_state, replies and the settings event.
++    if (state.contains(QStringLiteral("ladder_active"))) {
++        const double fpsTakeMax = state.value(QStringLiteral("fps_take_max")).toDouble(m_fpsTakeMax);
++        const bool ladderEnabled = state.value(QStringLiteral("ladder_enabled")).toBool(m_ladderEnabled);
++        const bool ladderActive = state.value(QStringLiteral("ladder_active")).toBool(m_ladderActive);
++        const int ladderRung = state.value(QStringLiteral("ladder_rung")).toInt(m_ladderRung);
++        const int ladderCount = state.value(QStringLiteral("ladder_count")).toInt(m_ladderCount);
++        const QString ladderText = state.value(QStringLiteral("ladder_text")).toString(m_ladderText);
++        if (fpsTakeMax != m_fpsTakeMax || ladderEnabled != m_ladderEnabled || ladderActive != m_ladderActive ||
++            ladderRung != m_ladderRung || ladderCount != m_ladderCount || ladderText != m_ladderText) {
++            m_fpsTakeMax = fpsTakeMax;
++            m_ladderEnabled = ladderEnabled;
++            m_ladderActive = ladderActive;
++            m_ladderRung = ladderRung;
++            m_ladderCount = ladderCount;
++            m_ladderText = ladderText;
++            emit ladderChanged();
++        }
++    }
++
+     if (state.contains(QStringLiteral("sound_recording")))
+         m_soundRecording = state.value(QStringLiteral("sound_recording")).toBool(m_soundRecording);
+ 
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 600febf..b88f6f3 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -38,6 +38,12 @@ class ApertarControlBridge : public QObject
+     Q_PROPERTY(int h264MaxWidth READ h264MaxWidth NOTIFY recordingCapabilitiesChanged)
+     Q_PROPERTY(double h264MaxFps READ h264MaxFps NOTIFY recordingCapabilitiesChanged)
+     Q_PROPERTY(double fpsMax READ fpsMax NOTIFY fpsMaxChanged)
++    Q_PROPERTY(double fpsTakeMax READ fpsTakeMax NOTIFY ladderChanged)
++    Q_PROPERTY(bool ladderEnabled READ ladderEnabled NOTIFY ladderChanged)
++    Q_PROPERTY(bool ladderActive READ ladderActive NOTIFY ladderChanged)
++    Q_PROPERTY(int ladderRung READ ladderRung NOTIFY ladderChanged)
++    Q_PROPERTY(int ladderCount READ ladderCount NOTIFY ladderChanged)
++    Q_PROPERTY(QString ladderText READ ladderText NOTIFY ladderChanged)
+     Q_PROPERTY(QString tuningFile READ tuningFile NOTIFY tuningFileChanged)
+     Q_PROPERTY(QString rawBitDepth READ rawBitDepth NOTIFY rawBitDepthChanged)
+     Q_PROPERTY(bool clearHdr READ clearHdr NOTIFY clearHdrChanged)
+@@ -87,6 +93,12 @@ public:
+     int h264MaxWidth() const { return m_h264MaxWidth; }
+     double h264MaxFps() const { return m_h264MaxFps; }
+     double fpsMax() const { return m_fpsMax; }
++    double fpsTakeMax() const { return m_fpsTakeMax; }
++    bool ladderEnabled() const { return m_ladderEnabled; }
++    bool ladderActive() const { return m_ladderActive; }
++    int ladderRung() const { return m_ladderRung; }
++    int ladderCount() const { return m_ladderCount; }
++    QString ladderText() const { return m_ladderText; }
+     QString tuningFile() const { return m_tuningFile; }
+     QString rawBitDepth() const;
+     bool clearHdr() const { return m_clearHdr; }
+@@ -113,6 +125,7 @@ public:
+ 
+     Q_INVOKABLE void refresh();
+     Q_INVOKABLE bool applyFps(const QString &displayValue);
++    Q_INVOKABLE bool applyModeLadderEnabled(bool enabled);
+     Q_INVOKABLE bool applyIso(const QString &displayValue);
+     Q_INVOKABLE bool applyExposureCompensation(double ev);
+     Q_INVOKABLE bool applyExposureMetering(const QString &mode);
+@@ -165,6 +178,7 @@ signals:
+     void cdngCompressionChanged();
+     void recordingCapabilitiesChanged();
+     void fpsMaxChanged();
++    void ladderChanged();
+     void tuningFileChanged();
+     void rawBitDepthChanged();
+     void clearHdrChanged();
+@@ -286,6 +300,13 @@ private:
+     int m_h264MaxWidth = 2560;
+     double m_h264MaxFps = 0;
+     double m_fpsMax = 0; // Core's fps_max (T33): highest FPS set_fps accepts outside a take; 0 = not sent
++    // Core's Mode Ladder state (T34), derived by Core and never saved here.
++    double m_fpsTakeMax = 0; // highest FPS a take reaches in the current resolution; 0 = not sent
++    bool m_ladderEnabled = false;
++    bool m_ladderActive = false; // the FPS picks resolution, bit depth, Clear HDR and compression
++    int m_ladderRung = 0; // 1-based running resolution, 0 = off the ladder
++    int m_ladderCount = 0;
++    QString m_ladderText; // the running line for the FORMAT row; empty when the ladder is not active
+     QLocalSocket m_eventSocket;
+     QString m_fps = QStringLiteral("24.000");
+     QString m_iso = QStringLiteral("800");
+-- 
+2.43.0
+

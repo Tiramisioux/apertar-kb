@@ -1,0 +1,119 @@
+{
+ "core": {
+  "fixed": [
+   {
+    "id": "preset-ladder-inherits-clear-hdr, preset-cleartdr-inherited, preset-inherits-clear-hdr",
+    "what": "One defect, found already fixed from the interrupted run and checked against the current code. applyLadderToPreset no longer takes Clear HDR from the camera. It sanitises the Favorite twice, as SDR and as Clear HDR. The Clear HDR reading counts only when it keeps the Favorite's size and either keeps its bits or is the 16-bit mode. The Favorite loads when a reading that keeps it matches what the ladder runs at its FPS, otherwise it is refused. The refusal message names the Favorite by that reading, SDR when both readings keep it. Traced cases: on Resolution 1 a 4K 12-bit 50 fps Favorite loads on Resolution 2, and on Resolution 2 a 16-bit 24 fps Favorite loads on Resolution 1. A 2K binned SDR Favorite is never silently forced to 4K Clear HDR. A pre-ladder 4K SDR 12-bit Favorite at 24 fps is still refused against 4K Clear HDR 16-bit, as the spec says.",
+    "where": "core/src/camera/CameraController.cpp CameraController::applyLadderToPreset (around line 10762)"
+   },
+   {
+    "id": "build-max-in-standby-skips-ladder",
+    "what": "Found already applied and checked. After the session restarts, wakeFromStandby runs the same ladder guard as start(): ladderRewriteLocked on a copy, then applyFpsStepLocked when the mode or the FPS moves, logging on failure. Then persistSettingsLocked() runs before emitSettingsEventLocked().",
+    "where": "core/src/camera/CameraController.cpp CameraController::wakeFromStandby (around line 9237)"
+   },
+   {
+    "id": "record-format-precheck-before-rewrite",
+    "what": "Found already applied and checked. setRecordingFormat's early unsupportedRecordingSettings check now runs after ladderRewriteLocked(requested). Picking lossy DNG on a Clear HDR resolution now lands on that resolution's compression instead of being refused. Without an active ladder, or during a take, nothing changes.",
+    "where": "core/src/camera/CameraController.cpp CameraController::setRecordingFormat (around line 9749)"
+   },
+   {
+    "id": "control-char-error-json",
+    "what": "Found already applied and checked. ControlProtocol.cpp is not one of my files, so the verifier's other option is used. parseRungs quotes the rung without characters below 0x20 in its error text, so the error reply is valid JSON. mode_ladder_test.cpp has a check for it (\"3840x2160:12:sdr\\a\\n\").",
+    "where": "core/src/camera/ModeLadder.hpp parseRungs (around line 189); mode_ladder_test.cpp line 42"
+   },
+   {
+    "id": "pcf-list-ignores-take-max",
+    "what": "Found already applied and checked. availablePcfFpsOptions takes a `bool recording` and uses `recording && settings.fpsTakeMax > 0.0 ? settings.fpsTakeMax : settings.fpsMax`. Both callers (the analog pot and fps_up/fps_down/cycle) pass camera_.isRecording().",
+    "where": "core/src/ApertarCoreApp.cpp availablePcfFpsOptions (line 1198) and its callers (lines 8761, 9027)"
+   },
+   {
+    "id": "lead-imx585-alias-crop-letterbox",
+    "what": "Found already applied and checked. When a probed mode is folded to Core's identity (3840x2200 or 3856x2180 to 3840x2160, 1928x1090 to 1920x1080), the new ladderCropOf keeps the crop's x and y and caps its width and height at the identity size times the binning. It is used everywhere the ladder takes a crop from the probe: the pool (ladderPoolModes), rung states (rungStateLocked) and the readout area (probedSensorArea). The area is now 3840x2160 and every 4K mode covers the whole sensor area. core_ladder_probe_test.cpp section 5 covers it: 3840x2200 becomes 3840x2160; 3856x2180 keeps its origin; 1928x1090 binned becomes 2 x 1920x1080; modes that are not folded keep their window; the readout area is 3840x2160; no 4K mode is letterboxed or cropped in. The extractor also copies ladderSizeOf and ladderCropOf.",
+    "where": "core/src/camera/CameraController.cpp ladderSizeOf / ladderCropOf / ladderPoolModes / probedSensorArea (around lines 2995-3078), rungStateLocked (line 9468); core_ladder_probe_test.cpp section 5; core_ladder_probe_extract.py"
+   }
+  ],
+  "skipped": [
+   {
+    "id": "webui-favorites-format-card-unlocked, favorites-format-card-not-locked, favorites-format-card-not-ladder-locked, probe-off-runtime-mode-ceiling, imx477-fps-pills-capped-by-current-mode, drag-drop-gap-maps-to-last-row, draft-dirty-after-normalize, switching-note-cleared-by-earlier-request, probe-off-crop-claims-whole-sensor, webui-imx477-uncompressed-cap-blocks-ladder",
+    "why": "All in WebControlPage.cpp, which the other fixer owns. Not mine to touch."
+   },
+   {
+    "id": "touch-format-line-overflows, touch-ladder-toggle-silent-refusal",
+    "why": "Touch UI QML (ui tree), not among my files."
+   }
+  ],
+  "checks": "Every fix assigned to me was already in the files from the interrupted run. I checked each against the current code and against the finding's scenarios, and found nothing half-done or applied twice, so I made no new edits. All checks pass: hostcheck-core.sh reports errors=0 warnings=0 for CameraController.cpp, ApertarCoreApp.cpp and WebControlPage.cpp; the header test (mode_ladder_test.cpp, g++ -Wall -Wextra -Werror) says all ok; the probe test (re-extracted 15 functions, g++ -Wall -Wextra -Werror) says all ok in all 6 sections, including the new crop and readout-area section 5. Nothing committed. As the user asked, I saved a copy of the work in /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34/agent-saves/: fix-core-files.diff (git diff HEAD of CameraController.cpp/.hpp, ApertarCoreApp.cpp, Types.hpp), ModeLadder.hpp (untracked, so copied whole), mode_ladder_test.cpp, core_ladder_probe_test.cpp, core_ladder_probe_extract.py."
+ },
+ "web": {
+  "fixed": [
+   {
+    "id": "webui-favorites-format-card-unlocked",
+    "what": "Settings > Favorites Format card is locked while ladder_active. Resolution, Crop Mode and the plain Resolution select get disabled=ladderActive, Compression adds `|| ladderActive`, and Bit Depth uses ladderLockedOptions with the .ladder-locked grid. The card shows the same one-line note as the Recording format card. The previous run had already made this fix; I checked it in the code and in the drive (all controls disabled, note shown, unlocked again with the ladder off). Screenshot: /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34/webtest/shots/desktop-16-favorites-format-locked.png",
+    "where": "core/src/web/WebControlPage.cpp renderFavoriteControls case \"format\" (~8588-8630)"
+   },
+   {
+    "id": "favorites-format-card-not-locked",
+    "what": "Same defect and fix as webui-favorites-format-card-unlocked.",
+    "where": "core/src/web/WebControlPage.cpp case \"format\" (~8588)"
+   },
+   {
+    "id": "favorites-format-card-not-ladder-locked",
+    "what": "Same defect and fix as webui-favorites-format-card-unlocked.",
+    "where": "core/src/web/WebControlPage.cpp case \"format\" (~8588)"
+   },
+   {
+    "id": "imx477-fps-pills-capped-by-current-mode",
+    "what": "`const ladderActive` now comes before the IMX477 uncompressed-cDNG block, and that block is guarded with `!ladderActive &&`, as the lossless caps already were. The previous run made this fix and I checked it. Drive check with IMX477 4056x3040 12-bit, ladder_tops [24,50] and fps_max 50: the pills now go 24…50 instead of only 24.",
+    "where": "core/src/web/WebControlPage.cpp availableFpsOptionsForSnapshot (5661)"
+   },
+   {
+    "id": "webui-imx477-uncompressed-cap-blocks-ladder",
+    "what": "Same defect and fix as imx477-fps-pills-capped-by-current-mode.",
+    "where": "core/src/web/WebControlPage.cpp availableFpsOptionsForSnapshot (5661)"
+   },
+   {
+    "id": "probe-off-runtime-mode-ceiling",
+    "what": "With the probe off, a saved resolution's mode_ceiling now counts as its own ceiling only when compression_applies (cDNG or lossy DNG); otherwise the ceiling is unknown. The previous run made that part. I finished it, because an unknown ceiling (280) with an empty Up to still made the next rows 'Never used' and refused every edit (the drive crashed on exactly that). Now an unknown ceiling with an empty Up to does not move the lower bound in ladderSpans, normalizeLadderDraft and ladderDraftProblem. In ladderRowStates such a row is `open` and the rows below it are `after` that row. Rows show 'Lowest FPS up to its ceiling' and 'Above Resolution N up to 40 fps', and the transition reads 'Above the ceiling of Resolution N: …'. No MB/s line is shown for an open row. The coverage bar stops at the first unknown ceiling and says so. Core's dry run still checks everything. Drive, probe off and H.264 with the editor's own ladder: no problems, edits accepted and Revert works. Probe off, cDNG, row 1 switched to Lossless JPEG: accepted, rows 2 and 3 usable.",
+    "where": "core/src/web/WebControlPage.cpp ladderCeilingKnown (5815), ladderSpans (5867), normalizeLadderDraft (5880), ladderDraftProblem (5895), ladderRowStates (5916), createLadderRow transition/range/MB/s (~6219-6305), renderLadderCoverage (6367)"
+   },
+   {
+    "id": "probe-off-crop-claims-whole-sensor",
+    "what": "ladderCrop: when neither the sensor area nor the crop is known (probe off), it returns an empty description, the size alone as title, cropIn false and whole false (plain window fill). The row adds the description line only when it is not empty. The previous run made this fix and I checked it. The mock now sends sensor_area {0,0}, crop null and binning 0 with the probe off, as Core does. Drive: no descriptions, no CROP IN tags, titles are '3840×2160', and Running now too.",
+    "where": "core/src/web/WebControlPage.cpp ladderCrop (5950), createLadderRow (`if (crop.desc)`)"
+   },
+   {
+    "id": "drag-drop-gap-maps-to-last-row",
+    "what": "pointermove now takes the slot before the first row whose middle is below the pointer (`over = slot > from ? slot - 1 : slot`), so gaps and transition lines map to the nearest slot. The previous run made this fix and I checked it. Drive: dragging row 1 onto the line between rows 2 and 3 targets row 2, and the crop-in row released on the line between rows 1 and 2 moves to position 2.",
+    "where": "core/src/web/WebControlPage.cpp installLadderDrag (6140)"
+   },
+   {
+    "id": "draft-dirty-after-normalize",
+    "what": "ladderDraftFromServer normalizes the saved ladder unless Core reports errors in it, so the rows can show them. It is used by applyModeLadder and revertModeLadder. ladderDirty compares against the same normalized text, not raw rungs_text. The previous run made this fix and I checked it. Drive with saved '…hdr:none:25,…': typing 40 in Resolution 2 and then clearing it gives 'Saved on the camera.' with Save disabled.",
+    "where": "core/src/web/WebControlPage.cpp ladderDraftFromServer (5844), ladderDirty (5861)"
+   },
+   {
+    "id": "switching-note-cleared-by-earlier-request",
+    "what": "Each FPS click keeps its own `switching` target, sets fpsSwitchingTo only when it switches, and clears it in finally only if fpsSwitchingTo still equals its target. The previous run made this fix and I checked it. Drive: 50 then 24 overlapping; after the first reply the line still reads 'Switching to Resolution 1…'.",
+    "where": "core/src/web/WebControlPage.cpp FPS pill handler (~11515-11535)"
+   }
+  ],
+  "skipped": [],
+  "checks": "node extract.js on core/src/web/WebControlPage.cpp, then node --check on webtest/page-script.js: OK. hostcheck-core.sh: src/web/WebControlPage.cpp errors=0 warnings=0 (CameraController.cpp and ApertarCoreApp.cpp also 0/0 at the time of the run). Playwright drive (server.js started first, then node drive.js shots; drive log in /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34/webtest/drive.log): exit 0, 'console errors: none', horizontal overflow none at 1280 and at 390 px (main page, favorites format, record panel, after edit). Favorites step present: shots/desktop-16-favorites-format-locked.png shows Resolution, Crop Mode, Compression and Bit Depth locked (16-bit highlighted) with the note 'Mode Ladder on: the FPS picks the resolution and compression.' I added a shot, shots/desktop-17-ladder-probe-off-h264.png, for the probe-off H.264 ladder. Test harness changes: in webtest/server.js the probe off now sends sensor_area {0,0}, crop null and binning 0, and H.264/ProRes runtime states get the processed-video ceiling (as Core). In webtest/drive.js the probe-off section now checks crop tags, row 1 switched to Lossless JPEG, and Core's H.264 ceilings with the editor's own ladder (no 'Never used', an edit accepted, Revert works). I stopped the mock server afterwards. Saved snapshots in case the session ends: /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34fix/wip-webui.diff (full uncommitted WebControlPage.cpp diff against HEAD) and /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34fix/fixes-webui.diff (fix edits only, against the reviewed T34 version). Nothing committed; no Core C++ files touched."
+ },
+ "ui": {
+  "fixed": [
+   {
+    "id": "touch-format-line-overflows",
+    "what": "InfoLine gets an opt-in property, subMaximumLineCount (default 1, so other InfoLines are unchanged). Above 1, the sub Text uses Text.Wrap with that maximumLineCount and ElideRight as the last resort, so it never draws outside its column. The row grows by the extra lines through a new subExtraHeight (lineCount-1 lines; 0 for one line). The FORMAT InfoLine is now id formatInfoLine with subMaximumLineCount 4. In every landscape layout the stats Column is vertically centred, so its verticalCenterOffset now subtracts formatInfoLine.subExtraHeight/2; the column then grows upward only and its bottom stays put. On a rung (ladderRung > 0), a new formatLadderSubtext turns the spaces inside each part of Core's running line into no-break spaces, so the line wraps only at ' · '. The off-ladder text 'Mode Ladder on · the next FPS pick chooses the resolution' keeps normal word wrap. I used 4 lines, not 2: measured with Inter and DejaVu, the full line does not fit in two lines of any column (square 154 px needs 4, compact 120 px at 9 px needs 3), so two lines would elide part of Core's text.",
+    "where": "ui/qml/InfoLine.qml (subMaximumLineCount, subExtraHeight, height, sub Text id subText with wrapMode/maximumLineCount/elide); ui/qml/CameraPage.qml (formatLadderSubtext + formatDisplaySubtext ~line 525; bottom-left stats Column verticalCenterOffset and FORMAT InfoLine id/subMaximumLineCount ~line 3645)"
+   },
+   {
+    "id": "touch-ladder-toggle-silent-refusal",
+    "what": "The Mode Ladder Row is now id modeLadderRow with a property errorText. onToggled sets errorText to apertarControlBridge.lastError when applyModeLadderEnabled returns false, and to '' when it succeeds. A red line (#ffb097, the page's standbyError style, same size as the caption) under the caption shows the error. A Connections on apertarControlBridge (the page's typeof-guarded target idiom) clears it on ladderChanged. The switch already returns to Core's state: TogglePill never assigns checked, so `checked: ladderEnabled` stays bound. I added a comment saying so. No bridge change was needed: sendCoreCommand already puts Core's error in lastError.",
+    "where": "ui/qml/SettingsPage.qml, Mode Ladder Row (~lines 3296-3368)"
+   }
+  ],
+  "skipped": [],
+  "checks": "ninja -C .../t34/ui-build: InfoLine/CameraPage/SettingsPage qmlcache rebuilt, Apertar-UI linked, no warnings. I also rendered InfoLine offscreen (Qt 6.4.2, software backend, a local copy of the QtQml.WorkerScript module in scratchpad/qtdebs, test in scratchpad/infoline-test). Square 180 px column, running line: 4 lines, breaking only at ' · ', not truncated, height 56→104. Compact 136 px at 9 px: 3 lines, 38→60, inside the box. Standard 198 px: 4 lines. Off-ladder text: 3 lines with word wrap. Short 'Uncompressed' and a plain CPU InfoLine: height 56 and extra 0, as before. An overlong unbreakable word wraps inside the column. qmllint of CameraPage.qml, normalized and compared with the earlier lintnew run: identical. For SettingsPage.qml the only new warnings are the same kinds the file's existing Connections blocks and context-property bindings already produce (Connections not resolved in this lint environment; unqualified root/interRegular/apertarControlBridge), with no unknown ids. Every binding I touched refers to ids that exist: formatInfoLine, subText, modeLadderRow, modeLadderToggle, bottomControlsRow. Not changed: the bridge files, which needed nothing. Note for the orchestrator: in the default square layout the FORMAT row with 4 lines reaches about 34 px above the 158 px black bottom band, over the preview's bottom-left corner, which cannot be avoided if the full line is kept. Per the user's request, I saved the whole uncommitted UI diff (T34 plus these fixes) as a backup to /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34/agent-saves/fix-ui-touch-files.diff (reverse-apply check OK). Nothing committed."
+ }
+}
