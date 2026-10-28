@@ -588,3 +588,8 @@ Entry format:
 - **Confirmed**: storage keeps up (queue never above 2); the frames are lost before the recorder, a back-end/capture limit
   (design §6 rule, F10: 20 ms per frame at 50 vs up to 34.6 ms back-end time while recording). Next per §6: one take with
   `APERTAR_RAW_CAMERA_BUFFERS=8`. Until then a 50 fps rung is not usable at this size.
+- Repeat with `APERTAR_RAW_CAMERA_BUFFERS=8` (drop-in `zz-ladder-buffers.conf`, restart 22:20:11): `C0026` 2616 of ~2974,
+  **358 missing**, `dropped_queue_full=0`, `peak_queue=3/12`, steady single-frame `capture-gap`s (dt 40 ms) as before.
+  **Confirmed: not raw-buffer starvation.** About 6 frames/s never arrive (~44 of 50): probably the sensor/capture side at
+  3840x2076 (frame timing or CSI rate) rather than Core; unmeasured. Parked by Patrik for a longer test later (card nearly
+  full). 1080p at 50 is clean (`C0030`).
