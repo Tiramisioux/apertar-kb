@@ -18,8 +18,9 @@ Built by Claude on the Pi's `cinemate-port`, step by step (Patrik's choices). Re
 
 - One command: `set_value_steps name=iso|shutter_angle|fps|wb [values=v1,v2,…] [free=true|false] [increment=N]`;
   for `shutter_angle` also `[flicker_free=true|false] [mains_hz=50|60]`. `values=` empty → back to the built-in list.
-- State: the lists and settings in the existing `ui` object; `flicker_free_angles` (the angles added for the current FPS)
-  next to `iso_max` and `fps_max`.
+- State: the lists and settings in the existing `ui` object (the operator's list or the built-in one). **Built without** a
+  `flicker_free_angles` field: the formula is three lines, so Core, the WebUI and the touch UI each compute it from
+  `flicker_free_shutter_angles`, `mains_hz` and the current FPS (a duplicated truth, listed in `llm/core-map.md` §4).
 
 ## Flicker-free angles
 
