@@ -578,3 +578,13 @@ Entry format:
   queued, before its first frame; the visible blink (first frame) is not measured (M2). Far below the ~1 s the design would
   answer with a settle delay.
 - Drive at 78 % (727 GB used, 206 GB free) before M3; this morning 65 %.
+
+## 2026-10-28: T34 M3, 12-bit SDR at 50 fps, 60 s (3840x2076)
+
+- Core `b017004`, NVMe PCIe **Gen 3 x1** (8.0 GT/s), exFAT, drive 78 % → 82 % after; cDNG uncompressed, 3840x2076 (the 12-bit
+  crop mode Core allows 60 today; 3840x2160 SDR is still capped at 30, F5), speed ramp off.
+- `cDNG_26-10-28_C0025`: 2632 DNGs of ~2987, **355 missing**; `dropped_queue_full=0`, `peak_queue=2/12`, `write_failures=0`;
+  `dropped_gap_estimate=355`, 13 `drop[capture-gap]` lines. 30 GB.
+- **Confirmed**: storage keeps up (queue never above 2); the frames are lost before the recorder, a back-end/capture limit
+  (design §6 rule, F10: 20 ms per frame at 50 vs up to 34.6 ms back-end time while recording). Next per §6: one take with
+  `APERTAR_RAW_CAMERA_BUFFERS=8`. Until then a 50 fps rung is not usable at this size.
