@@ -29,6 +29,9 @@ What the Pi runs today is not known from the cloud. Check first: `ssh apertar 'g
 The cloud session could not compile `CameraController.cpp` (libcamera) or run anything on a Pi. What Patrik did on the Pi is
 not recorded in this export.
 
+> [!todo] 2026-10-28: **listen to the experimental stretched WAV** (`C0034_stretched.wav` under `cDNG_26-10-28_C0034` on a
+> 25 fps timeline). Length (36.360 s = 909/25) and pitch are measured; the sound is not checked yet. `ramp-ladder/README.md` 19.
+
 ## 2. Rules (unchanged, keep them)
 
 - `working/handoff-T26-T30.md` §2 and `working/mac-driven-loop.md`: Claude on the Mac, the Pi over `ssh apertar`, build on the

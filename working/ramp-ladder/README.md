@@ -38,7 +38,10 @@ with the decisions taken so far.
     (1000 Hz test tone) but land 20-50 ms off per tempo change (clicks at 5 s/8 s → 6.032/10.048 s with rubberband,
     5.949/9.963 with atempo), so a stepped ramp (~50 changes) would drift. Exact options: `rubberband-cli --timemap`
     (apt package; only `librubberband2` 3.3.0 is installed, no CLI, no headers), own WSOLA in Core, or ffmpeg per segment.
-    Engine not chosen yet.
+    Built 2026-10-28 as `78c980d` (+ `6ea848b`): Rubber Band CLI with a key-frame map, `<clip>_stretched.wav`, experimental,
+    on by default. **Open check (Patrik): listen to `C0034_stretched.wav`** (`/media/RAW/cDNG_26-10-28_C0034`) under the clip
+    on a 25 fps timeline in Resolve: does it follow the slow motion, any artefacts at the ramp steps? Length and pitch are
+    confirmed; the sound is not.
 20. **(2026-10-28) Ramp button** ("ramps up to a set fps and back"): the WebUI block's Ramp / Back is liked; a hardware
     button for it is not asked for yet.
 21. **(2026-10-28) `conform_fps`**, the project's timeline rate, default 25: `61d5bd0`. Nothing uses it yet.
