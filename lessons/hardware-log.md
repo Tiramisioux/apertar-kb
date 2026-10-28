@@ -625,3 +625,14 @@ Entry format:
   before the request (the request then switched to rung 2, by design); cause unknown, not reproduced; two takes of 3.0 and
   3.85 s ran just before it. Possibly a record/stop pressed on the camera during the run; leave the camera alone during tests.
 - Clear HDR 16-bit **lossless** overflows the queue: `dropped_queue_full=19`, `peak_queue=24/24` in a 6.5 s take at 24 fps.
+
+## 2026-10-28: T34 compression per resolution (Core d0cb727 + a7e67da), restart 23:09:36
+
+- `get_mode_ladder` keys: `resolutions`, `resolutions_text`, `running_resolution`, `ceiling`, `enabled`, `ramp_ready`, `pool`, `errors`, `warnings`.
+  Ladder `…hdr:25:none,…sdr::lossy_3to1`: dry run no errors, one warning; each resolution carries `compression` and
+  `compression_set`. `lossy_5to1` on a Clear HDR resolution is an error. **Confirmed.**
+- Ladder on: 24 fps → Clear HDR 16-bit **uncompressed cDNG**; 30 fps → SDR 12-bit **lossy DNG 3:1** (`recording_format`
+  `lossydng`, ratio 3to1); back to 24 → cDNG uncompressed. `set_cdng_compression` and `set_lossy_dng_ratio` refused with the
+  ladder message; MLV is still allowed with the ladder on. **Confirmed.**
+- Short take at 24 fps in Clear HDR 16-bit uncompressed: 137 DNGs, `dropped_queue_full=0`, `peak_queue=2/12` (lossless in the
+  same mode dropped 19 in 6.5 s). **Confirmed.**
