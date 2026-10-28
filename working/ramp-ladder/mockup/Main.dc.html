@@ -39,7 +39,7 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <div style="display: flex; gap: 12px; justify-content: space-between; align-items: flex-start;">
 <div>
 <h2 id="ladderTitle" style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Mode Ladder</h2>
-<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">Switches resolution automatically when you change FPS. Each resolution runs up to its FPS limit, then the next one takes over.</p>
+<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">Switches resolution automatically when you change FPS. Each resolution runs to its max FPS, then the next one takes over.</p>
 </div>
 <div style="{{ statusPill.style }}">{{ statusPill.label }}</div>
 </div>
@@ -49,9 +49,10 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <div style="font-size: 15px; font-weight: 600;">Activate ladder</div>
 <div style="font-size: 13px; color: #a1a1aa; margin-top: 4px;">{{ switchNote }}</div>
 </div>
-<button type="button" role="switch" aria-checked="{{ switchChecked }}" aria-label="Activate ladder" onClick="{{ toggleOn }}" style="{{ switchTrack }}">
-<span style="{{ switchKnob }}"></span>
-</button>
+<div role="group" aria-label="Activate ladder" style="display: grid; grid-template-columns: repeat(2, 88px); gap: 8px;">
+<button type="button" aria-pressed="{{ ladderOffPressed }}" onClick="{{ ladderOff }}" style="{{ ladderOffStyle }}">Off</button>
+<button type="button" aria-pressed="{{ ladderOnPressed }}" onClick="{{ ladderOnPick }}" style="{{ ladderOnStyle }}">On</button>
+</div>
 </div>
 
 <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 18px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72);">
@@ -114,7 +115,7 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </div>
 <div style="display: flex; gap: 12px; align-items: flex-start; flex: 0 0 auto;">
 <div style="display: flex; flex-direction: column; gap: 4px; flex: 0 0 120px;">
-<label for="{{ rung.inputId }}" style="font-size: 11px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Up to (fps)</label>
+<label for="{{ rung.inputId }}" style="font-size: 11px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Max (fps)</label>
 <input id="{{ rung.inputId }}" type="number" inputmode="numeric" step="1" min="{{ rung.minFps }}" max="{{ rung.ceiling }}" placeholder="{{ rung.placeholder }}" value="{{ rung.thr }}" onChange="{{ rung.setThr }}" style="{{ rung.inputStyle }}">
 <span style="font-size: 12px; color: #a1a1aa;">{{ rung.ceilingText }}</span>
 </div>
@@ -177,9 +178,10 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </div>
 <div style="display: flex; align-items: center; gap: 12px;">
 <span style="font-size: 15px; font-weight: 600;">Allow speed ramping</span>
-<button type="button" role="switch" aria-checked="{{ rampChecked }}" aria-label="Allow speed ramping" onClick="{{ toggleRamp }}" style="{{ rampTrack }}">
-<span style="{{ rampKnob }}"></span>
-</button>
+<div role="group" aria-label="Allow speed ramping" style="display: grid; grid-template-columns: repeat(2, 88px); gap: 8px;">
+<button type="button" aria-pressed="{{ rampOffPressed }}" onClick="{{ rampOff }}" style="{{ rampOffStyle }}">Off</button>
+<button type="button" aria-pressed="{{ rampOnPressed }}" onClick="{{ rampOnPick }}" style="{{ rampOnStyle }}">On</button>
+</div>
 </div>
 </section>
 
@@ -188,27 +190,36 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <h2 id="modesTitle" style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Activated sensor modes</h2>
 <p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">From the sensor probe at start: 42 modes on this IMX585. Add the ones you want on the ladder. Ceilings are Core's, capped at the build maximum.</p>
 </div>
-<div style="display: flex; flex-wrap: wrap; gap: 8px;">
-<sc-for list="{{ groupFilters }}" as="f" hint-placeholder-count="5">
-<button type="button" onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="{{ f.style }}">{{ f.label }}</button>
-</sc-for>
-<span style="width: 1px; background: #27272a; margin: 0 4px;" aria-hidden="true"></span>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;" role="group" aria-label="Bit depth">
 <sc-for list="{{ depthFilters }}" as="f" hint-placeholder-count="3">
 <button type="button" onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="{{ f.style }}">{{ f.label }}</button>
 </sc-for>
 </div>
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px;">
-<sc-for list="{{ catalog }}" as="m" hint-placeholder-count="8">
-<div style="display: flex; gap: 10px; align-items: center; padding: 12px 12px 12px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.08); background: #202024;">
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<sc-for list="{{ modeGroups }}" as="g" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 8px;">
+<button type="button" aria-expanded="{{ g.expanded }}" aria-controls="{{ g.listId }}" onClick="{{ g.toggle }}" style="display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 16px; border-radius: 16px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72); color: #f4f4f5; font-family: inherit; font-size: 15px; font-weight: 600; text-align: left; cursor: pointer;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="{{ g.chevronStyle }}"><path d="M9 6l6 6-6 6"></path></svg>
+<span style="flex: 1 1 auto;">{{ g.label }}</span>
+<span style="font-size: 13px; font-weight: 400; color: #a1a1aa;">{{ g.countText }}</span>
+</button>
+<sc-if value="{{ g.isOpen }}" hint-placeholder-val="{{ true }}">
+<div id="{{ g.listId }}" style="display: flex; flex-direction: column; gap: 8px;">
+<sc-for list="{{ g.items }}" as="m" hint-placeholder-count="3">
+<div style="display: flex; gap: 14px; align-items: center; padding: 12px 12px 12px 16px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.08); background: #202024;">
 <div aria-hidden="true" title="{{ m.cropTitle }}" style="{{ m.frameStyle }}">
 <div style="{{ m.winStyle }}"></div>
 <span style="{{ m.tagStyle }}">{{ m.tag }}</span>
 </div>
 <div style="flex: 1 1 auto; min-width: 0;">
-<div style="font-size: 14px; font-weight: 600;">{{ m.name }}</div>
-<div style="font-size: 12px; color: #a1a1aa; margin-top: 3px;">{{ m.meta }}</div>
+<div style="font-size: 15px; font-weight: 600;">{{ m.name }}</div>
+<div style="font-size: 13px; color: #a1a1aa; margin-top: 3px;">{{ m.meta }}</div>
 </div>
 <button type="button" disabled="{{ m.addDisabled }}" title="{{ m.addWhy }}" onClick="{{ m.add }}" aria-label="{{ m.addLabel }}" style="{{ m.addStyle }}">{{ m.addText }}</button>
+</div>
+</sc-for>
+</div>
+</sc-if>
 </div>
 </sc-for>
 </div>
@@ -230,7 +241,7 @@ class Component extends DCLogic {
       rungs: initial,
       dragId: null,
       overIndex: -1,
-      group: 'all',
+      open: { chdr: true, '4k': true, crop: false, '2k': false },
       depth: '12',
       notice: '',
     };
@@ -435,7 +446,7 @@ class Component extends DCLogic {
       if (comp.indexOf('lossy') === 0 && m.cls.indexOf('Clear HDR') === 0) problem = 'Lossy DNG cannot record Clear HDR. Pick Uncompressed or Lossless JPEG.';
       else if (!Number.isFinite(thrNum) || thrNum <= 0) problem = 'Enter an FPS, or leave it empty for ' + ceiling + '.';
       else if (thrNum > ceiling) problem = 'Above this mode’s ceiling of ' + ceiling + ' fps.';
-      else if (ceiling <= prev) problem = 'Never used: the resolutions above already cover up to ' + prev + ' fps.';
+      else if (ceiling <= prev) problem = 'Never used: the resolutions above already reach ' + prev + ' fps.';
       else if (thrNum <= prev) problem = 'Must be above ' + prev + ' fps, where the resolution above stops.';
       const from = prev;
       const top = problem ? from : Math.max(prev, thrNum);
@@ -485,7 +496,7 @@ class Component extends DCLogic {
         setComp: (e) => this.setRungs(st.rungs.map((x, j) => (j === i ? { ...x, comp: e.target.value } : x))),
         name: m.name,
         meta: m.size + ' · ' + m.aspect + ' · ' + m.depth + '-bit · ' + m.cls,
-        rangeText: problem ? 'Not used' : (from === 0 ? 'Lowest FPS' : 'Above ' + from) + ' up to ' + top + ' fps',
+        rangeText: problem ? 'Not used' : (from === 0 ? 'Lowest FPS' : 'Above ' + from) + ', max ' + top + ' fps',
         hasProblem: problem !== '',
         problem,
         ceiling,
@@ -594,22 +605,14 @@ class Component extends DCLogic {
       };
     });
 
-    // catalog
+    // activated sensor modes: one column, in collapsible groups
     const onIds = st.rungs.map((r) => r.id);
-    const groups = [['all', 'All'], ['chdr', 'Clear HDR'], ['4k', '4K SDR'], ['crop', '3840 wide'], ['2k', '2K binned']];
     const depths = [['12', '12-bit'], ['10', '10-bit'], ['all', 'Any depth']];
-    const groupFilters = groups.map(([k, label]) => ({
-      label, pressed: st.group === k ? 'true' : 'false', pick: () => this.setState({ group: k }),
-      style: { ...pill(st.group === k), padding: '0 16px' },
-    }));
     const depthFilters = depths.map(([k, label]) => ({
       label, pressed: st.depth === k ? 'true' : 'false', pick: () => this.setState({ depth: k }),
       style: { ...pill(st.depth === k), padding: '0 16px' },
     }));
-    const catalog = this.modes()
-      .filter((m) => st.group === 'all' || m.group === st.group)
-      .filter((m) => st.depth === 'all' || m.depth === st.depth || m.group === 'chdr')
-      .map((m) => {
+    const tile = (m) => {
         const idx = onIds.indexOf(m.id);
         const ceiling = Math.min(m.max, buildMax);
         const cr = this.cropOf(m, 65, 40);
@@ -622,7 +625,7 @@ class Component extends DCLogic {
           cropTitle: cr.title,
           binned: cr.binned,
           name: m.name,
-          meta: m.size + ' · ' + m.aspect + ' · ' + m.cls + ' · up to ' + ceiling + ' fps' + (cr.cropped ? ' · crop in' : '') + ' · ' + this.sizeMB(m, 'none').toFixed(1) + ' MB/frame',
+          meta: m.size + ' · ' + m.aspect + ' · ' + m.cls + ' · max ' + ceiling + ' fps' + (cr.cropped ? ' · crop in' : '') + ' · ' + this.sizeMB(m, 'none').toFixed(1) + ' MB/frame',
           onLadder: idx >= 0,
           addText: idx >= 0 ? 'Resolution ' + (idx + 1) : 'Add',
           addLabel: idx >= 0 ? m.name + ' is resolution ' + (idx + 1) : 'Add ' + m.name + ' to the ladder',
@@ -636,7 +639,23 @@ class Component extends DCLogic {
             background: idx >= 0 ? 'transparent' : '#ffffff', color: idx >= 0 ? '#a1a1aa' : '#09090b', cursor: idx >= 0 ? 'default' : 'pointer',
           },
         };
-      });
+    };
+    const GROUPS = [['chdr', 'Clear HDR'], ['4k', '4K SDR'], ['crop', '3840 wide crops'], ['2k', '2K binned']];
+    const modeGroups = GROUPS.map(([k, label]) => {
+      const items = this.modes()
+        .filter((m) => m.group === k && (st.depth === 'all' || m.depth === st.depth || k === 'chdr'))
+        .map(tile);
+      const used = items.filter((t) => t.onLadder).length;
+      const isOpen = !!st.open[k];
+      return {
+        label, items, isOpen,
+        expanded: isOpen ? 'true' : 'false',
+        listId: 'modes-' + k,
+        countText: items.length + (items.length === 1 ? ' mode' : ' modes') + (used ? ' \u00b7 ' + used + ' on the ladder' : ''),
+        toggle: () => this.setState({ open: { ...st.open, [k]: !isOpen } }),
+        chevronStyle: { flex: '0 0 16px', transform: isOpen ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s ease' },
+      };
+    });
 
     const gapText = covered < buildMax
       ? 'Above ' + covered + ' fps no resolution can run: FPS stops at ' + covered + '. Add a resolution or raise a threshold.'
@@ -650,29 +669,21 @@ class Component extends DCLogic {
           ? { borderRadius: '999px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }
           : { borderRadius: '999px', background: 'rgba(161, 161, 170, 0.12)', color: '#d4d4d8', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' },
       },
-      rampChecked: st.rampOn ? 'true' : 'false',
-      toggleRamp: () => this.setState({ rampOn: !st.rampOn }),
-      rampTrack: {
-        width: '58px', height: '34px', borderRadius: '999px', border: st.rampOn ? '1px solid rgba(52, 211, 153, 0.6)' : '1px solid #3f3f46',
-        background: st.rampOn ? '#059669' : '#27272a', position: 'relative', cursor: 'pointer', flex: '0 0 58px', padding: 0,
-      },
-      rampKnob: {
-        position: 'absolute', top: '3px', left: st.rampOn ? '27px' : '3px', width: '26px', height: '26px', borderRadius: '999px',
-        background: '#ffffff', transition: 'left 0.15s ease',
-      },
-      switchChecked: on ? 'true' : 'false',
+      rampOffPressed: st.rampOn ? 'false' : 'true',
+      rampOnPressed: st.rampOn ? 'true' : 'false',
+      rampOff: () => this.setState({ rampOn: false }),
+      rampOnPick: () => this.setState({ rampOn: true }),
+      rampOffStyle: { ...pill(!st.rampOn), textAlign: 'center' },
+      rampOnStyle: { ...pill(st.rampOn), textAlign: 'center' },
       switchNote: on
         ? 'On: changing FPS switches resolution.'
         : 'Off: changing FPS never switches resolution.',
-      toggleOn: () => this.setState({ on: !on }),
-      switchTrack: {
-        width: '58px', height: '34px', borderRadius: '999px', border: on ? '1px solid rgba(52, 211, 153, 0.6)' : '1px solid #3f3f46',
-        background: on ? '#059669' : '#27272a', position: 'relative', cursor: 'pointer', flex: '0 0 58px', padding: 0,
-      },
-      switchKnob: {
-        position: 'absolute', top: '3px', left: on ? '27px' : '3px', width: '26px', height: '26px', borderRadius: '999px',
-        background: '#ffffff', transition: 'left 0.15s ease',
-      },
+      ladderOffPressed: on ? 'false' : 'true',
+      ladderOnPressed: on ? 'true' : 'false',
+      ladderOff: () => this.setState({ on: false }),
+      ladderOnPick: () => this.setState({ on: true }),
+      ladderOffStyle: { ...pill(!on), textAlign: 'center' },
+      ladderOnStyle: { ...pill(on), textAlign: 'center' },
       nowText,
       nowNote,
       ...(() => {
@@ -703,12 +714,11 @@ class Component extends DCLogic {
       buildMax,
       segments,
       ticks,
-      coverageLabel: 'FPS coverage from 1 to ' + buildMax + ': ' + rungs.filter((r) => r._ok).map((r) => 'resolution ' + r.number + ' up to ' + r._top).join(', '),
+      coverageLabel: 'FPS coverage from 1 to ' + buildMax + ': ' + rungs.filter((r) => r._ok).map((r) => 'resolution ' + r.number + ' max ' + r._top).join(', '),
       hasGap: on && gapText !== '',
       gapText,
-      groupFilters,
       depthFilters,
-      catalog,
+      modeGroups,
     };
   }
 }

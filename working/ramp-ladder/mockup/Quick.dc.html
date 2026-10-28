@@ -81,7 +81,7 @@ body{margin:0;background:#000000}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    // The ladder from the Mode Ladder pane: resolution 1 up to 25 fps, resolution 2 up to 50 fps.
+    // The ladder from the Mode Ladder pane: resolution 1 max 25 fps, resolution 2 max 50 fps.
     this.ladder = [
       { name: '4K Clear HDR 16-bit', size: '3840×2160', cls: 'ClearHDR16', top: 25, comp: 'Uncompressed', cropped: false },
       { name: '4K SDR 12-bit', size: '3840×2160', cls: 'SDR12', top: 50, comp: 'Uncompressed', cropped: false },
