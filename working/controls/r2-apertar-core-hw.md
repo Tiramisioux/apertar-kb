@@ -31,13 +31,13 @@ Citation key. Core paths are relative to the Core tree and pinned `@eb9cc39`; `A
 
 ### 1.1 Candidate paths and which file wins
 
-All Core readers build the same candidate list: `$APERTAR_HARDWARE_CONFIG` (if set and non-empty), `/home/pi/apertar-hardware.conf`, `/boot/firmware/apertar-hardware.conf`, `/boot/apertar-hardware.conf`, de-duplicated. CONFIRMED: `App:4288-4311`, `HW/GpioInput.cpp:55-76`, `HW/Pcf8574Input.cpp:55-76`, `HW/NeoRotary4Input.cpp:68-89`, `HW/GroveAnalogInput.cpp:54-65`, `HW/TriggerOutput.cpp:70-81`, `HW/RecordingIndicatorOutput.cpp:67-78`, `HW/Mpu6050RecordingSession.cpp:186-199`, Python helper `App:3428-3443`. No unit file sets `APERTAR_HARDWARE_CONFIG` in either repo (grep over `*.service`, `*.sh`, `*.conf`): PROBABLE that it is unset on a stock Pi.
+All Core readers build the same candidate list: `$APERTAR_HARDWARE_CONFIG` (if set and non-empty), `/home/pi/apertar-hardware.conf`, `/boot/firmware/apertar-hardware.conf`, `/boot/apertar-hardware.conf`, de-duplicated. CONFIRMED: `App:4288-4311`, `HW/GpioInput.cpp:55-76`, `HW/Pcf8574Input.cpp:55-76`, `HW/NeoRotary4Input.cpp:68-89`, `HW/GroveAnalogInput.cpp:54-65`, `HW/TriggerOutput.cpp:70-81`, `HW/RecordingIndicatorOutput.cpp:67-78`, `HW/Mpu6050RecordingSession.cpp:186-199`, Python helper `App:3429-3443`. No unit file sets `APERTAR_HARDWARE_CONFIG` in either repo (grep over `*.service`, `*.sh`, `*.conf`): PROBABLE that it is unset on a stock Pi.
 
 But they do not agree on *which* candidate wins:
 
 | Rule | Readers | Cite | Label |
 | --- | --- | --- | --- |
-| First file that exists, whether or not it has the section | INA219, CFE hat (Core), trigger output, recording LED, IMU (first file that opens), Python reinsert helper, UI automounter | `App:4497-4545`, `App:4557-4597`, `HW/TriggerOutput.cpp:256-356`, `HW/RecordingIndicatorOutput.cpp:252-396`, `HW/Mpu6050RecordingSession.cpp:855-1029`, `App:3470`, `UI/src/CfeAutomounter.cpp:131-145` | CONFIRMED |
+| First file that exists, whether or not it has the section | INA219, CFE hat (Core), trigger output, recording LED, IMU (first file that opens), Python reinsert helper, UI automounter | `App:4497-4545`, `App:4557-4597`, `HW/TriggerOutput.cpp:256-356`, `HW/RecordingIndicatorOutput.cpp:252-396`, `HW/Mpu6050RecordingSession.cpp:855-1029`, `App:3472`, `UI/src/CfeAutomounter.cpp:131-145` | CONFIRMED |
 | First file that *contains the section*; otherwise keep looking | GPIO, PCF8574, NeoRotary4, Grove analog | `HW/GpioInput.cpp:498-499`, `HW/Pcf8574Input.cpp:385-386`, `HW/NeoRotary4Input.cpp:439-440`, `HW/GroveAnalogInput.cpp:350-351` | CONFIRMED |
 | Fixed path: env var or `/home/pi/…`, never `/boot` | WebUI editor (read and write), script runner, UI hotspot delay | `editableHardwareConfigPath()` `App:4313-4318` used at `App:5432`, `App:5483`, `App:8841`; `UI/src/WifiBridge.cpp:19-35` | CONFIRMED |
 
@@ -122,7 +122,7 @@ Core never reads it; it only appears in Core's template (`App:4354-4371`). The U
 | value | optional `'…'`/`"…"` quoting; unquoted values cut at `#`/`;`; must be absolute, a regular readable file | `:69-79`, `:88-90` | CONFIRMED |
 | file size | config > 256 KiB → error | `:40-41` | CONFIRMED |
 
-Execution: `/bin/bash -- <script>`, cwd = script's directory, stdin `/dev/null`, fds ≥ 3 closed, own process group, inherits Core's environment and user (`:207-238`). One job at a time; at most 5 queued or running; a pending/running duplicate (same slot, or slot 0 = "all") is dropped; `stop()` sends SIGTERM to the group, SIGKILL after 2 s (`:122-142`, `:151-166`). Core passes `editableHardwareConfigPath()` (`App:8841`). CONFIRMED.
+Execution: `/bin/bash -- <script>`, cwd = script's directory, stdin `/dev/null`, fds ≥ 3 closed, own process group, inherits Core's environment and user (`:207-240`). One job at a time; at most 5 queued or running; a pending/running duplicate (same slot, or slot 0 = "all") is dropped; `stop()` sends SIGTERM to the group, SIGKILL after 2 s (`:122-143`, `:151-166`). Core passes `editableHardwareConfigPath()` (`App:8841`). CONFIRMED.
 
 #### `[imu]` and the driver sections `[mpu6050]`/`[bmi160]`/`[bmi270]`/`[icm42688p]`/`[gyro]`. Reader `Mpu6050RecordingSession::loadConfig` `HW/Mpu6050RecordingSession.cpp:851-1033`; defaults `HW/Mpu6050RecordingSession.hpp:95-121`.
 
@@ -406,7 +406,7 @@ Order matters: the checks run top to bottom, first match wins. Socket form is `{
 | 22 | `timelapse` | `timelapse_stop` / `timelapse_start value format` | | `App:9072-9082` | CONFIRMED |
 | 23 | `eject` | `eject_media` | ignored while recording or timelapse | `App:9084-9091` | CONFIRMED |
 | 24 | `still_mode` | `set_photo_mode_enabled enabled=!current` + event | | `App:9093-9099` | CONFIRMED |
-| 25 | `focus_peaking`, `zebra`, `false_color`, `guides`, `center_marker`, `grayscale`, `smpte`, `external_monitor`, `date_time_overlay`, `audio_meter` | `set_<name>_enabled enabled=!current` + event `hardware_action <name>` | groups flip each independently (README) | `App:9101-9140`, `:8646-8656`; `README.md:174` | CONFIRMED |
+| 25 | `focus_peaking`, `zebra`, `false_color`, `guides`, `center_marker`, `grayscale`, `smpte`, `external_monitor`, `date_time_overlay`, `audio_meter` | `set_<name>_enabled enabled=!current` + event `hardware_action <name>` | groups flip each independently (README) | `App:9101-9140`, `:8646-8656`; `README.md:175` | CONFIRMED |
 | 26 | `settings`, `clip_browser`, `quick_menu` | event `hardware_action <name>` only | touch UI opens settings / browser / quick menu (`UI/qml/Main.qml:313-330`) | `App:9142-9145` | CONFIRMED |
 | 27 | anything else | none | `Hardware input action ignored: unknown action` | `App:9147` | CONFIRMED |
 | — | power button (not mappable) | `wake`, event `power_button_press`, or `enter_standby` | §2.6 | `App:8786-8806` | CONFIRMED |
@@ -417,9 +417,9 @@ Not expressible as a hardware action today (no branch): `iso_auto`, `wb_auto`, `
 
 - Up to 6 items (`HW/ButtonActionList.hpp:14`, `:88-91`), comma-separated; spaces allowed; an empty item (`a,,b`) rejects the whole mapping (`:92-95`); duplicates are removed (`:103-104`); an LED token may only stand alone (`:96-100`). CONFIRMED.
 - Run sequentially, each its own `handleCommand`, under one sequence lock so two buttons' groups do not interleave (`App:8818-8836`). A failure in one item does not stop the next (replies are only logged, `App:8641-8642`). CONFIRMED.
-- `standby` should be last: the loop breaks once the camera is in standby (`App:8834`; template advice `App:4401-4402`). CONFIRMED.
+- `standby` should be last: the loop breaks once the camera is in standby (`App:8834`; template advice `App:4402-4403`). CONFIRMED.
 - Works for encoder directions too (`encoder0_cw=iso_up,wb_up`), minus `standby`. CONFIRMED (`App:8832`).
-- README's example: `P0=iso200,fps24,wb5600`, `P1=focus_peaking,zebra`, `P2=capture` (`README.md:168-172`). CONFIRMED.
+- README's example: `P0=iso200,fps24,wb5600`, `P1=focus_peaking,zebra`, `P2=capture` (`README.md:169-173`). CONFIRMED.
 
 ### 3.5 Analog targets (`[grove_analog] aN=…`)
 
@@ -549,7 +549,7 @@ Derived by comparing this report with R1 §1.4-§1.9 and §2.1; labels are PROBA
 
 1. Which UI bridge writes the missing-file template first on a fresh image (`DisplayConfigBridge` vs `Ina219Bridge`), and therefore whether `[network]`, `[neorotary4]`, `[gpio_*]`, `[grove_analog]` are present on Patrik's Pi.
 2. Whether the seesaw encoder delta is one count per detent on the NeoRotary 4 (affects whether `max_events_per_poll` or a `steps_per_event` is needed).
-3. Whether `ApertarCore` runs as `pi` (template says scripts run "as pi"; README says "the Core service user"); the unit file is not in the Core tree.
+3. Whether `ApertarCore` runs as `pi` (template says scripts run "as pi" (`App:4376`); README says "the Core service user" (`README.md:177`)); the unit file is not in the Core tree.
 4. Whether GPIO line requests on 2/3 with I2C1 enabled fail with EBUSY on the Pi 5 kernel in use (needs the Pi).
 5. Whether the PCF8574 sharing hazards in §2.14 show up in practice (needs a PCF with a button, the trigger and the LED on one chip).
 6. The UI repo's `GyroConfigBridge` writer details and when `Ina219Bridge` and `WifiBridge` read the file were not traced line by line.

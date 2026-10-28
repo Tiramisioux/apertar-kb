@@ -1,0 +1,45 @@
+From 54c20a614f9d070964aacbe119133e125d58e23e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 27 Oct 2026 21:11:18 +0000
+Subject: [PATCH 1/2] ui: 4K Clear HDR 16-bit offers FPS up to 25
+
+Why: Core caps 4K Clear HDR 16-bit at 25 fps (at 30 the back end delivers
+about 28 and drops frames; Patrik accepted 25 as the observed maximum on
+2026-10-27). The touch UI still offered 30, which Core would clamp.
+What: maximumSupportedFpsForResolution() returns 25 for 3840x2160 when
+Clear HDR is active at 16 bit, so availableFpsOptions() and
+maximumSelectableFps() end at 25 in that mode. 12-bit Clear HDR and SDR 4K
+keep 30.
+
+Tested: not built here (Qt is not on the host); one expression changed.
+
+Rebased onto d8098d0 (2026-10-28): the 25 sits on top of Patrik's expression
+(Clear HDR 30, SDR 60 per the sensor probe), so 12-bit Clear HDR keeps 30 and
+SDR 4K keeps 60. His availableFpsOptions() still lifts 16-bit Clear HDR to 50
+while Core switches to 12-bit SDR above 25, so the list there stays
+25/33/50. Host build with Qt 6.4.2.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ qml/CameraPage.qml | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/qml/CameraPage.qml b/qml/CameraPage.qml
+index 454fb0a..0053bba 100644
+--- a/qml/CameraPage.qml
++++ b/qml/CameraPage.qml
+@@ -784,8 +784,9 @@ function maximumSupportedFpsForResolution(resolutionValue) {
+ 
+     if (root.imx585Detected) {
+         var imx585Max = 60.0
++        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if (resolutionValue === "3856x2180" || resolutionValue === "3840x2160")
+-            imx585Max = root.clearHdrActive ? 30.0 : 60.0   // SDR 60 per the sensor probe (2026-10-27; temporary)
++            imx585Max = root.clearHdrActive ? (root.rawBitDepthValue === "16-bit" ? 25.0 : 30.0) : 60.0   // SDR 60 per the sensor probe (2026-10-27; temporary)
+         else if (resolutionValue === "3840x2024" ||
+                  resolutionValue === "3840x2076" ||
+                  resolutionValue === "3840x1920" ||
+-- 
+2.43.0
+

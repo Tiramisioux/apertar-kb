@@ -12,8 +12,9 @@ Saved as work in progress. Nothing here is on Apertar-Core or Apertar-UI GitHub.
 | T34 | coded in Core, WebUI and touch UI (`patches/wip-core.diff`, `patches/wip-ui.diff`, not committed). `ModeLadder.hpp` + `mode_ladder_test.cpp` (52 checks) + `core_ladder_probe_test.cpp` |
 | Checks | g++ -fsyntax-only of CameraController.cpp, ApertarCoreApp.cpp, WebControlPage.cpp with libcamera-apertar headers (`hostcheck-core.sh`): 0 errors, 0 warnings; node --check; Playwright drive of the WebUI against a mock (`webtest/`, screenshots); the touch UI builds with Qt 6.4.2 |
 | Critique | 23 findings, 19 confirmed (`critique-confirmed.json`), 13 distinct defects |
-| Fixes | in progress when the container restarted 2026-10-28; partial edits are in the WIP diffs and are re-checked before commit |
-| Next | finish fixes, commit T34, rebase the whole series (T31-T34) onto Patrik's GitHub tips (Core `eb9cc39`, UI `d8098d0`: his "temp:" Clear HDR switch in setFps is what the ladder `3840x2160:16:hdr:none:25,3840x2160:12:sdr:lossless_jpeg` does), tutorials T33/T34, the complementary zip |
+| Fixes | all 13 distinct defects fixed and re-checked; T34 committed in the scratch trees (Core `1164414` camera, `1ab0e37` web; UI `d5ebde4`) |
+| Patches | `patches-on-6ae70b5/` (the full reviewed series: Core T31, T32 x2, T33, T34 x2; UI T32 x2, T33, T34) |
+| Stopped | the rebase onto Patrik's tips (partial: `patches-tip/`) and the T33/T34 tutorials and zip: Patrik builds T33 and T34 with Claude in VS Code (2026-10-28). This folder is reference for that work |
 
 ## Controls project (Cinemate GPIO dropdown and method assignment, I2C devices, the NeoRotary 4 fix)
 

@@ -1,0 +1,93 @@
+From dd0ebcc848e54f4977aeae9365358862b6130e16 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 27 Oct 2026 21:03:35 +0000
+Subject: [PATCH 2/3] camera: cap 4K Clear HDR 16-bit at 25 fps
+
+Why: at 30 fps the 16-bit Clear HDR stream delivers about 28 fps and
+drops frames; the back end is the limit (KB
+working/research-30fps-answer.md). Patrik accepted 25 fps as the
+observed maximum on 2026-10-27.
+What: tableMaximumFpsForResolution() returns 25 for 3840x2160 Clear HDR
+at 16 bit, so sanitizeSettingsForSensor(), set_fps and the ramp_fps
+stepper all stop there. The WebUI's maximumSupportedFpsForSnapshot()
+follows, so its FPS pills end at 25 in that mode, and so does Core's own
+list for the PCF pot and the fps/fps_up/fps_down buttons
+(maximumPcfFpsForSettings in ApertarCoreApp.cpp): at 30 the fps cycle
+button would stick at 25, because Core clamps the 30 it asks for. Clear HDR 12-bit and
+SDR 4K keep 30.
+
+Tested: host g++ -fsyntax-only of WebControlPage.cpp and ApertarCoreApp.cpp; CameraController.cpp
+needs libcamera (Pi build).
+
+Rebased onto eb9cc39 (2026-10-28): the 16-bit cap sits on top of
+Patrik's 4K table (Clear HDR 12-bit 30 with the probe, 25 without; SDR
+60 with the probe, 30 without) in tableMaximumFpsForResolution,
+maximumPcfFpsForSettings and the WebUI's maximumSupportedFpsForSnapshot.
+His lists still offer up to 50 in 16-bit Clear HDR (Math.max in the
+WebUI, the 12-bit SDR limits in availablePcfFpsOptions), because his
+setFps switches to 12-bit SDR above 25.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ src/ApertarCoreApp.cpp          | 3 ++-
+ src/camera/CameraController.cpp | 7 ++++++-
+ src/web/WebControlPage.cpp      | 3 ++-
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 71c37d3..21a386e 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -1162,9 +1162,10 @@ double maximumPcfFpsForSettings(const CaptureSettings &settings, const std::stri
+     if (sensor.find("imx585") != std::string::npos) {
+         // 4K: 30 in Clear HDR, 60 in SDR (sensor probe, 2026-10-26); this table
+         // said 30 for both, which kept the rotary out of SDR's upper rates.
++        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if ((width == 3856 && height == 2180) ||
+             (width == 3840 && height == 2160))
+-            return settings.clearHdr ? 30.0 : 60.0;
++            return settings.clearHdr ? (settings.rawBitDepth == 16 ? 25.0 : 30.0) : 60.0;
+         if ((width == 1928 && height == 1090) ||
+             (width == 1920 && height == 1080))
+             return 60.0;
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 51b78bb..0265e21 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -2780,11 +2780,16 @@ double tableMaximumFpsForResolution(SensorFamily sensorFamily, Resolution reques
+             return 11.72;
+         break;
+     case SensorFamily::Imx585:
+-        if (normalized.width == 3840 && normalized.height == 2160)
++        if (normalized.width == 3840 && normalized.height == 2160) {
++            // Clear HDR 16-bit: 25 fps is the accepted ceiling. At 30 the back end
++            // delivers about 28 and drops frames (KB working/research-30fps-answer.md).
++            if (clearHdr && normalizeRawBitDepth(rawBitDepth) == 16)
++                return 25.0;
+             // Clear HDR doubles VMAX: 30 fps at link 891 MHz, 25 at the driver's default 720 MHz.
+             // SDR: 60 once the startup probe confirms it (it does, 2026-10-26), else 30
+             // (was 30 always; Patrik wants 33 and 50, 2026-10-27; temporary).
+             return clearHdr ? (sensorLimitKnown ? 30.0 : 25.0) : (sensorLimitKnown ? 60.0 : 30.0);
++        }
+         if (isImx585Raw12CropResolution(normalized))
+             return 60.0;
+         if ((normalized.width == 1920 && normalized.height == 1080) ||
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index f28c16e..89942a0 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -4974,8 +4974,9 @@ std::string_view webControlPageHtml()
+       }
+ 
+       if (sensorLower.indexOf("imx585") !== -1) {
++        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if ((width === 3856 && height === 2180) || (width === 3840 && height === 2160))
+-          return snapshot && snapshot.clear_hdr ? 30.0 : 60.0;   // SDR 60 per the sensor probe (2026-10-27; temporary)
++          return snapshot && snapshot.clear_hdr ? (Number(snapshot.raw_bit_depth) === 16 ? 25.0 : 30.0) : 60.0;   // SDR 60 per the sensor probe (2026-10-27; temporary)
+         if (width === 3840 && (height === 2076 || height === 2024 || height === 1920 || height === 1744
+             || height === 1728 || height === 1632 || height === 1608 || height === 1536 || height === 1504))
+           return 60.0;
+-- 
+2.43.0
+

@@ -1,0 +1,102 @@
+From e3a1a0438027d4f2973823f70bffcfd0dab5b50b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 28 Oct 2026 19:01:21 +0000
+Subject: [PATCH 3/4] ui: FPS list stops at Core's fps_max
+
+Why: Core now publishes its own FPS ceiling, fps_max (T33): the mode's
+limit from its table and the sensor probe, capped at the build maximum
+in apertar-hardware.conf ([camera] max_fps). The touch UI's own table
+still stopped 4K SDR at 30 and knew nothing of the build maximum, so
+the picker offered rates Core would clamp and hid ones it accepts.
+What: the bridge has an fpsMax property (fpsMaxChanged), read from
+fps_max in applyCoreState(), which handles get_state, command replies
+and Core's settings event. availableFpsOptions() takes it as the
+maximum when it is above 0; the QML table stays for a Core that does
+not send it. The H.264, IMX477 uncompressed and lossless caps still
+apply on top. The FPS picker and maximumSelectableFps() follow.
+
+Tested: host build of the whole UI with Qt 6.4.2 (QML compiled ahead of
+time); Apertar-UI links. Not run on the Pi.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ qml/CameraPage.qml           | 5 ++++-
+ src/ApertarControlBridge.cpp | 8 ++++++++
+ src/ApertarControlBridge.hpp | 4 ++++
+ 3 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/qml/CameraPage.qml b/qml/CameraPage.qml
+index 0a4bf30..e82d7cf 100644
+--- a/qml/CameraPage.qml
++++ b/qml/CameraPage.qml
+@@ -811,7 +811,10 @@ function availableFpsOptions() {
+                   : ((root.imx577Detected)
+                      ? [24.000, 25.000, 30.000, 50.000, 60.000, 100.000]
+                      : [24.000, 25.000, 30.000, 50.000, 60.000])
+-    var max = root.maximumSupportedFpsForResolution(root.resolution)
++    // Core's own ceiling (fps_max: the mode, the sensor probe, the build maximum) when it sends one.
++    var max = root.controlBridge && root.controlBridge.fpsMax > 0
++              ? root.controlBridge.fpsMax
++              : root.maximumSupportedFpsForResolution(root.resolution)
+     if (root.h264RecordFormat && root.controlBridge && root.controlBridge.h264MaxFps > 0)
+         max = Math.min(max, root.controlBridge.h264MaxFps)
+     if (!root.photoModeEnabled && root.imx477Detected && root.recordingFormat === "cDNG" && root.cdngCompressionValue === "none") {
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 33e67fa..469cfcd 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -1372,6 +1372,14 @@ void ApertarControlBridge::applyCoreState(const QJsonObject &state)
+     if (state.contains(QStringLiteral("fps_ramp")))
+         m_fpsRamp = state.value(QStringLiteral("fps_ramp")).toBool(m_fpsRamp);
+ 
++    if (state.contains(QStringLiteral("fps_max"))) {
++        const double fpsMax = state.value(QStringLiteral("fps_max")).toDouble(m_fpsMax);
++        if (fpsMax != m_fpsMax) {
++            m_fpsMax = fpsMax;
++            emit fpsMaxChanged();
++        }
++    }
++
+     if (state.contains(QStringLiteral("sound_recording")))
+         m_soundRecording = state.value(QStringLiteral("sound_recording")).toBool(m_soundRecording);
+ 
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index f4d240a..600febf 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -37,6 +37,7 @@ class ApertarControlBridge : public QObject
+     Q_PROPERTY(bool h264HardwareEncoding READ h264HardwareEncoding NOTIFY recordingCapabilitiesChanged)
+     Q_PROPERTY(int h264MaxWidth READ h264MaxWidth NOTIFY recordingCapabilitiesChanged)
+     Q_PROPERTY(double h264MaxFps READ h264MaxFps NOTIFY recordingCapabilitiesChanged)
++    Q_PROPERTY(double fpsMax READ fpsMax NOTIFY fpsMaxChanged)
+     Q_PROPERTY(QString tuningFile READ tuningFile NOTIFY tuningFileChanged)
+     Q_PROPERTY(QString rawBitDepth READ rawBitDepth NOTIFY rawBitDepthChanged)
+     Q_PROPERTY(bool clearHdr READ clearHdr NOTIFY clearHdrChanged)
+@@ -85,6 +86,7 @@ public:
+     bool h264HardwareEncoding() const { return m_h264HardwareEncoding; }
+     int h264MaxWidth() const { return m_h264MaxWidth; }
+     double h264MaxFps() const { return m_h264MaxFps; }
++    double fpsMax() const { return m_fpsMax; }
+     QString tuningFile() const { return m_tuningFile; }
+     QString rawBitDepth() const;
+     bool clearHdr() const { return m_clearHdr; }
+@@ -162,6 +164,7 @@ signals:
+     void previewExposureReferenceChanged();
+     void cdngCompressionChanged();
+     void recordingCapabilitiesChanged();
++    void fpsMaxChanged();
+     void tuningFileChanged();
+     void rawBitDepthChanged();
+     void clearHdrChanged();
+@@ -282,6 +285,7 @@ private:
+     bool m_h264HardwareEncoding = false;
+     int m_h264MaxWidth = 2560;
+     double m_h264MaxFps = 0;
++    double m_fpsMax = 0; // Core's fps_max (T33): highest FPS set_fps accepts outside a take; 0 = not sent
+     QLocalSocket m_eventSocket;
+     QString m_fps = QStringLiteral("24.000");
+     QString m_iso = QStringLiteral("800");
+-- 
+2.43.0
+
