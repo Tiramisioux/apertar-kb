@@ -73,3 +73,6 @@ Patrik's.
   Compression stays locked while the ladder is on.
 - The touch FORMAT row **drops the size** in the square layout.
 - Claude builds step by step (not tutor mode); Patrik restarts, looks and decides.
+- **Changed later the same day (Patrik): an active ladder blocks manual resolution changes** (the design's lock), replacing the Q2 answer
+  above: Core refuses `set_resolution`, `set_raw_bit_depth`, `set_clear_hdr`; the UIs grey Resolution, Crop, Bit Depth and
+  Clear HDR with "Mode Ladder on: the FPS picks the resolution." and the line links to the Mode Ladder card (`dd4cb24`).
