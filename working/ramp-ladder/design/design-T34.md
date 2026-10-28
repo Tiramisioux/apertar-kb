@@ -980,6 +980,8 @@ here because the ladder already put rung 1 in place at 24.)
 > Q12 settled: T33 became the value lists (`6c34e8a`, `8fd44e3`, `07cd559`); T34 is the ladder. Since this design: no
 > `[camera] max_fps` (Patrik); rung 2's top is its threshold (50). Core still caps 4K SDR at 30 (F5), so T34 lifts it to the
 > probe. M0 done (T31 on the Pi: C0030, C0022). `fps_max`/`iso_max` are in the state.
+> **Cap decision (Patrik, 2026-10-28): 4K SDR stays capped at 30** until a longer M3 shows 50 holds (M3 at 3840x2076 lost
+> 12 % as capture gaps with 4 or 8 buffers). Rung 2 runs 25-30 for now; the editor warns that it stops at 30.
 
 
 
