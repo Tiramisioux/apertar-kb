@@ -58,12 +58,12 @@ read-only:
 
 ```bash
 ssh apertar 'git -C ~/ApertarCore log --oneline -8; git -C ~/ApertarUI log --oneline -5'
-ssh apertar 'grep -c fpsRampEnabled ~/ApertarCore/src/camera/CameraController.cpp'        # T31: 11
+ssh apertar 'grep -c "fpsSpeedRamp\b" ~/ApertarCore/src/camera/CameraController.cpp'        # T31: 11
 ssh apertar 'grep -c "FPS ramping works in cDNG and MLV takes only." ~/ApertarCore/src/ApertarCoreApp.cpp'  # T31, ramp_fps refuses up front: 1
 ssh apertar 'grep -c "normalizeRawBitDepth(rawBitDepth) == 16" ~/ApertarCore/src/camera/CameraController.cpp'  # T32 cap, Core clamp: 1
 ssh apertar 'grep -c "settings.clearHdr && settings.rawBitDepth == 16 ? 25.0" ~/ApertarCore/src/ApertarCoreApp.cpp'  # T32 cap, PCF list: 1
 ssh apertar 'grep -c settingsSpeedRamp ~/ApertarCore/src/web/WebControlPage.cpp'          # T32 WebUI block: 18
-ssh apertar 'grep -c m_fpsRamp ~/ApertarUI/src/ApertarControlBridge.cpp'                  # T32 touch UI picker: 2
+ssh apertar 'grep -c m_fpsSpeedRamp ~/ApertarUI/src/ApertarControlBridge.cpp'                  # T32 touch UI picker: 2
 ssh apertar 'grep -c m_soundRecording ~/ApertarUI/src/ApertarControlBridge.cpp'           # T32 picker, camera takes only: 3
 ```
 

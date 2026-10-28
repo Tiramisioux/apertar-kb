@@ -26,10 +26,10 @@ with the decisions taken so far.
 
 | Tutorial | Patches (apply in this order) | What |
 | --- | --- | --- |
-| T31 | Core `0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch` | FPS changes inside cDNG/MLV takes behind `fps_ramp` (count-based numbering, one `FrameRate`/timecode base, real-time WAV, shutter policy, grace, `fps-ramp.txt`, `ramp_fps` stepper, which refuses up front in a take it cannot ramp). Rebased onto `cinemate-port` `7a545d9`; three steps differ from the first cloud version (tutorial status line) |
+| T31 | Core `0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch` | FPS changes inside cDNG/MLV takes behind `fps_speed_ramp` (count-based numbering, one `FrameRate`/timecode base, real-time WAV, shutter policy, grace, `fps-ramp.txt`, `ramp_fps` stepper, which refuses up front in a take it cannot ramp). Rebased onto `cinemate-port` `7a545d9`; three steps differ from the first cloud version (tutorial status line) |
 | T32 | Core `0001-camera-cap-4K-Clear-HDR-16-bit-at-25-fps.patch`, `0001-web-speed-ramp-block-in-the-Recording-format-card.patch`; UI `0001-ui-4K-Clear-HDR-16-bit-offers-FPS-up-to-25.patch`, `0001-ui-FPS-picker-sends-only-set_fps-during-a-speed-ramp.patch` | 25 fps ceiling for 4K Clear HDR 16-bit in Core (clamp and PCF pot/button list), WebUI and touch UI; Speed Ramp block under Bit Depth in Settings → Record → Recording format (On/Off, Shutter Sync Angle/Exposure, Ramp to … over …, ×2, Back); the touch UI picker leaves the shutter to Core in a camera ramp take (not in a sound-only take) |
 
-FPS controls during a take with `fps_ramp` on: WebUI pills and the Speed Ramp block, PCF pot, `fps:<n>`/`fps_up`/`fps_down` buttons
+FPS controls during a take with `fps_speed_ramp` on: WebUI pills and the Speed Ramp block, PCF pot, `fps:<n>`/`fps_up`/`fps_down` buttons
 (all `set_fps` or `ramp_fps`), touch UI picker (after T32 4.9). The touch UI's `ensureValidFpsSelection()` returns early with a
 bridge (`qml/CameraPage.qml:1557-1558`), so it does not fight a stepper.
 
@@ -161,3 +161,6 @@ tree).
   open questions Q1-Q12. `design/changes-from-critique.md`: what the critics changed. `design/plan-v1.md`,
   `design/critique-code.md`, `design/critique-operator.md`: the steps before it. `design/sketch/`: `ModeLadder.hpp` (no
   libcamera) and its host test (`g++ -std=c++20 -Isketch sketch/mode_ladder_test.cpp`, 28 checks).
+
+Names: since 2026-10-28 the switch is `fps_speed_ramp` / `set_fps_speed_ramp` / `fpsSpeedRamp` (as `fps_phase_lock`). `r1-core.md`,
+`r2-cinemate.md`, `../ramp-answer.md`, `../port-raw/` and `design/` files other than `design-T34.md` keep the old names (`fps_ramp`, `set_fps_ramp`, `fpsRampEnabled`).

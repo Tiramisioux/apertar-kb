@@ -1,4 +1,4 @@
-From 80b39e932f2d5bc92fc67cf892d5d08ab10e3615 Mon Sep 17 00:00:00 2001
+From 647d963fb16f64c57046a4ef09eddf2df099ba51 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 27 Oct 2026 21:03:35 +0000
 Subject: [PATCH 2/3] camera: cap 4K Clear HDR 16-bit at 25 fps
@@ -28,7 +28,7 @@ Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
  3 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
-index 9373efd..cfa6a88 100644
+index feae230..8b47abb 100644
 --- a/src/ApertarCoreApp.cpp
 +++ b/src/ApertarCoreApp.cpp
 @@ -1160,9 +1160,10 @@ double maximumPcfFpsForSettings(const CaptureSettings &settings, const std::stri
@@ -44,7 +44,7 @@ index 9373efd..cfa6a88 100644
              (width == 1920 && height == 1080))
              return 60.0;
 diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
-index b1d5d6f..dad83e8 100644
+index 0cfd8bf..c0db241 100644
 --- a/src/camera/CameraController.cpp
 +++ b/src/camera/CameraController.cpp
 @@ -2775,9 +2775,14 @@ double tableMaximumFpsForResolution(SensorFamily sensorFamily, Resolution reques
@@ -64,7 +64,7 @@ index b1d5d6f..dad83e8 100644
              return 60.0;
          if ((normalized.width == 1920 && normalized.height == 1080) ||
 diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
-index 1bcc9ef..d6c8b6f 100644
+index 6ecd401..3bd7d9b 100644
 --- a/src/web/WebControlPage.cpp
 +++ b/src/web/WebControlPage.cpp
 @@ -4974,8 +4974,9 @@ std::string_view webControlPageHtml()
@@ -79,5 +79,5 @@ index 1bcc9ef..d6c8b6f 100644
              || height === 1728 || height === 1632 || height === 1608 || height === 1536 || height === 1504))
            return 60.0;
 -- 
-2.43.0
+2.50.1 (Apple Git-155)
 

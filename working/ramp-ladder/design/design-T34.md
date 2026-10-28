@@ -125,7 +125,7 @@ Your day, tap by tap (from the operator critique, kept):
 | Step | Code (new code marked T34) |
 | --- | --- |
 | 1 | Not recording, so T31's ramp gate is skipped (`CC:9083-9096`) |
-| 2 | T34: `ladderRewriteLocked(requested)` picks the rung for the target. Target = `fps`, or the ladder ceiling when Ramp-ready and `fps_ramp` are both on. Rule: `chooseRung` in `ModeLadder.hpp` (first usable rung whose ceiling reaches the target) |
+| 2 | T34: `ladderRewriteLocked(requested)` picks the rung for the target. Target = `fps`, or the ladder ceiling when Ramp-ready and `fps_speed_ramp` are both on. Rule: `chooseRung` in `ModeLadder.hpp` (first usable rung whose ceiling reaches the target) |
 | 3 | `sanitizeSettingsForSensor` clamps to the rung's mode (`CC:2835-2881`): table, probe, lossless cap, `max_fps` |
 | 4a | Same mode: today's `applyFpsStepLocked` → `applySettingsLocked(next, false, true)` → `applyControls` (no reconfigure) → persist and emit (`CC:9121-9158`, `:10287-10352`) |
 | 4b | Other mode: the same `applyFpsStepLocked`, given the rung. It keeps the shutter policy (`CC:9127-9145`), logs `ApertarCore mode ladder: 20 -> 30 fps, 4K Clear HDR 16-bit -> 4K SDR 12-bit` and calls `applySettingsLocked(next, true, true)`. A Clear HDR change is `stop()` + `start()` (`CC:10291`, `:6358-6370`): WDR off, other tuning variant, new CameraManager (`CC:6145-6152`). On failure the recovery puts rung 1 back and the reply carries the error (`CC:10322-10333`, commit = true). One apply, one reconfigure |
@@ -211,7 +211,7 @@ Build **A + R** as T34. B0 is dropped (both critics): it is what you already do 
 | 4. Ramping in takes | T31, unchanged, inside the running rung |
 | 5. Value lists, Camera settings pane kept | T35; the pane is kept and shows the class |
 
-What changed from plan v1: Ramp-ready is its own switch (not armed by `fps_ramp`), a boolean (not an FPS select), and it lives
+What changed from plan v1: Ramp-ready is its own switch (not armed by `fps_speed_ramp`), a boolean (not an FPS select), and it lives
 in the Speed Ramp block. The class is on screen. The in-take cap is the rung's ceiling. Logic moves to a host-tested header.
 No "apply, then align". Two FPS ceilings in the state, so the pot does not change meaning at record start. No `notice` field,
 no `# mode=` line, no per-rung Enabled box, no B0. Presets that name another mode are refused.
@@ -269,7 +269,7 @@ unusable → rung 2), Cinemate's invariant from `ff59dd8` ("no reachable request
 ### 3.2 The chooser's rules
 
 - Upper bound inclusive: 25 → rung 1, 25.001 → rung 2. Any rung may run any FPS below its ceiling; the ranges are a preference.
-- Target = `fps`, or the ladder ceiling when Ramp-ready **and** `fps_ramp` are both on (R). Leaving Speed Ramp on does not arm R.
+- Target = `fps`, or the ladder ceiling when Ramp-ready **and** `fps_speed_ramp` are both on (R). Leaving Speed Ramp on does not arm R.
 - One rule for every FPS path, because every one ends in `CameraController::setFps` (§1.2). Cinemate lesson (r2 "What to avoid" 9).
 - The ladder is asked about the FPS that will be commanded, after the rung's clamp (Cinemate `ff59dd8`).
 - Active = enabled, not photo mode, a raw video format (cDNG any compression, MLV), at least one usable rung.
@@ -282,7 +282,7 @@ unusable → rung 2), Cinemate's invariant from `ff59dd8` ("no reachable request
 | --- | --- | --- | --- |
 | `max_fps` (build maximum) | `apertar-hardware.conf` `[camera]` (first existing of `hardwareConfigCandidatePaths()`, `App:4285-4303`) | Core reads, WebUI Config panel edits | no |
 | The ladder: `enabled`, `ramp_ready`, `rungs` | new `~/.config/apertar-core/mode_ladder.conf` (same XDG rule as `camera_settings.conf`, `CC:357-368`) | Core only | no: one ladder per camera |
-| `fps_ramp`, `fps_ramp_keep_exposure`, mode, FPS | `camera_settings.conf`, `profile.<format>.` keys (`CC:650-663`, `:735-738`, `:809-810`) | Core | yes |
+| `fps_speed_ramp`, `fps_speed_ramp_keep_exposure`, mode, FPS | `camera_settings.conf`, `profile.<format>.` keys (`CC:650-663`, `:735-738`, `:809-810`) | Core | yes |
 | T35 value lists | `~/.config/CinePi/UI.conf` `[General]` (README §3.1) | Core and touch UI | no |
 
 Why not `UI.conf` for the ladder: Core reparses that file on every `readSharedUiSettings()` (`App:1665-1672`) and the touch
@@ -346,7 +346,7 @@ WebUI poll). CONFIRMED writers.
 | `fps_take_max` (T34) | highest FPS a take in the current mode reaches. On a rung: its ceiling. Else the mode's ceiling | 25 in rung 1, 50 in rung 2 |
 | `ladder_active` | §3.2 | true |
 | `ladder_rung` | 1-based running rung, 0 = the mode is not a rung | 1 or 2 |
-| `ladder_ramp_ready` | R is choosing (Ramp-ready and `fps_ramp` on, ladder active) | |
+| `ladder_ramp_ready` | R is choosing (Ramp-ready and `fps_speed_ramp` on, ladder active) | |
 
 Neither ceiling changes at record start (the mode does not change then), so no new settings events are needed at
 `startRecording`/`stopRecording` (they emit recording events only, `CC:9840`, `:10095`). CONFIRMED.
@@ -408,12 +408,12 @@ taken path; **low** = host-checkable (header with its test, `ApertarCoreApp.cpp`
 | 0.5 | after `App:4303` | `std::vector<std::filesystem::path> hardwareConfigCandidatePaths()` | `cameraMaxFpsFromHardwareConfig()`: first existing file, `[camera]`, `max_fps`, inline `#` stripped, 0..280 | low |
 | 0.6 | before `App:6972`; after `App:7317` | `if (!camera_.start(options_.mediaRoot`; `saveHardwareConfigFile(request.body` | apply at start and after a Config save | low |
 | 0.7 | `App:4325` | `std::string defaultHardwareConfigTemplate()` | `[camera]` block | low |
-| 0.8 | `Types:133` (after) | `bool fpsRampKeepExposure = false;` | `double fpsMax = 0.0;` (derived) | low |
+| 0.8 | `Types:133` (after) | `bool fpsSpeedRampKeepExposure = false;` | `double fpsMax = 0.0;` (derived) | low |
 | 0.9 | `CC:10171-10179`, `:10407-10414` | `CaptureSettings result = settings_;`, `void CameraController::emitSettingsEventLocked()` | fill `fpsMax` = sanitiser at 280 | medium |
-| 0.10 | `CC:189`, `App:215`, `App:8045` | `"fps_ramp\":"` | `fps_max` in the three writers | low (CC line trivial) |
+| 0.10 | `CC:189`, `App:215`, `App:8045` | `"fps_speed_ramp\":"` | `fps_max` in the three writers | low (CC line trivial) |
 | 0.11 | `App:1183` | `const double maxFps = maximumPcfFpsForSettings(settings, sensorName);` | use `settings.fpsMax` when > 0. **Changed from plan v1:** `fps_max` is the off-take value and does not change at record start (critiques 4 / 5) | low |
-| 0.12 | `Web:5032`, `Web:8845` | `let max = maximumSupportedFpsForSnapshot(snapshot);`, `snapshot.fps_ramp_keep_exposure = source.fps_ramp_keep_exposure;` | use `snapshot.fps_max`; merge `fps_max` and `clear_hdr` from replies (today no `clear_hdr` merge, CONFIRMED) | low |
-| 0.13 | `CBh:39`, `:87`, `:284`; `CB:1368`; `QML:814` | `Q_PROPERTY(double h264MaxFps`, `if (state.contains(QStringLiteral("fps_ramp")))`, `var max = root.maximumSupportedFpsForResolution(root.resolution)` | `fpsMax` property, parse, use | low |
+| 0.12 | `Web:5032`, `Web:8845` | `let max = maximumSupportedFpsForSnapshot(snapshot);`, `snapshot.fps_speed_ramp_keep_exposure = source.fps_speed_ramp_keep_exposure;` | use `snapshot.fps_max`; merge `fps_max` and `clear_hdr` from replies (today no `clear_hdr` merge, CONFIRMED) | low |
+| 0.13 | `CBh:39`, `:87`, `:284`; `CB:1368`; `QML:814` | `Q_PROPERTY(double h264MaxFps`, `if (state.contains(QStringLiteral("fps_speed_ramp")))`, `var max = root.maximumSupportedFpsForResolution(root.resolution)` | `fpsMax` property, parse, use | low |
 
 T33 must say: `max_fps=50` also caps 1080p and the 3840 and 1920 crops (60 today, `CC:2786-2790`) and H.264 at 50. CONFIRMED
 consequence (code critique Missing 5).
@@ -429,17 +429,17 @@ Check after T33 (Pi): `get_state` shows `"fps_max":50` in 4K SDR 12-bit and `25`
 | A2 | same | | `parseRungs`, `number`, `rungsText` | low (test §1) |
 | A3 | same | | `validate` | low (test §4) |
 | A4 | same; KB `working/tools/mode_ladder_test.cpp` | | `PoolEntry`, `toJson`, `fileText`, `parseFile`; the test file | low (test §5-6) |
-| A5 | `Types:133` (after) | `bool fpsRampKeepExposure = false;` | derived `double fpsTakeMax = 0.0; bool ladderActive = false; uint32_t ladderRung = 0; bool ladderRampReady = false;` | low |
+| A5 | `Types:133` (after) | `bool fpsSpeedRampKeepExposure = false;` | derived `double fpsTakeMax = 0.0; bool ladderActive = false; uint32_t ladderRung = 0; bool ladderRampReady = false;` | low |
 | A6 | `Hdr:5`; `Hdr:88`; `Hdr:115`; `Hdr:177` | `#include "util/RecordingDropWarning.hpp"`, `bool setFpsRamp(`, `std::vector<SensorMode> sensorModes() const;`, `bool rampTakeChanged_ = false;` | `#include "camera/ModeLadder.hpp"`; public `setModeLadder(…)`, `modeLadderJson()`, `applyLadderToPreset(CaptureSettings &, bool namesMode)`; private `ladder::Ladder modeLadder_;`, the five helpers of A8; `applyFpsStepLocked` gains `const CaptureSettings *rung = nullptr` | low (App's host check sees the header) |
 | A7 | after `CC:368`; `CC:8923` | `std::filesystem::path persistedSettingsPath()`; `settings_ = loadPersistedCaptureSettings(formatSettings_, stillSettings_);` | `modeLadderPath()` (same XDG rule, `mode_ladder.conf`); load with `ladder::parseFile` in the constructor | medium |
 | A8 | new, after `restoreFpsAfterRampLocked` (`CC:9179`) | `void CameraController::restoreFpsAfterRampLocked()` | `ladderStatesLocked(base)`, `ladderActiveForLocked(base)`, `ladderRewriteLocked(next)`, `fillLadderFieldsLocked(out)`, `ladderLabel(settings)`. Code below | **high** |
 | A9 | `CC:9105-9118`; `CC:9121-9158` | `CaptureSettings requested = settings_;` inside `setFps`; `bool CameraController::applyFpsStepLocked(` | rewrite before the sanitiser; in-take rung cap; `applyFpsStepLocked(…, rung)` reconfigures into the rung. Code below | **high** |
 | A10 | after `CC:9050`, `:9529`, `:9565` | `Resolution changes are blocked while recording.` and the two siblings | `if (ladderActiveForLocked(settings_)) { setErrorLocked(kLadderOwnsMode); return false; }` | low |
-| A11 | `CC:9743-9746`; `CC:9371-9379`; `CC:9283`/`:9294`; `CC:8961-8972` | `next.fpsRampKeepExposure = keepExposure;`; `next = supportedRecordingSettings(next);` in `setRecordingFormat`; `restoreModeGeometryLocked(next);` in `setStillExposureMode`; `settings_ = session_->currentSettings();` in `start` | one rewrite before each single apply: `setFpsRamp` (`requiresReconfigure = changed`), `setRecordingFormat`, `setStillExposureMode` when leaving photo mode (code critique Missing 3); `start`: a guard after the session is up, logged, rare (a hand-edited file) | medium |
+| A11 | `CC:9743-9746`; `CC:9371-9379`; `CC:9283`/`:9294`; `CC:8961-8972` | `next.fpsSpeedRampKeepExposure = keepExposure;`; `next = supportedRecordingSettings(next);` in `setRecordingFormat`; `restoreModeGeometryLocked(next);` in `setStillExposureMode`; `settings_ = session_->currentSettings();` in `start` | one rewrite before each single apply: `setFpsRamp` (`requiresReconfigure = changed`), `setRecordingFormat`, `setStillExposureMode` when leaving photo mode (code critique Missing 3); `start`: a guard after the session is up, logged, rare (a hand-edited file) | medium |
 | A12 | new, before `applyCapturePreset` (`CC:10231`) | `bool CameraController::applyCapturePreset(` | `setModeLadder`, `modeLadderJson`, `applyLadderToPreset`, the pool from `sensorModes()` | medium |
-| A13 | `CC:10174-10177`; `CC:10409-10411`; `CC:189-190` | `CaptureSettings result = settings_;`; `settings_.exposureCompensationAvailable = simulateCamera_`; `"fps_ramp\":"` | `fillLadderFieldsLocked(result)` / `(settings_)`; the five fields in `settingsEvent` | low |
-| A14 | after `App:9659`; `App:9681` | `if (command.name == "list_sensor_modes") {`; `\"set_fps_ramp\",\"ramp_fps\",` | handlers `get_mode_ladder`, `set_mode_ladder` (strings and booleans only, F16); help list | low |
-| A15 | `App:215-216`, `App:8045-8046` | `"fps_ramp_keep_exposure\":"` (twice) | `fps_take_max`, `ladder_active`, `ladder_rung`, `ladder_ramp_ready` | low |
+| A13 | `CC:10174-10177`; `CC:10409-10411`; `CC:189-190` | `CaptureSettings result = settings_;`; `settings_.exposureCompensationAvailable = simulateCamera_`; `"fps_speed_ramp\":"` | `fillLadderFieldsLocked(result)` / `(settings_)`; the five fields in `settingsEvent` | low |
+| A14 | after `App:9659`; `App:9681` | `if (command.name == "list_sensor_modes") {`; `\"set_fps_speed_ramp\",\"ramp_fps\",` | handlers `get_mode_ladder`, `set_mode_ladder` (strings and booleans only, F16); help list | low |
+| A15 | `App:215-216`, `App:8045-8046` | `"fps_speed_ramp_keep_exposure\":"` (twice) | `fps_take_max`, `ladder_active`, `ladder_rung`, `ladder_ramp_ready` | low |
 | A16 | `App:8692`, `App:8951`; `App:9329` | `if (target == "resolution") {`; `fps is this mode's limit` | resolution pot and step: return when `cameraSettings.ladderActive` (no "Hardware input action failed" spam, code critique Missing 7); stepper wording with the ladder | low |
 | A17 | before `App:11055` | `if (!camera_.applyCapturePreset(presetSettings, [&] {` | `namesMode` = `cameraRawBitDepth`, `cameraResolutionWidth` or `cameraResolution` present (`App:10871-10886`); `if (!camera_.applyLadderToPreset(presetSettings, namesMode)) return errorReply(…)` | low |
 
@@ -480,7 +480,7 @@ bool CameraController::ladderRewriteLocked(CaptureSettings &next) const
     if (recording_ || !ladderActiveForLocked(next))
         return false;
     const auto states = ladderStatesLocked(next);
-    const bool rampReady = modeLadder_.rampReady && next.fpsRampEnabled;
+    const bool rampReady = modeLadder_.rampReady && next.fpsSpeedRamp;
     const double target = rampReady ? ladder::ladderCeiling(modeLadder_, states) : next.fps;
     const int index = ladder::chooseRung(modeLadder_, states, target);
     if (index < 0)
@@ -499,7 +499,7 @@ bool CameraController::ladderRewriteLocked(CaptureSettings &next) const
 `ladderActiveForLocked(base)` = `modeLadder_.enabled && !base.photoModeEnabled && !isProcessedVideoFormat(base.recordingFormat)
 && chooseRung(modeLadder_, ladderStatesLocked(base), 0.0) >= 0`. `fillLadderFieldsLocked(out)`: the mode ceiling (sanitiser at
 280) into `fpsMax` and `fpsTakeMax`; when active, `fpsMax` = ladder ceiling, and the rung that matches `settings_` gives
-`ladderRung` and `fpsTakeMax`; `ladderRampReady` = `rampReady && settings_.fpsRampEnabled`.
+`ladderRung` and `fpsTakeMax`; `ladderRampReady` = `rampReady && settings_.fpsSpeedRamp`.
 
 In `setFps` (`CC:9105-9118`), the T34 lines:
 
@@ -546,7 +546,7 @@ stops at 25.
 | B7 | `Web:5032` | `let max = maximumSupportedFpsForSnapshot(snapshot);` (T33 changed it) | `max = snapshot.recording ? snapshot.fps_take_max : snapshot.fps_max` when > 0 | low |
 | B8 | `Web:2544`; `Web:10059-10065` | `<span>Frame rate</span>`; `buildOptionButtons("fpsOptions"` | class line (`HDR16 · ≤25`); tint pills above `fps_take_max` off-take with the ladder on; while a switching `set_fps` runs, the line says "Switching to 4K SDR 12-bit…"; after the reply, a toast when the accepted FPS is below the requested one | low |
 | B9 | `Web:9897-9898`; `Web:10102`; `Web:10135-10138` | `setElementDisabled("settingsRecordResolutionSelect", false);`; `buildOptionButtons("resolutionOptions"`; `buildOptionButtons("settingsRawBitDepthOptions"` | disabled while `snapshot.ladder_active`, copy "Mode Ladder on: the FPS picks the mode." | low |
-| B10 | `Web:5098`; `Web:8845`; `Web:8880` | `setText("settingsSpeedRampRange"`; `snapshot.fps_ramp_keep_exposure = source.fps_ramp_keep_exposure;`; `case "set_fps_ramp":` | the "Ramp to 50 is not possible in this take" line; merge the four T34 fields; `case "set_mode_ladder":` optimistic patch of `ladder_ramp_ready`/`ladder_active` | low |
+| B10 | `Web:5098`; `Web:8845`; `Web:8880` | `setText("settingsSpeedRampRange"`; `snapshot.fps_speed_ramp_keep_exposure = source.fps_speed_ramp_keep_exposure;`; `case "set_fps_speed_ramp":` | the "Ramp to 50 is not possible in this take" line; merge the four T34 fields; `case "set_mode_ladder":` optimistic patch of `ladder_ramp_ready`/`ladder_active` | low |
 | B11 | `Web:10149`; `Web:11579` | `renderSpeedRamp(snapshot, fpsOptions);`; `settingsSpeedRampTargetSelect").addEventListener` | `renderModeLadder(snapshot);`; listeners for Add, Save, Revert, threshold `input`, Ramp-ready | low |
 
 The redraw rule (operator critique 10, fixed): the rows are rebuilt **only** after `fetchModeLadder` returns, after Save or
@@ -561,7 +561,7 @@ the Record panel opens and after a save. Two browsers editing at once: last Save
 
 | # | File:line @`34499f1` | Search string | Change | Risk |
 | --- | --- | --- | --- | --- |
-| C1 | `CBh:39`, `:87`, `:149`, `:318`; `CB:1368-1369` | `Q_PROPERTY(double h264MaxFps`, `double h264MaxFps() const`, `void fpsChanged();`, `bool m_fpsRamp = false;`, `m_fpsRamp = state.value(QStringLiteral("fps_ramp"))` | properties `fpsTakeMax`, `ladderActive`, `ladderRampReady` with one `ladderChanged` signal; parse in `applyCoreState` | low |
+| C1 | `CBh:39`, `:87`, `:149`, `:318`; `CB:1368-1369` | `Q_PROPERTY(double h264MaxFps`, `double h264MaxFps() const`, `void fpsChanged();`, `bool m_fpsSpeedRamp = false;`, `m_fpsSpeedRamp = state.value(QStringLiteral("fps_speed_ramp"))` | properties `fpsTakeMax`, `ladderActive`, `ladderRampReady` with one `ladderChanged` signal; parse in `applyCoreState` | low |
 | C2 | `CB:1036-1049` | `commandName == QStringLiteral("apply_preset");` | add `set_fps` and `set_mode_ladder` to the 10 s list: both can reconfigure now (F15) | low |
 | C3 | `CB:280`, `:288` | `setFps(formatFpsValue(fpsValue));` | use the accepted FPS from `fpsReply` (`fpsReply.value("fps")`) for the display and the shutter (code critique 5) | low |
 | C4 | new `Q_INVOKABLE` next to `applyFps` (`CBh:113`) | `Q_INVOKABLE bool applyFps(const QString &displayValue);` | `applyModeLadderSwitch(const QString &name, bool on)`: `set_mode_ladder {name: "true" or "false"}` | low |
@@ -762,7 +762,7 @@ ref core src/camera/CameraController.cpp 9121 bool CameraController::applyFpsSte
 ref core src/camera/CameraController.cpp 9048 setErrorLocked("Resolution changes are blocked while recording.");
 ref core src/camera/CameraController.cpp 9527 setErrorLocked("Raw bit depth changes are blocked while recording.");
 ref core src/camera/CameraController.cpp 9563 setErrorLocked("Clear HDR changes are blocked while recording.");
-ref core src/camera/CameraController.cpp 9745 next.fpsRampKeepExposure = keepExposure;
+ref core src/camera/CameraController.cpp 9745 next.fpsSpeedRampKeepExposure = keepExposure;
 ref core src/camera/CameraController.cpp 9379 return applySettingsLocked(next, requiresReconfigure);
 ref core src/camera/CameraController.cpp 9294 return applySettingsLocked(next, photoMode != settings_.photoModeEnabled);
 ref core src/camera/CameraController.cpp 8956 if (!simulateCamera_ && !session_->start(settings_, &lastError_)) {
@@ -773,12 +773,12 @@ ref core src/camera/CameraController.cpp 10407 void CameraController::emitSettin
 ref core src/camera/CameraController.cpp 10191 std::vector<CameraController::SensorMode> CameraController::sensorModes() const
 ref core src/camera/CameraController.hpp 88 bool setFpsRamp(bool enabled, bool keepExposure);
 ref core src/camera/CameraController.hpp 177 bool rampTakeChanged_ = false;
-ref core include/apertar/core/Types.hpp 133 bool fpsRampKeepExposure = false;
+ref core include/apertar/core/Types.hpp 133 bool fpsSpeedRampKeepExposure = false;
 ref core src/ApertarCoreApp.cpp 1183 const double maxFps = maximumPcfFpsForSettings(settings, sensorName);
 ref core src/ApertarCoreApp.cpp 8682 if (target == "fps") {
 ref core src/ApertarCoreApp.cpp 9329 fps is this mode's limit
 ref core src/ApertarCoreApp.cpp 9659 if (command.name == "list_sensor_modes") {
-ref core src/ApertarCoreApp.cpp 9681 \"set_fps_ramp\",\"ramp_fps\",
+ref core src/ApertarCoreApp.cpp 9681 \"set_fps_speed_ramp\",\"ramp_fps\",
 ref core src/ApertarCoreApp.cpp 10805 CaptureSettings presetSettings = camera_.settings();
 ref core src/ApertarCoreApp.cpp 11055 if (!camera_.applyCapturePreset(presetSettings, [&] {
 ref core src/web/WebControlPage.cpp 2950 <p class="settings-card-copy" id="settingsSpeedRampRange"></p>
@@ -790,13 +790,13 @@ ref core src/web/WebControlPage.cpp 5032 let max = maximumSupportedFpsForSnapsho
 ref core src/web/WebControlPage.cpp 2544 <span>Frame rate</span>
 ref core src/web/WebControlPage.cpp 10059 buildOptionButtons("fpsOptions"
 ref core src/web/WebControlPage.cpp 9897 setElementDisabled("settingsRecordResolutionSelect", false);
-ref core src/web/WebControlPage.cpp 8845 snapshot.fps_ramp_keep_exposure = source.fps_ramp_keep_exposure;
+ref core src/web/WebControlPage.cpp 8845 snapshot.fps_speed_ramp_keep_exposure = source.fps_speed_ramp_keep_exposure;
 ref core src/web/WebControlPage.cpp 10149 renderSpeedRamp(snapshot, fpsOptions);
 ref core src/web/WebControlPage.cpp 11579 settingsSpeedRampTargetSelect").addEventListener
 ref ui src/ApertarControlBridge.cpp 280 setFps(formatFpsValue(fpsValue));
 ref ui src/ApertarControlBridge.cpp 1049 commandName == QStringLiteral("apply_preset");
-ref ui src/ApertarControlBridge.cpp 1368 if (state.contains(QStringLiteral("fps_ramp")))
-ref ui src/ApertarControlBridge.hpp 318 bool m_fpsRamp = false;
+ref ui src/ApertarControlBridge.cpp 1368 if (state.contains(QStringLiteral("fps_speed_ramp")))
+ref ui src/ApertarControlBridge.hpp 318 bool m_fpsSpeedRamp = false;
 ref ui src/ApertarControlBridge.hpp 113 Q_INVOKABLE bool applyFps(const QString &displayValue);
 ref ui qml/CameraPage.qml 522 readonly property string formatDisplaySubtext:
 ref ui qml/CameraPage.qml 1214 function applyResolutionValue(resolutionValue) {
@@ -846,9 +846,9 @@ python3 -I $K/core.py set_cdng_compression value=none       # lossless is capped
 python3 -I $K/core.py set_clear_hdr enabled=false
 python3 -I $K/core.py set_raw_bit_depth value=12
 python3 -I $K/core.py set_resolution width=3840 height=2076
-python3 -I $K/core.py set_fps_ramp enabled=true shutter=angle
+python3 -I $K/core.py set_fps_speed_ramp enabled=true shutter=angle
 python3 -I $K/core.py set_fps value=24
-python3 -I $K/core.py get_state | grep -oE '"(resolution|fps|raw_bit_depth|clear_hdr|fps_ramp)":[^,]*'   # 3840x2076, 24, 12, false, true
+python3 -I $K/core.py get_state | grep -oE '"(resolution|fps|raw_bit_depth|clear_hdr|fps_speed_ramp)":[^,]*'   # 3840x2076, 24, 12, false, true
 T1=$(date '+%F %T'); python3 -I $K/core.py record_start
 sleep 10; python3 -I $K/core.py ramp_fps to=50 seconds=5    # 26 steps up
 sleep 65; python3 -I $K/core.py ramp_fps to=24 seconds=5    # 60 s at 50: the longest stretch you plan (Q11)
@@ -865,7 +865,7 @@ into `lessons/hardware-log.md`. Decides: whether T31 is a base to build on.
 **M3. Can SDR 12-bit hold 50 for 3 minutes?** (no code change, 3840x2076; after T33 repeat at 3840x2160 = M4)
 
 ```bash
-python3 -I $K/core.py set_fps_ramp enabled=false            # elapsed-time numbering again: a drop leaves a hole (CC:8018)
+python3 -I $K/core.py set_fps_speed_ramp enabled=false            # elapsed-time numbering again: a drop leaves a hole (CC:8018)
 python3 -I $K/core.py set_fps value=50
 bash $K/takes.sh 1 180                                      # pass: files=9000 missing=0, dropped_queue_full absent
 ```
@@ -914,7 +914,7 @@ whether the UI must warn of a level change at the switch (ISO maps to the same g
 
 ```bash
 python3 -I $K/core.py set_fps value=1; python3 -I $K/core.py get_state | grep -o '"fps":[0-9.]*'     # 1?
-python3 -I $K/core.py set_fps_ramp enabled=true shutter=angle; python3 -I $K/core.py set_fps value=2
+python3 -I $K/core.py set_fps_speed_ramp enabled=true shutter=angle; python3 -I $K/core.py set_fps value=2
 T1=$(date '+%F %T'); python3 -I $K/core.py record_start; sleep 20
 python3 -I $K/core.py set_fps value=5; sleep 20; python3 -I $K/core.py set_fps value=12; sleep 10
 python3 -I $K/core.py record_stop; sleep 6

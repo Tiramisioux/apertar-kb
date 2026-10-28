@@ -5,6 +5,10 @@ Written 2026-10-26 in a cloud session. Trees: Apertar-Core branch `clearhdr-fixe
 > [!note] 2026-10-27: line numbers here are at the cloud commit `d4ad539`. The patch in `working/patches/` is now the version
 > rebased onto `cinemate-port` `7a545d9`, and tutorial T31 cites that tree. Three details differ there (the T31 status line).
 
+> [!note] 2026-10-28: the on/off switch is renamed to match `fps_phase_lock`: `fps_speed_ramp`, `set_fps_speed_ramp`,
+> `fpsSpeedRamp`, `fps_speed_ramp_keep_exposure`, `fpsSpeedRampKeepExposure` (UI `m_fpsSpeedRamp`). This page keeps the old
+> names (`fps_ramp`, `set_fps_ramp`, `fpsRampEnabled`) because it describes the cloud commit; T31/T32 and the patches use the new ones.
+
 ## 0. Short answer
 
 Core at `9d4f7fb` does not ramp: one `if` in `setFps` refuses any change while recording (`src/camera/CameraController.cpp:8543-8546@9d4f7fb`, message "Stop recording before changing FPS so video and audio keep the same timeline.") — **confirmed**. Below that gate everything an fps change needs is already a one-request control write: `applyControls` → `pendingControls_` → the next `requeueRequest` carries the new `FrameDurationLimits`, no camera stop, no buffer reallocation (`CC:6124-6157`, `:7271-7277`) — **confirmed**. Four things assume one rate per clip and would misbehave if the gate were simply removed: the recorder's elapsed-time frame numbering, the WAV endpoint model, the per-frame `FrameRate` tag and timecode that follow the *live* fps, and the H.264/ProRes containers (one `time_base`) — **confirmed** from the lines in §2.
