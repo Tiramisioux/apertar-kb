@@ -16,6 +16,14 @@ the pages it points to, before touching anything.
 | T34 mode ladder | requirements, facts and two designs (`working/ramp-ladder/README.md` §3.2); no tutorial, no patch |
 | 4K Clear HDR 16-bit | 25 fps is the accepted maximum (Patrik, 2026-10-27); T32 makes Core (its clamp and its PCF pot/button list) and both UIs stop there |
 
+> [!note] 2026-10-28 (VS Code session): point 0 done (KB `03d5166`, synced to the Pi). Point 1 check: neither T31 nor T32
+> on the Pi (every count 0). The Pi had `temp:` commits on top (Core 6 from `753f181`, UI 6 from `def5d45`); Patrik moved them
+> to the local branch `cinemate-port-temp` and reset Pi `cinemate-port` to Core `87011d4`, UI `2d27c46`. All five reference
+> patches apply cleanly there, so T31/T32 are typed as written. **Hazard if the temp work comes back:** `13a350f`/`3c2f2c5` put
+> a Clear HDR 16 → SDR 12 switch in `setFps` through `applySettingsLocked`, which has no take check; with T31 a ramp past 25 in
+> Clear HDR 16 would reconfigure the camera mid-take. It must refuse or cap in a take (design A). The running binaries are
+> still the temp build until the next Core/UI build.
+
 What the Pi runs today is not known from the cloud. Check first: `ssh apertar 'git -C ~/ApertarCore log --oneline -1; git -C ~/ApertarUI log --oneline -1'`.
 
 The cloud session could not compile `CameraController.cpp` (libcamera) or run anything on a Pi. What Patrik did on the Pi is
