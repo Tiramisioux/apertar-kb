@@ -30,7 +30,10 @@ with the decisions taken so far.
 13. **(2026-10-28) Auto on the ISO dial**, at its lowest position, when the operator changes ISO.
 14. **(2026-10-28) Clear HDR log spam.** Candidate: the driver's `Update minimum HMAX: base= lane_scale= hdr_scale=` (186 lines
     this boot, one per mode set); to confirm with Patrik.
-15. **(2026-10-28) Open question:** must H.264 refuse ramping? See the answer in the session; decision pending.
+15. **(2026-10-28) H.264 ramping stays refused** (Patrik): H.264 captures from 4K only and Core caps it at 30
+    (hardware-log 2026-10-28); the MP4/MOV are video-only, so audio was never the obstacle.
+19. **(2026-10-28) Audio stretch switch.** A real-time WAV of another length is acceptable. With a switch on, also write a WAV
+    conformed to the clip timeline: tempo follows the ramp (base/capture fps), pitch unchanged. Built before T32.
 
 16. **(2026-10-28) Auto ISO: lock or off, in the ISO array and the API.** Proposal (least API): `set_iso_auto [enabled=true|false]`
     (the `set_fps_phase_lock` pattern); `false` locks at the live gain (`measuredAnalogueGain_`, `CC:7704`); `set_iso value=N` stays

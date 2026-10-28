@@ -524,3 +524,12 @@ Entry format:
   flag, so SDR kept ISO 720 manual while WB went back to auto. Round trip with both auto: held in Clear HDR, auto again in SDR;
   flags persisted. **Confirmed.**
 - Seen: while auto ISO runs, the state's `iso` is the stored value (720 after the round trip), not the live gain; request 16.
+
+## 2026-10-28: H.264 on the IMX585 (Core 65b2bb2): 4K capture only, 30 fps cap, x264 has headroom
+
+- `set_record_format h264`: capture stays 3840x2160 (a 1920x1080 `set_resolution` is ignored), output 1920x1080, libx264
+  `tune=zerolatency`, `input=staged-yuv`. `set_fps` 50 or 60 → 30.
+- 10 s takes: 25 fps 235/235 frames, 30 fps 294/294 (`ffprobe` 294, avg 30/1), `dropped_queue_full=0`, peak queue 1/6;
+  Core 69-84 % of one core. **Confirmed**: the encoder is not the limit; Core's H.264 capture choice is.
+- The H.264 MP4 and the ProRes MOV are video-only (one stream: `LibavH264EncoderPlugin.cpp:124`, `ProresEncoder.cpp:929`);
+  audio is the clip folder's WAV, as for cDNG. Speed ramping in H.264 stays refused (Patrik): 25 → 30 is too little.
