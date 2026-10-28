@@ -1,0 +1,39 @@
+core src/hardware/GpioInput.cpp|if (!running_.exchange(false))
+core src/hardware/Pcf8574Input.cpp|if (!running_.exchange(false))
+core src/hardware/GroveAnalogInput.cpp|if (!running_.exchange(false))
+core src/hardware/GpioInput.cpp|setLastError({});
+core src/hardware/Pcf8574Input.cpp|setLastError({});
+core src/hardware/GroveAnalogInput.cpp|setLastError({});
+core src/hardware/TriggerOutput.hpp|bool running_ = false;
+core src/hardware/RecordingIndicatorOutput.hpp|bool running_ = false;
+core src/hardware/NeoRotary4Input.cpp|const std::string &action = delta > 0
+core src/hardware/NeoRotary4Input.cpp|emitAction(config_.encoders[encoder].press);
+core src/hardware/Pcf8574Input.cpp|emitAction(config_.actions[pin]);
+core src/hardware/GpioInput.cpp|if (button.stablePressed)
+core src/ApertarCoreApp.cpp|void ApertarCoreApp::handleHardwareInputAction(const std::string &action, bool buttonPress)
+core src/ApertarCoreApp.cpp|static const Ina219HardwareConfig config = loadIna219HardwareConfig();
+core src/ApertarCoreApp.cpp|CfeHatReader hat(hatConfig);
+core src/ApertarCoreApp.cpp|const CardPresence slot = hat.cardPresence();
+core src/ApertarCoreApp.cpp|syncRecordingTracking(camera_.isRecording());
+core src/ApertarCoreApp.cpp|publishEvent("{\"event\":\"camera_state\",\"state\":\"stopping\"}");
+core src/ApertarCoreApp.cpp|std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+core src/ApertarCoreApp.cpp|std::string buildHardwareConfigFileJson()
+core src/ApertarCoreApp.cpp|std::string defaultHardwareConfigTemplate()
+core src/ApertarCoreApp.hpp|std::mutex commandMutex_;
+core src/ApertarCoreApp.hpp|std::thread mediaWatcherThread_;
+core src/web/WebControlPage.cpp|data-panel="config" type="button"
+core src/web/WebControlPage.cpp|<section class="settings-panel" data-panel="config">
+core src/web/WebControlPage.cpp|const settingsPanelMeta = {
+core src/web/WebControlPage.cpp|configDirty: false,
+core src/web/WebControlPage.cpp|function setSettingsPanel(panelName) {
+core src/web/WebControlPage.cpp|.preset-row {
+core src/web/WebControlPage.cpp|.config-editor {
+core src/web/WebControlPage.cpp|function updateConfigEditorControls() {
+core src/web/WebControlPage.cpp|async function sendCommand(payload) {
+core src/web/WebControlPage.cpp|id="restartSystemButton"
+core src/hardware/Mpu6050RecordingSession.cpp|bool Mpu6050RecordingSession::setConfiguredDriver(const std::string &driver, std::string *error)
+core src/hardware/Mpu6050RecordingSession.cpp|if (!updateImuBiasConfig(session.config_.configPath,
+core CMakeLists.txt|src/hardware/TriggerOutput.cpp
+ui src/GyroConfigBridge.cpp|bool GyroConfigBridge::writeConfigValue(const QString &sectionName,
+ui qml/SettingsPage.qml|readonly property var defaultSystemOrder: [
+ui src/DeviceInfoBridge.hpp|Q_PROPERTY(QString ipAddress READ ipAddress NOTIFY infoChanged)
