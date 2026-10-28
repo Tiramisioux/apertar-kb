@@ -32,6 +32,13 @@ with the decisions taken so far.
     this boot, one per mode set); to confirm with Patrik.
 15. **(2026-10-28) Open question:** must H.264 refuse ramping? See the answer in the session; decision pending.
 
+16. **(2026-10-28) Auto ISO: lock or off, in the ISO array and the API.** Proposal (least API): `set_iso_auto [enabled=true|false]`
+    (the `set_fps_phase_lock` pattern); `false` locks at the live gain (`measuredAnalogueGain_`, `CC:7704`); `set_iso value=N` stays
+    "off at N". While `iso_auto`, the state's existing `"iso"` reports the live gain (today the set value, `App:8018`), shown green.
+    In T33 the ISO array gets Auto as its lowest entry, so the dial's lowest position is Auto (request 13).
+17. **(2026-10-28) Clear HDR guard.** In Clear HDR, auto ISO and auto WB are off, with an info message. Entering Clear HDR with
+    either on: they hold the value they had at that moment. Back to SDR: they return to auto.
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
