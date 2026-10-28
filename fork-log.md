@@ -87,6 +87,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `75e8de4` | Clear HDR records uncompressed cDNG, SDR lossless, however the mode is switched (`set_clear_hdr` and the ladder; Clear HDR 16-bit lossless overflowed the queue); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `d4a4b6d` | Ladder messages say "resolution", not "rung" (Patrik); API keys unchanged; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `rs2` | Ladder API says resolutions: `set_mode_ladder resolutions=`, `resolutions`/`resolutions_text`/`running_resolution`, state `ladder_resolution`, file key `resolutions=` (reads old `rungs=`); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `d0cb727` `a7e67da` | Each ladder resolution names its compression (`WxH:BITS:hdr|sdr[:FPS[:none|lossless_jpeg|lossy_3to1|lossy_5to1]]`, default Clear HDR none / SDR lossless); the ladder puts it into its one reconfigure; while active `set_cdng_compression`, `set_lossy_dng_ratio` and cDNG↔lossy `set_record_format` are refused; presets that match take the ladder's format; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `1c3de76` | WebUI: Compression select disabled with a note while the ladder is active; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -98,6 +100,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `fb8ca36` | Touch UI: `ladderActive` in the control bridge; Compression field disabled, labelled "set by Mode Ladder"; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `fcbe030` | Touch screen + HDMI: system-decided values in italics instead of green (`TopDropdownStat.valueItalic`); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `bd0e54d` | QML: ISO Auto offered everywhere but Clear HDR; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `1509cab` | Touch UI + HDMI: auto values white; cap green only when the camera added it (fixes ISO 800 green in lossless); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |

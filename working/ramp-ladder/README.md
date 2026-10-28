@@ -94,6 +94,11 @@ with the decisions taken so far.
 30. **(2026-10-28) Unverified items** (auto ISO in lossless, stretched WAV sound, 50 fps, dials, …): `../unverified-speed-ramp-port.md`.
     Also: ISO and WB dials reach Auto below the first value (`5778b70`, `12c9075`; Auto offered everywhere but Clear HDR).
 
+31. **(2026-10-28) Naming:** it is a *resolution*, not a rung, in messages and in the API (`resolutions`, `ladder_resolution`).
+32. **(2026-10-28) Compression is defined per ladder resolution** (none / lossless_jpeg / lossy_3to1 / lossy_5to1; default Clear HDR
+    uncompressed, SDR lossless), and an active ladder overrides the Recording format's compression: greyed out with a note in both
+    UIs, refused in Core. Clear HDR 16-bit lossless overflowed the write queue, hence the default (`75e8de4`, `d0cb727`).
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
