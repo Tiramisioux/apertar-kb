@@ -32,6 +32,8 @@ not recorded in this export.
 > [!todo] 2026-10-28: **listen to the experimental stretched WAV** (`C0034` was deleted; `C0022_stretched.wav` exists, a small 25 → 30 → 25
 > ramp; a new 1080p 25 → 50 → 25 take is the better test). Length and pitch are measured; the sound is not checked yet. `ramp-ladder/README.md` 19.
 
+> [!todo] 2026-10-28: the open, unconfirmed items of the port are in `working/unverified-speed-ramp-port.md`.
+
 ## 2. Rules (unchanged, keep them)
 
 - `working/handoff-T26-T30.md` §2 and `working/mac-driven-loop.md`: Claude on the Mac, the Pi over `ssh apertar`, build on the

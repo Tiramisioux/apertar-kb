@@ -91,6 +91,9 @@ with the decisions taken so far.
 29. **(2026-10-28) T34 M3 parked:** 12-bit SDR 3840x2076 at 50 fps loses ~12 % as capture gaps with 4 or 8 raw buffers
     (`C0025`, `C0026`), storage fine. Longer test later (Patrik). A 50 fps rung 2 at 4K is not proven usable.
 
+30. **(2026-10-28) Unverified items** (auto ISO in lossless, stretched WAV sound, 50 fps, dials, …): `../unverified-speed-ramp-port.md`.
+    Also: ISO and WB dials reach Auto below the first value (`5778b70`, `12c9075`; Auto offered everywhere but Clear HDR).
+
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
