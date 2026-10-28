@@ -78,6 +78,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `40747b9` | Lossless cDNG ISO cap 1600 (was 800), as temp 753f181; Clear HDR 16-bit lossless now tops at 1585; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |
 | `cded727` | Recording frame (default off) and red timecode (default on) switches: UI.conf keys, `set_recording_frame_enabled`, `set_recording_red_timecode_enabled`, web state, presets; WebUI switches in Live preview, red border on the preview (requests 25, 27); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |
 | `b017004` | WebUI: no explanation line under the recording-indicator switches (Patrik); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |
+| `9de98c9` | WebUI: auto ISO/WB/shutter white; green only for values the camera decides (held, added cap, flicker-free, ramp angle) (Patrik); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -89,6 +90,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `1509cab` | Touch UI + HDMI: auto values white; cap green only when the camera added it (fixes ISO 800 green in lossless); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `632d840` | Touch UI + HDMI: recording frame and red timecode switches (Settings → Monitoring), red border during takes, timecode red only with the switch on; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |
 | `b823e17` | QML lossless ISO fallback 1600, as Core; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |
 | `696aaf0` | Touch screen + HDMI resolution line back to "16-bit" (reverts c1d393b); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik) |
