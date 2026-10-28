@@ -79,6 +79,9 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
+| `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `79b9c2c` | Touch UI FPS picker sends only `set_fps` in a camera ramp take (Core applies the shutter policy); tracks `fps_speed_ramp`, `sound_recording` (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `5223ae6` | Touch UI FPS list stops at 25 in 4K Clear HDR 16-bit (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 | `d8098d0` | Touch UI: 25/33/50 in 16-bit Clear HDR, IMX585 4K SDR up to 60, lossless cap 50; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `f23c243` | HDMI monitor: RESOLUTION caption shows bit depth and Clear HDR for raw takes; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `2464b60` | Touch UI frame rates 25/33/50 (IMX585 and others); branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -91,9 +94,6 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `66d6d19` | Stop tracking the committed `build/` tree (551 files, 18 MB, #5) | offer |
 | `29ed99b` | Executable bits and `mesa-minimal` symlinks restored (#6) | offer |
 | `4415a55` | Touch UI: "4K Clear HDR" resolution (quick menu + settings) and 16-bit bit depth, greyed where unavailable; bridge `clearHdr` / `applyClearHdr` | offer (needs Core `631721d`+) |
-| `5223ae6` | Touch UI FPS list stops at 25 in 4K Clear HDR 16-bit (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
-| `79b9c2c` | Touch UI FPS picker sends only `set_fps` in a camera ramp take (Core applies the shutter policy); tracks `fps_speed_ramp`, `sound_recording` (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
-| `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
 
 ## libcamera · `Tiramisioux/libcamera` branch `apertar` · base will127534 `qbc-pisp-handler` (`7e9fef0`)
 
