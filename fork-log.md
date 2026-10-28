@@ -66,8 +66,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `a56eae7` | Phase lock carried across recording formats (was per format profile); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (hardware-log) |
 | `78c980d` | **Experimental** stretched WAV after a ramp take: `fps_speed_ramp_stretch_audio` (default on, `audio=real|stretch`), detached `rubberband --fine --timemap` → `<clip>_stretched.wav`; `fps-ramp.txt` gets `applied_us` (request 19); needs `rubberband-cli`; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (hardware-log) |
 | `6ea848b` | Audio-stretch key-frame map without the `0 0` line (Rubber Band warned about a NaN ratio); branch `cinemate-port` | fork-only, Pi only; built, needs a Core restart |
-| `4d9b321` | `iso_max` in the state: the current mode's ISO ceiling (Clear HDR per mode, lossless 800), from the same helpers the sanitiser uses; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
-| `4ee472d` | WebUI: camera-set values green (`.system-value`, `--ok`), badges show `iso_actual`/`wb_actual_kelvin`, ISO pills from `iso_max` (first step above lands on it), Lock pill, WB Auto greyed in Clear HDR; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `4d9b321` | `iso_max` in the state: the current mode's ISO ceiling (Clear HDR per mode, lossless 800), from the same helpers the sanitiser uses; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
+| `4ee472d` | WebUI: camera-set values green (`.system-value`, `--ok`), badges show `iso_actual`/`wb_actual_kelvin`, ISO pills from `iso_max` (first step above lands on it), Lock pill, WB Auto greyed in Clear HDR; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
 | `753f181` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `c5d0c37` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `13a350f` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -79,9 +79,9 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 | Commit | Change | Status |
 | --- | --- | --- |
-| `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
 | `79b9c2c` | Touch UI FPS picker sends only `set_fps` in a camera ramp take (Core applies the shutter policy); tracks `fps_speed_ramp`, `sound_recording` (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
-| `5223ae6` | Touch UI FPS list stops at 25 in 4K Clear HDR 16-bit (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `5223ae6` | Touch UI FPS list stops at 25 in 4K Clear HDR 16-bit (T32); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
 | `d8098d0` | Touch UI: 25/33/50 in 16-bit Clear HDR, IMX585 4K SDR up to 60, lossless cap 50; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `f23c243` | HDMI monitor: RESOLUTION caption shows bit depth and Clear HDR for raw takes; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `2464b60` | Touch UI frame rates 25/33/50 (IMX585 and others); branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |

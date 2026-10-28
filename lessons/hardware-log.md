@@ -551,3 +551,4 @@ Entry format:
 - `get_state` `iso_max`: SDR lossless 800, SDR uncompressed 0, Clear HDR 12-bit 720 (ISO 800 capped to 720), Clear HDR
   16-bit 1585. **Confirmed.** UI started clean (`qml_aot=true`, no QML errors). The on-screen green values, the ISO lists and
   Lock wait for Patrik's look on the touch screen, HDMI and WebUI.
+- Patrik (21:2x): green values, ISO lists, Lock, Clear HDR hold on the touch screen, HDMI and WebUI "work well". **Confirmed.**
