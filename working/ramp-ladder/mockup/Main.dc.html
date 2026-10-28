@@ -39,17 +39,17 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <div style="display: flex; gap: 12px; justify-content: space-between; align-items: flex-start;">
 <div>
 <h2 id="ladderTitle" style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Mode Ladder</h2>
-<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">Put the sensor modes in order, best first. When you ask for an FPS, Core uses the first rung that can run it. A threshold is optional: empty means the mode's own ceiling.</p>
+<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">Switches resolution automatically when you change FPS. Each resolution runs up to its FPS limit, then the next one takes over.</p>
 </div>
 <div style="{{ statusPill.style }}">{{ statusPill.label }}</div>
 </div>
 
 <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; padding: 14px 16px; border-radius: 18px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72);">
 <div style="min-width: 0;">
-<div style="font-size: 15px; font-weight: 600;">Honour the ladder</div>
+<div style="font-size: 15px; font-weight: 600;">Activate ladder</div>
 <div style="font-size: 13px; color: #a1a1aa; margin-top: 4px;">{{ switchNote }}</div>
 </div>
-<button type="button" role="switch" aria-checked="{{ switchChecked }}" aria-label="Honour the ladder" onClick="{{ toggleOn }}" style="{{ switchTrack }}">
+<button type="button" role="switch" aria-checked="{{ switchChecked }}" aria-label="Activate ladder" onClick="{{ toggleOn }}" style="{{ switchTrack }}">
 <span style="{{ switchKnob }}"></span>
 </button>
 </div>
@@ -60,22 +60,28 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <div style="{{ nowStyle }}">{{ nowText }}</div>
 <div style="font-size: 13px; color: #a1a1aa; margin-top: 4px;">{{ nowNote }}</div>
 </div>
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+<div role="img" aria-label="{{ nowCropLabel }}" style="{{ nowFrameStyle }}">
+<div style="{{ nowWinStyle }}"></div>
+<span style="{{ nowTagStyle }}">{{ nowTag }}</span>
+</div>
+</div>
 </div>
 
 <div style="display: flex; flex-direction: column; gap: 6px; padding: 0 2px;">
 <span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">During a take</span>
-<span style="font-size: 14px; color: #d4d4d8;">FPS stops at the running rung's ceiling. Rungs change between takes only, with a short preview blink. A switch inside a take (new clip, frame gap, look cut) is not built: it waits for the Pi measurements.</span>
+<span style="font-size: 14px; color: #d4d4d8;">FPS stops at the running resolution's ceiling. Resolutions change between takes only, with a short preview blink. A switch inside a take (new clip, frame gap, look cut) is not built: it waits for the Pi measurements.</span>
 <span style="font-size: 13px; color: #a1a1aa;">While the ladder is on, Resolution, Bit Depth and Clear HDR are greyed in Recording format: the FPS picks the mode.</span>
 </div>
 
 <div style="display: flex; flex-direction: column; gap: 10px;">
 <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px;">
-<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Rungs, top first</span>
+<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Resolutions, first one first</span>
 <span style="font-size: 12px; color: #a1a1aa;">Drag the handle, or use the arrows</span>
 </div>
 
 <sc-if value="{{ noRungs }}" hint-placeholder-val="{{ false }}">
-<div style="padding: 22px; border-radius: 18px; border: 1px dashed #3f3f46; color: #a1a1aa; font-size: 14px; text-align: center;">No rungs yet. Add a mode from Activated sensor modes below.</div>
+<div style="padding: 22px; border-radius: 18px; border: 1px dashed #3f3f46; color: #a1a1aa; font-size: 14px; text-align: center;">No resolutions yet. Add a mode from Activated sensor modes below.</div>
 </sc-if>
 
 <sc-for list="{{ rungs }}" as="rung" hint-placeholder-count="2">
@@ -87,27 +93,47 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </div>
 </sc-if>
 <div draggable="true" onDragStart="{{ rung.dragStart }}" onDragOver="{{ rung.dragOver }}" onDrop="{{ rung.drop }}" onDragEnd="{{ rung.dragEnd }}" style="{{ rung.rowStyle }}">
+<div style="display: flex; gap: 14px; align-items: center; flex: 1 1 380px; min-width: 0;">
 <span aria-hidden="true" title="Drag to reorder" style="display: flex; align-items: center; justify-content: center; width: 28px; color: #a1a1aa; cursor: grab;">
 <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
 </span>
 <span style="{{ rung.badgeStyle }}">{{ rung.number }}</span>
-<div style="flex: 1 1 220px; min-width: 0;">
+<div aria-hidden="true" title="{{ rung.cropTitle }}" style="{{ rung.frameStyle }}">
+<div style="{{ rung.winStyle }}"></div>
+<span style="{{ rung.tagStyle }}">{{ rung.tag }}</span>
+</div>
+<div style="flex: 1 1 auto; min-width: 0;">
 <div style="font-size: 15px; font-weight: 600;">{{ rung.name }}</div>
 <div style="font-size: 13px; color: #a1a1aa; margin-top: 3px;">{{ rung.meta }}</div>
+<div style="{{ rung.descStyle }}">{{ rung.desc }}</div>
 <div style="font-size: 13px; color: #d4d4d8; margin-top: 6px;">{{ rung.rangeText }}</div>
 <sc-if value="{{ rung.hasProblem }}" hint-placeholder-val="{{ false }}">
 <div style="font-size: 13px; color: #fca5a5; margin-top: 6px;">{{ rung.problem }}</div>
 </sc-if>
 </div>
-<div style="display: flex; flex-direction: column; gap: 4px; flex: 0 0 132px;">
+</div>
+<div style="display: flex; gap: 12px; align-items: flex-start; flex: 0 0 auto;">
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 0 0 120px;">
 <label for="{{ rung.inputId }}" style="font-size: 11px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Up to (fps)</label>
-<input id="{{ rung.inputId }}" type="number" inputmode="decimal" min="1" max="{{ rung.ceiling }}" placeholder="{{ rung.placeholder }}" value="{{ rung.thr }}" onChange="{{ rung.setThr }}" style="{{ rung.inputStyle }}">
+<input id="{{ rung.inputId }}" type="number" inputmode="numeric" step="1" min="{{ rung.minFps }}" max="{{ rung.ceiling }}" placeholder="{{ rung.placeholder }}" value="{{ rung.thr }}" onChange="{{ rung.setThr }}" style="{{ rung.inputStyle }}">
 <span style="font-size: 12px; color: #a1a1aa;">{{ rung.ceilingText }}</span>
 </div>
-<div style="display: flex; gap: 6px; align-items: center;">
+<div style="display: flex; flex-direction: column; gap: 4px; flex: 0 0 190px;">
+<label for="{{ rung.compId }}" style="font-size: 11px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Compression</label>
+<select id="{{ rung.compId }}" onChange="{{ rung.setComp }}" style="{{ rung.compStyle }}">
+<sc-for list="{{ rung.compOptions }}" as="o" hint-placeholder-count="4">
+<option value="{{ o.value }}" selected="{{ o.selected }}" disabled="{{ o.disabled }}">{{ o.label }}</option>
+</sc-for>
+</select>
+<span style="font-size: 12px; color: #a1a1aa;">{{ rung.compNote }}</span>
+<span style="{{ rung.sizeStyle }}">{{ rung.sizeFrame }}</span>
+<span style="{{ rung.rateStyle }}">{{ rung.sizeRate }}</span>
+</div>
+<div style="display: flex; gap: 6px; align-items: center; padding-top: 19px;">
 <button type="button" aria-label="{{ rung.upLabel }}" disabled="{{ rung.isFirst }}" onClick="{{ rung.moveUp }}" style="{{ rung.upStyle }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"></path><path d="M6 11l6-6 6 6"></path></svg></button>
 <button type="button" aria-label="{{ rung.downLabel }}" disabled="{{ rung.isLast }}" onClick="{{ rung.moveDown }}" style="{{ rung.downStyle }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M6 13l6 6 6-6"></path></svg></button>
 <button type="button" aria-label="{{ rung.removeLabel }}" onClick="{{ rung.remove }}" style="width: 44px; height: 44px; border-radius: 14px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72); color: #fca5a5; display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button>
+</div>
 </div>
 </div>
 </div>
@@ -142,38 +168,18 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 </sc-if>
 </div>
 
-<div style="display: flex; flex-direction: column; gap: 8px;">
-<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap;">
-<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Quick access FPS (your list)</span>
-<span style="font-size: 12px; color: #a1a1aa;">Under each value: the rung it runs on. Amber: picking it switches the mode (between takes)</span>
-</div>
-<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px;">
-<sc-for list="{{ quickFps }}" as="q" hint-placeholder-count="9">
-<button type="button" disabled="{{ q.disabled }}" onClick="{{ q.pick }}" aria-pressed="{{ q.pressed }}" style="{{ q.style }}">
-<span style="display: block; font-size: 14px;">{{ q.label }}</span>
-<span style="{{ q.rungStyle }}">{{ q.rungText }}</span>
-</button>
-</sc-for>
-</div>
-</div>
 </section>
 
-<section aria-labelledby="rampTitle" style="border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1); background: #18181b; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
-<div style="display: flex; gap: 12px; justify-content: space-between; align-items: flex-start;">
-<div>
-<h2 id="rampTitle" style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Speed Ramp <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">(T32 block, in Recording format)</span></h2>
-<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 60ch;">The ladder adds one row here. Ramp-ready makes the next ramp take start in the rung that reaches the ramp's top, so the whole ramp stays in one mode.</p>
+<section aria-labelledby="rampTitle" style="border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1); background: #18181b; padding: 20px; display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;">
+<div style="min-width: 0; flex: 1 1 320px;">
+<h2 id="rampTitle" style="margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em;">Speed Ramp</h2>
+<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa; max-width: 56ch;">Change the frame rate during recording. The clip keeps the rate it started at, so the faster parts play back as slow motion.</p>
 </div>
-<div style="{{ rampPill.style }}">{{ rampPill.label }}</div>
-</div>
-<div style="display: flex; flex-direction: column; gap: 8px;">
-<span style="font-size: 12px; font-weight: 700; color: #a1a1aa; letter-spacing: 0.08em; text-transform: uppercase;">Ramp-ready (new)</span>
-<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; max-width: 420px;">
-<sc-for list="{{ rampReadyOptions }}" as="rr" hint-placeholder-count="2">
-<button type="button" onClick="{{ rr.pick }}" aria-pressed="{{ rr.pressed }}" style="{{ rr.style }}">{{ rr.label }}</button>
-</sc-for>
-</div>
-<span style="{{ rampReadyNoteStyle }}">{{ rampReadyNote }}</span>
+<div style="display: flex; align-items: center; gap: 12px;">
+<span style="font-size: 15px; font-weight: 600;">Allow speed ramping</span>
+<button type="button" role="switch" aria-checked="{{ rampChecked }}" aria-label="Allow speed ramping" onClick="{{ toggleRamp }}" style="{{ rampTrack }}">
+<span style="{{ rampKnob }}"></span>
+</button>
 </div>
 </section>
 
@@ -194,11 +200,15 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px;">
 <sc-for list="{{ catalog }}" as="m" hint-placeholder-count="8">
 <div style="display: flex; gap: 10px; align-items: center; padding: 12px 12px 12px 14px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.08); background: #202024;">
+<div aria-hidden="true" title="{{ m.cropTitle }}" style="{{ m.frameStyle }}">
+<div style="{{ m.winStyle }}"></div>
+<span style="{{ m.tagStyle }}">{{ m.tag }}</span>
+</div>
 <div style="flex: 1 1 auto; min-width: 0;">
 <div style="font-size: 14px; font-weight: 600;">{{ m.name }}</div>
 <div style="font-size: 12px; color: #a1a1aa; margin-top: 3px;">{{ m.meta }}</div>
 </div>
-<button type="button" disabled="{{ m.onLadder }}" onClick="{{ m.add }}" aria-label="{{ m.addLabel }}" style="{{ m.addStyle }}">{{ m.addText }}</button>
+<button type="button" disabled="{{ m.addDisabled }}" title="{{ m.addWhy }}" onClick="{{ m.add }}" aria-label="{{ m.addLabel }}" style="{{ m.addStyle }}">{{ m.addText }}</button>
 </div>
 </sc-for>
 </div>
@@ -212,17 +222,17 @@ a{color:#e4e4e7}a:hover{color:#ffffff}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    const initial = [{ id: 'chdr16-3840x2160', thr: '' }, { id: 'sdr12-3840x2160', thr: '' }];
+    const initial = [{ id: 'chdr16-3840x2160', thr: '', comp: 'none' }, { id: 'sdr12-3840x2160', thr: '', comp: 'none' }];
     this.state = {
       on: true,
-      rampReady: false,
+      rampOn: true,
       savedJson: JSON.stringify(initial),
       rungs: initial,
       dragId: null,
       overIndex: -1,
       group: 'all',
       depth: '12',
-      pickedFps: 25,
+      notice: '',
     };
   }
 
@@ -236,20 +246,139 @@ class Component extends DCLogic {
     const crops2k = [['1038', '1.85:1'], ['1012', '1.90:1'], ['960', '2.00:1'], ['872', '2.20:1'], ['864', '2.22:1'], ['816', '2.35:1'], ['804', '2.39:1'], ['768', '2.50:1'], ['752', '2.55:1']];
     ['12', '10'].forEach((d) => {
       list.push({ id: 'sdr' + d + '-3840x2160', group: '4k', name: '4K SDR ' + d + '-bit', size: '3840×2160', aspect: '16:9', depth: d, cls: 'SDR', max: 60, maxWhy: 'sensor probe; Core caps 30 today' });
-      crops.forEach(([h, a]) => list.push({ id: 'sdr' + d + '-3840x' + h, group: 'crop', name: a + ' crop, ' + d + '-bit', size: '3840×' + h, aspect: a, depth: d, cls: 'SDR', max: 60, maxWhy: 'Core crop limit' }));
+      crops.forEach(([h, a]) => list.push({ id: 'sdr' + d + '-3840x' + h, group: 'crop', name: a + ', ' + d + '-bit', size: '3840×' + h, aspect: a, depth: d, cls: 'SDR', max: 60, maxWhy: 'Core crop limit' }));
       list.push({ id: 'sdr' + d + '-1920x1080', group: '2k', name: '2K binned ' + d + '-bit', size: '1920×1080', aspect: '16:9', depth: d, cls: 'SDR 2×2 binned', max: 60, maxWhy: 'Core limit' });
-      crops2k.forEach(([h, a]) => list.push({ id: 'sdr' + d + '-1920x' + h, group: '2k', name: '2K ' + a + ' crop, ' + d + '-bit', size: '1920×' + h, aspect: a, depth: d, cls: 'SDR 2×2 binned', max: 60, maxWhy: 'Core limit' }));
+      crops2k.forEach(([h, a]) => list.push({ id: 'sdr' + d + '-1920x' + h, group: '2k', name: '2K ' + a + ', ' + d + '-bit', size: '1920×' + h, aspect: a, depth: d, cls: 'SDR 2×2 binned', max: 60, maxWhy: 'Core limit' }));
     });
     this._modes = list;
     return list;
+  }
+
+  // The mode's window inside the full 3840x2160 sensor frame (Cinemate's cropDiagram); the cut-off area is hatched.
+  cropOf(m, w0, h0) {
+    const [w, h] = m.size.split('\u00d7').map(Number);
+    const binned = m.cls.indexOf('binned') >= 0;
+    const nw = binned ? w * 2 : w; // 2x2 binned modes report their crop in native sensor pixels
+    const nh = binned ? h * 2 : h;
+    const cutW = Math.round((1 - nw / 3840) * 100);
+    const cutH = Math.round((1 - nh / 2160) * 100);
+    const cropped = cutW > 0; // a real crop-in: the width is cut. Same width with less height is only a different aspect ratio.
+    const letterbox = !cropped && cutH > 0;
+    const tag = cropped ? 'CROP IN' : '';
+    const desc = cropped
+      ? 'Crop in: reads ' + nw + '\u00d7' + nh + ' of 3840\u00d72160, ' + cutW + '% of the width cut off' + (binned ? ', then binned 2\u00d72' : '') + '.'
+      : (letterbox
+        ? 'Full sensor width, ' + m.aspect + ' (top and bottom not read). No crop-in.'
+        : (binned ? 'Whole sensor area, binned 2\u00d72 to ' + w + '\u00d7' + h + '.' : 'Whole sensor area, no crop.'));
+    const big = w0 > 100;
+    return {
+      binned, cropped, tag, desc,
+      frameStyle: {
+        position: 'relative', flex: '0 0 auto', width: w0 + 'px', height: h0 + 'px', border: '1px solid #8a8a8a', background: '#131210', overflow: 'hidden', boxSizing: 'border-box',
+      },
+      winStyle: {
+        position: 'absolute', boxSizing: 'border-box', left: ((3840 - nw) / 2 / 3840 * 100) + '%', top: ((2160 - nh) / 2 / 2160 * 100) + '%',
+        width: (nw / 3840 * 100) + '%', height: (nh / 2160 * 100) + '%', border: '2px solid #90ee90',
+        background: (nw >= 3840 && nh >= 2160) ? 'rgba(120, 220, 150, 0.08)' : 'rgba(120, 220, 150, 0.13)', minWidth: '2px', minHeight: '2px',
+      },
+      tagStyle: {
+        position: 'absolute', left: '3px', top: '2px', fontSize: big ? '11px' : '8px', fontWeight: 700, letterSpacing: '0.04em', lineHeight: 1.2, color: '#fbbf24',
+      },
+      title: (cropped ? 'Crop in ' : (letterbox ? 'Full width ' : 'Full sensor area ')) + nw + '\u00d7' + nh + ' of 3840\u00d72160' + (binned ? ' (2\u00d72 readout, output ' + w + '\u00d7' + h + ')' : ''),
+    };
+  }
+
+  // File size per frame (MB, 1 MB = 1e6 bytes) of a mode in a compression. Uncompressed is exact; lossless is a typical ratio, lossy is the nominal ratio.
+  sizeMB(m, comp) {
+    const [w, h] = m.size.split('\u00d7').map(Number);
+    const raw = w * h * Number(m.depth) / 8 / 1e6;
+    const f = { none: 1, lossless_jpeg: 0.6, lossy_3to1: 1 / 3, lossy_5to1: 1 / 5 }[comp || 'none'];
+    return raw * f;
   }
 
   mode(id) {
     return this.modes().find((m) => m.id === id);
   }
 
+  bm() {
+    return Math.max(1, Number(this.props.buildMaxFps ?? 50));
+  }
+
+  ceilingOf(r) {
+    const m = this.mode(r.id);
+    return Math.min(m.max, this.bm(), (r.comp || 'none') === 'lossless_jpeg' ? 30 : 1e9);
+  }
+
+  // [{from, top, c}] for a list: each resolution serves (from, top]
+  spans(list) {
+    let prev = 0;
+    return list.map((r) => {
+      const c = this.ceilingOf(r);
+      const thr = r.thr === '' ? c : Number(r.thr);
+      const from = prev;
+      const top = Math.max(prev, Math.min(thr, c));
+      prev = top;
+      return { from, top, c, thr };
+    });
+  }
+
+  // clamp every threshold into its legal range; an out-of-range one is cleared (= the mode's own ceiling)
+  normalize(list) {
+    let prev = 0;
+    return list.map((r) => {
+      const c = this.ceilingOf(r);
+      let thr = r.thr;
+      if (thr !== '') {
+        const n = Math.round(Number(thr));
+        thr = Number.isFinite(n) && n > prev && n < c ? String(n) : '';
+      }
+      prev = Math.max(prev, thr === '' ? c : Number(thr));
+      return { ...r, thr };
+    });
+  }
+
+  // '' when the ladder is legal, else why not
+  legal(list) {
+    let prev = 0;
+    for (let i = 0; i < list.length; i++) {
+      const r = list[i];
+      const m = this.mode(r.id);
+      const c = this.ceilingOf(r);
+      const comp = r.comp || 'none';
+      if (comp.indexOf('lossy') === 0 && m.cls.indexOf('Clear HDR') === 0) return 'Lossy DNG cannot record Clear HDR.';
+      if (c <= prev) return 'Resolution ' + (i + 1) + ' (' + m.name + ') would never be used: the ones above already reach ' + prev + ' fps.';
+      prev = r.thr === '' ? c : Number(r.thr);
+    }
+    return '';
+  }
+
+  commit(next, notice) {
+    const n = this.normalize(next);
+    const why = this.legal(n);
+    if (why) { this.setState({ notice: why }); return false; }
+    this.setState({ rungs: n, notice: notice || '', dragId: null, overIndex: -1 });
+    return true;
+  }
+
   setRungs(rungs) {
-    this.setState({ rungs });
+    this.commit(rungs, '');
+  }
+
+  setThrAt(i, raw) {
+    const list = this.state.rungs;
+    const sp = this.spans(this.normalize(list));
+    const v = String(raw).replace(/[^0-9]/g, '');
+    let thr = '';
+    let notice = '';
+    if (v !== '') {
+      const lo = sp[i].from + 1;
+      const hi = sp[i].c;
+      const n = Number(v);
+      const k = Math.min(Math.max(n, lo), hi);
+      if (k !== n) notice = 'Resolution ' + (i + 1) + ': FPS must be between ' + lo + ' and ' + hi + '. Set to ' + k + '.';
+      thr = k === hi ? '' : String(k);
+    }
+    this.commit(list.map((x, j) => (j === i ? { ...x, thr } : x)), notice);
   }
 
   moveRung(from, to) {
@@ -257,11 +386,11 @@ class Component extends DCLogic {
     if (to < 0 || to >= rungs.length || from === to) return;
     const [item] = rungs.splice(from, 1);
     rungs.splice(to, 0, item);
-    this.setState({ rungs, dragId: null, overIndex: -1 });
+    this.commit(rungs, '');
   }
 
   renderVals() {
-    const RUNG_COLORS = ['#60a5fa', '#fb923c', '#c084fc', '#34d399', '#f472b6', '#facc15'];
+    const RUNG_COLOR = '#4ade80'; // one colour for every resolution
     const buildMax = Math.max(1, Number(this.props.buildMaxFps ?? 50));
     const st = this.state;
     const on = st.on;
@@ -292,21 +421,27 @@ class Component extends DCLogic {
       },
     }));
 
-    // rungs
+    const COMPS = [['none', 'Uncompressed'], ['lossless_jpeg', 'Lossless JPEG'], ['lossy_3to1', 'Lossy 3:1'], ['lossy_5to1', 'Lossy 5:1']];
+    const compLabel = (k) => (COMPS.find((c) => c[0] === k) || COMPS[0])[1];
+
+    // resolutions
     let prev = 0;
     const rungs = st.rungs.map((r, i) => {
       const m = this.mode(r.id);
-      const ceiling = Math.min(m.max, buildMax);
+      const comp = r.comp || 'none';
+      const ceiling = Math.min(m.max, buildMax, comp === 'lossless_jpeg' ? 30 : 1e9);
       const thrNum = r.thr === '' ? ceiling : Number(r.thr);
       let problem = '';
-      if (!Number.isFinite(thrNum) || thrNum <= 0) problem = 'Enter an FPS, or leave it empty for ' + ceiling + '.';
+      if (comp.indexOf('lossy') === 0 && m.cls.indexOf('Clear HDR') === 0) problem = 'Lossy DNG cannot record Clear HDR. Pick Uncompressed or Lossless JPEG.';
+      else if (!Number.isFinite(thrNum) || thrNum <= 0) problem = 'Enter an FPS, or leave it empty for ' + ceiling + '.';
       else if (thrNum > ceiling) problem = 'Above this mode’s ceiling of ' + ceiling + ' fps.';
-      else if (ceiling <= prev) problem = 'Never used: the rungs above already cover up to ' + prev + ' fps.';
-      else if (thrNum <= prev) problem = 'Must be above ' + prev + ' fps, where the rung above stops.';
+      else if (ceiling <= prev) problem = 'Never used: the resolutions above already cover up to ' + prev + ' fps.';
+      else if (thrNum <= prev) problem = 'Must be above ' + prev + ' fps, where the resolution above stops.';
       const from = prev;
       const top = problem ? from : Math.max(prev, thrNum);
-      const color = RUNG_COLORS[i % RUNG_COLORS.length];
+      const color = RUNG_COLOR;
       const prevMode = i > 0 ? this.mode(st.rungs[i - 1].id) : null;
+      const prevCompOf = i > 0 ? st.rungs[i - 1].comp : null;
       let transitionText = '';
       if (prevMode) {
         const classChange = prevMode.cls !== m.cls || prevMode.depth !== m.depth;
@@ -314,6 +449,7 @@ class Component extends DCLogic {
         const parts = [];
         if (classChange) parts.push(prevMode.cls + ' ' + prevMode.depth + '-bit → ' + m.cls + ' ' + m.depth + '-bit');
         if (sizeChange) parts.push('picture ' + prevMode.size + ' → ' + m.size);
+        if ((prevCompOf || 'none') !== comp) parts.push(compLabel(prevCompOf || 'none') + ' \u2192 ' + compLabel(comp));
         if (!parts.length) parts.push('same class and size');
         const inTake = classChange || sizeChange
           ? 'Switches between takes only, with a short preview blink; in a take FPS stops at ' + from + '.'
@@ -321,6 +457,7 @@ class Component extends DCLogic {
         transitionText = 'Above ' + from + ' fps: ' + parts.join(', ') + '. ' + inTake;
       }
       const over = st.overIndex === i && st.dragId !== null && st.dragId !== r.id;
+      const crop = this.cropOf(m, 78, 48);
       const ctl = (enabled) => ({
         width: '44px', height: '44px', borderRadius: '14px', border: '1px solid #27272a',
         background: 'rgba(9, 9, 11, 0.72)', color: enabled ? '#f4f4f5' : '#52525b',
@@ -329,6 +466,23 @@ class Component extends DCLogic {
       prev = Math.max(prev, top);
       return {
         number: String(i + 1),
+        frameStyle: crop.frameStyle,
+        winStyle: crop.winStyle,
+        tag: crop.tag,
+        tagStyle: crop.tagStyle,
+        cropTitle: crop.title,
+        binned: crop.binned,
+        desc: crop.desc,
+        descStyle: { fontSize: '13px', marginTop: '4px', color: crop.cropped ? '#fbbf24' : '#a1a1aa' },
+        compId: 'comp-' + i,
+        compOptions: COMPS.map(([v, label]) => ({ value: v, label: (v.indexOf('lossy') === 0 && m.cls.indexOf('Clear HDR') === 0) ? label + ' (not for Clear HDR)' : label, selected: v === comp, disabled: v.indexOf('lossy') === 0 && m.cls.indexOf('Clear HDR') === 0 })),
+        compNote: comp === 'lossless_jpeg' ? 'Capped at 30 fps' : (comp.indexOf('lossy') === 0 ? 'Smaller files' : 'Exact, largest files'),
+        sizeFrame: (comp === 'none' ? '' : '\u2248 ') + this.sizeMB(m, comp).toFixed(1) + ' MB per frame',
+        sizeStyle: { fontSize: '13px', fontWeight: 600, color: '#e4e4e7' },
+        sizeRate: problem ? 'Not used' : (comp === 'none' ? '' : '\u2248 ') + Math.round(this.sizeMB(m, comp) * top) + ' MB/s at ' + top + ' fps' + (this.sizeMB(m, comp) * top > 437 ? ' \u00b7 above 437 (PCIe Gen 2)' : ''),
+        rateStyle: { fontSize: '12px', color: this.sizeMB(m, comp) * top > 437 && !problem ? '#fbbf24' : '#a1a1aa' },
+        compStyle: { minHeight: '44px', borderRadius: '14px', border: '1px solid #27272a', background: 'rgba(9, 9, 11, 0.72)', color: '#f4f4f5', padding: '0 10px', fontSize: '14px', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box' },
+        setComp: (e) => this.setRungs(st.rungs.map((x, j) => (j === i ? { ...x, comp: e.target.value } : x))),
         name: m.name,
         meta: m.size + ' · ' + m.aspect + ' · ' + m.depth + '-bit · ' + m.cls,
         rangeText: problem ? 'Not used' : (from === 0 ? 'Lowest FPS' : 'Above ' + from) + ' up to ' + top + ' fps',
@@ -337,7 +491,7 @@ class Component extends DCLogic {
         ceiling,
         placeholder: String(ceiling),
         thr: r.thr,
-        ceilingText: 'Ceiling ' + ceiling + (ceiling < m.max ? ' (build max)' : ' (' + m.maxWhy + ')'),
+        ceilingText: 'Ceiling ' + ceiling + (ceiling < Math.min(m.max, buildMax) ? ' (lossless cap)' : (ceiling < m.max ? ' (build max)' : ' (' + m.maxWhy + ')')),
         inputId: 'thr-' + i,
         inputStyle: {
           minHeight: '44px', borderRadius: '14px', border: problem ? '1px solid #ef4444' : '1px solid #27272a',
@@ -351,7 +505,7 @@ class Component extends DCLogic {
           display: 'flex', alignItems: 'center', justifyContent: 'center', flex: '0 0 30px',
         },
         rowStyle: {
-          display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', padding: '12px', borderRadius: '18px',
+          display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', padding: '14px 16px', borderRadius: '18px',
           border: over ? '1px dashed rgba(255, 255, 255, 0.7)' : '1px solid rgba(255, 255, 255, 0.1)',
           background: st.dragId === r.id ? '#111113' : '#202024', opacity: on ? 1 : 0.55,
         },
@@ -365,10 +519,8 @@ class Component extends DCLogic {
         moveUp: () => this.moveRung(i, i - 1),
         moveDown: () => this.moveRung(i, i + 1),
         remove: () => this.setRungs(st.rungs.filter((_, j) => j !== i)),
-        setThr: (e) => {
-          const v = String(e.target.value).replace(/[^0-9.]/g, '');
-          this.setRungs(st.rungs.map((x, j) => (j === i ? { ...x, thr: v } : x)));
-        },
+        setThr: (e) => this.setThrAt(i, e.target.value),
+        minFps: from + 1,
         dragStart: (e) => { try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', r.id); } catch (err) {} this.setState({ dragId: r.id }); },
         dragOver: (e) => { e.preventDefault(); if (st.overIndex !== i) this.setState({ overIndex: i }); },
         drop: (e) => { e.preventDefault(); const from = st.rungs.findIndex((x) => x.id === st.dragId); if (from >= 0) this.moveRung(from, i); },
@@ -399,53 +551,30 @@ class Component extends DCLogic {
       style: { position: 'absolute', left: Math.min(100, (v / buildMax) * 100) + '%', transform: v <= 1 ? 'none' : (v >= buildMax ? 'translateX(-100%)' : 'translateX(-50%)') },
     }));
 
-    // quick access pills
-    const quickList = [12, 15, 20, 24, 25, 30, 40, 48, 50];
-    const rungFor = (fps) => {
-      if (!on) return null;
-      for (const r of rungs) if (r._ok && fps > r._from && fps <= r._top) return r;
-      return null;
-    };
     // what runs now: the picked FPS's rung, or with Ramp-ready the rung that reaches the top
     const shortClass = (r) => {
       if (!r) return '';
       const m = this.mode(st.rungs[Number(r.number) - 1].id);
-      const base = (m.cls.indexOf('Clear HDR') === 0 ? 'HDR' : 'SDR') + m.depth;
+      const base = (m.cls.indexOf('Clear HDR') === 0 ? 'ClearHDR' : 'SDR') + m.depth;
       return m.aspect === '16:9' ? base : base + ' ' + m.aspect;
     };
     const okRungs = rungs.filter((r) => r._ok);
     const topRung = okRungs.length ? okRungs[okRungs.length - 1] : null;
-    const pickedRung = rungFor(st.pickedFps);
-    const runningRung = on ? (st.rampReady && topRung ? topRung : pickedRung) : null;
-
-    const quickFps = quickList.map((fps) => {
-      const r = rungFor(fps);
-      const disabled = on ? !r : fps > 25;
-      const active = st.pickedFps === fps;
-      const switches = on && r && runningRung && r !== runningRung;
-      return {
-        label: String(fps),
-        rungText: on ? (r ? 'rung ' + r.number + (switches ? ' · switch' : '') : 'no rung') : 'mode only',
-        disabled,
-        pressed: active ? 'true' : 'false',
-        pick: () => this.setState({ pickedFps: fps }),
-        style: {
-          ...pill(active), textAlign: 'center', opacity: disabled ? 0.45 : 1, cursor: disabled ? 'default' : 'pointer',
-          border: active ? '1px solid rgba(255, 255, 255, 0.9)' : (switches ? '1px dashed #f59e0b' : '1px solid rgba(255, 255, 255, 0.1)'),
-        },
-        rungStyle: { display: 'block', fontSize: '11px', marginTop: '3px', fontWeight: 600, color: active ? '#3f3f46' : (switches ? '#fbbf24' : (r ? r._color : '#a1a1aa')) },
-      };
-    });
+    const runningRung = on ? (false && topRung ? topRung : (okRungs[0] || null)) : null;
 
     const nowText = !on
-      ? '4K · Clear HDR 16-bit · Uncompressed (ladder off)'
+      ? '3840×2160 · ClearHDR16 · Uncompressed (ladder off)'
       : (runningRung
-        ? 'Rung ' + runningRung.number + ' · ' + shortClass(runningRung) + ' · ≤' + runningRung._top + ' · Uncompressed' + (st.rampReady ? ' · RAMP' : '')
-        : 'No rung runs ' + st.pickedFps + ' fps');
+        ? (() => {
+          const rr = st.rungs[Number(runningRung.number) - 1];
+          const m = this.mode(rr.id);
+          return 'Resolution ' + runningRung.number + ' · ' + m.size + (this.cropOf(m, 1, 1).cropped ? ' crop in' : '') + ' · ' + shortClass(runningRung) + ' · ≤' + runningRung._top + ' · ' + compLabel(rr.comp);
+        })()
+        : 'No resolution configured');
     const nowNote = !on
       ? 'FPS stays inside the current mode.'
-      : (st.rampReady
-        ? 'Ramp-ready is on: the next ramp take records the whole ramp in rung ' + (topRung ? topRung.number : '?') + '. Turning it off switches back once.'
+      : (false
+        ? 'Ramp-ready is on: the next ramp take records the whole ramp in resolution ' + (topRung ? topRung.number : '?') + '. Turning it off switches back once.'
         : 'Same line on the camera screen (FORMAT) and next to Frame rate in Camera settings.');
 
     const dirty = JSON.stringify(st.rungs) !== st.savedJson;
@@ -457,7 +586,7 @@ class Component extends DCLogic {
     });
 
     const rampReadyOptions = [['off', 'Off'], ['on', 'On']].map(([k, label]) => {
-      const active = (k === 'on') === st.rampReady;
+      const active = (k === 'on') === false;
       return {
         label, pressed: active ? 'true' : 'false',
         pick: () => this.setState({ rampReady: k === 'on' }),
@@ -467,7 +596,7 @@ class Component extends DCLogic {
 
     // catalog
     const onIds = st.rungs.map((r) => r.id);
-    const groups = [['all', 'All'], ['chdr', 'Clear HDR'], ['4k', '4K SDR'], ['crop', '3840 crops'], ['2k', '2K binned']];
+    const groups = [['all', 'All'], ['chdr', 'Clear HDR'], ['4k', '4K SDR'], ['crop', '3840 wide'], ['2k', '2K binned']];
     const depths = [['12', '12-bit'], ['10', '10-bit'], ['all', 'Any depth']];
     const groupFilters = groups.map(([k, label]) => ({
       label, pressed: st.group === k ? 'true' : 'false', pick: () => this.setState({ group: k }),
@@ -483,15 +612,26 @@ class Component extends DCLogic {
       .map((m) => {
         const idx = onIds.indexOf(m.id);
         const ceiling = Math.min(m.max, buildMax);
+        const cr = this.cropOf(m, 65, 40);
+        const addWhy = idx >= 0 ? '' : this.legal(this.normalize(st.rungs.concat([{ id: m.id, thr: '', comp: 'none' }]))).replace(/^Resolution \d+ \(.*?\) would never be used: /, 'No FPS left for it: ');
         return {
+          frameStyle: cr.frameStyle,
+          winStyle: cr.winStyle,
+          tag: cr.tag,
+          tagStyle: cr.tagStyle,
+          cropTitle: cr.title,
+          binned: cr.binned,
           name: m.name,
-          meta: m.size + ' · ' + m.aspect + ' · ' + m.cls + ' · up to ' + ceiling + ' fps',
+          meta: m.size + ' · ' + m.aspect + ' · ' + m.cls + ' · up to ' + ceiling + ' fps' + (cr.cropped ? ' · crop in' : '') + ' · ' + this.sizeMB(m, 'none').toFixed(1) + ' MB/frame',
           onLadder: idx >= 0,
-          addText: idx >= 0 ? 'Rung ' + (idx + 1) : 'Add',
-          addLabel: idx >= 0 ? m.name + ' is rung ' + (idx + 1) : 'Add ' + m.name + ' to the ladder',
-          add: () => this.setRungs(st.rungs.concat([{ id: m.id, thr: '' }])),
+          addText: idx >= 0 ? 'Resolution ' + (idx + 1) : 'Add',
+          addLabel: idx >= 0 ? m.name + ' is resolution ' + (idx + 1) : 'Add ' + m.name + ' to the ladder',
+          add: () => this.setRungs(st.rungs.concat([{ id: m.id, thr: '', comp: 'none' }])),
+          addDisabled: idx >= 0 || addWhy !== '',
+          addWhy: idx >= 0 ? '' : addWhy,
           addStyle: {
-            minWidth: '72px', minHeight: '44px', borderRadius: '14px', fontFamily: 'inherit', fontSize: '14px', fontWeight: 600,
+            opacity: (idx < 0 && addWhy !== '') ? 0.4 : 1,
+            minWidth: '72px', minHeight: '44px', whiteSpace: 'nowrap', padding: '0 12px', borderRadius: '14px', fontFamily: 'inherit', fontSize: '14px', fontWeight: 600,
             border: idx >= 0 ? '1px solid transparent' : '1px solid rgba(255, 255, 255, 0.9)',
             background: idx >= 0 ? 'transparent' : '#ffffff', color: idx >= 0 ? '#a1a1aa' : '#09090b', cursor: idx >= 0 ? 'default' : 'pointer',
           },
@@ -499,21 +639,31 @@ class Component extends DCLogic {
       });
 
     const gapText = covered < buildMax
-      ? 'Above ' + covered + ' fps no rung can run: FPS stops at ' + covered + '. Add a rung or raise a threshold.'
+      ? 'Above ' + covered + ' fps no resolution can run: FPS stops at ' + covered + '. Add a resolution or raise a threshold.'
       : '';
 
     return {
       navItems,
       statusPill: {
-        label: on ? 'On · ' + rungs.length + ' rung' + (rungs.length === 1 ? '' : 's') : 'Off',
+        label: on ? 'On' : 'Off',
         style: on
           ? { borderRadius: '999px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' }
           : { borderRadius: '999px', background: 'rgba(161, 161, 170, 0.12)', color: '#d4d4d8', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' },
       },
+      rampChecked: st.rampOn ? 'true' : 'false',
+      toggleRamp: () => this.setState({ rampOn: !st.rampOn }),
+      rampTrack: {
+        width: '58px', height: '34px', borderRadius: '999px', border: st.rampOn ? '1px solid rgba(52, 211, 153, 0.6)' : '1px solid #3f3f46',
+        background: st.rampOn ? '#059669' : '#27272a', position: 'relative', cursor: 'pointer', flex: '0 0 58px', padding: 0,
+      },
+      rampKnob: {
+        position: 'absolute', top: '3px', left: st.rampOn ? '27px' : '3px', width: '26px', height: '26px', borderRadius: '999px',
+        background: '#ffffff', transition: 'left 0.15s ease',
+      },
       switchChecked: on ? 'true' : 'false',
       switchNote: on
-        ? 'Core picks the rung for every FPS request: WebUI, touch UI, pots, buttons and the ramp stepper.'
-        : 'Off: FPS stays inside the current mode, as today. The ladder is kept for later.',
+        ? 'On: changing FPS switches resolution.'
+        : 'Off: changing FPS never switches resolution.',
       toggleOn: () => this.setState({ on: !on }),
       switchTrack: {
         width: '58px', height: '34px', borderRadius: '999px', border: on ? '1px solid rgba(52, 211, 153, 0.6)' : '1px solid #3f3f46',
@@ -525,32 +675,37 @@ class Component extends DCLogic {
       },
       nowText,
       nowNote,
-      nowStyle: { fontSize: '18px', fontWeight: 700, marginTop: '4px', color: on && st.rampReady ? '#fbbf24' : '#ffffff' },
-      draftText: dirty ? 'Unsaved changes. Core checks the ladder when you save.' : 'Saved on the camera.',
-      draftStyle: { fontSize: '13px', color: dirty ? '#fbbf24' : '#a1a1aa' },
+      ...(() => {
+        const rr = runningRung ? st.rungs[Number(runningRung.number) - 1] : null;
+        const m = rr ? this.mode(rr.id) : this.mode('chdr16-3840x2160');
+        const c = this.cropOf(m, 160, 98);
+        return { nowFrameStyle: c.frameStyle, nowWinStyle: c.winStyle, nowTag: c.tag, nowTagStyle: c.tagStyle, nowBinned: c.binned, nowCropLabel: c.title, nowCropCaption: m.size + ' \u00b7 ' + c.desc };
+      })(),
+      nowStyle: { fontSize: '18px', fontWeight: 700, marginTop: '4px', color: on && false ? '#fbbf24' : '#ffffff' },
+      draftText: st.notice ? st.notice : (dirty ? 'Unsaved changes. Core checks the ladder again when you save.' : 'Saved on the camera.'),
+      draftStyle: { fontSize: '13px', color: st.notice ? '#fca5a5' : (dirty ? '#fbbf24' : '#a1a1aa') },
       notDirty: !dirty,
       save: () => this.setState({ savedJson: JSON.stringify(st.rungs) }),
       revert: () => this.setState({ rungs: JSON.parse(st.savedJson) }),
       saveStyle: btn(true, dirty),
       revertStyle: btn(false, dirty),
       rampPill: {
-        label: st.rampReady ? 'On · Angle · Ramp-ready' : 'On · Angle',
+        label: false ? 'On · Angle · Ramp-ready' : 'On · Angle',
         style: { borderRadius: '999px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' },
       },
       rampReadyOptions,
-      rampReadyNote: st.rampReady
-        ? (topRung ? 'Next ramp take starts in rung ' + topRung.number + ' (' + shortClass(topRung) + ', up to ' + topRung._top + ' fps): the whole take is ' + shortClass(topRung) + '.' : 'No rung to start in.')
-        : 'Off: a ramp take stays in its rung and stops at that rung’s ceiling (25 in HDR16).',
-      rampReadyNoteStyle: { fontSize: '13px', color: st.rampReady ? '#fbbf24' : '#a1a1aa' },
+      rampReadyNote: false
+        ? (topRung ? 'Next ramp take starts in resolution ' + topRung.number + ' (' + shortClass(topRung) + ', up to ' + topRung._top + ' fps): the whole take is ' + shortClass(topRung) + '.' : 'No rung to start in.')
+        : 'Off: a ramp take stays in its resolution and stops at its ceiling (25 in ClearHDR16).',
+      rampReadyNoteStyle: { fontSize: '13px', color: false ? '#fbbf24' : '#a1a1aa' },
       noRungs: rungs.length === 0,
       rungs,
       buildMax,
       segments,
       ticks,
-      coverageLabel: 'FPS coverage from 1 to ' + buildMax + ': ' + rungs.filter((r) => r._ok).map((r) => 'rung ' + r.number + ' up to ' + r._top).join(', '),
+      coverageLabel: 'FPS coverage from 1 to ' + buildMax + ': ' + rungs.filter((r) => r._ok).map((r) => 'resolution ' + r.number + ' up to ' + r._top).join(', '),
       hasGap: on && gapText !== '',
       gapText,
-      quickFps,
       groupFilters,
       depthFilters,
       catalog,

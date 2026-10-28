@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quick select</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000000}
+</style>
+</helmet>
+<div style="width: 720px; min-height: 1040px; box-sizing: border-box; padding: 24px; background: radial-gradient(120% 72% at 50% -8%, #27272a 0%, #09090b 46%, #000000 100%); color: #ffffff; font-family: Inter, 'Segoe UI', sans-serif;">
+<section aria-labelledby="camTitle" style="border-radius: 28px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72); padding: 24px; display: flex; flex-direction: column; gap: 22px;">
+
+<div style="display: flex; align-items: center; gap: 14px;">
+<span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 999px; background: #18181b; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f4f4f5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+</span>
+<h2 id="camTitle" style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; flex: 1 1 auto;">Camera settings</h2>
+<sc-if value="{{ ladderOn }}" hint-placeholder-val="{{ true }}">
+<span style="border-radius: 999px; background: rgba(52, 211, 153, 0.1); color: #34d399; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap;">Resolution ladder on</span>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;">
+<h3 style="margin: 0; font-size: 17px; font-weight: 700;">Frame rate</h3>
+<span style="{{ switchNoteStyle }}">{{ switchNote }}</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{ fpsPills }}" as="f" hint-placeholder-count="7">
+<button type="button" onClick="{{ f.pick }}" aria-pressed="{{ f.pressed }}" style="{{ f.style }}">
+<span style="display: block; font-size: 15px;">{{ f.label }}</span>
+<span style="{{ f.subStyle }}">{{ f.sub }}</span>
+</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<h3 style="margin: 0; font-size: 17px; font-weight: 700;">ISO</h3>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{ isoPills }}" as="i" hint-placeholder-count="4">
+<button type="button" onClick="{{ i.pick }}" aria-pressed="{{ i.pressed }}" style="{{ i.style }}">{{ i.label }}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<h3 style="margin: 0; font-size: 17px; font-weight: 700;">Shutter angle</h3>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{ shutterPills }}" as="a" hint-placeholder-count="8">
+<button type="button" onClick="{{ a.pick }}" aria-pressed="{{ a.pressed }}" style="{{ a.style }}">{{ a.label }}</button>
+</sc-for>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px;">
+<h3 style="margin: 0; font-size: 17px; font-weight: 700;">Resolution</h3>
+<sc-if value="{{ ladderOn }}" hint-placeholder-val="{{ true }}">
+<span style="font-size: 12px; color: #34d399; font-weight: 600;">Resolution ladder on: set by the frame rate</span>
+</sc-if>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+<sc-for list="{{ resPills }}" as="r" hint-placeholder-count="2">
+<button type="button" disabled="{{ r.disabled }}" onClick="{{ r.pick }}" aria-pressed="{{ r.pressed }}" style="{{ r.style }}">{{ r.label }}</button>
+</sc-for>
+</div>
+</div>
+
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"ladderOn":{"editor":"boolean","default":true,"section":"Mode Ladder"},"$preview":{"width":720,"height":900}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    // The ladder from the Mode Ladder pane: resolution 1 up to 25 fps, resolution 2 up to 50 fps.
+    this.ladder = [
+      { name: '4K Clear HDR 16-bit', size: '3840×2160', cls: 'ClearHDR16', top: 25, comp: 'Uncompressed', cropped: false },
+      { name: '4K SDR 12-bit', size: '3840×2160', cls: 'SDR12', top: 50, comp: 'Uncompressed', cropped: false },
+    ];
+    this.state = { fps: 25, iso: 800, shutter: '180°', switching: 0, res: 1 };
+  }
+
+  resFor(fps) {
+    for (let i = 0; i < this.ladder.length; i++) if (fps <= this.ladder[i].top) return i;
+    return this.ladder.length - 1;
+  }
+
+  renderVals() {
+    const st = this.state;
+    const ladderOn = this.props.ladderOn ?? true;
+    const cur = ladderOn ? this.resFor(st.fps) : st.res - 1;
+    const pill = (active) => ({
+      border: active ? '1px solid rgba(255, 255, 255, 0.9)' : '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '18px', padding: '11px 8px', minHeight: '48px', background: active ? '#ffffff' : '#202024',
+      color: active ? '#09090b' : '#e4e4e7', fontSize: '15px', fontFamily: 'inherit', textAlign: 'center', cursor: 'pointer',
+      boxShadow: active ? '0 16px 32px rgba(255, 255, 255, 0.08)' : 'inset 0 1px 0 rgba(255, 255, 255, 0.03)',
+    });
+    const fpsList = [24, 25, 30, 35, 40, 45, 50];
+    const fpsPills = fpsList.map((f) => {
+      const r = this.resFor(f);
+      const active = st.fps === f;
+      const other = ladderOn && r !== cur;
+      return {
+        label: f.toFixed(3),
+        sub: ladderOn ? 'Resolution ' + (r + 1) : '',
+        pressed: active ? 'true' : 'false',
+        pick: () => {
+          if (!ladderOn) { this.setState({ fps: f }); return; }
+          const target = this.resFor(f);
+          const change = target !== this.resFor(this.state.fps);
+          this.setState({ fps: f, switching: change ? target + 1 : 0 });
+          if (change) setTimeout(() => this.setState({ switching: 0 }), 1400);
+        },
+        style: { ...pill(active), border: active ? '1px solid rgba(255, 255, 255, 0.9)' : (other ? '1px dashed #f59e0b' : '1px solid rgba(255, 255, 255, 0.1)') },
+        subStyle: { display: 'block', fontSize: '10px', marginTop: '2px', fontWeight: 600, color: active ? '#52525b' : (other ? '#fbbf24' : '#71717a') },
+      };
+    });
+    const m = this.ladder[cur];
+    const isoPills = [100, 200, 400, 800, 1600, 3200, 6400, 12800].map((v) => ({
+      label: String(v), pressed: st.iso === v ? 'true' : 'false', pick: () => this.setState({ iso: v }), style: pill(st.iso === v),
+    }));
+    const shutterPills = ['Auto', '90°', '144°', '172.8°', '180°', '216°', '270°', '360°'].map((v) => ({
+      label: v, pressed: st.shutter === v ? 'true' : 'false', pick: () => this.setState({ shutter: v }), style: pill(st.shutter === v),
+    }));
+    const resNames = ['4K Clear HDR', '4K'];
+    const resPills = resNames.map((label, i) => {
+      const active = i === cur;
+      return {
+        label, pressed: active ? 'true' : 'false', disabled: ladderOn,
+        pick: () => this.setState({ res: i + 1 }),
+        style: { ...pill(active), opacity: ladderOn && !active ? 0.45 : 1, cursor: ladderOn ? 'default' : 'pointer' },
+      };
+    });
+    return {
+      fpsPills, isoPills, shutterPills, resPills,
+      ladderOn,
+      switchNote: ladderOn ? (st.switching ? 'Switching to Resolution ' + st.switching + '…' : 'Dashed: switches the resolution') : '',
+      switchNoteStyle: { fontSize: '12px', fontWeight: st.switching ? 700 : 400, color: st.switching ? '#fbbf24' : '#a1a1aa' },
+    };
+  }
+}
+</script>
+</body>
+</html>

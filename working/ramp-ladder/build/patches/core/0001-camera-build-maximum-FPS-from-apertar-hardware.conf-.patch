@@ -1,0 +1,329 @@
+From d4ed6de6bbfe498dcf3fcf4d644500802f3f165f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Wed, 28 Oct 2026 19:01:16 +0000
+Subject: [PATCH] camera: build maximum FPS from apertar-hardware.conf, 4K SDR
+ up to the sensor probe
+
+Why: the Mode Ladder (T34) runs 4K SDR 12-bit above 30 fps, up to what
+the storage holds. Core capped 4K SDR at 30 although the IMX585 probe
+reports 60, and had no build-wide limit. The WebUI, the touch UI and
+the PCF list each kept their own FPS table, so none of them knew Core's
+real ceiling.
+What:
+- apertar-hardware.conf gets a [camera] block with max_fps (empty in
+  the template: no build limit). cameraMaxFpsFromHardwareConfig() reads
+  the first existing candidate file like loadCfeHatConfig(); a number
+  in 0 < fps <= 280 (decimals allowed, inline # comment stripped) is
+  the build maximum, anything else means none. The App applies it
+  before camera_.start() and after a successful Config save.
+- CameraController::setBuildMaximumFps() stores it next to the probe
+  globals. maximumSupportedFpsForResolution() returns at most that, so
+  sanitizeSettingsForSensor(), set_fps, the ramp_fps stepper and H.264
+  stop there; --simulate (no sensor table) applies it too. Outside a
+  take a higher current FPS is lowered once, keeping the shutter angle
+  as set_fps does; no reconfigure. A take keeps its rate.
+- IMX585 4K SDR: 60 fps when the sensor probe ran, so the probe's own
+  maximum wins through the existing min; 30 without a probe. Clear HDR
+  is unchanged (16-bit 25; 12-bit 30 with the probe, 25 without).
+- New derived CaptureSettings::fpsMax (not persisted): the highest FPS
+  set_fps accepts outside a take, i.e. what the sanitiser leaves of 280
+  in the current settings. Filled in settings() and
+  emitSettingsEventLocked(), sent as "fps_max" by settingsEvent,
+  settingsBody and buildWebStateJson. It does not change at record
+  start.
+- The PCF pot and fps_up/fps_down list ends at fps_max.
+- WebUI: maximumSupportedFpsForSnapshot() returns fps_max when Core
+  sends it (its table stays for an older Core); command replies merge
+  fps_max and clear_hdr into the snapshot.
+With max_fps=50 this also caps 1080p, the 3840 and 1920 crops (60
+today) and H.264 at 50.
+
+Tested: hostcheck-core.sh (g++ -fsyntax-only -Wall -Wextra with the
+libcamera-apertar headers): CameraController.cpp, ApertarCoreApp.cpp
+and WebControlPage.cpp errors=0 warnings=0; node --check on the page
+script; cameraMaxFpsFromHardwareConfig() copied verbatim into a host
+test without libcamera, 25 of 25 cases (no file, the template, decimals,
+inline #, upper case, 0/negative/281/nan/inf/text give 0, other
+sections, last key wins, CRLF). Not run on a Pi.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01T93jucKMhWYnQM1yyFVkbH
+---
+ include/apertar/core/Types.hpp  |  3 +++
+ src/ApertarCoreApp.cpp          | 47 ++++++++++++++++++++++++++++++++-
+ src/camera/CameraController.cpp | 45 +++++++++++++++++++++++++++++--
+ src/camera/CameraController.hpp |  4 +++
+ src/web/WebControlPage.cpp      |  9 +++++++
+ 5 files changed, 105 insertions(+), 3 deletions(-)
+
+diff --git a/include/apertar/core/Types.hpp b/include/apertar/core/Types.hpp
+index eca4af5..c0386a5 100644
+--- a/include/apertar/core/Types.hpp
++++ b/include/apertar/core/Types.hpp
+@@ -131,6 +131,9 @@ struct CaptureSettings {
+     // true: an FPS change keeps the exposure time (brightness); false: keeps the
+     // shutter angle (motion blur) through Core's existing rescale.
+     bool fpsRampKeepExposure = false;
++    // Highest FPS set_fps accepts outside a take: the mode's ceiling, capped at the
++    // build maximum (apertar-hardware.conf [camera] max_fps). Derived, not persisted.
++    double fpsMax = 0.0;
+     uint32_t iso = 800;
+     bool isoAuto = false;
+     uint32_t shutterUs = 20833;
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index a815bc1..0b90821 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -214,6 +214,7 @@ std::string settingsBody(const CaptureSettings &settings)
+         << ",\"fps_phase_lock\":" << (settings.fpsPhaseLock ? "true" : "false")
+         << ",\"fps_ramp\":" << (settings.fpsRampEnabled ? "true" : "false")
+         << ",\"fps_ramp_keep_exposure\":" << (settings.fpsRampKeepExposure ? "true" : "false")
++        << ",\"fps_max\":" << settings.fpsMax
+         << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
+         << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
+         << ",\"hdr_blend\":" << settings.hdrBlend
+@@ -1181,7 +1182,8 @@ std::vector<double> availablePcfFpsOptions(const CaptureSettings &settings,
+             ? std::vector<double>{24.0, 25.0, 30.0, 50.0, 60.0, 100.0}
+             : std::vector<double>{24.0, 25.0, 30.0, 50.0, 60.0};
+ 
+-    const double maxFps = maximumPcfFpsForSettings(settings, sensorName);
++    // Core's own ceiling (fps_max) when known: the build maximum and the probe are in it.
++    const double maxFps = settings.fpsMax > 0.0 ? settings.fpsMax : maximumPcfFpsForSettings(settings, sensorName);
+     std::vector<double> filtered;
+     for (double fps : presets) {
+         if (fps <= maxFps + 0.0005)
+@@ -4344,6 +4346,10 @@ address=0x34
+ mount_path=/media/RAW
+ pcie_controller=1000110000.pcie
+ 
++[camera]
++# Highest FPS this build records, in every mode and format (H.264 too). Empty or 0: no build limit.
++max_fps=
++
+ [display]
+ # Resolutions: 720x720(Default), 640x480, 800x480, 1280x720, 1024x600, 1920x1080
+ # Layouts:
+@@ -4591,6 +4597,42 @@ CfeHatConfig loadCfeHatConfig()
+     return config;
+ }
+ 
++// [camera] max_fps, the build maximum (CameraController::setBuildMaximumFps).
++// 0 = no build limit: no file, no key, empty, or not a number in 0 < fps <= 280.
++double cameraMaxFpsFromHardwareConfig()
++{
++    std::error_code ec;
++    for (const auto &path : hardwareConfigCandidatePaths()) {
++        if (!std::filesystem::exists(path, ec) || !std::filesystem::is_regular_file(path, ec))
++            continue;
++        std::ifstream input(path);
++        if (!input.is_open())
++            continue;
++        bool inSection = false;
++        double maxFps = 0.0;
++        std::string line;
++        while (std::getline(input, line)) {
++            std::string trimmed = trimAscii(line);
++            if (trimmed.empty() || trimmed[0] == '#' || trimmed[0] == ';')
++                continue;
++            if (trimmed.front() == '[' && trimmed.back() == ']') {
++                inSection = lowerAscii(trimmed) == "[camera]";
++                continue;
++            }
++            if (!inSection)
++                continue;
++            const std::size_t eq = trimmed.find('=');
++            if (eq == std::string::npos || lowerAscii(trimAscii(trimmed.substr(0, eq))) != "max_fps")
++                continue;
++            const std::string value = trimmed.substr(eq + 1);
++            const auto parsed = parseDoubleValue(value.substr(0, value.find('#')));
++            maxFps = parsed && *parsed > 0.0 && *parsed <= 280.0 ? *parsed : 0.0;
++        }
++        return maxFps;
++    }
++    return 0.0;
++}
++
+ constexpr uint8_t kIna219RegConfig = 0x00;
+ constexpr uint8_t kIna219RegShuntVoltage = 0x01;
+ constexpr uint8_t kIna219RegBusVoltage = 0x02;
+@@ -6970,6 +7012,7 @@ bool ApertarCoreApp::start()
+     }
+ #endif
+ 
++    camera_.setBuildMaximumFps(cameraMaxFpsFromHardwareConfig());
+     if (!camera_.start(options_.mediaRoot, options_.simulateCamera)) {
+         stopMjpegEncoder();
+         stopPreviewPublisher();
+@@ -7322,6 +7365,7 @@ WebServer::Response ApertarCoreApp::handleWebRequest(const WebServer::Request &r
+             response.body = errorReply(-1, errorMessage.empty() ? "Could not save config file." : errorMessage);
+             return response;
+         }
++        camera_.setBuildMaximumFps(cameraMaxFpsFromHardwareConfig());
+ 
+         WebServer::Response response;
+         response.contentType = "application/json; charset=utf-8";
+@@ -8045,6 +8089,7 @@ std::string ApertarCoreApp::buildWebStateJson() const
+         << ",\"fps_phase_lock\":" << (settings.fpsPhaseLock ? "true" : "false")
+         << ",\"fps_ramp\":" << (settings.fpsRampEnabled ? "true" : "false")
+         << ",\"fps_ramp_keep_exposure\":" << (settings.fpsRampKeepExposure ? "true" : "false")
++        << ",\"fps_max\":" << settings.fpsMax
+         << ",\"hdr_threshold_high\":" << settings.hdrThresholdHigh
+         << ",\"hdr_threshold_low\":" << settings.hdrThresholdLow
+         << ",\"hdr_blend\":" << settings.hdrBlend
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index dad83e8..865fc79 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -188,6 +188,7 @@ std::string settingsEvent(const CaptureSettings &settings)
+         << ",\"fps_phase_lock\":" << (settings.fpsPhaseLock ? "true" : "false")
+         << ",\"fps_ramp\":" << (settings.fpsRampEnabled ? "true" : "false")
+         << ",\"fps_ramp_keep_exposure\":" << (settings.fpsRampKeepExposure ? "true" : "false")
++        << ",\"fps_max\":" << settings.fpsMax
+         << ",\"af_mode\":\"" << toString(settings.autofocusMode) << "\""
+         << ",\"af_range\":\"" << toString(settings.autofocusRange) << "\""
+         << ",\"af_speed\":\"" << toString(settings.autofocusSpeed) << "\""
+@@ -2719,6 +2720,8 @@ double imx477MaximumUncompressedCdngFpsForResolution(Resolution resolution, uint
+ std::mutex probedSensorModesMutex;
+ std::vector<CameraController::SensorMode> probedSensorModes;
+ bool sensorModesProbed = false;
++// apertar-hardware.conf [camera] max_fps, set by the App (setBuildMaximumFps); 0 = no build limit.
++std::atomic<double> buildMaximumFps{0.0};
+ 
+ std::optional<double> probedMaximumFps(Resolution sensorSize, uint32_t bitDepth, bool clearHdr)
+ {
+@@ -2781,7 +2784,10 @@ double tableMaximumFpsForResolution(SensorFamily sensorFamily, Resolution reques
+             if (clearHdr && normalizeRawBitDepth(rawBitDepth) == 16)
+                 return 25.0;
+             // Clear HDR doubles VMAX: 30 fps at link 891 MHz, 25 at the driver's default 720 MHz.
+-            return clearHdr && !sensorLimitKnown ? 25.0 : 30.0;
++            if (clearHdr)
++                return sensorLimitKnown ? 30.0 : 25.0;
++            // SDR: up to the probe's maximum (60), safe at 30 without a probe.
++            return sensorLimitKnown ? 60.0 : 30.0;
+         }
+         if (isImx585Raw12CropResolution(normalized))
+             return 60.0;
+@@ -2802,7 +2808,9 @@ double maximumSupportedFpsForResolution(SensorFamily sensorFamily, Resolution re
+     const SensorModeSelection mode = sensorModeForRequestedResolution(sensorFamily, requested, rawBitDepth);
+     const auto probed = probedMaximumFps(mode.rawResolution, mode.bitDepth, clearHdr);
+     const double table = tableMaximumFpsForResolution(sensorFamily, requested, rawBitDepth, clearHdr, probed.has_value());
+-    return probed ? std::min(table, *probed) : table;
++    const double ceiling = probed ? std::min(table, *probed) : table;
++    const double buildMax = buildMaximumFps.load();
++    return buildMax > 0.0 ? std::min(ceiling, buildMax) : ceiling;
+ }
+ 
+ uint32_t supportedRawBitDepthForSensor(SensorFamily sensorFamily, uint32_t requestedBitDepth, bool clearHdr)
+@@ -2846,6 +2854,9 @@ CaptureSettings sanitizeSettingsForSensor(CaptureSettings settings, SensorFamily
+ 
+     if (sensorFamily == SensorFamily::Unknown) {
+         enforceLosslessCaptureLimits(settings, sensorFamily);
++        // No sensor table here (--simulate, before the session starts); the build maximum still holds.
++        if (const double buildMax = buildMaximumFps.load(); buildMax > 0.0 && settings.fps > buildMax)
++            settings.fps = buildMax;
+         return settings;
+     }
+ 
+@@ -9746,6 +9757,34 @@ bool CameraController::setFpsRamp(bool enabled, bool keepExposure)
+     return applySettingsLocked(next, false);
+ }
+ 
++void CameraController::setBuildMaximumFps(double fps)
++{
++    std::lock_guard<std::mutex> lock(mutex_);
++    buildMaximumFps.store(fps > 0.0 ? fps : 0.0);
++    // Before start (and in standby) the session's own sanitise applies it; a take
++    // keeps its rate, the next set_fps after it is capped.
++    if (state_ != CameraState::Ready || recording_)
++        return;
++    const double capped = fpsMaxLocked();
++    if (settings_.fps > capped + 0.0001) {
++        std::cerr << "ApertarCore build maximum: " << settings_.fps << " -> " << capped << " fps\n";
++        applyFpsStepLocked(capped, /*rampingTake=*/false, /*commit=*/true);
++        return;
++    }
++    emitSettingsEventLocked();
++}
++
++// What the sanitiser leaves of 280 fps in the current settings.
++double CameraController::fpsMaxLocked() const
++{
++    const SensorFamily sensorFamily = (!simulateCamera_ && session_)
++        ? session_->sensorFamily()
++        : SensorFamily::Unknown;
++    CaptureSettings probe = settings_;
++    probe.fps = 280.0;
++    return sanitizeSettingsForSensor(probe, sensorFamily).fps;
++}
++
+ double CameraController::recordingBaseFps() const
+ {
+     std::lock_guard lock(mutex_);
+@@ -10175,6 +10214,7 @@ CaptureSettings CameraController::settings() const
+     result.exposureCompensationAvailable = simulateCamera_ || (session_ && session_->exposureCompensationAvailable());
+     if (!simulateCamera_ && session_)
+         result.whiteBalanceMeasured = session_->measuredWhiteBalance();
++    result.fpsMax = fpsMaxLocked();
+     return result;
+ }
+ 
+@@ -10409,6 +10449,7 @@ void CameraController::emitSettingsEventLocked()
+     settings_.exposureCompensationAvailable = simulateCamera_ || (session_ && session_->exposureCompensationAvailable());
+     settings_.whiteBalanceAvailable = simulateCamera_ ||
+         ((!session_ || !session_->monochromeSensor()) && activeTuningHasCalibratedWhiteBalance());
++    settings_.fpsMax = fpsMaxLocked();
+     if (eventCallback_)
+         eventCallback_(settingsEvent(settings_));
+ }
+diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
+index c37c3d5..ca6a971 100644
+--- a/src/camera/CameraController.hpp
++++ b/src/camera/CameraController.hpp
+@@ -86,6 +86,9 @@ public:
+     bool setTimecodeMode(TimecodeMode mode);
+     bool setFpsPhaseLock(bool enabled);
+     bool setFpsRamp(bool enabled, bool keepExposure);
++    // apertar-hardware.conf [camera] max_fps; 0 = no build limit. Outside a take a
++    // higher current FPS is lowered to it.
++    void setBuildMaximumFps(double fps);
+     bool setAutofocusMode(AutofocusMode mode);
+     bool setAutofocusRange(AutofocusRange range);
+     bool setAutofocusSpeed(AutofocusSpeed speed);
+@@ -127,6 +130,7 @@ private:
+     bool applySettingsLocked(CaptureSettings nextSettings, bool requiresReconfigure, bool commit = true);
+     bool applyFpsStepLocked(double effectiveFps, bool rampingTake, bool commit);
+     void restoreFpsAfterRampLocked();
++    double fpsMaxLocked() const;
+     bool commitHdrKnobsLocked(const CaptureSettings &next);
+     void persistSettingsLocked();
+     void restoreModeGeometryLocked(CaptureSettings &next) const;
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 5d39655..112a3b6 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -4960,6 +4960,11 @@ std::string_view webControlPageHtml()
+     }
+ 
+     function maximumSupportedFpsForSnapshot(snapshot) {
++      // Core's own ceiling (fps_max: the mode, the sensor probe, the build maximum).
++      // The table below is for a Core that does not send it.
++      const coreMax = Number(snapshot.fps_max) || 0;
++      if (coreMax > 0)
++        return coreMax;
+       const width = Number(snapshot.width) || 0;
+       const height = Number(snapshot.height) || 0;
+       const sensorLower = sensorNameLower(snapshot);
+@@ -8843,6 +8848,10 @@ std::string_view webControlPageHtml()
+         snapshot.fps_ramp = source.fps_ramp;
+       if (typeof source.fps_ramp_keep_exposure === "boolean")
+         snapshot.fps_ramp_keep_exposure = source.fps_ramp_keep_exposure;
++      if (isFiniteNumber(source.fps_max))
++        snapshot.fps_max = Number(source.fps_max);
++      if (typeof source.clear_hdr === "boolean")
++        snapshot.clear_hdr = source.clear_hdr;
+     }
+ 
+     function applyCommandSnapshotPatch(payload, result, optimistic) {
+-- 
+2.43.0
+

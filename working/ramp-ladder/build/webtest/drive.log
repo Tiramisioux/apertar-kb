@@ -1,0 +1,146 @@
+rows (saved): 4K Clear HDR 16-bit | 4K SDR 12-bit
+status pill: On · 2 resolutions
+running now: Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed
+draft line: Saved on the camera.
+messages: warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25.
+coverage: FPS COVERAGE, 1 TO 50 / Build maximum 50 fps · apertar-hardware.conf, [camera] max_fps
+shot: desktop-01-ladder-patrik.png
+shot: desktop-04-speed-ramp-on.png
+speed ramp after click: false / {"cmd":"set_fps_ramp","enabled":"false"}
+shot: desktop-04b-speed-ramp-off.png
+speed ramp after 2nd click: true / {"cmd":"set_fps_ramp","enabled":"true"}
+after typing 70: notice=Resolution 2: FPS must be between 26 and 50. Set to 50. / value=''
+after typing 12 on resolution 1: notice=Unsaved changes. Core checks the ladder again when you save. / value='12' rows: Lowest FPS up to 12 fps | Above 12 up to 50 fps
+shot: desktop-05-threshold-12-draft.png
+after Revert: Saved on the camera. / 4K Clear HDR 16-bit | 4K SDR 12-bit / thr0=''
+edit undone: Saved on the camera. / save disabled=true / thr0=''
+after Up to 40: Unsaved changes. Core checks the ladder again when you save. / save disabled=false
+dry run messages: warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25.
+dry run sent: {"cmd":"set_mode_ladder","rungs":"3840x2160:16:hdr:none,3840x2160:12:sdr:none:40","dry_run":"true"}
+shot: desktop-03-sensor-modes-crop-12bit.png
+crop-in pool item: CROP IN / 2560×1440 crop in, 12-bit / 2560×1440 · 16:9 · SDR · up to 50 fps · crop in · 5.5 MB/frame / Add
+rows after Add: 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit
+crop-in row: 3 / CROP IN / 2560×1440 crop in, 12-bit / 2560×1440 · 16:9 · 12-bit · SDR / Crop in: reads 2560×1440 of 3840×2200, 33% of the width cut off. / Above 40 up to 50 fps / UP TO (FPS) / Ceiling 50 (build max) / COMPRESSION / Uncompressed / Lossless JPEG / Lossy 3:1 / Lossy 5:1 / Exact, largest files / 5.5 MB per frame / 276 MB/s at 50 fps
+save sent: {"cmd":"set_mode_ladder","rungs":"3840x2160:16:hdr:none,3840x2160:12:sdr:none:40,2560x1440:12:sdr:none","dry_run":"true"} {"cmd":"set_mode_ladder","rungs":"3840x2160:16:hdr:none,3840x2160:12:sdr:none:40,2560x1440:12:sdr:none"} {"cmd":"get_mode_ladder"}
+after Save: Saved on the camera. / 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit / pill On · 3 resolutions
+messages after save: warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25. || warning: Above 40 fps: picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 40.
+shot: desktop-02-ladder-three-cropin.png
+shot: desktop-03b-sensor-modes-all.png
+lossy options on resolution 1: ["Uncompressed","Lossless JPEG","Lossy 3:1 (not for Clear HDR) [disabled]","Lossy 5:1 (not for Clear HDR) [disabled]"]
+selectOption lossy_3to1: refused by the browser: page.selectOption: Timeout 2000ms exceeded.
+forced lossy_3to1: notice=Lossy DNG cannot record Clear HDR. / select now none / dirty=false
+move resolution 1 down: notice=Resolution 2 (4K Clear HDR 16-bit) would never be used: the ones above already reach 40 fps. / 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit
+drag row 1 onto line 2-3: drop target: row 2
+drag row 1 onto line 2-3, dropped: notice=Resolution 2 (4K Clear HDR 16-bit) would never be used: the ones above already reach 40 fps. / 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit
+during drag: drop-target rows: 1, dragging: 1
+after drag: 4K Clear HDR 16-bit | 2560×1440 crop in, 12-bit | 4K SDR 12-bit / Unsaved changes. Core checks the ladder again when you save. / ranges: Lowest FPS up to 25 fps | Above 25 up to 45 fps | Above 45 up to 50 fps
+dry run after drag: warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit, picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 25. || warning: Above 45 fps: picture 2560×1440 → 3840×2160. Switches between takes only; in a take FPS stops at 45.
+shot: desktop-06-after-drag-draft.png
+after Revert: 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit / Saved on the camera.
+shot: desktop-13-record-format-ladder-on.png
+record format disabled: {"resolution":true,"crop":true,"compression":true,"bitDepth":"16-bitx,12-bitx,10-bitx,8-bitx","note":"Mode Ladder on: the FPS picks the resolution and compression.","noteHidden":false}
+favorites format (ladder on): {"selects":"Resolutionx,Crop Modex,Compressionx","pills":"Record Format: *CinemaDNG,MLV,H.264,ProRes Proxy,ProRes LT,ProRes 422,ProRes HQ | Bit Depth: *16-bitx,12-bitx,10-bitx,8-bitx","note":"Mode Ladder on: the FPS picks the resolution and compression."}
+shot: desktop-16-favorites-format-locked.png
+favorites format (ladder off): {"selects":"Resolution,Crop Modex,Compression","note":""}
+switch off: false / {"cmd":"set_mode_ladder","enabled":"false"} / pill Off / now 3840×2160 · ClearHDR16 · Uncompressed (ladder off)
+shot: desktop-07-ladder-off.png
+shot: desktop-08-camera-ladder-off.png
+switch on: true / {"cmd":"set_mode_ladder","enabled":"true"} / pill On · 3 resolutions
+camera: fps line: Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed
+camera: fps pills: 24.000/Resolution 1 *25.000/Resolution 1 30.000/Resolution 2(dashed) 35.000/Resolution 2(dashed) 40.000/Resolution 2(dashed) 45.000/Resolution 3(dashed) 50.000/Resolution 3(dashed)
+camera: resolution pills: Full HD(locked) 4K(locked) *4K Clear HDR(locked)
+shot: desktop-09-camera-ladder-on.png
+while switching: Switching to Resolution 2…
+shot: desktop-10-fps-switching.png
+after switch: Resolution 2 · 3840×2160 · SDR12 · ≤40 · Uncompressed / 24.000/Resolution 1(dashed) 25.000/Resolution 1(dashed) *30.000/Resolution 2 35.000/Resolution 2 40.000/Resolution 2 45.000/Resolution 3(dashed) 50.000/Resolution 3(dashed) / badge 3840x2160
+overlap: after the first reply: Switching to Resolution 1…
+overlap: after both: Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed
+back on resolution 2: Resolution 2 · 3840×2160 · SDR12 · ≤40 · Uncompressed
+imx477 fps options: {"ladderOn":"24.000 25.000 30.000 35.000 40.000 45.000 50.000","ladderOff":"24.000 25.000 30.000 35.000 40.000 45.000 50.000"}
+toast after clamp: Resolution 2 (SDR12) stops at 40 fps in a take.
+shot: desktop-11-take-clamp-toast.png
+recording: fps line: Resolution 2 · 3840×2160 · SDR12 · ≤40 · Uncompressed
+recording: fps pills: 24.000/Resolution 2 25.000/Resolution 2 30.000/Resolution 2 35.000/Resolution 2 *40.000/Resolution 2
+shot: desktop-12-camera-recording.png
+recording: switch: disabled=true / Stop recording to turn the ladder on or off.
+recording: speed ramp: disabled=true / Stop recording to turn it on or off.
+recording: edit: Unsaved changes. Stop recording to save the ladder. / save disabled=true
+shot: desktop-14-ladder-recording.png
+h264: switch note: On, but not in use: the ladder works in CinemaDNG and MLV video. / now 3840×2160 · SDR12 · H.264 (ladder not in use)
+h264: speed ramp: disabled=true / Not in H.264 or ProRes: they keep one rate per clip.
+core dry-run error: error: Resolution 2 (4K SDR 12-bit, Uncompressed) cannot record: test error from Core. || warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25. || warning: Above 35 fps: picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 35. / save disabled=true
+mlv: now: Resolution 2 · 3840×2160 · SDR12 · ≤40 · MLV / messages warning: Above 25 fps: Clear HDR 16-bit → SDR 12-bit. Switches between takes only; in a take FPS stops at 25. || warning: Above 40 fps: picture 3840×2160 → 2560×1440. Switches between takes only; in a take FPS stops at 40. || warning: MLV records uncompressed: each resolution's compression applies in cDNG and lossy DNG.
+probe off: copy: Sensor probe off: add modes with core.py (set_mode_ladder rungs=…). / filters hidden=true / items 0
+probe off: rows: 4K Clear HDR 16-bit | 4K SDR 12-bit | 2560×1440 crop in, 12-bit / ceilings Ceiling 25 (sensor mode) | Ceiling 50 (build max) | Ceiling 50 (build max)
+probe off: crop: descriptions 3 / titles Full sensor area 3840×2200 of 3840×2200 | Full width 3840×2160 of 3840×2200 | Crop in 2560×1440 of 3840×2200 / running now Full width 3840×2160 of 3840×2200
+probe off, h264: ceilings: Ceiling: Core checks it | Ceiling: Core checks it | Ceiling: Core checks it / problems 2
+probe off, h264: edit: Resolution 3 (2560×1440 crop in, 12-bit) would never be used: the ones above already reach 280 fps.
+node:internal/process/promises:394
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.click: Target page, context or browser has been closed
+Browser logs:
+
+<launching> /opt/pw-browsers/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,Translate,AutoDeElevate,OptimizationHints,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-TQmXiL --remote-debugging-pipe --no-startup-window
+<launched> pid=20766
+[pid=20766][err] [1028/204813.644679:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=20766][err] [1028/204813.644757:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=20766][err] [1028/204813.646270:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=20766][err] [1028/204813.646367:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Failed to connect to socket /run/dbus/system_bus_socket: No such file or directory
+[pid=20766][err] [1028/204813.661563:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[pid=20766][err] [1028/204813.661652:WARNING:device/bluetooth/dbus/bluez_dbus_manager.cc:209] Floss manager service not available, cannot set Floss enable/disable.
+[pid=20766][err] [1028/204813.659934:WARNING:media/gpu/vaapi/vaapi_wrapper.cc:1660] drmGetDevices2() has not found any devices
+[pid=20766][err] [1028/204813.666129:ERROR:dbus/bus.cc:405] Failed to connect to the bus: Could not parse server address: Unknown address type (examples of valid types are "tcp" and on UNIX "unix")
+[pid=20766][err] [1028/204813.666483:ERROR:dbus/object_proxy.cc:572] Failed to call method: org.freedesktop.DBus.NameHasOwner: object_path= /org/freedesktop/DBus: unknown error type: 
+[pid=20766][err] [1028/204813.669232:WARNING:sandbox/policy/linux/sandbox_linux.cc:405] InitializeSandbox() called with multiple threads in process gpu-process.
+[pid=20766][err] [1028/204813.743070:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204813.761895:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204813.766914:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204813.767339:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204813.768066:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204813.768499:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204834.812790:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766][err] [1028/204844.782672:ERROR:net/socket/socket_posix.cc:121] CreatePlatformSocket() failed: Address family not supported by protocol (97)
+[pid=20766] <gracefully close start>
+[pid=20766] <forcefully close>
+[pid=20766] <kill>
+[pid=20766] <will force kill>
+Call log:
+[2m  - waiting for locator('#settingsModeLadderRevert')[22m
+[2m    - locator resolved to <button disabled type="button" class="secondary-button" id="settingsModeLadderRevert">Revert</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not enabled[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    18 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not enabled[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at /tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/t34/webtest/drive.js:359:14 {
+  log: [
+    "  - waiting for locator('#settingsModeLadderRevert')",
+    '    - locator resolved to <button disabled type="button" class="secondary-button" id="settingsModeLadderRevert">Revert</button>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is not enabled',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is not enabled',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    18 × waiting for element to be visible, enabled and stable',
+    '       - element is not enabled',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ]
+}
+
+Node.js v22.22.0
