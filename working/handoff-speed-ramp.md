@@ -29,8 +29,8 @@ What the Pi runs today is not known from the cloud. Check first: `ssh apertar 'g
 The cloud session could not compile `CameraController.cpp` (libcamera) or run anything on a Pi. What Patrik did on the Pi is
 not recorded in this export.
 
-> [!todo] 2026-10-28: **listen to the experimental stretched WAV** (`C0034_stretched.wav` under `cDNG_26-10-28_C0034` on a
-> 25 fps timeline). Length (36.360 s = 909/25) and pitch are measured; the sound is not checked yet. `ramp-ladder/README.md` 19.
+> [!todo] 2026-10-28: **listen to the experimental stretched WAV** (`C0034` was deleted; `C0022_stretched.wav` exists, a small 25 → 30 → 25
+> ramp; a new 1080p 25 → 50 → 25 take is the better test). Length and pitch are measured; the sound is not checked yet. `ramp-ladder/README.md` 19.
 
 ## 2. Rules (unchanged, keep them)
 
