@@ -552,3 +552,6 @@ Entry format:
   16-bit 1585. **Confirmed.** UI started clean (`qml_aot=true`, no QML errors). The on-screen green values, the ISO lists and
   Lock wait for Patrik's look on the touch screen, HDMI and WebUI.
 - Patrik (21:2x): green values, ISO lists, Lock, Clear HDR hold on the touch screen, HDMI and WebUI "work well". **Confirmed.**
+- Patrik's hand-driven ramp take `cDNG_26-10-28_C0022` (4K lossless, WebUI block + FPS controls): 25 → 30 → 25 in 1 fps steps,
+  10/10 changes applied, 439 DNGs, 0 missing, no drops; `_stretched.wav` 17.56 s (= 439/25), real WAV 16.06 s; back at 25 after
+  stop. Patrik: "ramp works". **Confirmed**: T32 from the controls.

@@ -60,7 +60,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `fafc477` | `iso_actual` (gain in use × 100) in the state, like `wb_actual_kelvin`; `set_iso_auto enabled=false` locks at it (request 16); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 |
 | `71487c5` | Presets carry every operating-mode switch: Clear HDR + its four knobs, phase lock, timecode mode (also UI.conf), speed ramp + shutter policy; knobs-only presets push to the sensor; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 |
 | `bcad104` | ISO from a measured gain rounds up so the gain code stays (lock and Clear HDR hold); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 |
-| `65b2bb2` | WebUI Speed Ramp block under Bit Depth (On/Off, Shutter Sync, Ramp to … over …, ×2, Back, Stop; the page steps `set_fps`); preset allow-list gets the switch keys (T32 part 2); branch `cinemate-port` | fork-only, Pi only; built, first browser take refused (switch set in the H.264 profile, fixed by 84081f7) |
+| `65b2bb2` | WebUI Speed Ramp block under Bit Depth (On/Off, Shutter Sync, Ramp to … over …, ×2, Back, Stop; the page steps `set_fps`); preset allow-list gets the switch keys (T32 part 2); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (C0022, Patrik: ramp works) |
 | `84081f7` | Speed-ramp switch and policy carried across recording formats, like timecode mode (was per format profile); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (hardware-log) |
 | `61d5bd0` | `conform_fps` (project timeline rate, default 25, 1-120): `set_conform_fps`, state, persisted, carried across formats, presets (request 21); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (hardware-log) |
 | `a56eae7` | Phase lock carried across recording formats (was per format profile); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (hardware-log) |
@@ -80,7 +80,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | Commit | Change | Status |
 | --- | --- | --- |
 | `92f1e73` | Touch UI + HDMI: camera-set values green (`#00c951`) with the values in use, ISO list from `iso_max`, Lock, 1 s state poll while auto ISO/WB, `[camera]` in the first-run template; branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
-| `79b9c2c` | Touch UI FPS picker sends only `set_fps` in a camera ramp take (Core applies the shutter policy); tracks `fps_speed_ramp`, `sound_recording` (T32); branch `cinemate-port` | fork-only, Pi only; built 2026-10-28 |
+| `79b9c2c` | Touch UI FPS picker sends only `set_fps` in a camera ramp take (Core applies the shutter policy); tracks `fps_speed_ramp`, `sound_recording` (T32); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (C0022) |
 | `5223ae6` | Touch UI FPS list stops at 25 in 4K Clear HDR 16-bit (T32); branch `cinemate-port` | fork-only, Pi only; tested 2026-10-28 (Patrik: works well) |
 | `d8098d0` | Touch UI: 25/33/50 in 16-bit Clear HDR, IMX585 4K SDR up to 60, lossless cap 50; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
 | `f23c243` | HDMI monitor: RESOLUTION caption shows bit depth and Clear HDR for raw takes; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), still on GitHub `cinemate-port` and the Mac; works on the Pi (Patrik, 2026-10-27 23:08) |
