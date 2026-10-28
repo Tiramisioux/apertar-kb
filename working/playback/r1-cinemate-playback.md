@@ -170,7 +170,7 @@ The rate row. [C] `SE.html:6580-6591`, `6659-6666`:
 - **Loop.** A toggle button that sets `aria-pressed` and the `.is-on` class. [C] `SE.html:6721-6725`.
 - **Zoom.** None. [C] Absent.
 - **Audio.** None. [C] Absent; the route is unused.
-- **Delete and download.** Not in this pane. [C] Absent. The RAW pane has per-take download and delete, and bulk actions. [C] `SE.html:5906-5909`, `6199-6230`.
+- **Delete and download.** Not in this pane. [C] Absent. The RAW pane has per-take download and delete, and bulk actions. [C] `SE.html:5908-5910`, `6199-6230`.
 - **Background tab.** Playback pauses with the toast "Paused — tab was backgrounded". Browsers clamp timers in a hidden tab to about 1 Hz, so the skip count would be meaningless. [C] `SE.html:6734-6739`.
 
 **While recording**
@@ -216,14 +216,14 @@ This is the closest thing Cinemate has to a clip *browser* list with a per-clip 
 | Tab / hint | "Playback" / "review takes" | [C] `00-chrome.md:29-31`; [P] the heading becomes the label and the paragraph the hint, judging by `t('tab.playback.label')` / `t('tab.playback.hint')` at `SE.html:1492` |
 | Sort | "Oldest first", "Newest first", "Largest first" | [C] `SE.html:2582-2586` |
 | View | "One row", "Grid" | [C] `SE.html:2590-2593` |
-| Transport titles | "First frame", "Previous frame", "Next frame", "Last frame", "Loop"; button text "PLAY"/"PAUSE" | [C] `SE.html:2619-2625`, `6676`, `6684` |
+| Transport titles | "First frame", "Previous frame", "Next frame", "Last frame", "Loop"; button text "PLAY"/"PAUSE" | [C] `SE.html:2619-2625`, `6677`, `6684` |
 | Scrub aria-label | "Scrub through take" | [C] `SE.html:2615` |
 | HUD labels | "FPS", "Resolution", "Depth", "Sensor", "Source" | [C] `SE.html:2630-2634` |
 | Rate labels | "Recorded", "Conform", "Playing at", "Achieved", "Frames skipped" | [C] `SE.html:2638-2642` |
 | Lock: recording | "Playback held — recording" / "Reading the card while a take is being written to it risks audio xruns and dropped frames. Playback resumes when recording stops." | [C] `SE.html:6687-6688` |
 | Lock: no thumbnail | "No embedded thumbnail" / "This take has no thumbnail — recorded with the toggle off, or before a rebuilt cinepi-raw supported it. Raw decode is far more demanding on the Pi and is not currently used as a fallback." | [C] `SE.html:6689-6690` |
 | Toasts | "Conformed to N fps", "Playing at the recorded rate", "Paused — tab was backgrounded" | [C] `SE.html:6731`, `6738` |
-| Card meta | "N frames · 25.000 fps" or "rate unknown" | [C] `SE.html:6475-6477` |
+| Card meta | "N frames · 25.000 fps" or "rate unknown" | [C] `SE.html:6476-6477` |
 | Settings card | "Use conform frame rate" + "Plays every take on the project's conform rate, from `settings.conform_frame_rate`. A take shot faster than the conform rate plays as slow motion — the same speed it will run on the timeline. Off plays each take at the rate it was shot." | [C] `11-playback-playback.md:19-22` |
 
 ---
@@ -359,7 +359,7 @@ The RAW pane uses these related routes. [C] `SE.py:1464-1606`:
 
 - **Take names.** No separators, `.` or `..`; the resolved parent must be the media root; a name with an embedded null byte is skipped. [C] `rf.py:180-213`.
 - **Files inside a take.** A symlink that resolves outside the take directory is dropped (`safe_take_children`). Without this, a `*.dng` link to `/etc/passwd` would have been served like a frame. [C] `rf.py:216-241`; commit `00f6f65`.
-- **Escaping.** Take names are escaped before they go into `innerHTML`. The page inlines the API token and has no CSP, so an unescaped crafted directory name would be stored XSS. [C] Comment at `SE.html:6460-6466`; token inlined at `SE.html:3033`; commit `00f6f65`.
+- **Escaping.** Take names are escaped before they go into `innerHTML`. The page inlines the API token and has no CSP, so an unescaped crafted directory name would be stored XSS. [C] Comment at `SE.html:6458-6465`; token inlined at `SE.html:3033`; commit `00f6f65`.
 
 ### 2.8 Formats
 
@@ -414,7 +414,7 @@ The RAW pane uses these related routes. [C] `SE.py:1464-1606`:
 
 **Why IFD1 and not a SubIFD ("decision 7").** The thumbnail is chained as IFD1 instead of the standard IFD0-plus-SubIFD shape. IFD0 stays byte-identical, so post software keeps reading the raw image from IFD0. [C] Commit `4b1acd4`; `dng_encoder.cpp:1750-1757`.
 
-Whether Resolve or Adobe DNG Converter accept photometric 6 in IFD1 has not been checked. The handbook lists it as open (`hb:lessons/hardware-log.md:2041-2045`). [U]
+Whether Resolve or Adobe DNG Converter accept photometric 6 in IFD1 has not been checked. The handbook lists it as open (`hb:lessons/hardware-log.md:2047-2049`). [U]
 
 ### 3.3 Costs (measured)
 
@@ -537,7 +537,7 @@ Measured 2026-09-13 on an imx585 in 4K 16-bit ClearHDR with CineMate Log 12, 25 
 | 6 | **Recording lockout** | `SE.py:243-280`; `SE.html:6402-6449`, `6687-6714` | Use Core's own recording, flush and pre-roll states. **Also gate the index scan.** | [C] / [P] |
 | 7 | **The conform-rate option** with SLOMO/FAST/CNF labels | `SE.html:6320-6323`, `6580-6623` | An option; depends on whether the touch UI has an equivalent. | [C] |
 | 8 | **Dropped frames counted from file-name gaps** | `pb.py:103-134` | Needs Apertar's CDNG numbering to be gap-preserving. | [U] for Apertar |
-| 9 | **Path safety:** validate the take name, filter symlinks inside takes, escape names in HTML | `rf.py:180-241`; `SE.html:6460-6476` | Port as is. | [C] |
+| 9 | **Path safety:** validate the take name, filter symlinks inside takes, escape names in HTML | `rf.py:180-241`; `SE.html:6458-6478` | Port as is. | [C] |
 | 10 | **Pause on a hidden tab**; stop streams that are not visible | `SE.html:6734-6739`; `4d3bca4` | Port as is. | [C] |
 | 11 | **Audio** | Only a WAV route (`send_file(..., conditional=True)`) | Playing audio in the browser, in sync with the frame clock, is **new work**; Cinemate never did it. | [C] absence; [P] design |
 
@@ -570,7 +570,7 @@ Each needs checking against the touch UI before it is offered.
 
 ### 5.4 Key data shapes
 
-**Clip index.** `GET /settings-editor/api/playback/clips`. [C] Field names from `pb.py:149-191`, `210-214` and `SE.py:1400-1403`. The values below are illustrative; the name is a real take from `hb:lessons/hardware-log.md:2058`.
+**Clip index.** `GET /settings-editor/api/playback/clips`. [C] Field names from `pb.py:149-191`, `210-214` and `SE.py:1400-1403`. The values below are illustrative. The name is rebuilt from the JPEG take listed at `hb:lessons/hardware-log.md:2059-2060` (`CINEPI_26-09-13_223925_F06_C00001_cam0` … `_224059_F22_`) [P]; its 126 frames come from the mean taken "over 126 frames" in the same entry [C] `hb:lessons/hardware-log.md:2017`.
 
 ```json
 {
