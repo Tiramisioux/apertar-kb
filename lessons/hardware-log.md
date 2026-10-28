@@ -545,3 +545,9 @@ Entry format:
 - `C0034` 1080p uncompressed 25 → 50 → 25 (set_fps steps): 909 DNGs = 36.36 s at 25; real-time WAV 25.809 s;
   `C0034_stretched.wav` 36.360 s, 48 kHz, written seconds after stop (50 key frames); `fps-ramp.txt` `applied_us` 5038579 for frame
   126 (= 5.04 s at 25). **Confirmed** length and pitch; how it sounds is for Patrik to judge.
+
+## 2026-10-28: iso_max per mode (Core 4d9b321, UI 92f1e73), restart 21:13:18
+
+- `get_state` `iso_max`: SDR lossless 800, SDR uncompressed 0, Clear HDR 12-bit 720 (ISO 800 capped to 720), Clear HDR
+  16-bit 1585. **Confirmed.** UI started clean (`qml_aot=true`, no QML errors). The on-screen green values, the ISO lists and
+  Lock wait for Patrik's look on the touch screen, HDMI and WebUI.
