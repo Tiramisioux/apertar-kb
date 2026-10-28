@@ -38,6 +38,8 @@ with the decisions taken so far.
     In T33 the ISO array gets Auto as its lowest entry, so the dial's lowest position is Auto (request 13).
 17. **(2026-10-28) Clear HDR guard.** In Clear HDR, auto ISO and auto WB are off, with an info message. Entering Clear HDR with
     either on: they hold the value they had at that moment. Back to SDR: they return to auto.
+    Both UIs show the held ISO and WB values (the numbers in use, not "Auto") in green: set by the camera when Clear HDR was
+    switched on (request 12's rule).
 
 ## 2. Done (patches and tutorials in this export)
 
