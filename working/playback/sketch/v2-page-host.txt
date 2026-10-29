@@ -1,0 +1,17 @@
+  ok   holes sorted; the missing 7 and the 0-byte 8 join into one
+  ok   clock -> number, clamped at the last
+  ok   over the hole 3-4 number 2 stays up
+  ok   over 7 (missing) and 8 (0 B): number 6
+  ok   duration = span 10 / 25 fps; sound on
+  ok   ramp take: plays as its 25 fps timeline (30 s), sound off
+  ok   look-ahead = round trip, capped at 2 frames
+  ok   503 or a closed connection: skip, wait one frame
+  ok   third failure in a row: back off 500 ms
+  ok   a decoded frame resets the lane
+  ok   409: the lane stops (the hold card shows)
+  ok   audio clock interpolates between coarse currentTime steps and resyncs
+  ok   scrub ends: play on if it was playing, once
+  ok   keep-awake every min(20 s, timeout / 3); none with standby off
+  ok   card names keep the clip counter: cDNG_26…C0007
+  ok   no hold text promises a resume
+page ok (16 checks)
