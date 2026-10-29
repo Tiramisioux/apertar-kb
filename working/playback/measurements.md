@@ -116,3 +116,19 @@ nothing removed); sort chip and the SHOW menu work; the live view stops while th
 Each card shows duration, DROP N (C0016 DROP 310), name, "cDNG clip", the shot date and the recorded timecode: Free Run takes
 show their time of day (C0024 22:04:35:00), Rec Run takes 00:00:00:00 (R1). Tapping a card opens its first picture at 1920 w in a
 new tab until the viewer (T50). Thumbnails fill the card to the top and the sides (Patrik).
+
+## T50 the Clip Viewer, page part (Claude drove it in headless Chrome against the real Core; Patrik tried it: "works well"), Core `6ffe564`
+
+Playing from the Mac over the LAN, Core decoding at 640 w with two lanes, 6 s each:
+
+| Take | Result |
+| --- | --- |
+| C0021, Clear HDR 16-bit uncompressed, 25 fps | **24 fps drawn**, clock and picture level (0 frames behind), badge "PLAYING" (no warning: over 95 %); rtt 64 ms |
+| C0016, SDR 12-bit lossless, 25 fps | **9 fps drawn**, the picture 4 frames behind the clock, badge "PLAYING · 9 FPS" (O4); rtt 182 ms |
+
+A number inside a hole is black (R2): C0016 number 2949 (the first of 30 holes, 52 long), "Frame 2949 dropped" when paused, black with no
+text while playing; stepping over it shows 2950 black and 3001 the first picture after. Scrub to 50 % = number 2611 (104.4 s of 209 s,
+the span). Prev/next opens the neighbour in the browser's order; the hold card ("Recording", Live view, Download disabled) appears
+within 2 s of `playback_hold` and clears without resuming. The phone's Back leaves the viewer first. Metadata rows: the nine
+touch-UI rows plus TIMECODE, SOUND, FORMAT, DROPPED. One bug found and fixed on the way: frames that arrived late were thrown
+away (nothing drew); a late frame is now shown when newer than the picture on screen.
