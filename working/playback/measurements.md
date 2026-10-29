@@ -105,3 +105,14 @@ Same numbers as the bench (M1): 64 ms vs 64 ms (16-bit uncompressed), 166-170 ms
 25 fps for Clear HDR 16-bit, 10-12 fps for lossless (PROBABLE; not yet measured with two clients). Errors: n past the end 404
 "Frame not found."; width 500 400; unknown clip 404 `gone`; stale `v` 404 "The clip changed. Refresh Media." The pictures were
 looked at: the touch UI's look (flat, ungraded), the right clip, no artefacts. Host test `frames_test.cpp`: 14 of 14 on the Pi.
+
+## T49 the Clip Browser, in the WebUI (Claude built and drove it in headless Chrome against the real Core; CONFIRMED), Core `26742ce`, `3042652`
+
+Laptop 1280 px (4 columns), phone 390 px (2 columns, names cut in the middle, top buttons icon only); 39 cDNG takes. Opening the
+browser: the first list after a Core restart 4.0 s (once), then 17 ms; 16 thumbnails fetched for the visible cards (two at a
+time, only when a card scrolls into view); thumbnail request 37 ms. Long press (800 ms) starts a selection, Select All = 39,
+Remove Selected opens the dialog ("39 clip(s) selected / +38 more. This action cannot be undone."; cancelled in the test,
+nothing removed); sort chip and the SHOW menu work; the live view stops while the browser is open and comes back on close.
+Each card shows duration, DROP N (C0016 DROP 310), name, "cDNG clip", the shot date and the recorded timecode: Free Run takes
+show their time of day (C0024 22:04:35:00), Rec Run takes 00:00:00:00 (R1). Tapping a card opens its first picture at 1920 w in a
+new tab until the viewer (T50). Thumbnails fill the card to the top and the sides (Patrik).
