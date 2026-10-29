@@ -118,6 +118,9 @@ int main(int argc, char **argv)
     check(cache.probes() == 2 && grown.frames.count() == 4 && grown.token != first.token, "a new frame: probed again, new token");
     const ClipFacts other = cache.get(tmp / b);
     check(cache.probes() == 3 && other.name == b, "another folder is its own entry");
+    ClipFacts peeked;
+    check(cache.peek(tmp / a, peeked) && peeked.token == grown.token && !cache.peek(tmp / "nowhere", peeked) && cache.probes() == 3,
+          "peek: the last facts without probing; an unknown folder: none");
     const ClipFacts none = probeClip(tmp / "missing_folder");
     check(!none.ok && !none.error.empty(), "a missing folder: not ok, with a reason");
 

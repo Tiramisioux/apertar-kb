@@ -207,6 +207,15 @@ public:
         entries_[key] = {mtimeNs, facts};
         return facts;
     }
+    // The last facts for a folder, without probing: used while a hold lasts and nothing may read the card.
+    bool peek(const std::filesystem::path &dir, ClipFacts &out)
+    {
+        std::lock_guard<std::mutex> lock(mutex_);
+        const auto it = entries_.find(dir.string());
+        if (it == entries_.end()) return false;
+        out = it->second.facts;
+        return true;
+    }
     int probes() const { return probes_.load(); }
 
 private:
