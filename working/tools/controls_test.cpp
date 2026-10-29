@@ -587,7 +587,7 @@ int main(int argc, char **argv)
         check(has(settings, "\"key\":\"enabled\",\"label\":\"On\",\"type\":\"bool\",\"value\":\"true\",\"in_file\":true") &&
               has(settings, "\"key\":\"pull\",\"label\":\"Pull\",\"type\":\"choice\",\"value\":\"up\"") &&
               has(settings, "\"key\":\"debounce_ms\",\"label\":\"Debounce (ms)\",\"type\":\"number\",\"value\":\"60\"") &&
-              has(settings, "\"key\":\"poll_ms\",\"label\":\"Poll every (ms)\",\"type\":\"number\",\"value\":\"12\"") &&
+              has(settings, "\"key\":\"poll_ms\",\"label\":\"Poll every (ms), chips without edge events\",\"type\":\"number\",\"value\":\"12\"") &&
               has(settings, "\"key\":\"chip\",\"label\":\"GPIO chip\",\"type\":\"text\",\"value\":\"auto\""),
               "GPIO button settings from the live file: on, pull up, 60 ms debounce, 12 ms poll, chip auto");
     }
@@ -625,6 +625,37 @@ int main(int argc, char **argv)
         check(clickThenLong == "press@0 press@300", "a click then a long press: the long press clears the count (" + clickThenLong + ")");
         const auto apart = run({{0, 100}, {800, 900}}, 2000);
         check(apart == "press@0 single@600 press@800 single@1400", "two clicks 0.8 s apart are two singles (" + apart + ")");
+
+        // The same presses the way the edge-event loop feeds them: update() only at an edge or at nextWakeMs().
+        auto onEdges = [](std::vector<std::pair<int, int>> presses, int endMs, bool useWakes) {
+            G gesture;
+            std::string out;
+            std::vector<std::pair<int, bool>> edges;
+            for (const auto &[from, to] : presses) { edges.push_back({from, true}); edges.push_back({to, false}); }
+            size_t next = 0;
+            bool down = false;
+            int calls = 0;
+            for (int64_t t = 0; t <= endMs && calls < 100; ++calls) {
+                if (next < edges.size() && edges[next].first == t) down = edges[next++].second;
+                for (const auto event : gesture.update(down, t)) {
+                    static const char *names[] = {"press", "single", "double", "triple", "hold"};
+                    out += std::string(out.empty() ? "" : " ") + names[static_cast<int>(event)] + "@" + std::to_string(t);
+                }
+                int64_t at = next < edges.size() ? edges[next].first : endMs + 1;
+                if (const int64_t wake = gesture.nextWakeMs(); useWakes && wake >= 0) at = std::min(at, wake);
+                if (at <= t) at = t + 1;
+                t = at;
+            }
+            return out;
+        };
+        const bool sameOnEdges = onEdges({{0, 100}}, 1000, true) == "press@0 single@600" &&
+                                 onEdges({{0, 100}, {250, 350}}, 1500, true) == "press@0 press@250 double@850" &&
+                                 onEdges({{0, 100}, {200, 300}, {400, 500}}, 1500, true) == "press@0 press@200 press@400 triple@1000" &&
+                                 onEdges({{0, 3500}}, 4500, true) == "press@0 hold@3000" &&
+                                 onEdges({{0, 100}, {300, 1000}}, 2500, true) == "press@0 press@300";
+        check(sameOnEdges, "fed only at edges and at nextWakeMs(): the same clicks, Hold and long press as when polled");
+        const auto lateRelease = onEdges({{0, 700}}, 2000, false);
+        check(lateRelease == "press@0", "a 0.7 s press seen only at its two edges is still no click (" + lateRelease + ")");
         const hc::Facts facts{};   // no bus facts: this case is about the keys and the pin claims
         const std::string clicks = "[gpio_buttons]\nenabled=true\nd10=capture\nd10_double=photo\nd10_hold=standby\nd6_triple=eject\n";
         const auto issues = hc::validate(clicks, facts);
