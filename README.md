@@ -41,6 +41,7 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | Something is broken, where do I start | `working/diagnose.md`, then `lessons/hardware-log.md` |
 | Has this been seen before? | `lessons/hardware-log.md`, `sources/` |
 | How do my forks differ from Apertar-Studio? What went upstream? | `fork-log.md` |
+| Why does Apertar drop more frames than CineMate, and what to port (incl. CineMate Log) | `working/drop-frames/README.md`, then `working/handoff-drop-frames.md` |
 
 ## Writing rules
 
