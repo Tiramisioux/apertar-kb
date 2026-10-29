@@ -1,0 +1,54 @@
+threads available: 4
+sdr12_uncompressed.dng (Core encoder 9 ms on this host)
+  ok   reader opens Core's file
+  ok   size and bit depth from IFD0
+  ok   compression tag
+  ok   FrameRate 51044 = 25
+  ok   PageName = frame file name
+  ok   DateTimeOriginal present
+  ok   ColorMatrix1 and AsShotNeutral present
+  ok   tags cost one small tail read (1448 B)
+  ok   every sample equals what Core encoded (bit-exact)
+  sdr12_uncompressed.dng             3840x2160 12-bit uncompressed payload  12.4 MB, tail 1448 B, fps 25.000
+    ms (median of 5): tags 0.01 | samples 17.6 | render 640w 17.1, 960w 39.1, 1920w 152.7 | histogram 0.16 | jpeg 960w q80 2.21 (26542 B)
+    one worker: 37 ms per 640w play frame = 27.0 fps; 173 ms per 1920w paused frame
+sdr12_lossless.dng (Core encoder 70 ms on this host)
+  ok   reader opens Core's file
+  ok   size and bit depth from IFD0
+  ok   compression tag
+  ok   FrameRate 51044 = 25
+  ok   PageName = frame file name
+  ok   DateTimeOriginal present
+  ok   ColorMatrix1 and AsShotNeutral present
+  ok   tags cost one small tail read (1596 B)
+  ok   every sample equals what Core encoded (bit-exact)
+  sdr12_lossless.dng                 3840x2160 12-bit lossless     payload   7.7 MB, tail 1596 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 150.2 | render 640w 17.4, 960w 39.5, 1920w 156.5 | histogram 0.15 | jpeg 960w q80 1.43 (26542 B)
+    one worker: 169 ms per 640w play frame = 5.9 fps; 308 ms per 1920w paused frame
+hdr16_uncompressed.dng (Core encoder 6 ms on this host)
+  ok   reader opens Core's file
+  ok   size and bit depth from IFD0
+  ok   compression tag
+  ok   FrameRate 51044 = 25
+  ok   PageName = frame file name
+  ok   DateTimeOriginal present
+  ok   ColorMatrix1 and AsShotNeutral present
+  ok   tags cost one small tail read (1448 B)
+  ok   every sample equals what Core encoded (bit-exact)
+  hdr16_uncompressed.dng             3840x2160 16-bit uncompressed payload  16.6 MB, tail 1448 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 14.7 | render 640w 17.8, 960w 40.3, 1920w 151.8 | histogram 0.16 | jpeg 960w q80 1.45 (26603 B)
+    one worker: 34 ms per 640w play frame = 29.3 fps; 168 ms per 1920w paused frame
+hdr16_lossless.dng (Core encoder 121 ms on this host)
+  ok   reader opens Core's file
+  ok   size and bit depth from IFD0
+  ok   compression tag
+  ok   FrameRate 51044 = 25
+  ok   PageName = frame file name
+  ok   DateTimeOriginal present
+  ok   ColorMatrix1 and AsShotNeutral present
+  ok   tags cost one small tail read (1596 B)
+  ok   every sample equals what Core encoded (bit-exact)
+  hdr16_lossless.dng                 3840x2160 16-bit lossless     payload  15.4 MB, tail 1596 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 182.6 | render 640w 18.1, 960w 40.8, 1920w 150.6 | histogram 0.15 | jpeg 960w q80 1.36 (26603 B)
+    one worker: 202 ms per 640w play frame = 4.9 fps; 335 ms per 1920w paused frame
+all ok

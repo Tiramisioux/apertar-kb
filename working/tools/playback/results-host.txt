@@ -1,0 +1,23 @@
+threads available: 4
+sdr12_uncompressed.dng (Core encoder 16 ms on this host)
+  sdr12_uncompressed.dng             3840x2160 12-bit uncompressed payload  12.4 MB, tail 1448 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 19.5 | render 640w 15.5, 960w 35.2, 1920w 141.6 | histogram 0.15 | jpeg 960w q80 1.44 (26542 B)
+    one worker: 37 ms per 640w play frame = 27.3 fps; 163 ms per 1920w paused frame
+sdr12_lossless.dng (Core encoder 50 ms on this host)
+  sdr12_lossless.dng                 3840x2160 12-bit lossless     payload   7.7 MB, tail 1596 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 139.1 | render 640w 18.2, 960w 38.1, 1920w 146.5 | histogram 0.17 | jpeg 960w q80 1.44 (26542 B)
+    one worker: 159 ms per 640w play frame = 6.3 fps; 287 ms per 1920w paused frame
+hdr16_uncompressed.dng (Core encoder 21 ms on this host)
+  hdr16_uncompressed.dng             3840x2160 16-bit uncompressed payload  16.6 MB, tail 1448 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 22.7 | render 640w 16.2, 960w 37.9, 1920w 159.7 | histogram 0.16 | jpeg 960w q80 1.50 (26603 B)
+    one worker: 41 ms per 640w play frame = 24.6 fps; 184 ms per 1920w paused frame
+hdr16_lossless.dng (Core encoder 119 ms on this host)
+  hdr16_lossless.dng                 3840x2160 16-bit lossless     payload  15.4 MB, tail 1596 B, fps 25.000
+    ms (median of 5): tags 0.02 | samples 154.2 | render 640w 15.5, 960w 34.2, 1920w 132.3 | histogram 0.15 | jpeg 960w q80 1.28 (26603 B)
+    one worker: 171 ms per 640w play frame = 5.8 fps; 288 ms per 1920w paused frame
+all ok
+parity ok (0)
+touch UI path  hdr16_lossless.dng       decode  166.8 ms | render 640x360  20.3 ms
+touch UI path  hdr16_uncompressed.dng   decode   17.2 ms | render 640x360  18.9 ms
+touch UI path  sdr12_lossless.dng       decode  169.8 ms | render 640x360  24.7 ms
+touch UI path  sdr12_uncompressed.dng   decode   18.5 ms | render 640x360  22.0 ms

@@ -1,0 +1,7 @@
+sdr12_uncompressed.dng     samples differ 0 | black UI 200.0 / copy 200.0, white 4095 / 4095 | 640x360: max diff 0, pixels differing 0 (0.000%), mean 0.0000 | histogram max bin diff 0.0000 (UI bins 48)
+sdr12_lossless.dng         samples differ 0 | black UI 200.0 / copy 200.0, white 4095 / 4095 | 640x360: max diff 0, pixels differing 0 (0.000%), mean 0.0000 | histogram max bin diff 0.0000 (UI bins 48)
+hdr16_uncompressed.dng     samples differ 0 | black UI 3201.0 / copy 3201.0, white 65535 / 65535 | 640x360: max diff 0, pixels differing 0 (0.000%), mean 0.0000 | histogram max bin diff 0.0000 (UI bins 48)
+hdr16_lossless.dng         samples differ 0 | black UI 3201.0 / copy 3201.0, white 65535 / 65535 | 640x360: max diff 0, pixels differing 0 (0.000%), mean 0.0000 | histogram max bin diff 0.0000 (UI bins 48)
+sdr12_lossy3.dng           samples differ 0 | black UI 0.0 / copy 0.0, white 65535 / 65535 | 640x360: max diff 0, pixels differing 0 (0.000%), mean 0.0000 | histogram max bin diff 0.0000 (UI bins 48)
+sdr12_lossy5.dng           samples differ 0 | black UI 0.0 / copy 0.0, white 65535 / 65535 | 640x360: max diff 0, pixels differing 0 (0.000%), mean 0.0000 | histogram max bin diff 0.0000 (UI bins 48)
+parity ok (0)
