@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clip Viewer held during a take, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 20px 14px 0; background: #09090b; color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif; overflow: hidden;">
+
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 0 4px;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 3px; color: #9a9aa4;">PLAYBACK</div>
+<h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em;">Clip Viewer</h1>
+</div>
+<button type="button" style="display: flex; align-items: center; gap: 6px; min-height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>
+Back
+</button>
+</div>
+
+<div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 12px; padding: 14px 12px 0; border-radius: 28px 28px 0 0; border: 1px solid #27272a; border-bottom: none; background: #111113;">
+<div role="img" aria-label="Playback held while recording" style="position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 18px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.06); background: radial-gradient(70% 60% at 48% 34%, rgba(255, 236, 214, 0.32), transparent 70%), linear-gradient(160deg, #46505e 0%, #121418 100%);">
+<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 12px; background: rgba(0, 0, 0, 0.55);">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 8px; max-width: 280px; padding: 14px 18px; border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(9, 9, 11, 0.86); text-align: center;">
+<div style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 700;">
+<span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 999px; background: #ef4444;"></span>
+Recording
+</div>
+<div style="font-size: 12px; color: #d4d4d8; line-height: 1.4;">Recording to media. Press Play when the take ends.</div>
+<button type="button" style="min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.9); background: #ffffff; color: #09090b; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">Live view</button>
+</div>
+</div>
+<span style="position: absolute; top: 9px; right: 9px; padding: 4px 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">25.000 FPS</span>
+<span style="position: absolute; left: 9px; bottom: 9px; padding: 4px 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">PAUSED</span>
+<span style="position: absolute; right: 9px; bottom: 9px; padding: 4px 8px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 10px; font-weight: 700; letter-spacing: 0.08em;">FRAME 96 / 207</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 8px;">
+<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+<span style="font-size: 19px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">cDNG_26-10-28_C0007</span>
+<span style="font-size: 12px; color: #a1a1aa;">cDNG sequence • 207 frames</span>
+</div>
+<button type="button" aria-label="Download this clip (waits until the take ends)" disabled="disabled" style="width: 44px; height: 44px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.03); color: #52525b; display: flex; align-items: center; justify-content: center;">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>
+</button>
+<button type="button" style="display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
+Info
+</button>
+</div>
+
+<div style="position: relative; height: 28px; display: flex; align-items: center;">
+<div style="position: absolute; left: 0; right: 0; height: 6px; border-radius: 999px; background: #27272a;"></div>
+<div style="position: absolute; left: 0; width: 46%; height: 6px; border-radius: 999px; background: #71717a;"></div>
+<div style="position: absolute; left: calc(46% - 10px); width: 20px; height: 20px; border-radius: 999px; background: #a1a1aa;"></div>
+</div>
+<div style="margin-top: -6px; font-size: 12px; color: #a1a1aa; font-variant-numeric: tabular-nums;">00:05 / 00:10</div>
+
+<div style="display: flex; align-items: center; justify-content: center; gap: 16px;">
+<button type="button" aria-label="Previous clip" disabled="disabled" style="width: 50px; height: 50px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.03); color: #52525b; display: flex; align-items: center; justify-content: center;">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 6h2v12H7z"></path><path d="M18 6v12l-8.5-6z"></path></svg>
+</button>
+<button type="button" aria-label="Play (waits until the take ends)" disabled="disabled" style="width: 62px; height: 62px; border-radius: 999px; border: 1px solid #3f3f46; background: #27272a; color: #71717a; display: flex; align-items: center; justify-content: center;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+</button>
+<button type="button" aria-label="Next clip" disabled="disabled" style="width: 50px; height: 50px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.03); color: #52525b; display: flex; align-items: center; justify-content: center;">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 6h2v12h-2z"></path><path d="M6 6v12l8.5-6z"></path></svg>
+</button>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+<button type="button" disabled="disabled" aria-label="Remove (not during a take)" style="display: flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.06); color: #7f5a5a; font-family: inherit; font-size: 13px; font-weight: 600;">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 13h10l1-13"></path><path d="M9 7V4h6v3"></path></svg>
+Remove
+</button>
+<div role="img" aria-label="Histogram of the last frame" style="width: 150px; height: 52px; box-sizing: border-box; display: flex; flex-direction: column; gap: 3px; padding: 6px 8px; border-radius: 14px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.05); opacity: 0.55;">
+<span style="font-size: 8px; font-weight: 700; letter-spacing: 0.14em; color: #9a9aa4;">HISTOGRAM</span>
+<div style="flex: 1 1 auto; display: flex; align-items: flex-end; gap: 1px; border-bottom: 1px solid rgba(255, 255, 255, 0.25);">
+<sc-for list="{{ bars }}" as="b" hint-placeholder-count="48">
+<span style="{{ b.style }}"></span>
+</sc-for>
+</div>
+</div>
+</div>
+<div style="font-size: 12px; color: #a1a1aa;">Stop recording before deleting media. Downloads wait until the take ends.</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const bars = Array.from({ length: 48 }, (_, i) => {
+      const x = i / 47;
+      const h = Math.max(4, Math.round(100 * (0.55 * Math.exp(-Math.pow((x - 0.32) / 0.16, 2)) + 0.4 * Math.exp(-Math.pow((x - 0.7) / 0.12, 2)) + 0.05)));
+      return { style: { flex: '1 1 0', height: h + '%', background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.42))', borderRadius: '1px 1px 0 0' } };
+    });
+    return { bars };
+  }
+}
+</script>
+</body>
+</html>
