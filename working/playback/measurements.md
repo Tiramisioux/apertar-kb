@@ -142,3 +142,14 @@ recording before deleting media."; `playback_hold` = `recording`. The take (`cDN
 download stopped just before it. After the take a download works (200); the route's delete of that take removed 92 files; the take
 is gone. Not tested live: Q23 (record_start refused while a delete runs: "Deleting media. One moment.") because a delete of one
 small take takes milliseconds; the code is in `handleCommand` and the delete routes, `mediaDeleteActive_`.
+
+## T51 sound, live on the Pi (Claude ran it in headless Chrome against the real Core; CONFIRMED), Core `0c9d194` + the look-ahead fix
+
+`/api/media/file` on C0016's WAV (60,170,586 B, s24 stereo 48 kHz, the span 209 s): `Range: bytes=0-99` 206 with `Content-Range: bytes 0-99/60170586`,
+`Content-Length: 100`, `Accept-Ranges: bytes`; `bytes=60170000-` 206 (586 B); `bytes=-1000` 206 (1000 B); `bytes=99999999999-` 416 with
+`Content-Range: bytes */60170586`; no Range 200, 60 MB in 75 ms on the Pi; names `../x.wav`, `a%2Fb.wav`, a `.dng` 400, a missing wav 404.
+SOUND row: "24-bit 48 kHz stereo". The viewer (Chromium, headless, autoplay allowed): the `<audio>` is the clock (sound 5.46 s, clock 5.44 s),
+pause stops it, a seek to 50 % moves sound and picture (104 s of 209 s), a hold removes the `src` and pauses. Picture against sound,
+the picture's lag in frames sampled over 5 s: **lossless C0016 (11 fps drawn): 0-2 frames (0.08 s at most)**, before the look-ahead
+fix 7 frames (0.28 s); **Clear HDR 16-bit uncompressed C0021 (24 fps drawn): 0 frames**. Not tested: Safari and Firefox, a phone,
+Bluetooth latency (M6, M12 skipped by Patrik), a ramp take's "sound off" line.
