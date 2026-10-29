@@ -208,7 +208,8 @@ Design: `working/drop-frames/README.md` §4. Each worker gets that section paste
   (anchor `setCdngCompression`, persisted load near `cdngCompression` in `CaptureSettingsPersister`),
   `src/camera/ModeLadder.hpp` (anchors `knownCompression`, `WIDTHxHEIGHT:BITS:hdr|sdr`).
 - Change: `enum class CdngLog { Off, Auto, Bits12, Bits10, Bits8 }` + `toString`/`fromString`;
-  `set_cdng_log value=`; refusals in Lossy/H.264/ProRes; state `cdng_log`, `cdng_log_bits`,
+  `set_cdng_log value=`; refusals in H.264/ProRes only (Log combines with every compression and with
+  Lossy, Patrik's rule); state `cdng_log`, `cdng_log_bits`,
   `cdng_log_available`; conf key `[camera] cdng_log`; carried across formats like `fps_phase_lock`
   (anchor `a56eae7` pattern); preset allow-list; ladder sixth field `log|log10|log8` and `log_bits` in
   the ladder JSON; `estimatedRawBytesPerSecond` uses `cdng_log_bits`.
@@ -223,16 +224,21 @@ Design: `working/drop-frames/README.md` §4. Each worker gets that section paste
   composed curve when log is on in 12-bit Clear HDR), apply `LogCurve::forward` per sample into the
   same buffer; set `copy.view.bitDepth` to the target; attach the inverse table to the job's metadata;
   the writer packs with the existing 8/10/12-bit row packers; `BlackLevel` stays the linear value.
-  Lossless JPEG consumes the log codes unchanged. Guard: never when `recordingFormat_ == LossyDng`.
-- Host check: none; return the diff and a table of bytes per frame for 16→12, 12→10, 10→8 at 3840×2160.
+  Lossless JPEG consumes the log codes unchanged. **Lossy + Log**: in `src/lossydng/LossyDngEncoder.cpp`
+  (anchors `buildCompanding`, `cachedGradation_`, `outputMetadata.linearizationTable = inverseQuantized_`)
+  the square-root companding is replaced by the log curve at the target depth when Log is on, the ratio
+  quantisation and SOF3 run unchanged on the log codes, and the file's table is the log inverse composed
+  with the quantisation. One companding per file, never two.
+- Host check: none; return the diff and a table of bytes per frame for 16→12, 12→10, 10→8 at 3840×2160,
+  uncompressed and at Lossy 3:1.
 - Pi test: one 10 s take per pair; `exiftool -LinearizationTable -BlackLevel -WhiteLevel -BitsPerSample`
   on a frame; open in Resolve (open question 5); then `takes.sh 1 600` at 16→12.
 
 **W6d, the two UIs.**
 - WebUI: `src/web/WebControlPage.cpp` anchors `settingsCdngCompressionSelect`, `settingsRawBitDepthNote`,
   `dispatchCdngCompressionSelection`, `ladderCompressions`, the resolution badge (anchor `16-bit` near
-  `8492488`'s change). Add the Log storage select, the greyed state in Lossy, the badge suffix, the
-  `LOG` pill on the Live preview row, the ladder editor's log column.
+  `8492488`'s change). Add the Log storage select (live in every compression, Lossy included), the
+  badge suffix, the `LOG` pill on the Live preview row, the ladder editor's log column.
 - Touch UI (Apertar-UI, branch `cinemate-port`): `qml/SettingsPage.qml` `recordFormatComponent`
   (anchor `applyRawBitDepth`), `src/ApertarControlBridge.cpp` (anchor `applyCdngCompression`),
   `qml/CameraPage.qml` `formatDisplaySubtext`. Add `applyCdngLog`, the row, the subtext.
