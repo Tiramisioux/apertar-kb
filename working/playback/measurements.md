@@ -76,3 +76,14 @@ exFAT folder mtime moves with its newest entry on all three takes checked (C0016
 newest file's); `stat` of all 39 folders: 36 ms. A file written in place would not move it; frames are never rewritten.
 Design change (T47): the cache key is the folder's mtime alone. Sample facts, C0016: 25 fps, 03:29 (the span), 4,913 files,
 310 missing in 30 holes, "SDR 12-bit · lossless", timecode 00:00:00:00 (a Rec Run take), 32.0 GB.
+
+## T47 live on the Pi (Claude ran it with Patrik's OK; CONFIRMED), Core `ee246ff`
+
+| Check | Result |
+| --- | --- |
+| `GET /api/media`, 39 cDNG takes | **4.24 s** the first time after a Core restart, then **0.02 s** (before: 6.8 s every call). First live version, before the cache was asked ahead of the folder scan: 9.6 s, then 1.8 s |
+| `GET /api/media/clip` C0016 | 1 ms; 4,913 files, first 0, last 5222, 310 missing in 30 holes, 25 fps, 03:29, "SDR 12-bit · lossless", "310 missing · 0 empty", bit depth 12-bit, size 32.0 GB, has audio; timecode_start 00:00:00:00 (a Rec Run take) |
+| unknown clip | 404 "Clip not found." |
+| `playback_hold` in `/api/state` | `""` idle; `"recording"` immediately after `record_start` (the yield window, before the camera's own flag) and during the take; back to `""` 2-3 s after stop (the window's 1.5 s tail) |
+| in a 4 s take (`cDNG_26-10-29_C0001`, 46 of 46 frames written, 0 dropped) | list answers from the cache in 16 ms with `"held":"recording"` and 39 items; `/api/media/clip` of a cached clip: 200 with `held`; of the take being written: **409** `Playback held: recording.` |
+| list after the take | 28 ms; the test take was removed afterwards |
