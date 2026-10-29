@@ -52,7 +52,7 @@ Read: `src/hardware/ActionCatalog.hpp:122-132`, `src/hardware/ButtonActionList.h
 
 **4.3** The three copies deleted; `normalizeAction` passes `hardware::actions::canonicalAction`. **Check:** `grep -c normalizeSingleAction src/hardware/NeoRotary4Input.cpp` is 0.
 
-**4.4** Analog targets, trigger events and tally tokens call the header (`GroveAnalogInput.cpp:128`, `ApertarCoreApp.cpp:9287`, `TriggerOutput.cpp:133`, `RecordingIndicatorOutput.cpp:121`). **Check:** `grep -c canonicalAnalogTarget src/hardware/GroveAnalogInput.cpp` is 1.
+**4.4** Analog targets, trigger events and tally tokens call the header (`GroveAnalogInput.cpp:128`, `ApertarCoreApp.cpp`, `TriggerOutput.cpp:133`, `RecordingIndicatorOutput.cpp:121`). **Check:** `grep -c canonicalAnalogTarget src/hardware/GroveAnalogInput.cpp` is 1.
 
 **4.5** App's `hardwareActionSuffix` and `parseHardwareActionNumber` delegate to `suffixAfter` and `numberAfter`; an unknown action logs a suggestion. The header takes the prefixes as `std::vector<std::string_view>` so App's `vector<string>` can call it. **Check:** `grep -c 'actions::suffixAfter' src/ApertarCoreApp.cpp` is 1.
 
@@ -104,9 +104,9 @@ ref core src/hardware/NeoRotary4Input.cpp 124 return hardware::normalizeButtonMa
 ref core src/hardware/GroveAnalogInput.cpp 128 return hardware::actions::canonicalAnalogTarget(target);
 ref core src/hardware/TriggerOutput.cpp 133 const std::string event = hardware::actions::canonicalTriggerEvent(token);
 ref core src/hardware/RecordingIndicatorOutput.cpp 121 return hardware::isOutputAction(normalizeToken(text));
-ref core src/ApertarCoreApp.cpp 1488 return hardware::actions::suffixAfter(action, prefixViews(prefixes));
-ref core src/ApertarCoreApp.cpp 9864 const std::string suggestion = hardware::actions::suggestion(action);
-ref core src/ApertarCoreApp.cpp 10408 if (command.name == "list_actions") {
+ref core src/ApertarCoreApp.cpp 1502 return hardware::actions::suffixAfter(action, prefixViews(prefixes));
+ref core src/ApertarCoreApp.cpp 9961 const std::string suggestion = hardware::actions::suggestion(action);
+ref core src/ApertarCoreApp.cpp 10363 if (command.name == "list_actions") {
 check 3.1 | git -C /home/pi/ApertarCore show 4fa0432:src/hardware/GpioInput.cpp | std::string normalizeSingleAction
 check 4.1 | grep -c 'inline std::string canonicalAction' /home/pi/ApertarCore/src/hardware/ActionCatalog.hpp | ^1$
 check 4.3 | grep -c normalizeSingleAction /home/pi/ApertarCore/src/hardware/NeoRotary4Input.cpp | ^0$

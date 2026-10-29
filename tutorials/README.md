@@ -126,6 +126,7 @@ The planned order (learning path T01-T15, with the mental model each builds) is 
 | 2026-10-29 | (no note) | **T50.** WebUI Clip Viewer: frame-number clock, black holes, scrub, frame step, metadata, hold card (`4629de2`); downloads and deletes yield to a take (`a37a902`) | done by Claude, tested |
 | 2026-10-29 | (no note) | **T51.** Sound: `/api/media/file` with Range, the `<audio>` as the clock (`fa19856`, `4fa0432`). T52 MLV, T53 ProRes/H.264, T54 touch UI still to do (`working/playback/HANDOFF-next.md`) | done by Claude, tested in Chrome |
 | 2026-10-29 | `20261029215000 CINEMATE APERTAR T36 one-action-vocabulary` | **T36.** Controls project step 1: one action vocabulary (`ActionCatalog.hpp`, replaces six copies) and `list_actions`; host test `working/tools/controls_test.cpp`. Core `916c1dd` on branch `controls` | done 2026-10-29 by Claude, tested on the camera |
+| 2026-10-29 | `20261029224000 CINEMATE APERTAR T37 core-owns-the-hardware-file` | **T37.** Controls project step 2: Core owns `apertar-hardware.conf` (text model, validator, one store with lock, revision, history), the IMU writers through it, `get_controls` / `set_controls`, validated at start. Core `controls` `3526e4b`, `c509e9f`, `f5a61b8`, `4d80a35` | done 2026-10-29 by Claude, tested on the camera |
 
 Status values: `written` → `in progress` → `done` (Patrik did it) → `confirmed` (result on hardware,
 logged in `lessons/hardware-log.md`).

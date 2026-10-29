@@ -46,7 +46,7 @@ SAFE_FIRST = {"curl", "grep", "cat", "ls", "git", "systemctl", "findmnt", "stat"
 SAFE_GIT = {"diff", "status", "log", "show", "rev-parse", "branch"}
 SAFE_SYSTEMCTL = {"show", "status", "is-active", "cat"}
 SAFE_CORE_CMDS = {"ping", "help", "get_state", "get_media_test_state", "audio_capabilities",
-                  "list_sensor_modes", "list_actions"}
+                  "list_sensor_modes", "list_actions", "get_controls"}
 
 
 def die(msg):

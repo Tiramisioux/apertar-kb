@@ -507,6 +507,38 @@ int main(int argc, char **argv)
               flipped != live, "one key edit changes exactly that line");
     }
 
+    std::printf("13. the default template Core shows when the file is missing\n");
+    {
+        std::ifstream sourceFile(coreTree + "/src/ApertarCoreApp.cpp");
+        std::stringstream sourceBuffer;
+        sourceBuffer << sourceFile.rdbuf();
+        const std::string source = sourceBuffer.str();
+        const auto from = source.find("std::string defaultHardwareConfigTemplate()");
+        const auto open = source.find("R\"CONFIG(", from);
+        const auto close = source.find(")CONFIG\"", open);
+        const std::string tmpl = from != std::string::npos && open != std::string::npos && close != std::string::npos
+            ? source.substr(open + 9, close - open - 9) : "";
+        check(!tmpl.empty(), "the template is in ApertarCoreApp.cpp (" + std::to_string(tmpl.size()) + " bytes)");
+        hc::Facts facts;
+        facts.known = true;
+        facts.buses = {0, 1, 10, 13, 14};
+        const auto issues = hc::validate(tmpl, facts);
+        size_t errors = 0;
+        for (const auto &issue : issues) {
+            errors += issue.error;
+            std::printf("    %s line %zu: %s\n", issue.error ? "error" : "warning", issue.line, issue.message.c_str());
+        }
+        check(!tmpl.empty() && errors == 0, "the template has no errors (" + std::to_string(issues.size()) + " issues in all)");
+        const auto doc = hc::parse(tmpl);
+        check(hc::join(doc) == tmpl, "it parses back byte for byte");
+        check(!hc::valueOf(doc, "imu", "bus") && !hc::valueOf(doc, "imu", "address") && !hc::valueOf(doc, "imu", "orientation"),
+              "[imu] holds no keys its reader ignores");
+        check(hc::valueOf(doc, "neorotary4", "enabled") == std::optional<std::string>("false") &&
+              hc::valueOf(doc, "pcf8574", "bus") == std::optional<std::string>("1") &&
+              hc::hasSection(doc, "gpio_encoders") && hc::hasSection(doc, "grove_analog"),
+              "NeoRotary off, PCF8574 on bus 1, and the encoder and analog sections are there");
+    }
+
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);
     return failures ? 1 : 0;
 }

@@ -25,3 +25,10 @@
 | Q21 | An enabled NeoRotary starts and polls even with no actions (so Listen works on a fresh board); status "connected · no actions" (R22) | 2026-10-29 |
 | Q22 | History: 20 versions + a pinned "Before Controls"; IMU taps coalesce per 10 minutes (design default) | 2026-10-29 |
 | Q23 | No test_output command; the Outputs card shows a hint instead (design default) | 2026-10-29 |
+
+## Notes
+
+- 2026-10-29: the rig has no gyro (IMU) and no MPU6050; the user's build has neither, and the [imu]/[mpu6050] sections are template leftovers. The gyro level, calibration and the touch UI gyro page (T45) cannot be tried on the camera. The file still has [imu] and [mpu6050] enabled on bus 10, and a device at 0x68 answers 0x47; unidentified. The user says the camera uses an older IMX585 module; the chips at 0x34, 0x48 and 0x68 on bus 10 may belong to it (unconfirmed).
+
+- 2026-10-29 (wish): assign scripts to buttons. Today a button can run a script: `d10=run_script1` in the file (catalog group "Scripts": run_script, run_script1..5), and the paths live in `[run_script] path..path5`. The Controls editor (T41) will offer the Scripts actions. The script paths stay ssh-only (Q2). A browser way to pick a script would need its own design, for example a fixed scripts folder to choose from, with no typed path (the middle option noted under Q2 and Q10). Not in T36-T45.
+- 2026-10-29: scripts on buttons: chosen from a fixed scripts folder, never a typed path (the user answered "fixed scripts folder"). Folder name, listing, and how the pick is stored are for its own design pass; script paths otherwise stay ssh-only (Q2).
