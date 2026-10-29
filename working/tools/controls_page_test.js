@@ -72,11 +72,12 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     for (let i = 0; i < 40; i++) { try { if (await tab.evaluate('typeof setSettingsPanel === "function" && typeof loadControls === "function"')) break; } catch (e) {} await sleep(250); }
     await tab.evaluate('window.confirm = () => true; 0');
     const q = (js) => tab.evaluate(js);
-    await q('setSettingsPanel("controls"); 0'); await sleep(1200);
+    await q('setSettingsPanel("config"); 0'); await sleep(1200);
 
     console.log('--- the page as loaded');
-    check('Controls is in the nav, before Config', await q('(() => { const n=[...document.querySelectorAll(".settings-nav-item")].map(b=>b.dataset.panel); return n.indexOf("controls")>=0 && n.indexOf("controls")<n.indexOf("config"); })()'));
-    check('the panel is the active one', await q('document.querySelector(".settings-panel.active").dataset.panel === "controls"'));
+    check('no separate Controls item in the nav: it lives in Config', await q('![...document.querySelectorAll(".settings-nav-item")].some(b=>b.dataset.panel==="controls")'));
+    check('in the Config panel the Controls card comes first, above the text editor', await q('(() => { const p=document.querySelector(".settings-panel.active"); const t=[...p.querySelectorAll(".settings-card-title")].map(e=>e.textContent); return p.dataset.panel==="config" && t[0]==="Controls" && t.indexOf("Apertar Config")>0; })()'));
+    check('the Remove button sits in the row, styled like the favourites list (danger-button preset-action)', await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 10"); const b=r.querySelector(".controls-row-actions button"); return !!b && b.classList.contains("danger-button") && b.classList.contains("preset-action") && b.textContent==="Remove"; })()'));
     const titles = await q('[...document.querySelectorAll("#controlsRows .controls-row-title")].map(e=>e.textContent).join(", ")');
     console.log('    rows:', titles);
     check('GPIO 10, GPIO 6 and the four knobs are there', ['GPIO 10', 'GPIO 6', 'Knob 1', 'Knob 2', 'Knob 3', 'Knob 4'].every((t) => titles.includes(t)));
@@ -105,7 +106,7 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     check('it says Saved and to restart Apertar Core; Save is disabled again', /Saved\. Restart Apertar Core/.test(msg) && await q('document.getElementById("saveControlsButton").disabled'));
 
     console.log('--- add a GPIO button, remove another, then a refusal');
-    await q('(() => { document.getElementById("controlsAddPin").value="17"; document.getElementById("controlsAddAction").value="photo"; document.getElementById("controlsAddButton").click(); const row=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 6"); [...row.querySelectorAll("button")].find(b=>b.textContent==="Remove").click(); return 0; })()'); await sleep(200);
+    await q('(() => { document.getElementById("controlsAddPin").value="17"; document.getElementById("controlsAddAction").value="photo"; document.getElementById("controlsAddButton").click(); const row=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 6"); row.querySelector(".controls-row-actions button").click(); return 0; })()'); await sleep(200);
     check('GPIO 17 appears as a new row with "Take a photo"; GPIO 6 is struck', await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")]; const n=r.find(x=>/GPIO 17 \\(new\\)/.test(x.querySelector(".controls-row-title").textContent)); const o=r.find(x=>x.querySelector(".controls-row-title").textContent==="GPIO 6"); return n && n.querySelector("select").value==="photo" && o.classList.contains("removed"); })()'));
     check('pin 17 is no longer offered for another button', await q('![...document.getElementById("controlsAddPin").options].some(o=>o.value==="17")'));
     nextReply = JSON.stringify({ ok: false, code: 'errors', error: 'Not saved: 1 new error. GPIO 17 is used twice.', new_errors: [{ line: 140, message: 'GPIO 17 is used twice.' }], issues: [] });

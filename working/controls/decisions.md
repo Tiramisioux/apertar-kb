@@ -32,3 +32,7 @@
 
 - 2026-10-29 (wish): assign scripts to buttons. Today a button can run a script: `d10=run_script1` in the file (catalog group "Scripts": run_script, run_script1..5), and the paths live in `[run_script] path..path5`. The Controls editor (T41) will offer the Scripts actions. The script paths stay ssh-only (Q2). A browser way to pick a script would need its own design, for example a fixed scripts folder to choose from, with no typed path (the middle option noted under Q2 and Q10). Not in T36-T45.
 - 2026-10-29: scripts on buttons: chosen from a fixed scripts folder, never a typed path (the user answered "fixed scripts folder"). Folder name, listing, and how the pick is stored are for its own design pass; script paths otherwise stay ssh-only (Q2).
+- 2026-10-29: Q14 changed: the Controls card sits at the top of the Config panel, above the text editor; no separate nav item ("they are basically two ways to control the config file").
+- 2026-10-29: buttons get Single, Double and Triple click and Hold next to Press, like Cinemate (gpio_input.py): Press fires at once; clicks are counted and fire 0.5 s after the last release; a press held over 0.5 s is no click; Hold fires after 3 s. This replaces Q4's 800/350 ms design, where Press waited.
+- 2026-10-29: two-way and three-way switches, like Cinemate: one pin with an on and an off action, or two pins with an action per position; the position is applied at Core start.
+- 2026-10-29: the Controls card gets white SVG blueprint sketches of each accessory.
