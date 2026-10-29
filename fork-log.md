@@ -105,6 +105,10 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `c509e9f` | T37 part 2: the IMU config writes go through the store (no shared .tmp, no remove-then-rename) | fork-only |
 | `f5a61b8` | T37 part 3: `get_controls`, `set_controls`, `errorReplyBody`, read-only hardware commands before the command lock | fork-only |
 | `4d80a35` | T37 part 4: the hardware file validated at start, adopted version pinned, `controls_errors`/`controls_warnings` in state, default template fixed | fork-only |
+| `5395fa4` | T38 part 1: `GET/POST /api/config` through the store (revision, 409 for an old or stale page, 400 with the issues), the control socket line limit 64 KiB to 1 MiB; local branch `controls` | fork-only |
+| `effb804` | T38 part 2: the Config page sends `X-Apertar-Revision`, shows Core's issues with line numbers and keeps the text on a refusal | fork-only |
+| `014fa22` | T38 part 3: a hardware file replaced by a default is detected (`get_controls` `replaced`, last-written copy) and `set_controls restore=true` puts it back | fork-only |
+| `7af9f13` | T38 part 5: Core's default hardware template is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`) | fork-only |
 | `55e7ba9` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `28ee0d3` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `d084ed4` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -117,6 +121,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | Commit | Change | Status |
 | --- | --- | --- |
 | `7029db1` | Touch UI: Settings > Timecode has UI timecode and File timecode (bridge `fileTimecodeMode` from Core's state); the tap on the camera screen toggles the UI timecode only | fork-only, Pi only; building 2026-10-29, not tested |
+| `c9d841f` | T38 part 4: the touch UI no longer writes a default `apertar-hardware.conf` when it is missing (both bridges); local branch `controls` | fork-only |
+| `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `c716dec` | Touch UI: `ladderActive` in the control bridge; Compression field disabled, labelled "set by Mode Ladder"; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `35b31f6` | Touch screen + HDMI: system-decided values in italics instead of green (`TopDropdownStat.valueItalic`); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `682a186` | QML: ISO Auto offered everywhere but Clear HDR; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |

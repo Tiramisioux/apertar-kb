@@ -99,14 +99,14 @@ Core `controls`: `3526e4b`, `c509e9f`, `f5a61b8`, `4d80a35`, one commit per part
 
 %% tutor
 ref core src/hardware/HardwareConfigText.hpp 314 inline std::string revision(const std::string &text)
-ref core src/hardware/HardwareConfigStore.hpp 49 class HardwareConfigStore {
-ref core src/hardware/HardwareConfigStore.cpp 240 StoreResult HardwareConfigStore::saveLocked(const std::string &base, const std::vector<hwconf::Edit> *edits,
+ref core src/hardware/HardwareConfigStore.hpp 59 class HardwareConfigStore {
+ref core src/hardware/HardwareConfigStore.cpp 248 StoreResult HardwareConfigStore::saveLocked(const std::string &base, const std::vector<hwconf::Edit> *edits,
 ref core src/hardware/Mpu6050RecordingSession.cpp 607 bool writeHardwareConfigValues(const std::string &sectionName,
 ref core src/ApertarCoreApp.cpp 141 std::string errorReplyBody(int id, const std::string &message, const std::string &body)
-ref core src/ApertarCoreApp.cpp 4585 std::string defaultHardwareConfigTemplate()
-ref core src/ApertarCoreApp.cpp 7576 // T37: validate the hardware file once, say what it holds, and pin the version Core found. Nothing is changed.
-ref core src/ApertarCoreApp.cpp 10341 std::optional<std::string> ApertarCoreApp::handleReadOnlyHardwareCommand(const ControlCommand &command)
-ref core src/ApertarCoreApp.cpp 10556 if (command.name == "set_controls") {
+ref core src/ApertarCoreApp.cpp 4599 std::string defaultHardwareConfigTemplate()
+ref core src/ApertarCoreApp.cpp 7565 // T37: validate the hardware file once, say what it holds, and pin the version Core found. Nothing is changed.
+ref core src/ApertarCoreApp.cpp 10371 std::optional<std::string> ApertarCoreApp::handleReadOnlyHardwareCommand(const ControlCommand &command)
+ref core src/ApertarCoreApp.cpp 10587 if (command.name == "set_controls") {
 ref core CMakeLists.txt 94 src/hardware/HardwareConfigStore.cpp
 check 3.1 | git -C /home/pi/ApertarCore show 4fa0432:src/hardware/Mpu6050RecordingSession.cpp | std::filesystem::remove\(path, ec\);
 check 3.2 | curl -s -m 3 -X POST http://127.0.0.1:8000/api/command -d '{"cmd":"get_controls"}' | "errors":0,"warnings":0

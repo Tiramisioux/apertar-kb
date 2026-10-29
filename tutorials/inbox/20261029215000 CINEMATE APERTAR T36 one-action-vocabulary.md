@@ -105,8 +105,8 @@ ref core src/hardware/GroveAnalogInput.cpp 128 return hardware::actions::canonic
 ref core src/hardware/TriggerOutput.cpp 133 const std::string event = hardware::actions::canonicalTriggerEvent(token);
 ref core src/hardware/RecordingIndicatorOutput.cpp 121 return hardware::isOutputAction(normalizeToken(text));
 ref core src/ApertarCoreApp.cpp 1502 return hardware::actions::suffixAfter(action, prefixViews(prefixes));
-ref core src/ApertarCoreApp.cpp 9961 const std::string suggestion = hardware::actions::suggestion(action);
-ref core src/ApertarCoreApp.cpp 10363 if (command.name == "list_actions") {
+ref core src/ApertarCoreApp.cpp 9991 const std::string suggestion = hardware::actions::suggestion(action);
+ref core src/ApertarCoreApp.cpp 10394 if (command.name == "list_actions") {
 check 3.1 | git -C /home/pi/ApertarCore show 4fa0432:src/hardware/GpioInput.cpp | std::string normalizeSingleAction
 check 4.1 | grep -c 'inline std::string canonicalAction' /home/pi/ApertarCore/src/hardware/ActionCatalog.hpp | ^1$
 check 4.3 | grep -c normalizeSingleAction /home/pi/ApertarCore/src/hardware/NeoRotary4Input.cpp | ^0$

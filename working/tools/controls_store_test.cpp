@@ -81,6 +81,8 @@ int main()
           "absent: empty text, the absent revision");
     auto r = store.replace(std::string(hc::kAbsentRevision), base, "webui");
     check(r.ok && r.written && fs::exists(file) && slurp(file) == base, "the first save creates the file");
+    check((fs::status(file).permissions() & fs::perms::mask) == (fs::perms::owner_read | fs::perms::owner_write | fs::perms::group_read | fs::perms::others_read),
+          "a new file is rw-r--r-- like the file always was");
     check(r.code.empty(), "a new file with an empty [run_script] is not a script-path change");
     check(!fs::exists(notes / "hardware-history") || entries(notes / "hardware-history") == 0, "nothing to keep in the history yet");
     check(store.currentRevision() == hc::revision(base) && r.revision == hc::revision(base), "the revision is the file's");
@@ -214,6 +216,53 @@ int main()
             if (has(finalText, "d" + std::to_string(n) + "=photo\n")) ++found;
         check(found == 32, "all 32 keys are in the file (" + std::to_string(found) + ")");
         check(hc::join(hc::parse(finalText)) == finalText, "and the file parses back byte for byte");
+    }
+
+    std::printf("11. the file replaced by a default\n");
+    {
+        const std::string uiHeader = "# Apertar hardware configuration\n# Primary location: /home/pi/apertar-hardware.conf\n";
+        const std::string uiTemplate = uiHeader + "[network]\nhotspot_delay_seconds=60\n[cfexpress_hat]\nbus=10\n";
+        const fs::path dir2 = root / "r2";
+        fs::create_directories(dir2);
+        const fs::path file2 = dir2 / "apertar-hardware.conf";
+        HardwareConfigStore store2(file2, dir2 / "notes");
+        check(!store2.replacedByDefault().replaced, "no version Core knows: nothing to compare with");
+        r = store2.replace(std::string(hc::kAbsentRevision), base, "webui");
+        check(r.ok && !store2.replacedByDefault().replaced, "the file Core just wrote is not replaced");
+        fs::remove(file2);
+        auto replaced = store2.replacedByDefault();
+        check(replaced.replaced && has(replaced.reason, "missing") && replaced.restoreText == base && replaced.source == "last saved" &&
+              !replaced.savedAt.empty(), "a missing file is replaced; the last saved version can be restored (" + replaced.savedAt + ")");
+        r = store2.replace(store2.currentRevision(), replaced.restoreText, "restore");
+        check(r.ok && r.written && slurp(file2) == base && !store2.replacedByDefault().replaced, "restoring puts the file back");
+        spit(file2, uiTemplate);
+        age(file2);
+        replaced = store2.replacedByDefault();
+        check(replaced.replaced && has(replaced.reason, "touch UI") && replaced.restoreText == base, "the touch UI's template is recognised");
+        r = store2.replace(store2.currentRevision(), replaced.restoreText, "restore");
+        check(r.ok && r.written && slurp(file2) == base, "and restored (the diff the page shows: " + std::to_string(hc::diff(uiTemplate, base).size()) + " bytes)");
+        spit(file2, base + "# a note by hand\n");
+        check(!store2.replacedByDefault().replaced, "an ordinary hand edit is not a replacement");
+        spit(file2, "");
+        check(store2.replacedByDefault().replaced, "an empty file is");
+        fs::remove(file2);
+        fs::remove(dir2 / "notes" / "hardware-last-written.conf");
+        check(!store2.replacedByDefault().replaced, "with no reference at all it says nothing");
+
+        const fs::path file3 = dir2 / "three.conf";
+        spit(file3, base);
+        age(file3);
+        HardwareConfigStore store3(file3, dir2 / "notes3");
+        check(store3.adopt(), "a file Core never saved: adopt pins it");
+        spit(file3, uiTemplate);
+        replaced = store3.replacedByDefault();
+        check(replaced.replaced && replaced.source == "before Controls" && replaced.restoreText == base, "then the adopted version is what can be restored");
+
+        const fs::path file4 = dir2 / "four.conf";
+        HardwareConfigStore store4(file4, dir2 / "notes4");
+        r = store4.replace(std::string(hc::kAbsentRevision), uiHeader + "[imu]\nenabled=true\n", "webui");
+        spit(file4, uiHeader + "[imu]\nenabled=false\n");
+        check(r.ok && !store4.replacedByDefault().replaced, "a file that started with that header when Core saved it is not flagged");
     }
 
     fs::remove_all(root);
