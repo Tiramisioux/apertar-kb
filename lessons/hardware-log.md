@@ -661,3 +661,39 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   downloads 409, deletes refused; a 5 s take after all that: 90 of 90 frames, 0 dropped. **Confirmed.**
 - A frame can be a hole (never written) or 0 bytes: the viewer draws it black (Patrik's requirement R2). Free Run takes carry the time of day as their recorded
   timecode, Rec Run takes 00:00:00:00 (the card shows it). **Confirmed.**
+
+## 2026-10-29: NeoRotary 4 on bus 1 `0x49` (ID `0x87`), hat on bus 1 `0x34` with a card
+
+- Tested: Patrik's Pi, IMX585 on cam0, RPI5-CFE-Hat, Core `727c9c8` (`cinemate-port`), Controls project M4. Core stopped for the seesaw read.
+- Worked: `i2cdetect -y 1` lists exactly `34` and `49`. Seesaw hardware ID read at `0x49` (`w2@0x49 0x00 0x01`, then `r1@0x49`): `0x87`. Hat status read twice at `0x34`: `0x02` (a card). Core's start lines: `cfexpress hat on bus=1 address=0x34`, `NeoRotary4 input enabled: /dev/i2c-1 address=0x49`.
+- Did not work: n/a
+- Why: the file has `[neorotary4] bus=1` and `[cfexpress_hat] bus=1` (the 2026-10-23 DPI fix); read with Core stopped so it cannot fire phantom knob turns.
+- Confirmed by: Patrik, a reading (M4 output shown, "yes" to log it).
+- Tutorial: none (design `working/controls/design-controls.md` §8 M4).
+
+## 2026-10-29: TMP117 answers on bus 10 `0x48`
+
+- Tested: as above; `i2ctransfer -y 10 w1@0x48 0x0f r2@0x48` with Core running (Core does not poll `0x48`).
+- Worked: ID `0x01 0x17`, the TMP117 device ID (datasheet `0x0117`).
+- Did not work: n/a
+- Why: bus 10 is the camera-side bus (`0x1a` there is held by a kernel driver, PROBABLE the sensor); `i2cdetect -y 10` also shows `0x34`, `0x48`, `0x68`.
+- Confirmed by: Patrik, a reading (M4 output shown, "yes" to log it).
+- Tutorial: none.
+
+## 2026-10-29: I2C buses on this Pi: 0, 1, 10, 13, 14 (no bus 4)
+
+- Tested: as above; `/dev/i2c-*` and `/sys/bus/i2c/devices/i2c-*`.
+- Worked: `i2c-0` `1f00070000.i2c`, `i2c-1` `1f00074000.i2c`, `i2c-10` `1f00088000.i2c` (Synopsys DesignWare, on the RP1 chip); `i2c-13` `107d508200.i2c`, `i2c-14` `107d508280.i2c` (SoC). `/dev/i2c-6` and `-11` are links to `-10` and `-0`. Bus 4 does not exist, so the INA219 default (`bus=4`) points at nothing.
+- Did not work: `/sys/class/i2c-adapter` does not exist on this kernel; read the labels from `/sys/bus/i2c/devices`. The i2c tools are in `/usr/sbin`, not on ssh's PATH.
+- Why: command output of M3. `pi` is in the `i2c`, `gpio` and `systemd-journal` groups.
+- Confirmed by: Patrik, a reading (M3 output shown, "yes" to log it).
+- Tutorial: none.
+
+## 2026-10-29: GPIO 6 and 10 are the button inputs, GPIO 21 the tally
+
+- Tested: as above; `gpioinfo -c gpiochip0` and `pinctrl get 2,3,6,10,21`.
+- Worked: lines 6 and 10: input, active-low, pull-up, consumer `apertar-gpio-input`; line 21: output, consumer `apertar-rec-led`. GPIO 2 and 3 are `a3` (SDA1/SCL1) in `pinctrl` but show no consumer in `gpioinfo`. GPIO 14 and 15 are `none`, and `config.txt` has no UART lines.
+- Did not work: n/a
+- Why: `d10=capture`, `d6=eject`, `[recording_indicator] target=gpio line=21` in `~/apertar-hardware.conf`.
+- Confirmed by: Patrik, a reading (M5 output shown, "yes" to log it).
+- Tutorial: none.
