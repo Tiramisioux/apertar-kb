@@ -4,7 +4,7 @@
 // Run:   ./controls_test <core-tree> [fixture]   (the tree whose ApertarCoreApp.cpp the coverage check reads;
 //        fixture = controls_fixture_apertar-hardware.conf, default next to the test)
 // The old_* copies are the code T36 deleted, read from the tree before the change (controls_make_old.sh, _old2.sh).
-#include "hardware/HardwareConfigText.hpp"
+#include "hardware/ControlsModel.hpp"
 #include "controls_old_normalizers.inc"
 #include "controls_old_extra.inc"
 
@@ -537,6 +537,45 @@ int main(int argc, char **argv)
               hc::valueOf(doc, "pcf8574", "bus") == std::optional<std::string>("1") &&
               hc::hasSection(doc, "gpio_encoders") && hc::hasSection(doc, "grove_analog"),
               "NeoRotary off, PCF8574 on bus 1, and the encoder and analog sections are there");
+    }
+
+    std::printf("14. the rows the Controls page draws, from the live file\n");
+    {
+        std::ifstream fixtureFile(argc > 2 ? argv[2] : "controls_fixture_apertar-hardware.conf", std::ios::binary);
+        std::stringstream fixtureBuffer;
+        fixtureBuffer << fixtureFile.rdbuf();
+        const auto doc = hc::parse(fixtureBuffer.str());
+        const auto rows = hc::controlRows(doc);
+        std::string titles;
+        for (const auto &row : rows) titles += row.title + " | ";
+        std::printf("    rows: %s\n", titles.c_str());
+        auto find = [&](const std::string &title) -> const hc::ControlRow * {
+            for (const auto &row : rows) if (row.title == title) return &row;
+            return nullptr;
+        };
+        const auto *d10 = find("GPIO 10"), *d6 = find("GPIO 6"), *knob1 = find("Knob 1"), *knob4 = find("Knob 4");
+        check(d10 && d10->pin == 10 && d10->lines.size() == 1 && d10->lines[0].key == "d10" && d10->lines[0].actions == std::vector<std::string>{"capture"},
+              "GPIO 10 is a button on d10 running capture");
+        check(d6 && d6->lines[0].actions == std::vector<std::string>{"eject"}, "GPIO 6 runs eject");
+        check(knob1 && knob1->lines.size() == 3 && knob1->lines[0].key == "encoder0_cw" && knob1->lines[0].actions == std::vector<std::string>{"iso_up"} &&
+              knob1->lines[1].actions == std::vector<std::string>{"iso_down"} && knob1->lines[2].actions == std::vector<std::string>{"iso"},
+              "knob 1: clockwise iso_up, counter-clockwise iso_down, press iso");
+        check(knob4 && knob4->lines[0].actions == std::vector<std::string>{"fps_up"} && knob4->lines[2].actions == std::vector<std::string>{"resolution"},
+              "knob 4: fps up and down, press resolution");
+        size_t pcf = 0, enc = 0, button = 0, neo = 0;
+        for (const auto &row : rows) { pcf += row.source == "pcf8574"; enc += row.source == "gpio_encoders"; button += row.source == "gpio_buttons"; neo += row.source == "neorotary4"; }
+        check(button == 2 && neo == 4 && pcf == 8 && enc == 1, "2 buttons, 4 knobs, 8 PCF pins, 1 GPIO encoder (" + std::to_string(rows.size()) + " rows)");
+        const std::string json = hc::modelJson(doc);
+        check(has(json, "\"name\":\"neorotary4\",\"present\":true,\"enabled\":true") && has(json, "\"name\":\"pcf8574\",\"present\":true,\"enabled\":false") &&
+              has(json, "\"name\":\"gpio_buttons\",\"present\":true,\"enabled\":true"), "the sections say which are on: NeoRotary and GPIO buttons yes, PCF8574 no");
+        const auto used = hc::gpioPinsInUse(doc);
+        std::string usedText;
+        for (const auto &[pin, by] : used) usedText += std::to_string(pin) + "=" + by + "; ";
+        std::printf("    pins in use: %s\n", usedText.c_str());
+        check(has(json, "\"pin\":10,\"by\":\"button d10\"") && has(json, "\"pin\":21,\"by\":\"tally\"") && !has(json, "\"free\":[4,5,6,"),
+              "pins in use: button d10, d6 and the tally on 21; 2 and 3 are never offered");
+        check(!has(json, "encoder 0") && !has(json, "trigger output"), "a disabled GPIO encoder and a disabled trigger hold no pin");
+        check(has(json, "\"free\":[4,5,") && has(json, ",27]}}"), "the free pins are listed");
     }
 
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);
