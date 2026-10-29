@@ -17,21 +17,27 @@ const pageSource = fs.readFileSync(path.join(coreTree, 'src/web/WebControlPage.c
 const pageStart = pageSource.indexOf('R"APERTAR(') + 'R"APERTAR('.length;
 const pageHtml = pageSource.slice(pageStart, pageSource.indexOf(')APERTAR"', pageStart));
 // the data: the real rows of the fixture and the real action list, from Core's own headers
-fs.writeFileSync(path.join(work, 'gen.cpp'), `#include "hardware/ControlsModel.hpp"
+fs.writeFileSync(path.join(work, 'gen.cpp'), String.raw`#include "hardware/ControlsModel.hpp"
 #include <fstream>
 #include <iostream>
 #include <sstream>
+using namespace apertar;
+static std::string periph(const hwconf::Document &doc, const char *id, const char *title, const char *status) {
+    return std::string("{\"id\":\"") + id + "\",\"section\":\"" + id + "\",\"title\":\"" + title + "\",\"in_file\":true,\"settings\":" +
+        hwconf::peripheralSettingsJson(doc, id) + ",\"status\":" + status + "}";
+}
 int main(int, char **argv) {
     std::ifstream f(argv[1], std::ios::binary); std::stringstream b; b << f.rdbuf();
     const std::string text = b.str();
-    if (std::string(argv[2]) == "actions") { std::cout << "{\\"ok\\":true," << apertar::hardware::actions::catalogJson().substr(1); return 0; }
-    std::cout << "{\\"ok\\":true,\\"controls\\":{\\"revision\\":\\"" << apertar::hwconf::revision(text) << "\\",\\"errors\\":0,\\"warnings\\":0,\\"issues\\":[],"
-              << "\\"replaced\\":{\\"replaced\\":false},\\"model\\":" << apertar::hwconf::modelJson(apertar::hwconf::parse(text))
-              << ",\\"peripherals\\":[{\\"id\\":\\"gpio_buttons\\",\\"section\\":\\"gpio_buttons\\",\\"title\\":\\"Raspberry Pi GPIO buttons\\",\\"settings\\":"
-              << apertar::hwconf::peripheralSettingsJson(apertar::hwconf::parse(text), "gpio_buttons")
-              << ",\\"status\\":{\\"state\\":\\"running\\",\\"detail\\":\\"Core reads the buttons on /dev/gpiochip0 (pinctrl-rp1).\\",\\"chip\\":{\\"ok\\":true,\\"path\\":\\"/dev/gpiochip0\\",\\"label\\":\\"pinctrl-rp1\\",\\"lines\\":54,\\"error\\":\\"\\"},"
-              << "\\"pins\\":[{\\"pin\\":6,\\"consumer\\":\\"apertar-gpio-input\\",\\"core\\":true,\\"output\\":false},{\\"pin\\":10,\\"consumer\\":\\"apertar-gpio-input\\",\\"core\\":true,\\"output\\":false},"
-              << "{\\"pin\\":16,\\"consumer\\":\\"some-driver\\",\\"core\\":false,\\"output\\":false},{\\"pin\\":21,\\"consumer\\":\\"apertar-rec-led\\",\\"core\\":true,\\"output\\":true}]}}]}}";
+    if (std::string(argv[2]) == "actions") { std::cout << "{\"ok\":true," << hardware::actions::catalogJson().substr(1); return 0; }
+    const auto doc = hwconf::parse(text);
+    std::cout << "{\"ok\":true,\"controls\":{\"revision\":\"" << hwconf::revision(text) << "\",\"errors\":0,\"warnings\":0,\"issues\":[],"
+              << "\"replaced\":{\"replaced\":false},\"model\":" << hwconf::modelJson(doc) << ",\"peripherals\":["
+              << periph(doc, "gpio_buttons", "Raspberry Pi GPIO buttons", "{\"state\":\"running\",\"detail\":\"Core reads the buttons on /dev/gpiochip0 (pinctrl-rp1).\",\"chip\":{\"ok\":true,\"path\":\"/dev/gpiochip0\",\"label\":\"pinctrl-rp1\",\"lines\":54,\"error\":\"\"},\"pins\":[{\"pin\":6,\"consumer\":\"apertar-gpio-input\",\"core\":true,\"output\":false},{\"pin\":10,\"consumer\":\"apertar-gpio-input\",\"core\":true,\"output\":false},{\"pin\":16,\"consumer\":\"some-driver\",\"core\":false,\"output\":false},{\"pin\":21,\"consumer\":\"apertar-rec-led\",\"core\":true,\"output\":true}]}") << ","
+              << periph(doc, "neorotary4", "NeoRotary 4", "{\"state\":\"running\",\"detail\":\"Core reads it on bus 1 at 0x49.\",\"bus\":1,\"address\":\"0x49\"}") << ","
+              << periph(doc, "pcf8574", "PCF8574 buttons", "{\"state\":\"found\",\"detail\":\"Found on bus 10 at 0x20, switched off.\",\"bus\":10,\"address\":\"0x20\"}") << ","
+              << periph(doc, "grove_analog", "Grove analog (ADC)", "{\"state\":\"missing\",\"detail\":\"Not found on bus 1 at 0x04.\",\"bus\":1,\"address\":\"0x04\"}")
+              << "],\"i2c_buses\":[{\"bus\":0,\"name\":\"Synopsys DesignWare I2C adapter\"},{\"bus\":1,\"name\":\"Synopsys DesignWare I2C adapter\"},{\"bus\":10,\"name\":\"Synopsys DesignWare I2C adapter\"}]}}";
 }
 `);
 execFileSync('g++', ['-std=c++20', '-I' + path.join(coreTree, 'src'), path.join(work, 'gen.cpp'), '-o', path.join(work, 'gen')]);
@@ -78,42 +84,62 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     await tab.evaluate('window.confirm = () => true; 0');
     const q = (js) => tab.evaluate(js);
     await q('document.getElementById("settingsButton").click(); 0'); await sleep(600);
-    await q('setSettingsPanel("config"); 0'); await sleep(1200);
+    await q('setSettingsPanel("controls"); 0'); await sleep(1200);
+    const rowOf = (title) => `[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent===${JSON.stringify(title)})`;
 
-    console.log('--- the page as loaded');
-    check('no separate Controls item in the nav: it lives in Config', await q('![...document.querySelectorAll(".settings-nav-item")].some(b=>b.dataset.panel==="controls")'));
-    check('in the Config panel the Controls card comes first, above the text editor', await q('(() => { const p=document.querySelector(".settings-panel.active"); const t=[...p.querySelectorAll(".settings-card-title")].map(e=>e.textContent); return p.dataset.panel==="config" && t[0]==="Controls" && t.indexOf("Apertar Config")>0; })()'));
-    const removeLook = await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 10"); const b=r.querySelector(".controls-row-actions button"); const cs=getComputedStyle(b); const rb=b.getBoundingClientRect(), rr=r.getBoundingClientRect(), sel=r.querySelector("select").getBoundingClientRect(); return JSON.stringify({color:cs.color, background:cs.backgroundColor, gapToRowRight:Math.round(rr.right-rb.right), rightOfDropdown:rb.left>=sel.right, sameLineAsDropdown:Math.abs((rb.top+rb.bottom)/2-(sel.top+sel.bottom)/2)<12}); })()').then(JSON.parse);
+    console.log('--- Controls: the user controls of the hardware that is there');
+    check('Controls and Config are two nav items, Controls first', await q('(() => { const n=[...document.querySelectorAll(".settings-nav-item")].map(b=>b.dataset.panel); return n.indexOf("controls")>=0 && n.indexOf("controls")<n.indexOf("config"); })()'));
+    const heads = await q('JSON.stringify([...document.querySelectorAll("#controlsRows .controls-peripheral")].map(c=>({title:c.querySelector(".controls-row-title").textContent, pill:c.querySelector(".online-pill").textContent, details:[...c.querySelectorAll(".controls-row-detail")].map(e=>e.textContent), settings:c.querySelectorAll(".controls-settings").length})))').then(JSON.parse);
+    console.log('    devices on Controls:', JSON.stringify(heads));
+    check('Controls shows the GPIO, the NeoRotary and the PCF8574 (found), not the Grove ADC (not found)', heads.map((h) => h.title).join('|') === 'Raspberry Pi GPIO buttons|NeoRotary 4|PCF8574 buttons');
+    check('no settings on Controls; a running device shows no message, a found-but-off one says so', heads.every((h) => h.settings === 0) && heads[0].pill === 'Detected' && heads[0].details.length === 0 && heads[2].pill === 'Detected, off' && /switched off/.test(heads[2].details.join(' ')));
+    const removeLook = await q(`(() => { const r=${rowOf("GPIO 10")}; const b=r.querySelector(".controls-row-actions button"); const cs=getComputedStyle(b); const rb=b.getBoundingClientRect(), rr=r.getBoundingClientRect(), sel=r.querySelector("select").getBoundingClientRect(); return JSON.stringify({color:cs.color, gapToRowRight:Math.round(rr.right-rb.right), rightOfDropdown:rb.left>=sel.right, sameLineAsDropdown:Math.abs((rb.top+rb.bottom)/2-(sel.top+sel.bottom)/2)<12}); })()`).then(JSON.parse);
     console.log('    Remove:', JSON.stringify(removeLook));
     check('Remove is red, at the far right of the row, on the same line as the dropdown', removeLook.color === 'rgb(252, 165, 165)' && removeLook.gapToRowRight >= 10 && removeLook.gapToRowRight <= 16 && removeLook.rightOfDropdown && removeLook.sameLineAsDropdown);
-    check('the Remove button sits in the row, styled like the favourites list (danger-button preset-action)', await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 10"); const b=r.querySelector(".controls-row-actions button"); return !!b && b.classList.contains("danger-button") && b.classList.contains("preset-action") && b.textContent==="Remove"; })()'));
     const titles = await q('[...document.querySelectorAll("#controlsRows .controls-row-title")].map(e=>e.textContent).join(", ")');
     console.log('    rows:', titles);
     check('GPIO 10, GPIO 6 and the four knobs are there', ['GPIO 10', 'GPIO 6', 'Knob 1', 'Knob 2', 'Knob 3', 'Knob 4'].every((t) => titles.includes(t)));
-    check('the PCF8574 and GPIO encoder groups are collapsed (switched off in the file)', await q('[...document.querySelectorAll("#controlsRows details .controls-group-title")].map(e=>e.textContent).join("|")').then((t) => /PCF8574/.test(t) && /GPIO encoders/.test(t) && /switched off/.test(t)));
-    const d10 = await q('(() => { const row=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 10"); const s=row.querySelector("select"); return JSON.stringify({value:s.value, label:s.selectedOptions[0].textContent, options:s.options.length, groups:s.querySelectorAll("optgroup").length}); })()').then(JSON.parse);
-    console.log('    GPIO 10 dropdown:', JSON.stringify(d10));
+    check('the PCF8574 and GPIO encoder groups are folded (switched off in the file)', await q('[...document.querySelectorAll("#controlsRows details .controls-group-title")].map(e=>e.textContent).join("|")').then((t) => /PCF8574/.test(t) && /GPIO encoders/.test(t) && /switched off/.test(t)));
+    const d10 = await q(`(() => { const s=${rowOf("GPIO 10")}.querySelector("select"); return JSON.stringify({value:s.value, label:s.selectedOptions[0].textContent, groups:s.querySelectorAll("optgroup").length}); })()`).then(JSON.parse);
     check('GPIO 10 shows "Record or photo (main button)" selected, with grouped options', d10.value === 'capture' && /Record or photo/.test(d10.label) && d10.groups >= 5);
-    const knob = await q('(() => { const row=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="Knob 1"); return JSON.stringify([...row.querySelectorAll(".controls-line")].map(l=>l.querySelector(".controls-line-label").textContent+"="+l.querySelector("select").value)); })()').then(JSON.parse);
-    console.log('    Knob 1:', knob.join(' | '));
+    const knob = await q(`JSON.stringify([...${rowOf("Knob 1")}.querySelectorAll(".controls-line")].map(l=>l.querySelector(".controls-line-label").textContent+"="+l.querySelector("select").value))`).then(JSON.parse);
     check('Knob 1: clockwise iso_up, counter-clockwise iso_down, press iso', knob.join('|') === 'Turn clockwise=iso_up|Turn counter-clockwise=iso_down|Press=iso');
-    const turnOpts = await q('(() => { const row=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="Knob 1"); const s=row.querySelector("select"); return JSON.stringify([...s.options].map(o=>o.value)); })()').then(JSON.parse);
-    console.log('    a turn offers:', turnOpts.join(' '));
-    check('a turn offers only stepping actions (no capture, no photo, no zoom)', turnOpts.includes('iso_up') && turnOpts.includes('fps_down') && !turnOpts.includes('capture') && !turnOpts.includes('photo') && !turnOpts.includes('zoom_toggle') && !turnOpts.includes('eject'));
+    const turnOpts = await q(`JSON.stringify([...${rowOf("Knob 1")}.querySelector("select").options].map(o=>o.value))`).then(JSON.parse);
+    check('a turn offers only stepping actions (no capture, no photo, no zoom)', turnOpts.includes('iso_up') && turnOpts.includes('fps_down') && !turnOpts.includes('capture') && !turnOpts.includes('photo') && !turnOpts.includes('zoom_toggle'));
     check('Save is disabled and the pill says Ready', await q('document.getElementById("saveControlsButton").disabled && document.getElementById("controlsStatePill").textContent==="Ready"'));
-    check('the add-a-button box is shown, with free pins and without 10, 6, 21', await q('(() => { const b=document.getElementById("controlsAdd"); const pins=[...document.getElementById("controlsAddPin").options].map(o=>o.value); return !b.hidden && pins.length>=15 && !pins.includes("10") && !pins.includes("6") && !pins.includes("21") && !pins.includes("2") && !pins.includes("3"); })()'));
 
-    console.log('--- the GPIO peripheral card');
-    const card = await q('(() => { const c=document.querySelector("#controlsRows .controls-peripheral"); if (!c) return "{}"; return JSON.stringify({title:c.querySelector(".controls-row-title").textContent, pill:c.querySelector(".online-pill").textContent, details:[...c.querySelectorAll(".controls-row-detail")].map(e=>e.textContent), fields:[...c.querySelectorAll(".controls-settings .field-stack")].map(f=>f.querySelector(".input-label").textContent+"="+(f.querySelector("select,input").value))}); })()').then(JSON.parse);
-    console.log('    card:', JSON.stringify(card));
-    check('the GPIO card comes first, says Detected, names the chip and the pins in use', card.title === 'Raspberry Pi GPIO buttons' && card.pill === 'Detected' && (card.details || []).some((d) => /gpiochip0 \(pinctrl-rp1\), 54 lines/.test(d)) && (card.details || []).some((d) => /GPIO 16 held by some-driver/.test(d) && /GPIO 21 Apertar \(output\)/.test(d)));
-    check('its settings show the file: On Yes, active low Yes, pull up, 60 ms, 12 ms, chip auto', (card.fields || []).join('|') === 'On=true|Pressed reads low (button to GND)=true|Pull=up|Debounce (ms)=60|Poll every (ms)=12|GPIO chip=auto');
-    check('a pin held by another program (16) is not offered for a new button', await q('![...document.getElementById("controlsAddPin").options].some(o=>o.value==="16")'));
-    await q('(() => { const f=[...document.querySelectorAll("#controlsRows .controls-settings .field-stack")].find(f=>/Debounce/.test(f.textContent)); const i=f.querySelector("input"); i.focus(); i.value="80"; i.dispatchEvent(new Event("input",{bubbles:true})); return 0; })()'); await sleep(200);
-    check('typing in Debounce enables Save at once, and the cursor stays in the field', await q('!document.getElementById("saveControlsButton").disabled && document.activeElement && document.activeElement.type==="number" && document.activeElement.value==="80"'));
+    console.log('--- the + controls');
+    check('the add-a-button pickers are closed until + is pressed', await q('document.getElementById("controlsAdd").hidden'));
+    await q('[...document.querySelectorAll("#controlsRows button")].find(b=>b.textContent==="+ Add GPIO button").click(); 0'); await sleep(200);
+    check('+ Add GPIO button opens them under the GPIO buttons, with free pins (not 2, 3, 6, 10, 21, nor 16 held by another program)', await q('(() => { const b=document.getElementById("controlsAdd"); const pins=[...document.getElementById("controlsAddPin").options].map(o=>o.value); return !b.hidden && b.parentElement.id==="controlsRows" && pins.length>=15 && !["2","3","6","10","21","16"].some(p=>pins.includes(p)); })()'));
+    await q('[...document.querySelectorAll("#controlsRows button")].find(b=>b.textContent==="Cancel").click(); 0'); await sleep(200);
+    const plusOpts = await q(`JSON.stringify([...${rowOf("GPIO 10")}.querySelector(".controls-add-gesture").options].map(o=>o.textContent))`).then(JSON.parse);
+    console.log('    GPIO 10 +:', plusOpts.join(' | '));
+    check('each GPIO button has "+ Add click or hold" with Single, Double, Triple click and Hold', plusOpts.join('|') === '+ Add click or hold|Single click|Double click|Triple click|Hold');
+    await q(`(() => { const s=${rowOf("GPIO 10")}.querySelector(".controls-add-gesture"); s.value="d10_double"; s.dispatchEvent(new Event("change",{bubbles:true})); return 0; })()`); await sleep(200);
+    const lines10 = await q(`JSON.stringify([...${rowOf("GPIO 10")}.querySelectorAll(".controls-line")].map(l=>l.querySelector(".controls-line-label").textContent))`).then(JSON.parse);
+    check('a Double click line appears under Press, and + no longer offers it', lines10.join('|') === 'Press|Double click' && await q(`![...${rowOf("GPIO 10")}.querySelector(".controls-add-gesture").options].some(o=>o.value==="d10_double")`));
+    await q(`(() => { const l=[...${rowOf("GPIO 10")}.querySelectorAll(".controls-line")][1]; const s=l.querySelector("select"); s.value="photo"; s.dispatchEvent(new Event("change",{bubbles:true})); return 0; })()`); await sleep(200);
     sent = []; await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1500);
     console.log('    Save sent:', JSON.stringify(sent[0]));
-    check('changing Debounce to 80 saves set.gpio_buttons.debounce_ms=80 and nothing else', sent[0] && sent[0]['set.gpio_buttons.debounce_ms'] === '80' && Object.keys(sent[0]).filter((k) => k.startsWith('set.') || k.startsWith('unset.')).length === 1);
+    check('Save sends set.gpio_buttons.d10_double=photo and nothing else', sent[0] && sent[0]['set.gpio_buttons.d10_double'] === 'photo' && Object.keys(sent[0]).filter((k) => k.startsWith('set.') || k.startsWith('unset.')).length === 1);
+
+    console.log('--- Config: the Hardware card');
+    await q('setSettingsPanel("config"); 0'); await sleep(1200);
+    check('the Hardware card is first on Config, above the text editor', await q('(() => { const p=document.querySelector(".settings-panel.active"); const t=[...p.querySelectorAll(".settings-card-title")].map(e=>e.textContent); return p.dataset.panel==="config" && t[0]==="Hardware" && t.indexOf("Apertar Config")>0; })()'));
+    const hw = await q('JSON.stringify([...document.querySelectorAll("#hardwareDevices .controls-peripheral")].map(c=>({title:c.querySelector(".controls-row-title").textContent, pill:(c.querySelector(".online-pill")||{}).textContent||"", details:[...c.querySelectorAll(".controls-row-detail")].map(e=>e.textContent), fields:[...c.querySelectorAll(".controls-settings .field-stack")].map(f=>f.querySelector(".input-label").textContent+"="+(f.querySelector("select,input").value))})))').then(JSON.parse);
+    console.log('    hardware:', JSON.stringify(hw.map((h) => h.title + ' [' + h.pill + '] ' + h.details.join(' / '))));
+    check('it lists the I2C buses, with what Core finds on each', hw[0].title === 'I2C buses' && hw[0].details.some((d) => /^Bus 1 \(Synopsys DesignWare I2C adapter\): NeoRotary 4/.test(d)) && hw[0].details.some((d) => /^Bus 10 .*PCF8574 buttons/.test(d)));
+    check('then every device, detected or not: GPIO, NeoRotary 4, PCF8574, Grove ADC (Not found, with where it looked)', hw.slice(1).map((h) => h.title).join('|') === 'Raspberry Pi GPIO buttons|NeoRotary 4|PCF8574 buttons|Grove analog (ADC)' && hw[4].pill === 'Not found' && /Not found on bus 1 at 0x04/.test(hw[4].details.join(' ')));
+    check('a supported device that is not found is greyed out (the Grove ADC), the detected ones are not', await q('(() => { const c=[...document.querySelectorAll("#hardwareDevices .controls-peripheral")]; const by=t=>c.find(x=>x.querySelector(".controls-row-title").textContent===t); return by("Grove analog (ADC)").classList.contains("undetected") && getComputedStyle(by("Grove analog (ADC)")).opacity==="0.5" && !by("NeoRotary 4").classList.contains("undetected") && !by("Raspberry Pi GPIO buttons").classList.contains("undetected") && !by("PCF8574 buttons").classList.contains("undetected"); })()'));
+    check('the GPIO settings show the file: On, active low, pull up, 60 ms, 12 ms, chip auto', hw[1].fields.join('|') === 'On=true|Pressed reads low (button to GND)=true|Pull=up|Debounce (ms)=60|Poll every (ms)=12|GPIO chip=auto');
+    check('the NeoRotary shows bus 1 and 0x49 from the file', hw[2].fields.includes('I2C bus=1') && hw[2].fields.includes('Address=0x49'));
+    await q('(() => { const f=[...document.querySelectorAll("#hardwareDevices .controls-settings .field-stack")].find(f=>/Debounce/.test(f.textContent)); const i=f.querySelector("input"); i.focus(); i.value="80"; i.dispatchEvent(new Event("input",{bubbles:true})); return 0; })()'); await sleep(200);
+    check('typing in Debounce enables Save Hardware at once, and the cursor stays in the field', await q('!document.getElementById("saveHardwareButton").disabled && document.activeElement && document.activeElement.type==="number" && document.activeElement.value==="80"'));
+    sent = []; await q('document.getElementById("saveHardwareButton").click(); 0'); await sleep(1500);
+    console.log('    Save Hardware sent:', JSON.stringify(sent[0]));
+    check('Save Hardware sends set.gpio_buttons.debounce_ms=80 and nothing else', sent[0] && sent[0]['set.gpio_buttons.debounce_ms'] === '80' && Object.keys(sent[0]).filter((k) => k.startsWith('set.') || k.startsWith('unset.')).length === 1);
+    await q('setSettingsPanel("controls"); 0'); await sleep(1200);
 
     console.log('--- change a button and a knob, then Save');
     await q('(() => { const row=t=>[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent===t); const set=(s,v)=>{ s.value=v; s.dispatchEvent(new Event("change",{bubbles:true})); }; set(row("GPIO 10").querySelector("select"),"record_toggle"); set(row("Knob 2").querySelectorAll("select")[0],"shutter_down"); return 0; })()'); await sleep(200);
@@ -127,6 +153,7 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     check('it says Saved and to restart Apertar Core; Save is disabled again', /Saved\. Restart Apertar Core/.test(msg) && await q('document.getElementById("saveControlsButton").disabled'));
 
     console.log('--- add a GPIO button, remove another, then a refusal');
+    await q('[...document.querySelectorAll("#controlsRows button")].find(b=>b.textContent==="+ Add GPIO button").click(); 0'); await sleep(200);
     await q('(() => { document.getElementById("controlsAddPin").value="17"; document.getElementById("controlsAddAction").value="photo"; document.getElementById("controlsAddButton").click(); const row=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 6"); row.querySelector(".controls-row-actions button").click(); return 0; })()'); await sleep(200);
     check('GPIO 17 appears as a new row with "Take a photo"; GPIO 6 is struck', await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")]; const n=r.find(x=>/GPIO 17 \\(new\\)/.test(x.querySelector(".controls-row-title").textContent)); const o=r.find(x=>x.querySelector(".controls-row-title").textContent==="GPIO 6"); return n && n.querySelector("select").value==="photo" && o.classList.contains("removed"); })()'));
     check('pin 17 is no longer offered for another button', await q('![...document.getElementById("controlsAddPin").options].some(o=>o.value==="17")'));

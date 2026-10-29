@@ -625,6 +625,16 @@ int main(int argc, char **argv)
         check(clickThenLong == "press@0 press@300", "a click then a long press: the long press clears the count (" + clickThenLong + ")");
         const auto apart = run({{0, 100}, {800, 900}}, 2000);
         check(apart == "press@0 single@600 press@800 single@1400", "two clicks 0.8 s apart are two singles (" + apart + ")");
+        const hc::Facts facts{};   // no bus facts: this case is about the keys and the pin claims
+        const std::string clicks = "[gpio_buttons]\nenabled=true\nd10=capture\nd10_double=photo\nd10_hold=standby\nd6_triple=eject\n";
+        const auto issues = hc::validate(clicks, facts);
+        std::string list;
+        for (const auto &issue : issues) list += issue.message + " | ";
+        check(issues.empty(), "the validator knows d10_double, d10_hold and d6_triple, and claims each pin once (" + list + ")");
+        const auto clickRows = hc::controlRows(hc::parse(clicks));
+        check(clickRows.size() == 2 && clickRows[1].title == "GPIO 10" && clickRows[1].lines.size() == 3 && clickRows[1].lines[1].label == "Double click" &&
+              clickRows[1].lines[2].label == "Hold" && clickRows[1].canAdd.size() == 2 && clickRows[0].title == "GPIO 6" && clickRows[0].lines[1].label == "Triple click",
+              "the rows: GPIO 10 with Press, Double click and Hold (Single and Triple can be added); GPIO 6 with only a Triple click");
     }
 
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);
