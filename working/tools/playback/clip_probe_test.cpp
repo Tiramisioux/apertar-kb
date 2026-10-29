@@ -91,6 +91,7 @@ int main(int argc, char **argv)
     check(fa.durationText == "00:00", "duration = span / fps = 0.17 s -> 00:00");
     check(std::regex_match(fa.shotDateText, std::regex("\\d\\d \\w{3} \\d{4}  \\d\\d:\\d\\d")), "shot date from DateTimeOriginal: '" + fa.shotDateText + "'");
     check(fa.bytes > 0 && !fa.sizeText_.empty(), "size: " + fa.sizeText_);
+    check(!fa.hasAudio, "no WAV beside the frames: has_audio false");
 
     const std::string b = "cDNG_26-10-28_C0008";        // 0 real, 1 empty (0 bytes), 2 real: 16-bit lossless
     fs::create_directories(tmp / b);
