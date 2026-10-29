@@ -581,6 +581,14 @@ int main(int argc, char **argv)
               "pins in use: button d10, d6 and the tally on 21; 2 and 3 are never offered");
         check(!has(json, "encoder 0") && !has(json, "trigger output"), "a disabled GPIO encoder and a disabled trigger hold no pin");
         check(has(json, "\"free\":[4,5,") && has(json, ",27]}}"), "the free pins are listed");
+        const std::string settings = hc::peripheralSettingsJson(doc, "gpio_buttons");
+        std::printf("    gpio settings: %s\n", settings.c_str());
+        check(has(settings, "\"key\":\"enabled\",\"label\":\"On\",\"type\":\"bool\",\"value\":\"true\",\"in_file\":true") &&
+              has(settings, "\"key\":\"pull\",\"label\":\"Pull\",\"type\":\"choice\",\"value\":\"up\"") &&
+              has(settings, "\"key\":\"debounce_ms\",\"label\":\"Debounce (ms)\",\"type\":\"number\",\"value\":\"60\"") &&
+              has(settings, "\"key\":\"poll_ms\",\"label\":\"Poll every (ms)\",\"type\":\"number\",\"value\":\"12\"") &&
+              has(settings, "\"key\":\"chip\",\"label\":\"GPIO chip\",\"type\":\"text\",\"value\":\"auto\""),
+              "GPIO button settings from the live file: on, pull up, 60 ms debounce, 12 ms poll, chip auto");
     }
 
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);

@@ -26,7 +26,12 @@ int main(int, char **argv) {
     const std::string text = b.str();
     if (std::string(argv[2]) == "actions") { std::cout << "{\\"ok\\":true," << apertar::hardware::actions::catalogJson().substr(1); return 0; }
     std::cout << "{\\"ok\\":true,\\"controls\\":{\\"revision\\":\\"" << apertar::hwconf::revision(text) << "\\",\\"errors\\":0,\\"warnings\\":0,\\"issues\\":[],"
-              << "\\"replaced\\":{\\"replaced\\":false},\\"model\\":" << apertar::hwconf::modelJson(apertar::hwconf::parse(text)) << "}}";
+              << "\\"replaced\\":{\\"replaced\\":false},\\"model\\":" << apertar::hwconf::modelJson(apertar::hwconf::parse(text))
+              << ",\\"peripherals\\":[{\\"id\\":\\"gpio_buttons\\",\\"section\\":\\"gpio_buttons\\",\\"title\\":\\"Raspberry Pi GPIO buttons\\",\\"settings\\":"
+              << apertar::hwconf::peripheralSettingsJson(apertar::hwconf::parse(text), "gpio_buttons")
+              << ",\\"status\\":{\\"state\\":\\"running\\",\\"detail\\":\\"Core reads the buttons on /dev/gpiochip0 (pinctrl-rp1).\\",\\"chip\\":{\\"ok\\":true,\\"path\\":\\"/dev/gpiochip0\\",\\"label\\":\\"pinctrl-rp1\\",\\"lines\\":54,\\"error\\":\\"\\"},"
+              << "\\"pins\\":[{\\"pin\\":6,\\"consumer\\":\\"apertar-gpio-input\\",\\"core\\":true,\\"output\\":false},{\\"pin\\":10,\\"consumer\\":\\"apertar-gpio-input\\",\\"core\\":true,\\"output\\":false},"
+              << "{\\"pin\\":16,\\"consumer\\":\\"some-driver\\",\\"core\\":false,\\"output\\":false},{\\"pin\\":21,\\"consumer\\":\\"apertar-rec-led\\",\\"core\\":true,\\"output\\":true}]}}]}}";
 }
 `);
 execFileSync('g++', ['-std=c++20', '-I' + path.join(coreTree, 'src'), path.join(work, 'gen.cpp'), '-o', path.join(work, 'gen')]);
@@ -97,6 +102,17 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     check('a turn offers only stepping actions (no capture, no photo, no zoom)', turnOpts.includes('iso_up') && turnOpts.includes('fps_down') && !turnOpts.includes('capture') && !turnOpts.includes('photo') && !turnOpts.includes('zoom_toggle') && !turnOpts.includes('eject'));
     check('Save is disabled and the pill says Ready', await q('document.getElementById("saveControlsButton").disabled && document.getElementById("controlsStatePill").textContent==="Ready"'));
     check('the add-a-button box is shown, with free pins and without 10, 6, 21', await q('(() => { const b=document.getElementById("controlsAdd"); const pins=[...document.getElementById("controlsAddPin").options].map(o=>o.value); return !b.hidden && pins.length>=15 && !pins.includes("10") && !pins.includes("6") && !pins.includes("21") && !pins.includes("2") && !pins.includes("3"); })()'));
+
+    console.log('--- the GPIO peripheral card');
+    const card = await q('(() => { const c=document.querySelector("#controlsRows .controls-peripheral"); if (!c) return "{}"; return JSON.stringify({title:c.querySelector(".controls-row-title").textContent, pill:c.querySelector(".online-pill").textContent, details:[...c.querySelectorAll(".controls-row-detail")].map(e=>e.textContent), fields:[...c.querySelectorAll(".controls-settings .field-stack")].map(f=>f.querySelector(".input-label").textContent+"="+(f.querySelector("select,input").value))}); })()').then(JSON.parse);
+    console.log('    card:', JSON.stringify(card));
+    check('the GPIO card comes first, says Detected, names the chip and the pins in use', card.title === 'Raspberry Pi GPIO buttons' && card.pill === 'Detected' && (card.details || []).some((d) => /gpiochip0 \(pinctrl-rp1\), 54 lines/.test(d)) && (card.details || []).some((d) => /GPIO 16 held by some-driver/.test(d) && /GPIO 21 Apertar \(output\)/.test(d)));
+    check('its settings show the file: On Yes, active low Yes, pull up, 60 ms, 12 ms, chip auto', (card.fields || []).join('|') === 'On=true|Pressed reads low (button to GND)=true|Pull=up|Debounce (ms)=60|Poll every (ms)=12|GPIO chip=auto');
+    check('a pin held by another program (16) is not offered for a new button', await q('![...document.getElementById("controlsAddPin").options].some(o=>o.value==="16")'));
+    await q('(() => { const f=[...document.querySelectorAll("#controlsRows .controls-settings .field-stack")].find(f=>/Debounce/.test(f.textContent)); const i=f.querySelector("input"); i.value="80"; i.dispatchEvent(new Event("change",{bubbles:true})); return 0; })()'); await sleep(200);
+    sent = []; await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1500);
+    console.log('    Save sent:', JSON.stringify(sent[0]));
+    check('changing Debounce to 80 saves set.gpio_buttons.debounce_ms=80 and nothing else', sent[0] && sent[0]['set.gpio_buttons.debounce_ms'] === '80' && Object.keys(sent[0]).filter((k) => k.startsWith('set.') || k.startsWith('unset.')).length === 1);
 
     console.log('--- change a button and a knob, then Save');
     await q('(() => { const row=t=>[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent===t); const set=(s,v)=>{ s.value=v; s.dispatchEvent(new Event("change",{bubbles:true})); }; set(row("GPIO 10").querySelector("select"),"record_toggle"); set(row("Knob 2").querySelectorAll("select")[0],"shutter_down"); return 0; })()'); await sleep(200);
