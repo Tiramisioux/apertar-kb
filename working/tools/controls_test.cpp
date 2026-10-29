@@ -668,6 +668,46 @@ int main(int argc, char **argv)
               "the rows: GPIO 10 with Press, Double click and Hold (Single and Triple can be added); GPIO 6 with only a Triple click");
     }
 
+    std::printf("16. two- and three-way switches ([gpio_switches])\n");
+    {
+        const hc::Facts facts{};
+        const std::string text = "[gpio_buttons]\nenabled=true\nd6=eject\n[gpio_switches]\nenabled=true\nswitch0_pins=17\nswitch0_on=photo\n"
+                                 "switch0_off=none\nswitch1_pins=22, 23\nswitch1_position0=record_toggle\nswitch1_position2=photo\n";
+        std::string list;
+        for (const auto &issue : hc::validate(text, facts)) list += issue.message + " | ";
+        check(list.empty(), "the validator knows switchN_pins, _on, _off and _position0..2 (" + list + ")");
+        const auto rows = hc::controlRows(hc::parse(text));
+        std::string shape;
+        for (const auto &row : rows) {
+            if (row.source != "gpio_switches") continue;
+            shape += row.title + " (" + row.kind + "):";
+            for (const auto &line : row.lines) shape += " " + line.label + "=" + line.raw;
+            shape += " keys";
+            for (const auto &key : row.keys) shape += " " + key;
+            shape += "; ";
+        }
+        check(shape == "GPIO 17 (switch2): On=photo Off=none keys switch0_pins switch0_on switch0_off; "
+                       "GPIO 22 + 23 (switch3): Position 1 (GPIO 22)=record_toggle Position 2 (middle)= Position 3 (GPIO 23)=photo keys switch1_pins switch1_position0 switch1_position2; ",
+              "the rows: a two-way switch with On and Off, a three-way with a line per position, and the keys a Remove unsets (" + shape + ")");
+        const auto used = hc::gpioPinsInUse(hc::parse(text));
+        check(std::count_if(used.begin(), used.end(), [](const auto &u) { return u.second.rfind("switch", 0) == 0; }) == 3,
+              "the switches' three pins count as in use");
+        const auto twice = hc::validate(text + "switch2_pins=6\nswitch2_on=photo\n", facts);
+        check(std::any_of(twice.begin(), twice.end(), [](const auto &i) { return i.error && i.rule == "gpio_twice"; }),
+              "a switch on the pin of a button is refused (gpio_twice)");
+        const auto bad = hc::validate(text + "switch2_pins=4,5,7\n", facts);
+        check(std::any_of(bad.begin(), bad.end(), [](const auto &i) { return i.error && i.rule == "switch_pins"; }),
+              "three pins on one switch is an error (switch_pins)");
+        const auto off = hc::gpioPinsInUse(hc::parse("[gpio_switches]\nenabled=false\nswitch0_pins=17\nswitch0_on=photo\n"));
+        check(off.empty(), "a switched-off [gpio_switches] holds no pin");
+        const auto hat = hc::peripheralSettingsJson(hc::parse("[cfexpress_hat]\nenabled=true\nbus=1\naddress=0x34\n"), "cfexpress_hat");
+        check(hat.find("\"key\":\"bus\",\"label\":\"I2C bus\",\"type\":\"number\",\"value\":\"1\"") != std::string::npos &&
+              hat.find("\"key\":\"address\",\"label\":\"Address\",\"type\":\"text\",\"value\":\"0x34\"") != std::string::npos,
+              "the CFexpress hat's settings come from its section");
+        check(hc::modelJson(hc::parse(text)).find("\"button_gestures\":[{\"suffix\":\"\",\"label\":\"Press\"},{\"suffix\":\"_single\"") != std::string::npos,
+              "the model lists the button gestures, Press first, for the page's dropdowns");
+    }
+
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);
     return failures ? 1 : 0;
 }
