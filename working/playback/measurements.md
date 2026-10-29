@@ -52,3 +52,12 @@ nothing is cached today. With 105,676 files that is the cost T47's folder cache 
 `readdir`). Probable side effect to check in T47: while the list runs, Core's other web requests wait (the page's 1 s state
 poll would stall for 6.8 s). T47's check: the list time after the cache (cold after a Core restart, warm), and `/api/state`
 answering during a list.
+
+## M8, M9, M10 (Patrik ran them; CONFIRMED)
+
+| | Result | Decides |
+| --- | --- | --- |
+| M8 NVMe link | **8.0 GT/s PCIe x1** (Gen 3; the design guessed Gen 2, 5.0 GT/s) | |
+| M8 one cold 16.6 MB frame, `dd iflag=direct` | 0.0207 s = **800 MB/s** | Clear HDR 16-bit at 25 fps needs 415 MB/s: not read-bound, with room for the take's own writes to be a separate question (M7/M16) |
+| M9 locale | `en_GB.UTF-8` | month names are English ("28 Oct 2026"); Q15's `strftime_l` is not needed |
+| M10 `libswscale` | 8.3.100; `~/ApertarUI/build/apertar-video-libav.so` exists | T53 (ProRes and H.264 in Core) has what it needs on the Pi |
