@@ -125,6 +125,7 @@ The planned order (learning path T01-T15, with the mental model each builds) is 
 | 2026-10-29 | (no note) | **T49.** WebUI Clip Browser in the touch UI's shape: cards, thumbnails, long-press selection, Remove/Download Selected (Core `26742ce`, `3042652`) | done by Claude, tested |
 | 2026-10-29 | (no note) | **T50.** WebUI Clip Viewer: frame-number clock, black holes, scrub, frame step, metadata, hold card (`6ffe564`); downloads and deletes yield to a take (`e69dc24`) | done by Claude, tested |
 | 2026-10-29 | (no note) | **T51.** Sound: `/api/media/file` with Range, the `<audio>` as the clock (`0c9d194`, `727c9c8`). T52 MLV, T53 ProRes/H.264, T54 touch UI still to do (`working/playback/HANDOFF-next.md`) | done by Claude, tested in Chrome |
+| 2026-10-29 | `20261029215000 CINEMATE APERTAR T36 one-action-vocabulary` | **T36.** Controls project step 1: one action vocabulary (`ActionCatalog.hpp`, replaces six copies) and `list_actions`; host test `working/tools/controls_test.cpp`. Core `d1b73e3` on branch `controls` | done 2026-10-29 by Claude, tested on the camera |
 
 Status values: `written` → `in progress` → `done` (Patrik did it) → `confirmed` (result on hardware,
 logged in `lessons/hardware-log.md`).

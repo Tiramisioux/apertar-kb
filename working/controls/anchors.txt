@@ -1,0 +1,56 @@
+core src/hardware/GpioInput.cpp 108 std::string normalizeSingleAction(std::string action)
+core src/hardware/Pcf8574Input.cpp 140 std::string normalizeSingleAction(std::string action)
+core src/hardware/NeoRotary4Input.cpp 121 std::string normalizeSingleAction(std::string action)
+core src/hardware/ButtonActionList.hpp 80 ButtonActionList parseButtonActions(std::string_view text, Normalizer normalize)
+core src/hardware/ButtonActionList.hpp 57 inline bool isOutputAction(const std::string &action)
+core src/hardware/RecordingIndicatorOutput.cpp 118 bool isRecordingIndicatorAction(const std::string &text)
+core src/hardware/GroveAnalogInput.cpp 125 std::string normalizeTarget(std::string target)
+core src/hardware/TriggerOutput.cpp 130 std::optional<TriggerOutput::Event> eventFromToken(std::string token)
+core src/ApertarCoreApp.cpp 8588 std::string normalizeHardwareAnalogTarget(std::string target)
+core src/ApertarCoreApp.cpp 914 std::optional<double> parseDoubleValue(const std::string &value)
+core src/ApertarCoreApp.cpp 1374 std::optional<std::string> hardwareActionSuffix(const std::string &action,
+core src/ApertarCoreApp.cpp 1311 std::vector<double> pcfIsoOptions()
+core src/ApertarCoreApp.cpp 8838 void ApertarCoreApp::handleSingleHardwareInputAction(const std::string &action)
+core src/ApertarCoreApp.cpp 9147 Hardware input action ignored: unknown action
+core src/ApertarCoreApp.cpp 9612 if (command.name == "list_sensor_modes") {
+core src/ApertarCoreApp.cpp 9633 if (command.name == "help")
+core src/ApertarCoreApp.cpp 66 constexpr size_t kMaxEditableHardwareConfigBytes = 256 * 1024;
+core src/ApertarCoreApp.cpp 4313 std::filesystem::path editableHardwareConfigPath()
+core src/ApertarCoreApp.cpp 3477 parser.read(config_path)
+core src/ApertarCoreApp.cpp 4448 std::optional<int> parseConfigInteger(const std::string &text)
+core src/ApertarCoreApp.cpp 4284 int busNumber = 4;
+core src/ApertarCoreApp.cpp 5430 std::string buildHardwareConfigFileJson()
+core src/ApertarCoreApp.cpp 5463 bool saveHardwareConfigFile(const std::string &text, std::string *backupPath, std::string *errorMessage)
+core src/ApertarCoreApp.cpp 7321 if (request.method == "POST" && request.path == "/api/config") {
+core src/ApertarCoreApp.cpp 122 std::string errorReply(int id, const std::string &message)
+core src/ApertarCoreApp.cpp 7201 std::string ApertarCoreApp::handleRequest(const std::string &line)
+core src/ApertarCoreApp.cpp 7231 std::string ApertarCoreApp::handleWebCommand(const std::string &payload)
+core src/hardware/Mpu6050RecordingSession.cpp 209 std::string stripInlineComment(std::string value)
+core src/hardware/Mpu6050RecordingSession.cpp 604 bool writeHardwareConfigValue(const std::filesystem::path &configPath,
+core src/hardware/Mpu6050RecordingSession.cpp 715 bool updateImuBiasConfig(const std::filesystem::path &configPath,
+core src/hardware/Mpu6050RecordingSession.cpp 1335 bool Mpu6050RecordingSession::setConfiguredLevelReference(std::string *error)
+core src/hardware/Mpu6050RecordingSession.cpp 1370 bool Mpu6050RecordingSession::clearConfiguredLevelReference(std::string *error)
+core src/hardware/TriggerOutput.cpp 56 std::string stripInlineComment(std::string value)
+core src/util/SettingsFile.hpp 36 inline bool atomicWrite(const std::filesystem::path &path, const std::string &data)
+core src/util/SettingsFile.hpp 59 class QtIniLock {
+core src/web/WebControlPage.cpp 10372 async function saveConfigFile() {
+core src/web/WebServer.cpp 70 case 503: return "Service Unavailable";
+core src/web/WebServer.cpp 156 bool allowedBrowserOrigin(const WebServer::Request &request)
+core src/ipc/ControlServer.cpp 261 if (line.size() >= 64 * 1024)
+ui src/DisplayConfigBridge.cpp 41 bool ensureDefaultHardwareConfigFile()
+ui src/DisplayConfigBridge.cpp 587 ensureDefaultHardwareConfigFile();
+ui src/Ina219Bridge.cpp 69 bool ensureDefaultHardwareConfigFile()
+ui src/Ina219Bridge.cpp 497 ensureDefaultHardwareConfigFile();
+core src/hardware/NeoRotary4Input.cpp 333 if (!running_.exchange(false))
+core src/hardware/NeoRotary4Input.cpp 640 setLastError({});
+core src/hardware/NeoRotary4Input.cpp 317 if (!hasMappedAction(config_.encoders)) {
+core src/hardware/GpioInput.cpp 571 if (::ioctl(chipFd, GPIO_V2_GET_LINE_IOCTL, &request) < 0) {
+core src/ApertarCoreApp.cpp 4693 PowerSupplySnapshot readIna219Snapshot()
+core src/ApertarCoreApp.cpp 9310 const CfeHatConfig hatConfig = loadCfeHatConfig();
+core src/ApertarCoreApp.cpp 11301 eventJson.find("\"event\":\"media_write_state\"") != std::string::npos ||
+core src/ApertarCoreApp.cpp 7857 std::string ApertarCoreApp::buildWebStateJson() const
+core src/ApertarCoreApp.cpp 1533 ShellCommandResult runShellCommandCapture(const std::string &command)
+core src/ApertarCoreApp.cpp 7042 recordingIndicatorOutput_.setRecordingActive(camera_.isRecording() || soundRecordingActive());
+ui src/ApertarControlBridge.cpp 1196 void ApertarControlBridge::applyCoreMessage(const QJsonObject &message)
+ui qml/CameraPage.qml 2612 DroppedFrameWarning {
+ui qml/SettingsPage.qml 4526 ? "Check /home/pi/apertar-hardware.conf and INA219 wiring"

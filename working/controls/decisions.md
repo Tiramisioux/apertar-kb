@@ -1,0 +1,27 @@
+# Controls: Patrik's decisions (Q1-Q23, design §9.2)
+
+| Q | Answer | Date |
+| --- | --- | --- |
+| Q1 | Keep `~/apertar-hardware.conf` as the system-controlled file (Core writes it; its notes in `~/.config/apertar-core/`) | 2026-10-29 |
+| Q3 | Hand edit over ssh: not applied on the side; applies on Apply / next start / Save and apply both (design default) | 2026-10-29 |
+| Q4 | T44 yes (hold 800 ms, double 350 ms, per source after measuring). Extras wanted: triple click, 2- and 3-position switches, chords. Extras are not in T36-T45: later, own design | 2026-10-29 |
+| Q5 | Save during a take: allowed; the file is written now and the drivers apply after the take ends (design changed from "refuse set_controls") | 2026-10-29 |
+| Q7 | INA219 stays on by default (no [Turn it off] sheet). Principle: all hardware is autodetected, like Cinemate. A device that is not found is shown as "not found", not as a warning. Rule: detect and show (Core scans the known addresses at start and on demand; the card says found / not found / error; nothing is written automatically). Detect and configure (Core writes the sections itself) is a possible later step | 2026-10-29 |
+| Q2 | `[run_script]` paths: ssh only; the browser cannot write them (design default) | 2026-10-29 |
+| Q6 | T45 (touch UI read-only card, gyro page through Core): build it, after T43 (design default) | 2026-10-29 |
+| Q8 | d10=capture, d6=eject and the four NeoRotary knob mappings (iso, shutter, wb, fps; knob 3 push = resolution) confirmed from the live file as the tutorial examples. IMU is on bus 10 (confirmed by Patrik). Live file already has [ina219] enabled=false | 2026-10-29 |
+| Q9 | One of each device type (PCF8574, NeoRotary 4). Different kinds of I2C device run together (already designed: a section and a driver group each) | 2026-10-29 |
+| Q10 | Middle option: an "API command" action with a free field, accepting only commands from a fixed allowlist of safe ones. Not in T36-T45; needs its own design pass (allowlist contents, argument validation, take-state rules), after T45 | 2026-10-29 |
+| Q11 | Numbering T36-T45 as listed, no merging | 2026-10-29 |
+| Q12 | Copy the live file into the KB as the host-test fixture (read by Patrik 2026-10-29, no secrets). Copied when the test needs it (T37); re-diff against the Pi then | 2026-10-29 |
+| Q13 | M4 findings (two masters, IMU identity) go into lessons/hardware-log.md as facts, one by one, only after Patrik confirms | 2026-10-29 |
+| Q14 | Nav: a new Controls item next to Config (two items); Config stays the text view | 2026-10-29 |
+| Q15 | GpioInput requests lines one by one: later, its own tutorial. Until then the red banner + Undo last save | 2026-10-29 |
+| Q16 | The "still to do" card may show Restart Camera (existing restart_system, a reboot Patrik presses). To check before T40: whether restart_system is refused during a take | 2026-10-29 |
+| Q17 | Stale text save: merge per key when only values changed and no key clashes, shown as a review before saving; otherwise refuse (design default) | 2026-10-29 |
+| Q18 | DPI box: asks "does this camera use a DPI screen?", shows commands only for "No"; shown only when an overlay is active (design default) | 2026-10-29 |
+| Q19 | Touch warning chip (T40) on the camera page, next to the dropped-frame chip; only visible when something is wrong | 2026-10-29 |
+| Q20 | No remapping of the NeoRotary knobs on the camera itself for now; Listen + phone covers it | 2026-10-29 |
+| Q21 | An enabled NeoRotary starts and polls even with no actions (so Listen works on a fresh board); status "connected · no actions" (R22) | 2026-10-29 |
+| Q22 | History: 20 versions + a pinned "Before Controls"; IMU taps coalesce per 10 minutes (design default) | 2026-10-29 |
+| Q23 | No test_output command; the Outputs card shows a hint instead (design default) | 2026-10-29 |
