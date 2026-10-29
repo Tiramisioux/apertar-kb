@@ -13,6 +13,12 @@ A row marked *default* means Patrik accepted the design's default.
 | Q22 | Bring the touch UI along as T54? | **Yes** (default) | T54 stays: pause in a take, number clock, span duration. |
 | Q9 | Which Cinemate options? | **O1, O4, O5, O10** (default) | O1 frame step and keys; O4 honest rate row; O5 DROP N badge; O10 the recorded timecode. W2 and the rest not chosen yet. |
 
+## New requirements (Patrik, 2026-10-29)
+
+| # | Requirement | What it changes in the plan |
+| --- | --- | --- |
+| R1 | **The Clip Browser card also shows the clip's timecode.** | T47: each `/api/media` item gets `timecode_start` ("14:03:22:07"), read from the first frame's DNG TimeCodes tag (51043, the same read O10 uses in the viewer); MLV from its timecode record, ProRes/H.264/sound from their own tag where there is one, else the field is empty and the line hidden. T49: one more line in the card footer (B18) after the shot date, in the touch UI's small muted style. Open: whether the touch UI's card gets it too (T54). It is the *File timecode* the take was recorded with (Free Run = time of day, Rec Run = starts at 00:00:00:00), so a Rec Run take shows 00:00:00:00. |
+
 ## Note for O10 (added 2026-10-29)
 
 The timecode the DNGs carry is now its own setting: **File timecode** (Free Run or Rec Run), apart from the UI timecode
