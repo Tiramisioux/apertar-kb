@@ -42,3 +42,13 @@ No touch screen on this Pi (Patrik, 2026-10-29). See `decisions.md`, "Constraint
 Reading: about 20 ms per request over the LAN (a new TCP connection each); the Pi's numbers are mostly `curl` start-up, so
 Core's server is at least that fast. The prediction (well above 40 req/s) holds. Decision: the look-ahead of two lanes is
 safe on the network; the decode (50-190 ms a frame) is the limit, not the server.
+
+## M4. What the clip list costs today (Patrik ran it; CONFIRMED)
+
+41 take folders, 105,676 files on `/media/RAW`. `GET /api/media` three times: **6.81 s, 6.81 s, 6.80 s**.
+
+Reading: the list takes 6.8 s *every* time, warm or not, because it reads the first DNG of every take and stats every file;
+nothing is cached today. With 105,676 files that is the cost T47's folder cache removes (an unchanged folder should cost one
+`readdir`). Probable side effect to check in T47: while the list runs, Core's other web requests wait (the page's 1 s state
+poll would stall for 6.8 s). T47's check: the list time after the cache (cold after a Core restart, warm), and `/api/state`
+answering during a list.
