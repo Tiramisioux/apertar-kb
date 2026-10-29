@@ -61,3 +61,18 @@ answering during a list.
 | M8 one cold 16.6 MB frame, `dd iflag=direct` | 0.0207 s = **800 MB/s** | Clear HDR 16-bit at 25 fps needs 415 MB/s: not read-bound, with room for the take's own writes to be a separate question (M7/M16) |
 | M9 locale | `en_GB.UTF-8` | month names are English ("28 Oct 2026"); Q15's `strftime_l` is not needed |
 | M10 `libswscale` | 8.3.100; `~/ApertarUI/build/apertar-video-libav.so` exists | T53 (ProRes and H.264 in Core) has what it needs on the Pi |
+
+## M4b. ClipProbe on your real card (Claude ran it, read-only, built in /tmp; CONFIRMED)
+
+`ClipFactsCache` over all 39 cDNG takes (105,532 frames), reference implementation `ClipProbe.hpp`:
+
+| | Time |
+| --- | --- |
+| today's `/api/media` | 6.8 s every call (M4) |
+| first pass, with a readdir-count key (the design's idea) | 15.2 s first, **3.8 s cached**: a readdir of 105,000 entries costs about 3.7 s on this exFAT card, so "an unchanged folder costs one readdir" was wrong here |
+| first pass, folder-mtime key, no second pass | **4.2 s once** (after a Core restart), then **7 ms** per list |
+
+exFAT folder mtime moves with its newest entry on all three takes checked (C0016, C0022, C0025: the directory's time equals its
+newest file's); `stat` of all 39 folders: 36 ms. A file written in place would not move it; frames are never rewritten.
+Design change (T47): the cache key is the folder's mtime alone. Sample facts, C0016: 25 fps, 03:29 (the span), 4,913 files,
+310 missing in 30 holes, "SDR 12-bit · lossless", timecode 00:00:00:00 (a Rec Run take), 32.0 GB.
