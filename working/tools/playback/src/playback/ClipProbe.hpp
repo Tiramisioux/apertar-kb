@@ -5,9 +5,10 @@
 // its own FPS, frame numbers and holes, span duration, recorded timecode, format text, shot date.
 // The texts follow the touch UI's rules so both screens say one thing (design §4.2, §4.3, F22, F23).
 //
-// ClipFactsCache: an unchanged folder costs one readdir (to count its entries) and one stat; a
-// changed one is probed OUTSIDE the lock and swapped in (critic m14), so a 6.8 s list becomes
-// milliseconds on a card of 105,000 files (M4).
+// ClipFactsCache: an unchanged folder costs ONE stat (its modification time). On Patrik's exFAT card the
+// folder's mtime moves with its newest entry (checked 2026-10-29), and a readdir of 105,000 entries costs
+// 3.7 s, so counting entries as well would defeat the cache. A changed folder is probed OUTSIDE the lock
+// and swapped in (critic m14).
 
 #include "ClipFrames.hpp"
 #include "DngTags.hpp"
@@ -115,12 +116,17 @@ inline ClipFacts probeClip(const std::filesystem::path &dir, int64_t coreStartMs
     f.frames = listFrames(dir, &f.error);
     if (f.frames.files.empty()) { f.error = f.error.empty() ? "No frames in the folder." : f.error; return f; }
 
+    // One readdir is all this takes (listFrames); on this card a readdir of 105,000 entries is the cost (M4b).
+    // The folder's size = the frames + the sound beside them + the ramp file; no second pass over the folder.
     std::error_code ec;
-    for (const auto &e : fs::directory_iterator(dir, ec)) {
-        if (e.is_regular_file(ec)) { const auto sz = e.file_size(ec); if (!ec) f.bytes += sz; }
+    for (const FrameFile &file : f.frames.files) f.bytes += file.bytes;
+    for (const char *extra : {".wav", "_stretched.wav"}) {
+        const auto sz = fs::file_size(dir / (f.name + extra), ec);
+        if (!ec) f.bytes += sz;
         ec.clear();
     }
     f.ramp = fs::exists(dir / "fps-ramp.txt", ec);
+    if (f.ramp) { const auto sz = fs::file_size(dir / "fps-ramp.txt", ec); if (!ec) f.bytes += sz; }
 
     for (const FrameFile &file : f.frames.files) {         // the first frame with a picture
         if (file.bytes == 0) continue;
@@ -181,34 +187,30 @@ class ClipFactsCache {
 public:
     explicit ClipFactsCache(int64_t coreStartMs = 0) : coreStartMs_(coreStartMs) {}
 
-    // A folder is unchanged when its mtime and its entry count are. The count is one readdir; the
-    // exFAT folder mtime alone may not move for every new file (UNCONFIRMED, M17), so both are the key.
+    // A folder is unchanged when its mtime is. exFAT: an added or deleted entry moves it (CONFIRMED on
+    // three takes, 2026-10-29); a file written in place does not, and frames are never rewritten.
     ClipFacts get(const std::filesystem::path &dir)
     {
-        namespace fs = std::filesystem;
         struct stat st {};
         const bool statOk = ::stat(dir.c_str(), &st) == 0;
-        std::error_code ec;
-        uint64_t entries = 0;
-        for (auto it = fs::directory_iterator(dir, ec); !ec && it != fs::directory_iterator(); it.increment(ec)) ++entries;
         const int64_t mtimeNs = statOk ? int64_t(st.st_mtim.tv_sec) * 1000000000LL + st.st_mtim.tv_nsec : 0;
         const std::string key = dir.string();
         {
             std::lock_guard<std::mutex> lock(mutex_);
             const auto it = entries_.find(key);
-            if (it != entries_.end() && it->second.mtimeNs == mtimeNs && it->second.entries == entries)
+            if (it != entries_.end() && it->second.mtimeNs == mtimeNs && statOk)
                 return it->second.facts;
         }
         ClipFacts facts = probeClip(dir, coreStartMs_);           // outside the lock
         probes_.fetch_add(1);
         std::lock_guard<std::mutex> lock(mutex_);
-        entries_[key] = {mtimeNs, entries, facts};
+        entries_[key] = {mtimeNs, facts};
         return facts;
     }
     int probes() const { return probes_.load(); }
 
 private:
-    struct Entry { int64_t mtimeNs = 0; uint64_t entries = 0; ClipFacts facts; };
+    struct Entry { int64_t mtimeNs = 0; ClipFacts facts; };
     std::mutex mutex_;
     std::map<std::string, Entry> entries_;
     std::atomic<int> probes_{0};
