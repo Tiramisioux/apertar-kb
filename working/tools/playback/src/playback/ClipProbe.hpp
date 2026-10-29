@@ -12,6 +12,7 @@
 #include "ClipFrames.hpp"
 #include "DngTags.hpp"
 
+#include <atomic>
 #include <cmath>
 #include <cstdio>
 #include <ctime>
