@@ -587,9 +587,9 @@ int main(int argc, char **argv)
         check(has(settings, "\"key\":\"enabled\",\"label\":\"On\",\"type\":\"bool\",\"value\":\"true\",\"in_file\":true") &&
               has(settings, "\"key\":\"pull\",\"label\":\"Pull\",\"type\":\"choice\",\"value\":\"up\"") &&
               has(settings, "\"key\":\"debounce_ms\",\"label\":\"Debounce (ms)\",\"type\":\"number\",\"value\":\"60\"") &&
-              has(settings, "\"key\":\"poll_ms\",\"label\":\"Poll every (ms), chips without edge events\",\"type\":\"number\",\"value\":\"12\"") &&
-              has(settings, "\"key\":\"chip\",\"label\":\"GPIO chip\",\"type\":\"text\",\"value\":\"auto\""),
-              "GPIO button settings from the live file: on, pull up, 60 ms debounce, 12 ms poll, chip auto");
+              has(settings, "\"key\":\"active_low\",\"label\":\"Pressed\",\"type\":\"bool\",\"value\":\"true\"") &&
+              has(settings, "\"options\":[\"low\",\"high\"]") && !has(settings, "poll_ms") && !has(settings, "\"chip\""),
+              "GPIO settings from the live file: on, Pressed low/high, pull up, 60 ms debounce; no poll, no chip");
     }
 
     std::printf("15. clicks and hold, like Cinemate (ButtonGesture)\n");
@@ -704,8 +704,23 @@ int main(int argc, char **argv)
         check(hat.find("\"key\":\"bus\",\"label\":\"I2C bus\",\"type\":\"number\",\"value\":\"1\"") != std::string::npos &&
               hat.find("\"key\":\"address\",\"label\":\"Address\",\"type\":\"text\",\"value\":\"0x34\"") != std::string::npos,
               "the CFexpress hat's settings come from its section");
-        check(hc::modelJson(hc::parse(text)).find("\"button_gestures\":[{\"suffix\":\"\",\"label\":\"Press\"},{\"suffix\":\"_single\"") != std::string::npos,
-              "the model lists the button gestures, Press first, for the page's dropdowns");
+        check(hc::modelJson(hc::parse(text)).find("\"base\":\"d6\",\"gestures\":[{\"suffix\":\"\",\"label\":\"Press\"},{\"suffix\":\"_single\"") != std::string::npos,
+              "a button row carries its base and gestures, Press first, for the page's dropdowns");
+        const std::string pushes = "[neorotary4]\nenabled=true\nencoder0_cw=iso_up\nencoder0_press=iso\nencoder0_double=photo\n"
+                                   "[pcf8574]\nenabled=true\npin3_triple=photo\n[gpio_encoders]\nenabled=true\nencoder1_a=5\nencoder1_b=7\nencoder1_press_gpio=8\nencoder1_hold=standby\n";
+        std::string plist;
+        for (const auto &issue : hc::validate(pushes, facts)) plist += issue.message + " | ";
+        check(plist.empty(), "the validator knows encoder0_double, pin3_triple and a GPIO encoder's encoder1_hold (" + plist + ")");
+        std::string pshape;
+        for (const auto &row : hc::controlRows(hc::parse(pushes))) {
+            if (row.title != "Knob 1" && row.source != "pcf8574" && row.source != "gpio_encoders") continue;
+            pshape += row.title + " " + row.base + ":";
+            for (const auto &line : row.lines) pshape += " " + line.label + "=" + line.raw;
+            pshape += " [" + row.gestures[0].first + "]; ";
+        }
+        check(pshape == "Knob 1 encoder0: Turn clockwise=iso_up Turn counter-clockwise= Press=iso Double click=photo [_press]; "
+                        "PCF pin 3 pin3: Press= Triple click=photo []; Encoder 1 encoder1: Turn clockwise= Turn counter-clockwise= Press= Hold=standby [_press]; ",
+              "knobs, PCF pins and GPIO encoders carry their push as gesture lines (" + pshape + ")");
     }
 
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);
