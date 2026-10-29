@@ -75,12 +75,45 @@ stays usable for regression tests.
 | # | Change | Where | Env for A/B | Expect |
 | --- | --- | --- | --- | --- |
 | 0 | **A/B soak matrix**: 10-min takes, 4K25 16-bit, same card at < 50 % full, one knob per run, count the four `drop[...]` lines | Pi, no build | `APERTAR_MEDIA_SYNC_MS=0`, `APERTAR_DNG_WRITEBACK=0`, `APERTAR_CDNG_QUEUE_FRAMES=64`, `APERTAR_RAW_CAMERA_BUFFERS=10`, `APERTAR_MEDIA_TUNE=1` (needs the sudoers + libexec install) | tells which counter moves and which knob stops it |
+| 0b | **Pre-roll A/B** (CineMate's storage pre-roll: a 2 s take at the mode's max fps, deleted, on startup and mount). Runs right after the overnight sub-folder/heat run. Protocol below | Pi, no build | none (defaults environment) | settles whether a short max-fps take before the real one changes its drops; no port unless the rule below says so |
 | 1 | **RAM-bounded queue, block instead of drop.** Budget = a fraction of `MemAvailable` at take start (cinepi-raw uses 0.9; start at 0.6 and keep 512 MiB free), in bytes, not frames. Copy worker **waits** while the budget is full; drop only at the copy-slot cap; a pool-exhausted stop ends the take like cinepi-raw. Expose `queue_bytes`/`queue_budget_bytes` in `get_state` for a buffer bar | `DngRecordingQueue` (`maxQueuedFrames_`, `enqueue`, `hasCapacityForFrame`, `copyLoop`, `acquireRawBuffer` pool) | `APERTAR_CDNG_QUEUE_RAM_FRACTION`, `APERTAR_CDNG_QUEUE_FRAMES` kept as a ceiling | queue-full drops become seconds of cushion |
 | 2 | **No sync during the take by default.** `APERTAR_MEDIA_SYNC_MS` default 0, `APERTAR_DNG_WRITEBACK` default off; keep the stop-time `syncfs`; keep the audio raw fsync | `DngRecordingQueue::start`, `startWritebackPerFrame`, `syncLoop` | the same two knobs | fewer capture gaps if writeback bursts were the cause; a pulled card loses up to `dirty_expire` |
 | 3 | **Media tuning on by default** (the e9dd6b2 objection was the 1 s bound, gone with #2). Installer step for `/usr/local/libexec/apertar-media-tune`, `/etc/sudoers.d/apertar-media`, tmpfiles | `ApertarCoreApp::applyMediaTuning`, `scripts/`, `config/` | `APERTAR_MEDIA_TUNE=0` to disable | bounded dirty pages, NVMe APST off on the CFE, scheduler none |
 | 4 | **Cached buffers for SDR raw, 8 of them.** Extend the cached-heap condition to unpacked SDR; `kConfiguredBufferCount` 4 → 8; keep +2 for FAT/NTFS | `allocateCachedBuffers` call site, `rawCameraBufferCount` | `APERTAR_RAW_CACHED_DMABUF`, `APERTAR_RAW_CAMERA_BUFFERS` | copy-slot drops in SDR disappear; CMA use +4 × 16.9 MB |
 | 5 | **Scheduling parity.** `LimitRTPRIO=80` on `apertar-core.service`; start script prefix `chrt -f 70 ionice -c2 -n0 taskset -c 1-3` behind `APERTAR_RT=1`; fallback: SCHED_FIFO on the completion and copy threads only | `scripts/start-apertar-core.sh`, `config/` drop-in, `CameraSession::requestComplete` | `APERTAR_RT` | capture thread no longer waits behind writers and the WebUI |
 | 6 | **CineMate Log for Apertar** (§4): 20–25 % fewer bytes per frame at the same picture, in parallel with every compression | encoder + format model + UIs | setting, not env | the same card carries 25 fps with margin |
+
+### Step 0b: the pre-roll A/B (next step, after the overnight run)
+
+**Why it is a question.** CineMate records 2 s at the sensor's max fps on startup (after 1 s) and on every
+mount (after 3 s), then deletes the clip (`src/module/storage_preroll.py`, setting
+`system.storage.auto_preroll`, default on). No file names what it warms and nothing measured it
+(`working/port-raw/s1-storage-cinemate.md` §3, `working/port-raw/critic.md` S4; T29 §5.3 planned the
+first-take vs second-take comparison and it was never run). Apertar has no pre-roll. The KB's own guesses
+(not CineMate's claims): wake the NVMe from a deep power state (already off here by the boot argument
+`nvme_core.default_ps_max_latency_us=0`; re-read it this boot), warm exFAT's allocator, show a slow drive early.
+Our stalls so far come minutes into a take, so the prior is low; the test is cheap.
+
+**Protocol** (real takes inside Core; same card, < 50 % full; defaults environment, no drop-in; 4K 25 fps
+Clear HDR 16-bit uncompressed; Core started again after the overnight run):
+
+| Arm | Before the real take | Real take |
+| --- | --- | --- |
+| COLD | remount (Patrik), drive idle until it reads <= 55 °C, then 10 s | 240 s |
+| WARM | the same remount and idle, then the pre-roll: `record_start`, 2 s, `record_stop`, delete that clip, 3 s settle (CineMate's `settle_delay`) | 240 s |
+| SECOND (control) | none: runs straight after a COLD take, no remount (the T29 §5.3 first vs second take) | 240 s |
+
+- 6 pairs, COLD and WARM alternated (start with either in turn), each pair at least 10 min apart so the drive
+  starts at the same temperature; the SECOND take follows each COLD take.
+- Recorded per take: each `drop[...]` counter in the first 30 s and in the rest of the take, frames missing,
+  `peak_queue`, stop `syncfs` ms, NVMe temperature at start and max (sysfs, every 5 s). Every take starts with
+  the same readback of the environment the unit holds.
+- Decision rule: the pre-roll earns a port only if WARM beats COLD in at least 5 of 6 pairs, by more than the
+  take-to-take spread the overnight run measured for equal conditions. Otherwise the result is written down as
+  "no effect on this rig" (hardware-log entry, after Patrik confirms the reading). If it passes, the port is a
+  setting (`storage_preroll`, default off at first), never a hidden step, and it must never run while recording.
+- Needs from Patrik: `sudo systemctl start apertar-core` (Core is stopped for the overnight run) and the remount
+  commands. Claude reads the automounter's own mount path first (read-only) and gives the exact block.
 
 Not worth doing: worker nice levels (CineMate's fail silently); O_DIRECT (T24 skipped, neither
 stack ships it).
@@ -161,6 +194,8 @@ Bytes per 4K frame (3840×2160, no thumbnail): 16-bit 16.6 MB → Log 12 12.4 MB
 3. CMA headroom for 8 cached SDR buffers at 4K: `grep Cma /proc/meminfo` before and after.
 4. Does `chrt -f 70` on the whole process starve the WebUI's MJPEG thread? (Step 5, watch the preview.)
 5. Log: does Resolve honour `LinearizationTable` on an 8-bit stored DNG? (Export one frame, open it.)
+6. Does a CineMate-style pre-roll (2 s at max fps, deleted) before the real take change its drops? (Step 0b:
+   COLD vs WARM pairs, plus the SECOND-take control.)
 
 ## 6. Sources
 
