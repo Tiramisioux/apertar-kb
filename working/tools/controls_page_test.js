@@ -72,11 +72,15 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     for (let i = 0; i < 40; i++) { try { if (await tab.evaluate('typeof setSettingsPanel === "function" && typeof loadControls === "function"')) break; } catch (e) {} await sleep(250); }
     await tab.evaluate('window.confirm = () => true; 0');
     const q = (js) => tab.evaluate(js);
+    await q('document.getElementById("settingsButton").click(); 0'); await sleep(600);
     await q('setSettingsPanel("config"); 0'); await sleep(1200);
 
     console.log('--- the page as loaded');
     check('no separate Controls item in the nav: it lives in Config', await q('![...document.querySelectorAll(".settings-nav-item")].some(b=>b.dataset.panel==="controls")'));
     check('in the Config panel the Controls card comes first, above the text editor', await q('(() => { const p=document.querySelector(".settings-panel.active"); const t=[...p.querySelectorAll(".settings-card-title")].map(e=>e.textContent); return p.dataset.panel==="config" && t[0]==="Controls" && t.indexOf("Apertar Config")>0; })()'));
+    const removeLook = await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 10"); const b=r.querySelector(".controls-row-actions button"); const cs=getComputedStyle(b); const rb=b.getBoundingClientRect(), rr=r.getBoundingClientRect(), sel=r.querySelector("select").getBoundingClientRect(); return JSON.stringify({color:cs.color, background:cs.backgroundColor, gapToRowRight:Math.round(rr.right-rb.right), rightOfDropdown:rb.left>=sel.right, sameLineAsDropdown:Math.abs((rb.top+rb.bottom)/2-(sel.top+sel.bottom)/2)<12}); })()').then(JSON.parse);
+    console.log('    Remove:', JSON.stringify(removeLook));
+    check('Remove is red, at the far right of the row, on the same line as the dropdown', removeLook.color === 'rgb(252, 165, 165)' && removeLook.gapToRowRight >= 10 && removeLook.gapToRowRight <= 16 && removeLook.rightOfDropdown && removeLook.sameLineAsDropdown);
     check('the Remove button sits in the row, styled like the favourites list (danger-button preset-action)', await q('(() => { const r=[...document.querySelectorAll("#controlsRows .controls-row")].find(r=>r.querySelector(".controls-row-title").textContent==="GPIO 10"); const b=r.querySelector(".controls-row-actions button"); return !!b && b.classList.contains("danger-button") && b.classList.contains("preset-action") && b.textContent==="Remove"; })()'));
     const titles = await q('[...document.querySelectorAll("#controlsRows .controls-row-title")].map(e=>e.textContent).join(", ")');
     console.log('    rows:', titles);

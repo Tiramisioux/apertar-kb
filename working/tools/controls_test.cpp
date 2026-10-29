@@ -276,16 +276,19 @@ int main(int argc, char **argv)
         check(hc::valueOf(hc::parse(t), "run_script", "path") == std::optional<std::string>("'/home/pi/a;b.sh'") &&
               !find(hc::validate(t, none), "Comment after"), "D1: a quoted script path may hold ;");
         t = "[mpu6050]\norientation=xyz;x\n";
-        auto e = find(hc::validate(t, none), "Comment after");
+        const auto eIssues1 = hc::validate(t, none);
+        auto e = find(eIssues1, "Comment after");
         check(hc::valueOf(hc::parse(t), "mpu6050", "orientation") == std::optional<std::string>("xyz") && e && !e->error,
               "D1: the IMU reader cuts at the first ; (Mpu6050RecordingSession.cpp:209): value xyz, a warning");
         t = "[cfexpress_hat]\nenabled=true # on\nbus=1\n";
-        e = find(hc::validate(t, none), "Comment after");
+        const auto eIssues2 = hc::validate(t, none);
+        e = find(eIssues2, "Comment after");
         check(e && !e->error && hc::effectiveValue(hc::parse(t), "cfexpress_hat", "enabled") == std::optional<std::string>("true"),
               "D1: a comment after enabled= in [cfexpress_hat] is read (the bool parser cuts it): warning only");
         t = "[cfexpress_hat]\nenabled=true\nbus=1  # header\n";
         const hc::Facts busOne{true, {1}, {}};
-        e = find(hc::validate(t, busOne), "has no usable bus=, so Core uses bus 10");
+        const auto eIssues3 = hc::validate(t, busOne);
+        e = find(eIssues3, "has no usable bus=, so Core uses bus 10");
         check(!hc::effectiveValue(hc::parse(t), "cfexpress_hat", "bus") && e != nullptr,
               "operator 11: bus=1 # header is shown as what Core uses: bus 10, and bus 10 is missing here");
 
@@ -305,9 +308,11 @@ int main(int argc, char **argv)
               "D3: a key added above an old junk line and an old 7-action line adds no new error (ids from rule/section/key)");
 
         const hc::Facts tenOnly{true, {1, 10}, {}};
-        e = find(hc::validate("[ina219]\nenabled=true\n", tenOnly), "has no usable bus=, so Core uses bus 4");
+        const auto eIssues4 = hc::validate("[ina219]\nenabled=true\n", tenOnly);
+        e = find(eIssues4, "has no usable bus=, so Core uses bus 4");
         check(e && !e->error, "D4: [ina219] on with no bus= runs on bus 4 (App:4284): warned");
-        e = find(hc::validate("[neorotary4]\nencoder0_cw=iso_up\n", tenOnly), "[ina219] is not in this file, so Core looks on bus 4");
+        const auto eIssues5 = hc::validate("[neorotary4]\nencoder0_cw=iso_up\n", tenOnly);
+        e = find(eIssues5, "[ina219] is not in this file, so Core looks on bus 4");
         check(e && !e->error, "D4: no [ina219] at all: Core still polls bus 4 (on by default): warned");
 
         auto boot = hc::parseConfigTxt("dtparam=i2c_arm=on,i2c_arm_baudrate=400000\n");
