@@ -132,3 +132,13 @@ the span). Prev/next opens the neighbour in the browser's order; the hold card (
 within 2 s of `playback_hold` and clears without resuming. The phone's Back leaves the viewer first. Metadata rows: the nine
 touch-UI rows plus TIMECODE, SOUND, FORMAT, DROPPED. One bug found and fixed on the way: frames that arrived late were thrown
 away (nothing drew); a late frame is now shown when newer than the picture on screen.
+
+## T50 Core part live on the Pi (Claude ran it with Patrik's OK; CONFIRMED), Core `e69dc24`
+
+A throttled ZIP download of C0016 (32 GB take) had streamed 64 MB after 2 s. `record_start`: the download ended **within about 0.3 s**
+(72.7 MB received, curl saw a normal end of stream: the archive is incomplete, as designed, Q21). In the take: a new download and a
+download-selected both 409 "Recording. Downloads wait until the take ends." (`hold: recording`); delete and delete-selected 400 "Stop
+recording before deleting media."; `playback_hold` = `recording`. The take (`cDNG_26-10-29_C0001`): 90 of 90 frames, 0 dropped, with a
+download stopped just before it. After the take a download works (200); the route's delete of that take removed 92 files; the take
+is gone. Not tested live: Q23 (record_start refused while a delete runs: "Deleting media. One moment.") because a delete of one
+small take takes milliseconds; the code is in `handleCommand` and the delete routes, `mediaDeleteActive_`.
