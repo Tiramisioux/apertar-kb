@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Review before Save</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+</style>
+</helmet>
+<div style="width: 880px; height: 860px; box-sizing: border-box; padding: 40px; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.8); color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif;">
+<div role="dialog" aria-modal="true" aria-labelledby="reviewTitle" style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; padding: 24px; border-radius: 26px; border: 1px solid #27272a; background: #18181b;">
+<div style="display: flex; flex-direction: column; gap: 4px;">
+<h2 id="reviewTitle" style="margin: 0; font-size: 22px; font-weight: 700;">Review before Save</h2>
+<span style="font-size: 13px; color: #a1a1aa;">Core checked the draft against the file (revision h3f9a…, loaded 21:14). Nothing is written yet.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 18px; background: #202024; border: 1px solid #27272a;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #9a9aa4;">WHAT CHANGES</span>
+<div style="display: flex; flex-direction: column; gap: 8px; font-size: 15px; line-height: 1.45;">
+<span>Knob 4 press: Resolution → Zebra.</span>
+<span>Pi GPIO buttons: GPIO 6 removed (was Standby). GPIO 6 is free.</span>
+<span>Hat: bus 10 → 1. <span style="color: #34d399;">Answers at 0x34 on bus 1.</span></span>
+<span>NeoRotary 4: on, bus 1, 0x49. <span style="color: #34d399;">Answers: ID 0x87, a NeoRotary 4.</span></span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; background: #202024; border: 1px solid #27272a;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #9a9aa4;">AFTER SAVING</span>
+<span style="font-size: 14px; color: #e4e4e7; line-height: 1.5;">Core applies the knobs and buttons now (about a second; not during a take). Then restart the automounter, or the camera, so automount uses bus 1.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.07);">
+<span style="font-size: 14px; font-weight: 600; color: #fde68a;">This save also applies the change made outside Apertar at 20:50</span>
+<code style="font-size: 12px; color: #e4e4e7; font-family: 'SF Mono', Menlo, monospace;">[display] hdmi_external_only=true</code>
+<span style="font-size: 13px; color: #d4d4d8;">It was saved over ssh and not applied yet. Saving now applies both.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding: 16px; border-radius: 18px; background: #202024; border: 1px solid #27272a;">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; color: #9a9aa4;">ISSUES</span>
+<span style="font-size: 14px; color: #fde68a;">Line 55, [neorotary4] poll_ms: comment after the value. Core reads its default, 30 ms, not 20. <span style="color: #79ddff; font-weight: 600;">Fix in Config</span></span>
+<span style="font-size: 14px; color: #fca5a5;">Line 6, [ina219] bus=4: bus 4 does not exist on this Pi. The INA219 reports nothing until you pick a bus or turn it off.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<span style="font-size: 13px; font-weight: 600; color: #79ddff;">Hide file diff</span>
+<div style="padding: 12px 14px; border-radius: 14px; border: 1px solid #27272a; background: #0c0c0e; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.7;">
+<div style="color: #9a9aa4;">@@ [cfexpress_hat] @@</div>
+<div style="color: #fca5a5; background: rgba(239, 68, 68, 0.08);">-bus=10</div>
+<div style="color: #86efac; background: rgba(34, 197, 94, 0.08);">+bus=1</div>
+<div style="color: #9a9aa4;">@@ [gpio] @@</div>
+<div style="color: #fca5a5; background: rgba(239, 68, 68, 0.08);">-d6=standby</div>
+<div style="color: #9a9aa4;">@@ [neorotary4] @@</div>
+<div style="color: #fca5a5; background: rgba(239, 68, 68, 0.08);">-encoder3_press=resolution</div>
+<div style="color: #86efac; background: rgba(34, 197, 94, 0.08);">+encoder3_press=zebra</div>
+</div>
+</div>
+
+<div style="display: flex; gap: 10px; justify-content: flex-end;">
+<button type="button" style="min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 14px; font-weight: 600;">Back to editing</button>
+<button type="button" style="min-height: 44px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.9); background: #ffffff; color: #09090b; font-family: inherit; font-size: 14px; font-weight: 600;">Save and apply both</button>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

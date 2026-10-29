@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings, Config text editor</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+a{color:#79ddff;text-decoration:none}a:hover{color:#bfeeff}
+</style>
+</helmet>
+<div style="width: 1280px; height: 1140px; box-sizing: border-box; padding: 28px 16px 40px; background: radial-gradient(120% 60% at 50% -8%, #27272a 0%, #09090b 46%, #000000 100%); color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif;">
+<div style="max-width: 1240px; margin: 0 auto; display: flex; gap: 24px; align-items: flex-start;">
+
+<nav aria-label="Settings sections" style="flex: 0 0 220px; display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 22px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72);">
+<div style="font-size: 20px; font-weight: 700; letter-spacing: -0.02em; padding: 4px 8px 10px;">Settings</div>
+<sc-for list="{{ navItems }}" as="nav" hint-placeholder-count="10">
+<button type="button" style="{{ nav.style }}">{{ nav.label }}</button>
+</sc-for>
+</nav>
+
+<main style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; gap: 12px; align-items: flex-start; justify-content: space-between;">
+<div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em;">Config</h1>
+<p style="margin: 6px 0 0; font-size: 14px; color: #a1a1aa;">apertar-hardware.conf as text, for advanced edits. Controls edits the same file.</p>
+</div>
+<span style="{{ pill.style }}">{{ pill.label }}</span>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(251, 191, 36, 0.35); background: rgba(251, 191, 36, 0.08);">
+<span style="flex: 1 1 360px; font-size: 14px; color: #fde68a;">Changed by the gyro page at 21:16 since you opened it ([imu] sync_offset_ms). On Save, Core merges it if you only changed values.</span>
+<button type="button" style="min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 13px; font-weight: 600;">Show changes</button>
+<button type="button" style="min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 13px; font-weight: 600;">Load the new file</button>
+</div>
+
+<div style="display: flex; gap: 16px; align-items: stretch;">
+<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+<div style="height: 760px; overflow: auto; border-radius: 18px; border: 1px solid #27272a; background: #0c0c0e;">
+<div style="display: flex; align-items: flex-start; min-height: 100%;">
+<div aria-hidden="true" style="flex: 0 0 56px; padding: 12px 0; background: #111113; border-right: 1px solid #27272a; font-family: 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 20px; text-align: right; user-select: none;">
+<sc-for list="{{ gutter }}" as="g" hint-placeholder-count="40">
+<div style="{{ g.style }}">{{ g.n }}</div>
+</sc-for>
+</div>
+<label for="configText" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">apertar-hardware.conf</label>
+<textarea id="configText" spellcheck="false" value="{{ text }}" onChange="{{ edit }}" style="{{ textStyle }}"></textarea>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+<button type="button" onClick="{{ check }}" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">Check</button>
+<button type="button" style="min-height: 44px; padding: 0 22px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.9); background: #ffffff; color: #09090b; font-family: inherit; font-size: 14px; font-weight: 600;">Save…</button>
+<button type="button" onClick="{{ discard }}" style="min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">Discard changes</button>
+<span style="font-size: 12px; color: #9a9aa4;">Save shows Core's diff first. Back to the easy editor: <a href="Main.dc.html">Controls</a></span>
+</div>
+</div>
+
+<aside aria-labelledby="checkTitle" style="flex: 0 0 330px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; border: 1px solid #27272a; background: #18181b;">
+<h2 id="checkTitle" style="margin: 0; font-size: 16px; font-weight: 700;">Check</h2>
+<span style="font-size: 12px; color: #9a9aa4;">{{ checkNote }}</span>
+<sc-for list="{{ issues }}" as="i" hint-placeholder-count="2">
+<div style="{{ i.boxStyle }}">
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: #9a9aa4;">LINE {{ i.line }} · {{ i.section }}</span>
+<span style="font-size: 13px; color: #e4e4e7; line-height: 1.45;">{{ i.text }}</span>
+<sc-if value="{{ i.canFix }}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{ i.fix }}" style="align-self: flex-start; min-height: 34px; padding: 0 14px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.9); background: #ffffff; color: #09090b; font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer;">{{ i.fixLabel }}</button>
+</sc-if>
+</div>
+</sc-for>
+<sc-if value="{{ noIssues }}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 13px; color: #34d399;">No issues. Every reader reads this file as written.</span>
+</sc-if>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: 20px; border: 1px solid #27272a; background: #18181b;">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700;">History</h2>
+<select aria-label="Saved versions" style="min-height: 40px; border-radius: 12px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72); color: #f4f4f5; padding: 0 10px; font-family: inherit; font-size: 13px;">
+<option>21:14 · WebUI · knob 4 press: Resolution → Zebra</option>
+<option>20:50 · outside Apertar (ssh)</option>
+<option>20:31 · gyro page · sync offset</option>
+<option>Before Controls · 28 Oct 19:02</option>
+</select>
+<button type="button" style="align-self: flex-start; min-height: 38px; padding: 0 14px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 13px; font-weight: 600;">Load as draft</button>
+<span style="font-size: 12px; color: #9a9aa4;">20 versions are kept. Loading puts the text in the box; nothing changes until you save.</span>
+</div>
+</aside>
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1140}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.original = [
+      '# Apertar hardware configuration',
+      '# Primary location: /home/pi/apertar-hardware.conf',
+      '',
+      '[ina219]',
+      'enabled=true',
+      'bus=4',
+      'address=0x40',
+      '',
+      '[cfexpress_hat]',
+      'enabled=true',
+      'bus=1',
+      'address=0x34',
+      '',
+      '[storage]',
+      'mount_path=/media/RAW',
+      'pcie_controller=1000110000.pcie',
+      '',
+      '[display]',
+      'ui_width=720',
+      'ui_height=720',
+      'ui_layout=square',
+      'controls_opacity=1.0',
+      'zoom_toggle_factor=4.0',
+      'controls_mode=Light',
+      'rotation=0',
+      'windowed=false',
+      'hdmi_external_only=true',
+      '',
+      '[imu]',
+      'enabled=true',
+      'driver=mpu6050',
+      'bus=10',
+      'address=0x68',
+      'sample_rate_hz=500',
+      'orientation=XYZ',
+      'sync_offset_ms=0',
+      '',
+      '[pcf8574]',
+      'enabled=false',
+      'bus=10',
+      'address=0x20',
+      '',
+      '[gpio]',
+      'enabled=true',
+      'chip=auto',
+      'pull=up',
+      'active_low=true',
+      'd10=record_toggle',
+      'd6=standby',
+      '',
+      '[neorotary4]',
+      'enabled=true',
+      'bus=1',
+      'address=0x49',
+      'poll_ms=20   # faster knobs',
+      'encoder0_cw=iso_up',
+      'encoder0_ccw=iso_down',
+      'encoder1_cw=shutter_up',
+      'encoder1_ccw=shutter_down',
+      'encoder2_cw=wb_up',
+      'encoder2_ccw=wb_down',
+      'encoder3_cw=fps_up',
+      'encoder3_ccw=fps_down',
+      'encoder3_press=resolution',
+      '',
+      '[recording_indicator]',
+      'enabled=true',
+      'target=gpio',
+      'gpiochip=auto',
+      'line=21',
+      'active_high=true',
+      'open_drain=false',
+      '',
+      '[trigger_output]',
+      'enabled=false',
+      'target=gpio',
+      'events=recording_start,still,timelapse_frame',
+      'pulse_ms=80',
+      'line=17',
+      'open_drain=true',
+    ].join('\n');
+    this.state = { text: this.original, checked: true };
+  }
+
+  issuesFor(text) {
+    const lines = text.split('\n');
+    const out = [];
+    let section = '';
+    lines.forEach((raw, i) => {
+      const t = raw.trim();
+      if (/^\[.*\]$/.test(t)) { section = t; return; }
+      if (section === '[ina219]' && /^bus\s*=\s*4\b/.test(t))
+        out.push({ line: i + 1, section, text: 'Bus 4 does not exist on this Pi (buses: 1, 10, 13, 14). Pick a bus that exists, or set enabled=false.', kind: 'error' });
+      const m = /^([A-Za-z0-9_]+)\s*=\s*([^#;]*?)\s+#\s*(.*)$/.exec(t);
+      if (m && section === '[neorotary4]')
+        out.push({ line: i + 1, section, text: 'Comment after the value: the NeoRotary reader ignores "' + m[2] + '   # ' + m[3] + '" and uses its default, 30 ms.', kind: 'warn', fix: { from: i, to: ['# ' + m[3], m[1] + '=' + m[2]] }, fixLabel: 'Fix: move the comment to its own line' });
+    });
+    return out;
+  }
+
+  renderVals() {
+    const st = this.state;
+    const lines = st.text.split('\n');
+    const issues = st.checked ? this.issuesFor(st.text) : [];
+    const marks = {};
+    issues.forEach((i) => { marks[i.line] = i.kind; });
+    const gutter = lines.map((_, i) => ({
+      n: String(i + 1),
+      style: {
+        height: '20px', paddingRight: '10px', color: marks[i + 1] === 'error' ? '#fca5a5' : (marks[i + 1] === 'warn' ? '#fbbf24' : '#6b6b75'),
+        fontWeight: marks[i + 1] ? 700 : 400, background: marks[i + 1] === 'error' ? 'rgba(239, 68, 68, 0.12)' : (marks[i + 1] === 'warn' ? 'rgba(251, 191, 36, 0.12)' : 'transparent'),
+      },
+    }));
+    const dirty = st.text !== this.original;
+    const navItems = ['Favorites', 'Monitoring', 'Record', 'Audio', 'Power', 'System', 'Presets', 'Controls', 'Config', 'Info'].map((label) => ({
+      label,
+      style: {
+        textAlign: 'left', minHeight: '44px', padding: '0 14px', borderRadius: '14px', fontFamily: 'inherit', fontSize: '15px', cursor: 'pointer',
+        fontWeight: label === 'Config' ? 600 : 500, border: label === 'Config' ? '1px solid rgba(255, 255, 255, 0.12)' : '1px solid transparent',
+        background: label === 'Config' ? '#202024' : 'transparent', color: label === 'Config' ? '#ffffff' : '#a1a1aa',
+      },
+    }));
+    return {
+      navItems, gutter,
+      text: st.text,
+      edit: (e) => this.setState({ text: e.target.value }),
+      check: () => this.setState({ checked: true }),
+      discard: () => this.setState({ text: this.original }),
+      issues: issues.map((i) => ({
+        ...i, canFix: !!i.fix, fixLabel: i.fixLabel || '',
+        fix: () => { if (!i.fix) return; const ls = st.text.split('\n'); ls.splice(i.fix.from, 1, ...i.fix.to); this.setState({ text: ls.join('\n') }); },
+        boxStyle: {
+          display: 'flex', flexDirection: 'column', gap: '6px', padding: '12px', borderRadius: '14px',
+          border: i.kind === 'error' ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(251, 191, 36, 0.4)',
+          background: i.kind === 'error' ? 'rgba(239, 68, 68, 0.07)' : 'rgba(251, 191, 36, 0.07)',
+        },
+      })),
+      noIssues: st.checked && issues.length === 0,
+      checkNote: st.checked ? 'Core read the text the way each reader reads its own section.' : 'Not checked since the last edit.',
+      pill: dirty
+        ? { label: 'Unsaved text', style: { borderRadius: '999px', background: 'rgba(251, 191, 36, 0.12)', color: '#fbbf24', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' } }
+        : { label: 'Saved 21:14 · WebUI', style: { borderRadius: '999px', background: 'rgba(52, 211, 153, 0.1)', color: '#34d399', padding: '6px 12px', fontSize: '12px', fontWeight: 600, whiteSpace: 'nowrap' } },
+      textStyle: {
+        flex: '1 1 auto', minWidth: 0, height: (lines.length * 20 + 24) + 'px', boxSizing: 'border-box', padding: '12px 14px', border: 'none', outline: 'none', resize: 'none', overflow: 'hidden',
+        background: 'transparent', color: '#e4e4e7', fontFamily: "'SF Mono', Menlo, monospace", fontSize: '13px', lineHeight: '20px', whiteSpace: 'pre', overflowWrap: 'normal',
+      },
+    };
+  }
+}
+</script>
+</body>
+</html>

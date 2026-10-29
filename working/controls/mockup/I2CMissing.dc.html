@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>I2C devices, bus 1 missing</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+a{color:#79ddff;text-decoration:none}a:hover{color:#bfeeff}
+</style>
+</helmet>
+<div style="width: 1000px; height: 1040px; box-sizing: border-box; padding: 28px; background: radial-gradient(120% 60% at 50% -8%, #27272a 0%, #09090b 46%, #000000 100%); color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif;">
+<section aria-labelledby="i2cTitle" style="border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1); background: #18181b; padding: 20px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; gap: 12px; justify-content: space-between; align-items: flex-start;">
+<div>
+<h2 id="i2cTitle" style="margin: 0; font-size: 20px; font-weight: 700;">I2C devices</h2>
+<p style="margin: 6px 0 0; font-size: 13px; color: #a1a1aa;">Buses on this Pi: 10 · cam0 connector (camera bus), 13 and 14 · HDMI (not for devices), 15 · touch panel (DPI).</p>
+</div>
+<span style="border-radius: 999px; background: rgba(239, 68, 68, 0.14); color: #fca5a5; padding: 6px 12px; font-size: 12px; font-weight: 600; white-space: nowrap;">2 devices unreachable</span>
+</div>
+
+<sc-for list="{{ rows }}" as="r" hint-placeholder-count="3">
+<div style="{{ r.rowStyle }}">
+<div style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 200px; min-width: 0;">
+<span style="font-size: 14px; font-weight: 600;">{{ r.name }}</span>
+<span style="font-size: 12px; color: #9a9aa4;">{{ r.where }}</span>
+</div>
+<span style="{{ r.stateStyle }}">{{ r.state }}</span>
+</div>
+</sc-for>
+
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 14px; border-radius: 16px; border: 1px solid rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.07);">
+<span style="font-size: 15px; font-weight: 700; color: #fecaca;">Bus 1 does not exist</span>
+<span style="font-size: 14px; color: #e4e4e7; line-height: 1.5;">GPIO 2/3 are taken by the DPI overlays vc4-kms-DPI-4inch, waveshare-4dpi, waveshare-touch-4dpi (config.txt lines 76-78). The hat and the NeoRotary 4 on its Qwiic hub are set to bus 1.</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px; padding: 16px; border-radius: 18px; border: 1px solid #27272a; background: #202024;">
+<span style="font-size: 16px; font-weight: 700;">Does this camera use a DPI screen (a panel on the GPIO header)?</span>
+<span style="font-size: 13px; color: #a1a1aa;">DRM says: card1-DPI-1 connected, 1 mode. Information only: it says the same without a panel, so Apertar cannot tell.</span>
+<div style="display: flex; gap: 10px;">
+<button type="button" onClick="{{ pickYes }}" aria-pressed="{{ yesPressed }}" style="{{ yesStyle }}">Yes, a DPI screen</button>
+<button type="button" onClick="{{ pickNo }}" aria-pressed="{{ noPressed }}" style="{{ noStyle }}">No, HDMI only</button>
+</div>
+
+<sc-if value="{{ isYes }}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 14px; color: #e4e4e7; line-height: 1.5; padding: 12px 14px; border-radius: 14px; background: rgba(9, 9, 11, 0.6);">Then bus 1 stays gone: the DPI screen needs GPIO 2/3. Feed the hat's Qwiic hub 3.3 V and use bus 10 with poll 50 ms for the NeoRotary 4.</div>
+</sc-if>
+
+<sc-if value="{{ isNo }}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 10px;">
+<span style="font-size: 14px; color: #e4e4e7;">Then the overlays can go. You run these; Apertar never edits config.txt.</span>
+<div style="position: relative; padding: 14px 16px; border-radius: 14px; border: 1px solid #27272a; background: #0c0c0e; font-family: 'SF Mono', Menlo, monospace; font-size: 12px; line-height: 1.7; color: #e4e4e7; white-space: pre-wrap; word-break: break-all;">sudo cp /boot/firmware/config.txt /boot/firmware/config.txt.$(date +%Y%m%d-%H%M%S)
+sudo sed -i -E 's/^(dtoverlay=(vc4-kms-DPI-4inch|waveshare-4dpi|waveshare-touch-4dpi)([,[:space:]]|$))/#\1/' /boot/firmware/config.txt
+sudo reboot</div>
+<div style="display: flex; gap: 10px; align-items: center;">
+<button type="button" style="min-height: 40px; padding: 0 16px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.9); background: #ffffff; color: #09090b; font-family: inherit; font-size: 13px; font-weight: 600;">Copy commands</button>
+<span style="font-size: 12px; color: #9a9aa4;">Safe to run twice. It also comments the same lines under another filter, such as [pi4].</span>
+</div>
+<span style="font-size: 13px; color: #d4d4d8; line-height: 1.5;"><b>To undo:</b> copy the backup back (sudo cp /boot/firmware/config.txt.20261028-211403 /boot/firmware/config.txt), or with a card reader remove the # on these lines in config.txt on the boot partition.</span>
+<span style="font-size: 13px; color: #d4d4d8; line-height: 1.5;"><b>After the reboot</b> the touch UI moves to HDMI at 720x720. In Config set [display] hdmi_external_only=true, then restart the UI. <a href="Config.dc.html">Open Config at [display]</a></span>
+</div>
+</sc-if>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1000,"height":1040}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { answer: 'no' };
+  }
+
+  renderVals() {
+    const a = this.state.answer;
+    const choice = (active) => ({
+      minHeight: '44px', padding: '0 18px', borderRadius: '999px', fontFamily: 'inherit', fontSize: '14px', fontWeight: 600, cursor: 'pointer',
+      border: active ? '1px solid rgba(255, 255, 255, 0.9)' : '1px solid #27272a', background: active ? '#ffffff' : 'rgba(255, 255, 255, 0.06)', color: active ? '#09090b' : '#f4f4f5',
+    });
+    const bad = { fontSize: '13px', color: '#fca5a5', fontWeight: 500 };
+    const ok = { fontSize: '13px', color: '#34d399', fontWeight: 500 };
+    const row = (red) => ({ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', padding: '12px 14px', borderRadius: '16px', border: red ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid #27272a', background: red ? 'rgba(239, 68, 68, 0.06)' : '#202024' });
+    return {
+      rows: [
+        { name: 'CFE hat', where: '[cfexpress_hat] · bus 1 · missing · 0x34', state: 'no answer: bus 1 does not exist', stateStyle: bad, rowStyle: row(true) },
+        { name: 'NeoRotary 4', where: '[neorotary4] · bus 1 · missing · 0x49', state: 'Lost at 21:20: /dev/i2c-1: No such file or directory', stateStyle: bad, rowStyle: row(true) },
+        { name: 'IMU (MPU6050)', where: '[imu] · bus 10 · 0x68', state: 'Connected since 21:14', stateStyle: ok, rowStyle: row(false) },
+      ],
+      isYes: a === 'yes', isNo: a === 'no',
+      pickYes: () => this.setState({ answer: 'yes' }), pickNo: () => this.setState({ answer: 'no' }),
+      yesPressed: a === 'yes' ? 'true' : 'false', noPressed: a === 'no' ? 'true' : 'false',
+      yesStyle: choice(a === 'yes'), noStyle: choice(a === 'no'),
+    };
+  }
+}
+</script>
+</body>
+</html>

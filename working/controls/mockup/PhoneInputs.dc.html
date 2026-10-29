@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Controls on a phone, NeoRotary knobs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px; padding: 18px 12px 0; background: #09090b; color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif; overflow: hidden;">
+<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 0 4px;">
+<div>
+<h1 style="margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em;">Controls</h1>
+<p style="margin: 4px 0 0; font-size: 13px; color: #a1a1aa;">Buttons, knobs, I2C devices and outputs.</p>
+</div>
+<button type="button" style="min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 14px; font-weight: 600;">Back</button>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 14px 12px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.1); background: #18181b;">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+<span style="font-size: 16px; font-weight: 700;">NeoRotary 4</span>
+<span style="font-size: 12px; color: #a1a1aa;">bus 1 · 0x49</span>
+<span style="border-radius: 999px; background: rgba(52, 211, 153, 0.1); color: #34d399; padding: 4px 9px; font-size: 11px; font-weight: 600;">Connected since 21:14</span>
+</div>
+<div style="display: flex; gap: 8px; align-items: center;">
+<button type="button" onClick="{{ toggleListen }}" aria-pressed="{{ listenPressed }}" style="{{ listenStyle }}">{{ listenLabel }}</button>
+<span style="font-size: 12px; color: #9a9aa4;">{{ listenNote }}</span>
+</div>
+
+<sc-for list="{{ knobs }}" as="k" hint-placeholder-count="4">
+<div style="{{ k.rowStyle }}">
+<div style="display: flex; align-items: center; gap: 8px;">
+<span style="font-size: 14px; font-weight: 700; flex: 1 1 auto;">{{ k.name }}</span>
+<sc-if value="{{ k.moved }}" hint-placeholder-val="{{ false }}">
+<span style="border-radius: 999px; background: rgba(121, 221, 255, 0.14); color: #79ddff; padding: 4px 9px; font-size: 11px; font-weight: 700;">Moved just now</span>
+</sc-if>
+</div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #a1a1aa;">Turn adjusts
+<select style="min-height: 44px; border-radius: 12px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.72); color: #f4f4f5; padding: 0 10px; font-family: inherit; font-size: 14px;">
+<option selected="selected">{{ k.turn }}</option>
+</select>
+</label>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+<span style="font-size: 12px; color: #a1a1aa; flex: 0 0 40px;">Press</span>
+<sc-if value="{{ k.hasPress }}" hint-placeholder-val="{{ false }}">
+<span style="display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 6px 0 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.18); background: #2a2a30; font-size: 13px; font-weight: 600;">{{ k.press }}
+<button type="button" aria-label="Remove {{ k.press }}" style="width: 26px; height: 26px; border-radius: 999px; border: none; background: rgba(255, 255, 255, 0.08); color: #d4d4d8; font-size: 14px;">×</button>
+</span>
+</sc-if>
+<button type="button" style="min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed rgba(255, 255, 255, 0.25); background: transparent; color: #d4d4d8; font-family: inherit; font-size: 13px; font-weight: 600;">+ action</button>
+</div>
+<span style="font-size: 11px; color: #8e8e98; font-family: 'SF Mono', Menlo, monospace;">{{ k.keys }}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { listen: true };
+  }
+
+  renderVals() {
+    const st = this.state;
+    const K = [['ISO', ''], ['Shutter', ''], ['WB', ''], ['FPS', 'Resolution']];
+    const knobs = K.map(([turn, press], i) => {
+      const moved = st.listen && i === 3;
+      return {
+        name: 'Knob ' + (i + 1), turn, press, hasPress: !!press, moved,
+        keys: 'encoder' + i + '_cw/_ccw' + (press ? ' · encoder' + i + '_press' : ''),
+        rowStyle: {
+          display: 'flex', flexDirection: 'column', gap: '8px', padding: '10px', borderRadius: '16px',
+          background: moved ? 'rgba(121, 221, 255, 0.08)' : '#202024', border: moved ? '1px solid rgba(121, 221, 255, 0.5)' : '1px solid #27272a',
+        },
+      };
+    });
+    return {
+      knobs,
+      toggleListen: () => this.setState({ listen: !st.listen }),
+      listenPressed: st.listen ? 'true' : 'false',
+      listenLabel: st.listen ? 'Listening' : 'Listen',
+      listenNote: st.listen ? 'Turn or press a knob: its row lights.' : 'Find out which knob is which.',
+      listenStyle: { minHeight: '40px', padding: '0 14px', borderRadius: '999px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 700, cursor: 'pointer', border: st.listen ? '1px solid #79ddff' : '1px solid #27272a', background: st.listen ? 'rgba(121, 221, 255, 0.14)' : 'rgba(255, 255, 255, 0.06)', color: st.listen ? '#79ddff' : '#f4f4f5' },
+    };
+  }
+}
+</script>
+</body>
+</html>
