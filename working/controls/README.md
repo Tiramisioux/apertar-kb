@@ -6,8 +6,8 @@ the I2C bus settings that make his NeoRotary-on-the-CFE-hat fix work; offer both
 manual editing for advanced users.
 
 Status: designed, critiqued and revised in a cloud session. **Nothing is built.** Trees read: Core `eb9cc39`, Apertar-UI
-`d8098d0`, Cinemate `d6cc93e`, the KB. Hand-over to Claude in VS Code: `HANDOFF-PROMPT.md`; for Sonnet, `HANDOFF-PROMPT-SONNET.md` (exact sections to read, hard rules,
-a stop after every step).
+`d8098d0`, Cinemate `d6cc93e`, the KB. Hand-over to Claude in VS Code: `HANDOFF-PROMPT.md`; for Sonnet, `HANDOFF-PROMPT-SONNET.md` (Claude writes the code on a `controls` branch; Patrik
+tests, confirms and gives feedback at a check-in after every step).
 
 | File | What |
 | --- | --- |
