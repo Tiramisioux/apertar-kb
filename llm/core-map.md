@@ -418,6 +418,9 @@ Idiom: `if (request.method == "<M>" && request.path == "<p>")` (exact) or `reque
 | `GET /icons/<name>` (prefix) | 7124 | PNG from `webIconsDirectory()` |
 | `GET /api/state` | 7154 | `buildWebStateJson` |
 | `GET /api/media` | 7161 | `buildMediaLibraryJson` |
+| `GET /api/media/clip?kind=folder&id=` | (T47, after 2026-10-29 line numbers shift ~+2000: grep the path) | `clipInfoJson` over `clipFactsCache().get`; hold: cached facts or 409 |
+| `GET /api/media/frame?kind=&id=&n=&w=&v=` | (T48) | `playback::frameJpeg`; headers `X-Frame-Number/Index/Count`, `X-Histogram`, `X-Frame-Source`, `X-Decode-Ms`; 409 hold, 503 busy |
+| `GET /api/media/file?kind=&id=&name=<clip>.wav` | (T51) | `streamFileRangeToClient`; 200/206/416 with Range, 409 in a hold |
 | `GET /api/config` | 7168 | `buildHardwareConfigFileJson` |
 | `POST /api/config` | 7175 | `extractJsonStringField(text)` → `saveHardwareConfigFile` |
 | `GET /api/media/download?kind=&id=` | 7197 | `streamFileToClient` / zip of a folder |
@@ -438,6 +441,8 @@ Idiom: `if (request.method == "<M>" && request.path == "<p>")` (exact) or `reque
 | File | Lines | One line | Entry points |
 | --- | --- | --- | --- |
 | `src/main.cpp` | 141 | CLI flags, signal self-pipe, start/wait/stop | `main` |
+| `src/playback/{PlaybackHold,ClipFrames,DngTags,ClipProbe,DngFrameReader,RawRender,DecodeSlots}.hpp`, `PlaybackFrames.{hpp,cpp}` | (T47, T48; added 2026-10-29) | WebUI playback: the hold rule and yield window, frame lists and holes, DNG tags, per-clip facts and the cache, the sample reader, the touch UI's look, decode slots, one frame as a JPEG | `playbackHoldFor`, `PlaybackYield`, `listFrames`, `readDngInfo`, `probeClip`, `ClipFactsCache`, `frameJpeg` |
+| `third_party/liblj92/` | 3 files | the touch UI's lossless-JPEG decoder, byte-identical (`lj92.c` is built as C: CMake `LANGUAGES C CXX`) | `lj92_open`, `lj92_decode` |
 | `src/ApertarCoreApp.hpp` | 179 | App class, options, owned members (110–124) | `start`, `stop`, `wait`, `requestShutdown` |
 | `src/cdng/CdngEncoder.{hpp,cpp}` | 203 / 1901 | CinemaDNG writer: uncompressed, packed CSI-2, PiSP, LJ92 tiles | `CdngEncoder::writeDngFile`, `prepareRawLayout`, `writeRawPayload`, `losslessTileRows`; `Csi2RawConverter::unpack10Row/unpack12Row` |
 | `src/cdng/LosslessJpegEncoder.{hpp,cpp}` | 46 / 410 | LJ92 (SOF3) encoder | `encode`, `begin`, `appendRow`, `finish` |

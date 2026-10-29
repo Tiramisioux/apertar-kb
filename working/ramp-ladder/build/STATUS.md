@@ -22,5 +22,5 @@ Saved as work in progress. Nothing here is on Apertar-Core or Apertar-UI GitHub.
 
 ## Playback project (WebUI playback like the touch UI's clip browser and player)
 
-`working/playback/`: reader reports, then design, critiques and v2. Tutorials start at T40.
+`working/playback/`: reader reports, then design, critiques and v2. Tutorials T46-T54; T47-T51 are built (`working/playback/HANDOFF-next.md`).
 Patrik's decision: the WebUI playback mirrors the touch UI's clip browser and player; Cinemate gives the browser mechanics.

@@ -74,3 +74,15 @@ Design: Core `eb9cc39`, touch UI `d8098d0`. The Pi on 2026-10-29: Core `2f4f0f6`
 ## Still open
 
 nothing in the design's list. Open for T46: which phone (Q10).
+
+## Where the build differs from the design (2026-10-29)
+
+| Design | Built | Why |
+| --- | --- | --- |
+| facts cache keyed on (folder mtime, entry count) | the folder mtime alone | a readdir of 105,000 entries costs 3.7 s on Patrik's exFAT card; the mtime moves with the newest entry (checked) |
+| ask ahead by the round trip, at most two frames | the round trip, at most 0.35 s | two requests are ever in flight; with the sound as the clock a lossless picture trailed it by 7 frames; now 0-2 |
+| hold the frame before over a hole | black over a hole (R2); Core's thumbnails still hold | Patrik, 2026-10-29 |
+| nine metadata rows + SOUND, FORMAT, DROPPED | plus TIMECODE (R1/O10) | Patrik |
+| card: duration pill only | plus DROP N and the recorded timecode | O5, R1 |
+| T47-T54 as tutorials Patrik types | Claude built T47-T51 (T46 measured with him) | Patrik, 2026-10-29: "to T48 yourself", "go ahead", "move on" |
+| `sketch/` copied from the KB | `working/tools/playback/` (headers, tests, `ClipProbe.hpp` and `PlaybackFrames.*` written new) | the sketch had no ClipProbe or frame service |

@@ -646,3 +646,18 @@ Entry format:
   lossless 30; Clear HDR 16-bit: 25, lossy 0). **Confirmed.**
 - An active ladder refuses `set_resolution`, `set_raw_bit_depth`, `set_clear_hdr` with the ladder message; with the ladder off they
   work again. **Confirmed.**
+
+## 2026-10-29: WebUI playback (T46-T51), Core `bc5d29d`..`727c9c8` (Patrik's Pi, CM5, NVMe exFAT PCIe Gen 3 x1)
+
+Full tables in `working/playback/measurements.md`; the findings Patrik confirmed by trying them ("works well", "sound works"):
+
+- One 4K frame, one worker, 640 w: Clear HDR 16-bit uncompressed 50-64 ms; SDR 12-bit lossless 166-190 ms (the Pi is about as fast as the dev host). A cold
+  NVMe read of one 16.6 MB frame: 800 MB/s. **Confirmed.**
+- `/api/media` took 6.8 s on every call (41 folders, 105,676 files). A readdir of 105,000 exFAT entries costs 3.7 s, so a cache that counts entries is as slow;
+  the exFAT folder mtime moves with its newest entry, so the facts cache keys on it: 4.2 s once after a Core restart, then 20 ms. **Confirmed.**
+- The viewer plays Clear HDR 16-bit uncompressed at 24 of 25 fps and lossless SDR at 9-11 fps, the picture within 0-2 frames of the sound (the sound is the clock). **Confirmed.**
+- C0016: 4,913 frames in a span of 5,223 (310 missing in 30 holes, 5.9 %); its WAV is 209 s, the span, not the file count. **Confirmed.**
+- In a take: `playback_hold` = `recording` within the command; frame, clip and file routes 409; a running download stops within 0.3 s of `record_start`;
+  downloads 409, deletes refused; a 5 s take after all that: 90 of 90 frames, 0 dropped. **Confirmed.**
+- A frame can be a hole (never written) or 0 bytes: the viewer draws it black (Patrik's requirement R2). Free Run takes carry the time of day as their recorded
+  timecode, Rec Run takes 00:00:00:00 (the card shows it). **Confirmed.**

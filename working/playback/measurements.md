@@ -153,3 +153,5 @@ pause stops it, a seek to 50 % moves sound and picture (104 s of 209 s), a hold 
 the picture's lag in frames sampled over 5 s: **lossless C0016 (11 fps drawn): 0-2 frames (0.08 s at most)**, before the look-ahead
 fix 7 frames (0.28 s); **Clear HDR 16-bit uncompressed C0021 (24 fps drawn): 0 frames**. Not tested: Safari and Firefox, a phone,
 Bluetooth latency (M6, M12 skipped by Patrik), a ramp take's "sound off" line.
+
+**Patrik, 2026-10-29: "sound works"** (his browser; he did not say which, nor on a phone). The look-ahead build (`727c9c8`) was the one he ran.
