@@ -87,3 +87,21 @@ Design change (T47): the cache key is the folder's mtime alone. Sample facts, C0
 | `playback_hold` in `/api/state` | `""` idle; `"recording"` immediately after `record_start` (the yield window, before the camera's own flag) and during the take; back to `""` 2-3 s after stop (the window's 1.5 s tail) |
 | in a 4 s take (`cDNG_26-10-29_C0001`, 46 of 46 frames written, 0 dropped) | list answers from the cache in 16 ms with `"held":"recording"` and 39 items; `/api/media/clip` of a cached clip: 200 with `held`; of the take being written: **409** `Playback held: recording.` |
 | list after the take | 28 ms; the test take was removed afterwards |
+
+## T48 live on the Pi (Claude ran it; CONFIRMED), Core `8d6aae9`
+
+`GET /api/media/frame?kind=folder&id=&n=&w=`, cold, from the NVMe, Core's own HTTP time and `X-Decode-Ms`:
+
+| Take, number, width | Time | Decode | JPEG |
+| --- | --- | --- | --- |
+| C0021 (Clear HDR 16-bit uncompressed) n=800, 640 w | 83 ms | 63.5 ms | 9.4 KB |
+| C0021 n=800, 1920 w (paused) | 272 ms | 271 ms | 58.9 KB |
+| C0016 (SDR 12-bit lossless) n=2000, 640 w | 237 ms | 166 ms | 19.7 KB |
+| C0016 n=2000, 960 w | 203 ms | 201 ms | 36.7 KB |
+| C0016 n=3, 640 w (frame 3) | 171 ms | 170 ms | 24.6 KB |
+| C0016 n=2000, 640 w again | **0.8 ms** | cache | |
+
+Same numbers as the bench (M1): 64 ms vs 64 ms (16-bit uncompressed), 166-170 ms vs 188 ms (lossless). With two workers: about
+25 fps for Clear HDR 16-bit, 10-12 fps for lossless (PROBABLE; not yet measured with two clients). Errors: n past the end 404
+"Frame not found."; width 500 400; unknown clip 404 `gone`; stale `v` 404 "The clip changed. Refresh Media." The pictures were
+looked at: the touch UI's look (flat, ungraded), the right clip, no artefacts. Host test `frames_test.cpp`: 14 of 14 on the Pi.
