@@ -25,3 +25,7 @@ Reading: the Pi is about as fast as the host (the design guessed 2× slower). Re
 workers: uncompressed and Clear HDR 16-bit reach the 25 fps of the take; lossless about 10 fps (PROBABLE, not run yet).
 Q1 stays "yes"; O11 (preview track) not needed on this evidence. Still to measure: two workers together, a long scroll of
 real frames (M7-style), M2-M19.
+
+## M2, M5, M12 (touch half), M13: not done
+
+No touch screen on this Pi (Patrik, 2026-10-29). See `decisions.md`, "Constraint".

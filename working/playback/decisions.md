@@ -52,6 +52,14 @@ With Q28 and Q29: W2 and O19 are now also in, in addition to O1, O4, O5, O10.
 | R1 | **The Clip Browser card also shows the clip's timecode.** | T47: each `/api/media` item gets `timecode_start` ("14:03:22:07"), read from the first frame's DNG TimeCodes tag (51043, the same read O10 uses in the viewer); MLV from its timecode record, ProRes/H.264/sound from their own tag where there is one, else the field is empty and the line hidden. T49: one more line in the card footer (B18) after the shot date, in the touch UI's small muted style. Open: whether the touch UI's card gets it too (T54). It is the *File timecode* the take was recorded with (Free Run = time of day, Rec Run = starts at 00:00:00:00), so a Rec Run take shows 00:00:00:00. |
 | R2 | **Dropped frames show as black holes in the viewer.** | The design holds the frame before over a hole or a 0-byte frame (§2.6, §3.6 Play). Instead: when the clock is on a number in `holes` (never written, or 0-byte), the picture is **black**, no frame request, sound keeps playing on the number clock. A frame the player merely did not manage to draw (a slow decode, skipped) still holds the last picture, and O4 counts it as "skipped", so the two never get mixed up: black = the camera dropped it (DROP N, O5), held = the player was slow. T50. Paused or scrubbed onto a hole: black with the text "Frame 6 dropped". The touch UI keeps holding the previous frame until T54 (open: should T54 make it black too, so both screens agree? ask at T54). |
 
+## Constraint (Patrik, 2026-10-29): no touch screen
+
+Patrik's Pi has **no touch screen**, only the WebUI in a browser and the HDMI output. So T46's M2, M5 (standby while the touch
+screen plays), M12's touch half (clap sync today) and M13 (touch preview while a browser plays) are **not measurable**; the
+touch UI's per-frame cost is the bench's (same decoder), and the WebUI side is measured in the browser. **T54 (touch UI)
+cannot be tried on a touch screen here**: it can only be built and checked by compiling and by a short HDMI/mouse look. Ask at
+T54 whether it stays, shrinks to the code changes only, or waits for a touch screen.
+
 ## Note for O10 (added 2026-10-29)
 
 The timecode the DNGs carry is now its own setting: **File timecode** (Free Run or Rec Run), apart from the UI timecode
