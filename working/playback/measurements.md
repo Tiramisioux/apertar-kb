@@ -29,3 +29,16 @@ real frames (M7-style), M2-M19.
 ## M2, M5, M12 (touch half), M13: not done
 
 No touch screen on this Pi (Patrik, 2026-10-29). See `decisions.md`, "Constraint".
+
+## M3. Small requests per second (Patrik ran it; CONFIRMED)
+
+`/icons/play.png`, 100 requests, one at a time and three at once (`xargs -P 3`).
+
+| From | one at a time | three at once |
+| --- | --- | --- |
+| the Pi, `127.0.0.1` | 1.14 s = 88 req/s | 0.47 s = 213 req/s |
+| the Mac over the LAN, `apertar.local` | 1.9-2.1 s = about 50 req/s | 0.97-1.03 s = about 100 req/s |
+
+Reading: about 20 ms per request over the LAN (a new TCP connection each); the Pi's numbers are mostly `curl` start-up, so
+Core's server is at least that fast. The prediction (well above 40 req/s) holds. Decision: the look-ahead of two lanes is
+safe on the network; the decode (50-190 ms a frame) is the limit, not the server.
