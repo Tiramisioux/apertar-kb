@@ -1,6 +1,6 @@
 # Controls project: plan summary (one page)
 
-2026-10-28. Full design: `design-controls.md` (same folder). Core `eb9cc39`, touch UI `d8098d0`, Cinemate `d6cc93e`.
+2026-10-28. Full design: `design-controls.md` (same folder). Core `0296ed1`, touch UI `5aab7e2`, Cinemate `d6cc93e`.
 Host-tested sketch: `sketch/` (51 of 51 checks).
 
 ## Recommendation

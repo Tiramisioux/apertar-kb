@@ -3,10 +3,10 @@
 2026-10-28, code critic pass. Read-only on every tree. The only file written is this one. Scratch builds went to
 `scratchpad/critic-build/` (test programs, an extracted page script).
 
-Trees: Core `scratchpad/controls/core-tip` `eb9cc39` (`App` = `src/ApertarCoreApp.cpp`, `App.hpp`, `HW/` =
+Trees: Core `scratchpad/controls/core-tip` `0296ed1` (`App` = `src/ApertarCoreApp.cpp`, `App.hpp`, `HW/` =
 `src/hardware/`, `Web` = `src/web/WebControlPage.cpp`, `WS` = `src/web/WebServer.cpp`, `CS` =
 `src/ipc/ControlServer.cpp`, `CP` = `src/ipc/ControlProtocol.cpp`, `SF` = `src/util/SettingsFile.hpp`). Touch UI
-`scratchpad/controls/ui-tip` `d8098d0` (`UI:`). KB `/home/user/apertar-kb` `e35ffa7` (`tutorial.py` =
+`scratchpad/controls/ui-tip` `5aab7e2` (`UI:`). KB `/home/user/apertar-kb` `b47f700` (`tutorial.py` =
 `tutorials/tutorial.py`, `core.py` = `working/tools/core.py`). Sketch = `scratchpad/controls/sketch/`.
 
 Labels: **CONFIRMED** = I opened the line or ran the command. **PROBABLE** = derived; the derivation is given.
@@ -402,7 +402,7 @@ bridges at construction, network helper at `UI:src/WifiBridge.cpp:129`). CONFIRM
 ### G. WebUI size and approach
 
 **G1. Major: the tip has no pointer-drag code.**
-- **Problem.** `setPointerCapture` and `pointercancel` occur 0 times in `Web@eb9cc39`, and once in the unmerged T34
+- **Problem.** `setPointerCapture` and `pointercancel` occur 0 times in `Web@0296ed1`, and once in the unmerged T34
   worktree. CONFIRMED.
 - **Fix.** T40 either depends on T34 being on the tip or brings its own ~60-line drag helper. Say which.
 

@@ -9,8 +9,8 @@ design the Apertar version. Other readers cover Apertar Core, the touch UI and t
 | --- | --- | --- |
 | `/home/user/tiramisioux/cinemate` (branch `dev`) | `d6cc93e` | paths are relative to the repo; every Cinemate citation is `@d6cc93e` |
 | `/home/user/tiramisioux/cinemate-handbook` | `c99ff77` | `HB:` |
-| `/home/user/apertar-kb` | `c15e422` | `KB:` |
-| Apertar Core at the cinemate-port tip | `eb9cc39` | `Core:` (cited only to place Cinemate's ideas) |
+| `/home/user/apertar-kb` | `080c022` | `KB:` |
+| Apertar Core at the cinemate-port tip | `0296ed1` | `Core:` (cited only to place Cinemate's ideas) |
 
 **Labels:** CONFIRMED means I opened the line(s) cited. PROBABLE means derived, and the
 derivation is stated. UNCONFIRMED means not checked. "SIM" means I ran the code on the host

@@ -7,7 +7,7 @@ Trees (all citations are at these commits):
 
 | Short name | Tree | Commit |
 | --- | --- | --- |
-| `CC`, `App`, `Web`, `Types`, `CP`, `GAI` | `scratchpad/tip-core` (`src/camera/CameraController.cpp`, `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `include/apertar/core/Types.hpp`, `src/ipc/ControlProtocol.cpp`, `src/hardware/GroveAnalogInput.cpp`) | `119d0bb` (= `6ae70b5` + T31 `5f38585` + T32 `cba1963`, `119d0bb`) |
+| `CC`, `App`, `Web`, `Types`, `CP`, `GAI` | `scratchpad/tip-core` (`src/camera/CameraController.cpp`, `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `include/apertar/core/Types.hpp`, `src/ipc/ControlProtocol.cpp`, `src/hardware/GroveAnalogInput.cpp`) | `119d0bb` (= `3c4f07d` + T31 `5f38585` + T32 `cba1963`, `119d0bb`) |
 | `CB`, `QML`, `SP` | `scratchpad/verify2/home/ApertarUI` (`src/ApertarControlBridge.cpp`, `qml/CameraPage.qml`, `qml/SettingsPage.qml`) | `34499f1` |
 | KB | `scratchpad/verify3` | `8b655da` |
 | patches, research | `scratchpad/apertar-kb-speed-ramp-2026-10-27/kb/working/` | export, no git |

@@ -1,6 +1,6 @@
 # Mode Ladder UI: the approved design against the Pi tree (2026-10-28)
 
-Pi tree: Core `ac48013`, UI `fb8ca36` (`cinemate-port`, local). Design: `UI-DESIGN.md` + the mockup. "Core" = something Core must
+Pi tree: Core `920beb0`, UI `c716dec` (`cinemate-port`, local). Design: `UI-DESIGN.md` + the mockup. "Core" = something Core must
 provide first. Items marked **ASK** conflict with an earlier decision or are open.
 
 ## Settings > Record (WebUI)
@@ -75,9 +75,9 @@ Patrik's.
 - Claude builds step by step (not tutor mode); Patrik restarts, looks and decides.
 - **Changed later the same day (Patrik): an active ladder blocks manual resolution changes** (the design's lock), replacing the Q2 answer
   above: Core refuses `set_resolution`, `set_raw_bit_depth`, `set_clear_hdr`; the UIs grey Resolution, Crop, Bit Depth and
-  Clear HDR with "Mode Ladder on: the FPS picks the resolution." and the line links to the Mode Ladder card (`dd4cb24`).
+  Clear HDR with "Mode Ladder on: the FPS picks the resolution." and the line links to the Mode Ladder card (`09256a7`).
 
-## WebUI built (2026-10-29, Core `cbeeb9d`..`a9abd76`, Pi `cinemate-port`)
+## WebUI built (2026-10-29, Core `1ef94fe`..`8050d56`, Pi `cinemate-port`)
 
 The WebUI part of the design is done. Where it ended up differing from `UI-DESIGN.md` (all Patrik's calls):
 

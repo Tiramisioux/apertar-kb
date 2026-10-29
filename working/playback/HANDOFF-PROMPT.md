@@ -20,8 +20,8 @@ Then read, in this order:
    routes and the yield-to-recording rule, the plan, the measurements, and the questions.
 3. `working/playback/r2-apertar-ui-player.md`: the touch UI's player, which the WebUI copies.
 4. `working/playback/changes-from-critique.md` where you doubt a decision.
-5. The sketch, `working/playback/sketch/`: build lines are at the top of each `.cpp`. It was written against Core `eb9cc39`
-   and touch UI `d8098d0`; tell me if my trees have moved.
+5. The sketch, `working/playback/sketch/`: build lines are at the top of each `.cpp`. It was written against Core `0296ed1`
+   and touch UI `5aab7e2`; tell me if my trees have moved.
 
 What I want from you, in this order:
 1. Go through my questions with me, one at a time, with the design's default and what changes if I say otherwise. First

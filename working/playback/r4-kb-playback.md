@@ -18,10 +18,10 @@ needed confirming or had gone stale. Each of those is marked "(tip check)".
 
 | Short | Tree | Commit |
 | --- | --- | --- |
-| `kb:` | Apertar KB `/home/user/apertar-kb` | `019fb72` (HEAD). STATUS.md last changed `dbcbfca`. working/controls and working/playback last changed `a08da9a` |
+| `kb:` | Apertar KB `/home/user/apertar-kb` | `0474ba7` (HEAD). STATUS.md last changed `24a00da`. working/controls and working/playback last changed `0870615` |
 | `hb:` | Cinemate handbook `/home/user/tiramisioux/cinemate-handbook` | `c99ff77` |
-| `core:` | Apertar-Core, Patrik's GitHub `cinemate-port` tip | `eb9cc39` |
-| `ui:` | Apertar-UI, Patrik's GitHub `cinemate-port` tip | `d8098d0` |
+| `core:` | Apertar-Core, Patrik's GitHub `cinemate-port` tip | `0296ed1` |
+| `ui:` | Apertar-UI, Patrik's GitHub `cinemate-port` tip | `5aab7e2` |
 
 - **CONFIRMED**: I opened the cited line and it says this. For a `kb:` or `hb:` line, that means *the KB or handbook records
   this*. When the KB's own label for the underlying code fact is weaker, I say so in brackets: [KB: probable],
@@ -29,12 +29,12 @@ needed confirming or had gone stale. Each of those is marked "(tip check)".
 - **PROBABLE**: derived. The derivation is given.
 - **UNCONFIRMED**: nothing settles it. The command that would settle it is given.
 - Most `kb:` code refs are against `upstream-1.6.0` (kb:llm/README.md:16, :57-58).
-  - **Touch-UI player refs still hold at `ui:d8098d0`** (tip check, CONFIRMED). `git log` on `qml/ClipBrowserPage.qml`,
+  - **Touch-UI player refs still hold at `ui:5aab7e2`** (tip check, CONFIRMED). `git log` on `qml/ClipBrowserPage.qml`,
     `qml/ClipPlayerPage.qml`, `qml/Main.qml`, `src/playbackcontroller.*`, `src/cliplistmodel.*`, `src/cdngimageprovider.cpp`,
     `src/dngdecoder.cpp`, `src/MlvReader.*`, `src/VideoPlayback*.cpp` and `src/main.cpp` shows only the 1.6.0 import commits
     (`8847105`, `ac2b412`, `665657c`). The line counts match the KB: 1025 / 2272 / 1294 / 642.
   - **Core refs have drifted.** `WebControlPage.cpp` has 7 commits since 1.6.0, and `ApertarCoreApp.cpp` is now 11 493 lines.
-    I re-grepped the WebUI anchors at `eb9cc39` (§3.1).
+    I re-grepped the WebUI anchors at `0296ed1` (§3.1).
 
 ---
 
@@ -42,7 +42,7 @@ needed confirming or had gone stale. Each of those is marked "(tip check)".
 
 1. **Patrik's decision** (CONFIRMED, kb:working/ramp-ladder/build/STATUS.md:22-25): "the WebUI playback mirrors the touch
    UI's clip browser and player; Cinemate gives the browser mechanics". Playback tutorials start at **T40**.
-2. **Precedent** (CONFIRMED, core:`6ae70b5`, `87011d4` commit bodies). Twice already, Patrik settled a WebUI vs touch-UI
+2. **Precedent** (CONFIRMED, core:`3c4f07d`, `bda2066` commit bodies). Twice already, Patrik settled a WebUI vs touch-UI
    disagreement the same way: the touch UI's model wins, and it moves into Core so the WebUI renders Core's answer.
    - "time left rounds down, like the touch UI"
    - "estimatedRawBytesPerSecond is the touch UI's per-frame model"
@@ -52,7 +52,7 @@ needed confirming or had gone stale. Each of those is marked "(tip check)".
    no reader for them today (PROBABLE: the KB's map of Core's small dirs lists only encoders).
 4. **The WebUI already has a "Clip browser" overlay**: list, filter, sort, select, download, delete. It is backed by
    `GET /api/media`, but there is no frame view (CONFIRMED, kb:llm/core-map.md:170, :196, :218, :242-250; anchors re-found at
-   `core:eb9cc39`, §3.1).
+   `core:0296ed1`, §3.1).
 5. **Apertar's DNGs carry no embedded thumbnail** (PROBABLE, tip check). Cinemate's whole browser mechanism serves the DNG's
    IFD1 thumbnail and refuses to raw-decode (hb:lessons/hardware-log.md:1523-1532). So Cinemate's mechanics cannot be copied
    unchanged. They need either a thumbnail in Core's writer, which costs write bandwidth, or a server-side decode.
@@ -96,13 +96,13 @@ needed confirming or had gone stale. Each of those is marked "(tip check)".
 | P1 | Brief: "port the playback function from cinemate, in the most Apertar like style" | kb:working/playback/r1-cinemate-playback.md:3 (quoting the brief) | CONFIRMED (as recorded) |
 | P2 | Decision 2026-10-28: "make the playback in web ui similar to the current touch ui"; KB status: "Patrik's decision: the WebUI playback mirrors the touch UI's clip browser and player; Cinemate gives the browser mechanics." | kb:working/playback/r2-apertar-ui-player.md:3; kb:working/ramp-ladder/build/STATUS.md:22-25 | CONFIRMED |
 | P3 | Playback tutorials start at T40, after reader reports, design, critiques and v2 | kb:working/ramp-ladder/build/STATUS.md:24 | CONFIRMED |
-| P4 | When the WebUI and the touch UI disagree, the WebUI follows the touch UI, and the shared logic moves into Core. Patrik's own commits: `87011d4` "web: time left rounds down, like the touch UI" ("the HDMI display (touch UI) truncated 35.96 min to 35 while the WebUI showed 36"); `6ae70b5` "estimatedRawBytesPerSecond is the touch UI's per-frame model" | core:`87011d4`, `6ae70b5` commit bodies (author Patrik Eriksson, 2026-10-27) | CONFIRMED (commits); the general rule is PROBABLE (two instances) |
+| P4 | When the WebUI and the touch UI disagree, the WebUI follows the touch UI, and the shared logic moves into Core. Patrik's own commits: `bda2066` "web: time left rounds down, like the touch UI" ("the HDMI display (touch UI) truncated 35.96 min to 35 while the WebUI showed 36"); `3c4f07d` "estimatedRawBytesPerSecond is the touch UI's per-frame model" | core:`bda2066`, `3c4f07d` commit bodies (author Patrik Eriksson, 2026-10-27) | CONFIRMED (commits); the general rule is PROBABLE (two instances) |
 | P5 | A knob press that opens the clip browser is on his learning path (T13, "UI-only action", planned) | kb:llm/tutoring.md:89 | CONFIRMED |
 | P6 | Hardware action `clip_browser` already has the alias **`playback`** (also `browser`) | kb:working/controls/r2-apertar-core-hw.md:355 | CONFIRMED (as recorded) |
 | P7 | Adjacent WebUI preference: **keep** the WebUI "Camera settings" pane as a quick-access menu in the field ("it is not replaced") | kb:working/ramp-ladder/README.md:28-29 | CONFIRMED. That this extends to "add playback without replacing existing panes" is PROBABLE |
 | P8 | Adjacent style pattern: "Cinemate-style, adapted to the Apertar style"; Patrik wants authored, ordered values rather than derived ones | kb:working/ramp-ladder/README.md:18; kb:working/ramp-ladder/r2-cinemate.md:205-206 | CONFIRMED (other projects) |
 | P9 | His medium is exFAT on the CFE NVMe ("yes, lets keep exfat") | kb:lessons/hardware-log.md:61 | CONFIRMED |
-| P10 | His shooting modes are 4K Clear HDR 16-bit at 25 fps (uncompressed) and 4K SDR 12-bit up to 50 (lossless). The player must handle both | kb:working/ramp-ladder/README.md:12-16; core:`eb9cc39` title "Clear HDR on = uncompressed, off = lossless" | CONFIRMED |
+| P10 | His shooting modes are 4K Clear HDR 16-bit at 25 fps (uncompressed) and 4K SDR 12-bit up to 50 (lossless). The player must handle both | kb:working/ramp-ladder/README.md:12-16; core:`0296ed1` title "Clear HDR on = uncompressed, off = lossless" | CONFIRMED |
 | P11 | He wants to learn by typing changes himself; the work stays off GitHub | kb:tutorials/README.md:3-5; kb:working/prompt-start-port-tutorials.md:4-7, :13; kb:working/ramp-ladder/build/STATUS.md:3 | CONFIRMED |
 
 Nothing else in the KB states a playback-specific preference: wording, colour handling, audio, or which Cinemate extras he wants.
@@ -121,7 +121,7 @@ These are open for the design to ask (§9).
 | Screens: `ClipBrowserPage.qml` (1025, "Clip grid over `/media/RAW`") and `ClipPlayerPage.qml` (2272, "DNG/MLV/movie playback") | kb:architecture/ui.md:67-68 | CONFIRMED |
 | No StackView. `currentPage` = `"camera"` / `"browser"` / `"player"` plus Loaders. `CameraPage` is always alive | kb:llm/ui-map.md:169; kb:architecture/ui.md:280 | CONFIRMED |
 | Browser Loader `active: currentPage === "browser"`, back goes to camera. Player Loader `"player"`, back goes to browser. `selectClip` sets `"player"` | kb:llm/ui-map.md:182, :186-187; kb:architecture/ui.md:288-289 | CONFIRMED |
-| Entry points: the `clipBrowserBtn` on the camera page (`CameraPage.qml:3690`, signal `openClipBrowserRequested` `:9`), and the `hardware_action` router `clip_browser` (`Main.qml:320-321`) | kb:llm/ui-map.md:141, :164, :180 | CONFIRMED. Tip check: at `ui:d8098d0` `qml/Main.qml:319-322` toggles `currentPage = root.browserLayerVisible ? "camera" : "browser"` and closes settings |
+| Entry points: the `clipBrowserBtn` on the camera page (`CameraPage.qml:3690`, signal `openClipBrowserRequested` `:9`), and the `hardware_action` router `clip_browser` (`Main.qml:320-321`) | kb:llm/ui-map.md:141, :164, :180 | CONFIRMED. Tip check: at `ui:5aab7e2` `qml/Main.qml:319-322` toggles `currentPage = root.browserLayerVisible ? "camera" : "browser"` and closes settings |
 | Browser: signals `backRequested`, `clipOpened`; `clipModel.browserOpen` follows visibility; refresh; sort toggle; multi-select delete via `clipModel.removeClip`; **clears the thumbnail cache on hide** | kb:sources/research-2026-10-25/ui-structure-notes.md:297-301 | CONFIRMED |
 | Player chapters: header + back, `playerPanel`, `playbackImage`, fps chip, play state, `frameBadge`, info button, progress bar + handle. **Split landscape** has an info panel, controls and a histogram. **Compact/square** has a progress bar, `deleteButton`, histogram, `compactInfoButton` and `transportControls`. Then `clipRevealAnim`, the info overlay (`infoColumn`) and the delete confirm | kb:llm/ui-map.md:191-208 | CONFIRMED |
 | Player API: only `playbackController` (`playing`, `frameCount`, `currentClipName`, `videoClip`, `currentFrameIndex`, `frameSource`, `fastFrameSource`, `histogramBins`, `clipMetadata`, `seekToFrame()`, `togglePlayback()`, `stop()`); signals back/previous/next/delete | kb:llm/ui-map.md:193, :198 | CONFIRMED |
@@ -140,8 +140,8 @@ These are open for the design to ask (§9).
 | L1 | **`/media/RAW` is hard-coded** in `ClipListModel` (`cliplistmodel.cpp:174`), `MediaStatusBridge` and `SettingsBridge`. `[storage] mount_path` is honoured only by the automounter | kb:architecture/ui.md:440; kb:lessons/upstream-issues.md:33 (#26) | CONFIRMED [KB: open (desk)] |
 | L2 | **Same flag, different meaning**: `standardLandscapeLayout` includes `landscape_large` in `ClipPlayerPage.qml:24-25` and Main, but not in SettingsPage | kb:llm/ui-map.md:580; kb:lessons/upstream-issues.md:32 (#25) | CONFIRMED [KB: open (desk)] |
 | L3 | `updateVideoFrame` (`ClipPlayerPage.qml:141`) has a comment at `:146` on **decoder starvation** | kb:llm/ui-map.md:199 | CONFIRMED (that the comment exists) |
-| L4 | UI README: "Playback is software-decoded, so large clips may **skip display frames** to keep the timeline moving, especially on older boards". ProRes/H.264 need the optional FFmpeg plugin. MLV supports only Apertar's single-file uncompressed layout. "Movie playback currently supports matching PCM16 WAV sidecars rather than embedded MOV audio" | ui:README.md:142-144@d8098d0 (tip check) | CONFIRMED |
-| L5 | The KB generalises L4 to "**Only PCM16 sidecars are supported**". That is **too broad**: the controller accepts PCM (format 1) at any bit depth and 32-bit float. It starts `aplay -f` with `S24_3LE` / `S32_LE` / `FLOAT_LE` / `S16_LE` by the WAV's bit depth. The README sentence is about movie playback | kb:sources/research-2026-10-25/ui-structure-notes.md:666 vs ui:src/playbackcontroller.cpp:963-964, :996-1001@d8098d0 (tip check) | CONFIRMED (KB line is stale/over-broad) |
+| L4 | UI README: "Playback is software-decoded, so large clips may **skip display frames** to keep the timeline moving, especially on older boards". ProRes/H.264 need the optional FFmpeg plugin. MLV supports only Apertar's single-file uncompressed layout. "Movie playback currently supports matching PCM16 WAV sidecars rather than embedded MOV audio" | ui:README.md:142-144@5aab7e2 (tip check) | CONFIRMED |
+| L5 | The KB generalises L4 to "**Only PCM16 sidecars are supported**". That is **too broad**: the controller accepts PCM (format 1) at any bit depth and 32-bit float. It starts `aplay -f` with `S24_3LE` / `S32_LE` / `FLOAT_LE` / `S16_LE` by the WAV's bit depth. The README sentence is about movie playback | kb:sources/research-2026-10-25/ui-structure-notes.md:666 vs ui:src/playbackcontroller.cpp:963-964, :996-1001@5aab7e2 (tip check) | CONFIRMED (KB line is stale/over-broad) |
 | L6 | The player and browser do **not exist in the monitor-only process**: `clipModel`, `playbackController` and the providers are absent there | kb:llm/ui-map.md:325-328 | CONFIRMED |
 | L7 | The HDMI `ExternalMonitorWindow` shows only on the `"camera"` page (`ExternalMonitorManager.cpp:111-126`), so it is not shown while the touch UI is in browser/player | kb:architecture/ui.md:426 ("Add a page" row) | CONFIRMED (KB row). What HDMI then shows is UNCONFIRMED: look at HDMI with the player open |
 | L8 | The touch UI blocks its GUI thread on slow Core commands, up to 60 s (`record_stop`) or 360 s (`format_media`). The player itself reads files directly, so this hits playback only through those commands | kb:lessons/upstream-issues.md:25 (#18); kb:llm/ui-map.md:579 | CONFIRMED [KB: open (desk)]. "Only through those commands" is PROBABLE (the player API in §2.1 calls no Core command) |
@@ -159,9 +159,9 @@ Commands are in §9.
 
 ## 3. Apertar's WebUI today
 
-### 3.1 What exists (KB anchors re-found at `core:eb9cc39`)
+### 3.1 What exists (KB anchors re-found at `core:0296ed1`)
 
-| Thing | KB (upstream-1.6.0) | At `eb9cc39` (tip check, CONFIRMED) |
+| Thing | KB (upstream-1.6.0) | At `0296ed1` (tip check, CONFIRMED) |
 | --- | --- | --- |
 | Clip browser CSS `.media-browser*`, `.media-filter`, `.media-row`, `.media-stat` | `WCP:1122-1432` (kb:llm/core-map.md:170) | `.media-browser-title-row {` at `WebControlPage.cpp:1165` |
 | Clip browser HTML `mediaBrowserOverlay`, `mediaBrowserList` | `WCP:3979-4031` (kb:llm/core-map.md:196) | `id="mediaBrowserOverlay"` at `:3979` |
@@ -170,7 +170,7 @@ Commands are in §9.
 | 1 s state poll | `WCP:11609` (kb:llm/flows.md:48) | `:11652` |
 | `GET /api/media` → `buildMediaLibraryJson` → `discoverMediaLibraryItems` | `App:7161`, `:7651-7710`, `:6282-6449` (kb:llm/core-map.md:61, :68, :420) | route `App:7307`; JSON `:7819`; scan `:6422` |
 | Download / download-selected / delete / delete-selected | `App:7197`, `:7318`, `:7503`, `:7575` (kb:architecture/core.md:338-342) | `:7343`, `:7464`, `:7649`, `:7721` |
-| Route list | kb:sources/research-2026-10-25/core-control-plane-notes.md:521-541 | Same set at `eb9cc39` (`App:7248-7783`): no frame, thumbnail, audio or range route exists |
+| Route list | kb:sources/research-2026-10-25/core-control-plane-notes.md:521-541 | Same set at `0296ed1` (`App:7248-7783`): no frame, thumbnail, audio or range route exists |
 
 Other KB facts about the WebUI that a playback pane would build on:
 
@@ -178,8 +178,8 @@ Other KB facts about the WebUI that a playback pane would build on:
 | --- | --- | --- |
 | `/api/media` item fields: `id, kind, category, type, name, size_bytes, size_text, file_count, frame_count, duration_text, fps_text, modified_text, modified_ms, download_url`; plus `ok`, `mounted`, `media_root` | kb:sources/research-2026-10-25/core-control-plane-notes.md:429 | CONFIRMED |
 | Clip library scan covers `Photos/`, `Audio/`, `Timelapse_*` and clip folders. Folder prefixes: `cDNG_`, `MLV_`, `H264_`, `cDNG_3to1_` / `cDNG_5to1_`, `ProRes_`, `Still_`, `Audio/Audio_` | kb:llm/core-map.md:61, :564 | CONFIRMED |
-| **Not in the KB**: the WebUI list labels **every clip with the camera's current fps** (`settings.fps`), and computes cDNG durations as frame count ÷ that fps. Container clips (MLV/MOV/MP4) show duration `--` | core:src/ApertarCoreApp.cpp:7824, :6490-6493@eb9cc39 (tip check) | CONFIRMED (code). Consequence: a 50 fps clip listed while the camera is at 25 shows "25 FPS" and twice its real duration (PROBABLE arithmetic). The touch UI reads per-clip metadata (`clipMetadata`, §2.1), so the two lists disagree today |
-| Media delete is refused while recording, sound-recording or in timelapse. It does **not** check `mediaWritesPending` or a running speed test, and it runs **outside** `commandMutex_` | KB: kb:sources/research-2026-10-25/core-control-plane-notes.md:538, :663 (#22); tip: core:src/ApertarCoreApp.cpp:7660, :7732@eb9cc39 | CONFIRMED (KB + tip). The KB line "checks `isRecording()` only" (kb:architecture/core.md:342) is now partly stale: the tip adds sound recorder and timelapse |
+| **Not in the KB**: the WebUI list labels **every clip with the camera's current fps** (`settings.fps`), and computes cDNG durations as frame count ÷ that fps. Container clips (MLV/MOV/MP4) show duration `--` | core:src/ApertarCoreApp.cpp:7824, :6490-6493@0296ed1 (tip check) | CONFIRMED (code). Consequence: a 50 fps clip listed while the camera is at 25 shows "25 FPS" and twice its real duration (PROBABLE arithmetic). The touch UI reads per-clip metadata (`clipMetadata`, §2.1), so the two lists disagree today |
+| Media delete is refused while recording, sound-recording or in timelapse. It does **not** check `mediaWritesPending` or a running speed test, and it runs **outside** `commandMutex_` | KB: kb:sources/research-2026-10-25/core-control-plane-notes.md:538, :663 (#22); tip: core:src/ApertarCoreApp.cpp:7660, :7732@0296ed1 | CONFIRMED (KB + tip). The KB line "checks `isRecording()` only" (kb:architecture/core.md:342) is now partly stale: the tip adds sound recorder and timelapse |
 | Folder download streams a zip and needs the `zip` tool | kb:sources/research-2026-10-25/core-control-plane-notes.md:531 | CONFIRMED |
 | WebUI page = one raw string compiled into Core, so **any WebUI edit needs a Core rebuild and restart** | kb:architecture/core.md:325; kb:architecture/build.md:63; kb:llm/README.md:107-108 | CONFIRMED |
 | Icons are PNGs served **from disk** (`src/web/icons`, search order `App:2420-2440`), not compiled in. A new icon needs the file on the Pi | kb:architecture/build.md:54-63 | CONFIRMED |
@@ -191,10 +191,10 @@ Other KB facts about the WebUI that a playback pane would build on:
 | Limit | Source | Label |
 | --- | --- | --- |
 | Bind `0.0.0.0:8000`, IPv4 only, backlog 16 | kb:sources/research-2026-10-25/core-control-plane-notes.md:508 | CONFIRMED |
-| **Thread per connection, max 32**; `SO_SNDTIMEO` / `SO_RCVTIMEO` 5 s | kb:…/core-control-plane-notes.md:509; tip: core:src/web/WebServer.cpp:266, :271@eb9cc39 | CONFIRMED |
+| **Thread per connection, max 32**; `SO_SNDTIMEO` / `SO_RCVTIMEO` 5 s | kb:…/core-control-plane-notes.md:509; tip: core:src/web/WebServer.cpp:266, :271@0296ed1 | CONFIRMED |
 | 10 s request deadline; max request 1 MiB; `Transfer-Encoding` rejected | kb:…/core-control-plane-notes.md:510; tip: `WebServer.cpp:23` | CONFIRMED |
-| **Every response** carries `Connection: close` and `Cache-Control: no-store`; streaming responses add `Pragma: no-cache` and have no `Content-Length` | kb:…/core-control-plane-notes.md:511; tip: `WebServer.cpp:127-154`@eb9cc39 | CONFIRMED. Consequences: every frame is a new TCP connection, and the browser cannot cache frames, so Cinemate's cache-friendly frame URLs would not cache here (PROBABLE). A handler can add headers, but `no-store` is always written first, so a second `Cache-Control` would conflict (PROBABLE, from `buildHttpResponse`) |
-| **No Range support**: no `Range`, `Accept-Ranges` or `206` anywhere in `WebServer.cpp` or `ApertarCoreApp.cpp` | tip: grep at `eb9cc39` | CONFIRMED (absence by grep). Browsers' `<audio>`/`<video>` seeking normally relies on Range: PROBABLE (general web knowledge, not KB) |
+| **Every response** carries `Connection: close` and `Cache-Control: no-store`; streaming responses add `Pragma: no-cache` and have no `Content-Length` | kb:…/core-control-plane-notes.md:511; tip: `WebServer.cpp:127-154`@0296ed1 | CONFIRMED. Consequences: every frame is a new TCP connection, and the browser cannot cache frames, so Cinemate's cache-friendly frame URLs would not cache here (PROBABLE). A handler can add headers, but `no-store` is always written first, so a second `Cache-Control` would conflict (PROBABLE, from `buildHttpResponse`) |
+| **No Range support**: no `Range`, `Accept-Ranges` or `206` anywhere in `WebServer.cpp` or `ApertarCoreApp.cpp` | tip: grep at `0296ed1` | CONFIRMED (absence by grep). Browsers' `<audio>`/`<video>` seeking normally relies on Range: PROBABLE (general web knowledge, not KB) |
 | Path not percent-decoded except preset file names | kb:…/core-control-plane-notes.md:518 | CONFIRMED |
 | **No auth**; only an origin check. A request without an `Origin` header passes. The README warns not to expose port 8000 | kb:…/core-control-plane-notes.md:512-516, :639 (#10); kb:lessons/upstream-issues.md:44 (#37) | CONFIRMED [KB: open (desk)] |
 | MJPEG preview: max 640×360, 30 fps, JPEG q75. The downsample runs **on libcamera's completion thread** whenever a browser viewer is connected | kb:…/core-control-plane-notes.md:544-548; kb:working/compare-raw/b3-core-completion.md:27, :106 | CONFIRMED. A browser that leaves the live `<img>` streaming while it plays back keeps that cost on the camera (PROBABLE) |
@@ -210,7 +210,7 @@ Other KB facts about the WebUI that a playback pane would build on:
   kb:architecture/overview.md:41, "Core → all socket clients").
 - So a knob press mapped to `clip_browser` opens the touch UI's browser but cannot open a browser tab's playback, unless
   Core adds a state field (PROBABLE).
-- Since `a070e1b` (in `eb9cc39`'s history, tip check), the `recording` event is broadcast at once
+- Since `086443c` (in `0296ed1`'s history, tip check), the `recording` event is broadcast at once
   (kb:lessons/hardware-log.md:420-428; kb:lessons/upstream-issues.md:51 #43). The WebUI still learns of a take start only
   from its next poll (PROBABLE, same mechanism).
 - WebUI commands go through the same `handleCommand` and obey the same gates. Their events are broadcast to socket clients
@@ -227,13 +227,13 @@ Other KB facts about the WebUI that a playback pane would build on:
 | F3 | H.264: `<clip>.mp4`, written as `.mp4.writing` then renamed. No audio track (WAV sidecar) | kb:architecture/core.md:428 | CONFIRMED |
 | F4 | ProRes: `<clip>.mov` + `_recovery.json`; **`ProresRepair` is never called** | kb:architecture/core.md:429; kb:lessons/upstream-issues.md:46 (#39) | CONFIRMED [KB: open (desk)] |
 | F5 | Audio: `<clip>/<clip>.wav` built at stop from `<clip>/audio_capture.raw` (BWF `bext` + `iXML`). Capture formats S16, S24_3LE, S24, S32, FLOAT. Patrik's rig records **s24 stereo 48 kHz** | kb:architecture/core.md:432; kb:sources/research-2026-10-25/core-internals-notes.md:580; kb:lessons/hardware-log.md:456 | CONFIRMED |
-| F6 | **A pulled take** (per-file fsync, `6fee0e4` / `7a545d9`, both in the tip) keeps readable DNGs to about 0.8-0.9 s before the pull. **The last ~21-23 DNGs exist with 0 bytes.** No WAV is built on a dead medium; `audio_capture.raw` is kept and `working/tools/raw2wav.py` makes `<clip>.recovered.wav` | kb:lessons/hardware-log.md:440-460 | CONFIRMED |
-| F7 | Before `6fee0e4`, a pulled take left a folder whose 48 `.dng` names were **all 0 bytes** | kb:lessons/hardware-log.md:430-438 | CONFIRMED |
-| F8 | T31 speed ramping (a patch, **not in `eb9cc39`**: no `fps_ramp` / `fps-ramp.txt` in `src/`, tip check) pins every frame's `FrameRate` and timecode to the take's start rate, numbers frames by count, and writes `fps-ramp.txt` into the clip folder | kb:working/ramp-answer.md:14, :73, :77; kb:llm/tutoring.md:107 | CONFIRMED (KB). If T31 is applied, a player reading the first frame's `FrameRate` plays a ramp as conform (slow motion), as intended. Count-based numbering then hides drops from a "span − files" counter (PROBABLE, from F1 + F8) |
+| F6 | **A pulled take** (per-file fsync, `5b68f1f` / `b606c4f`, both in the tip) keeps readable DNGs to about 0.8-0.9 s before the pull. **The last ~21-23 DNGs exist with 0 bytes.** No WAV is built on a dead medium; `audio_capture.raw` is kept and `working/tools/raw2wav.py` makes `<clip>.recovered.wav` | kb:lessons/hardware-log.md:440-460 | CONFIRMED |
+| F7 | Before `5b68f1f`, a pulled take left a folder whose 48 `.dng` names were **all 0 bytes** | kb:lessons/hardware-log.md:430-438 | CONFIRMED |
+| F8 | T31 speed ramping (a patch, **not in `0296ed1`**: no `fps_ramp` / `fps-ramp.txt` in `src/`, tip check) pins every frame's `FrameRate` and timecode to the take's start rate, numbers frames by count, and writes `fps-ramp.txt` into the clip folder | kb:working/ramp-answer.md:14, :73, :77; kb:llm/tutoring.md:107 | CONFIRMED (KB). If T31 is applied, a player reading the first frame's `FrameRate` plays a ramp as conform (slow motion), as intended. Count-based numbering then hides drops from a "span − files" counter (PROBABLE, from F1 + F8) |
 | F9 | Sizes: 4K Clear HDR 16-bit = 16.59 MB/frame, 415 MB/s at 25 fps. 4K SDR 12-bit = 12.44 MB/frame | kb:working/ramp-mode-ladder.md:40-41 [KB: probable arithmetic] | CONFIRMED (as recorded) |
 | F10 | This Pi's NVMe/exFAT: O_DIRECT `dd` 733-759 MB/s with 0 gaps; buffered 561 MB/s with gaps | kb:working/ramp-mode-ladder.md:46 | CONFIRMED |
-| F11 | **No embedded thumbnail**: `CdngEncoder.cpp` contains no "thumbnail" string. IFD0 is written with `NewSubFileType` (254) = full resolution | core:src/cdng/CdngEncoder.cpp:1529@eb9cc39 (tip check) | PROBABLE (grep absence; no IFD1 writer found). Not recorded in the KB |
-| F12 | Lossy DNG is written with `compression = LosslessJpeg` (tag 7), which the UI's decoder accepts (`COMPRESSION_NONE` or `COMPRESSION_JPEG`) | core:src/lossydng/LossyDngEncoder.cpp:509@eb9cc39; ui:src/dngdecoder.cpp:659@d8098d0 (tip check) | PROBABLE that lossy takes decode in the touch UI. UNCONFIRMED on the Pi |
+| F11 | **No embedded thumbnail**: `CdngEncoder.cpp` contains no "thumbnail" string. IFD0 is written with `NewSubFileType` (254) = full resolution | core:src/cdng/CdngEncoder.cpp:1529@0296ed1 (tip check) | PROBABLE (grep absence; no IFD1 writer found). Not recorded in the KB |
+| F12 | Lossy DNG is written with `compression = LosslessJpeg` (tag 7), which the UI's decoder accepts (`COMPRESSION_NONE` or `COMPRESSION_JPEG`) | core:src/lossydng/LossyDngEncoder.cpp:509@0296ed1; ui:src/dngdecoder.cpp:659@5aab7e2 (tip check) | PROBABLE that lossy takes decode in the touch UI. UNCONFIRMED on the Pi |
 | F13 | Core records with **no mount or free-space check**; with nothing mounted, files land in `/media/RAW` on the root filesystem. That is upstream behaviour; T28 added gates on `cinemate-port` | kb:architecture/core.md:419; kb:llm/tutoring.md:104 | CONFIRMED |
 | F14 | Core's media root is `--media /media/RAW` (CLI); `/api/state` `media_label` says "/media/RAW" even when `--media` differs | kb:llm/flows.md:87; kb:…/core-control-plane-notes.md:653 | CONFIRMED |
 
@@ -323,7 +323,7 @@ That is Cinemate-specific. Apertar's WebUI polls Core directly (§3.3).
 | K15 | The hardware log is append-only; an entry goes in only after **Patrik confirms the interpretation** | kb:README.md:51-52; kb:lessons/hardware-log.md:3 | CONFIRMED |
 | K16 | Tutorial shape (sections 0-9), numbered steps, `%% tutor` block with `ref` and read-only `check` lines; checks must FAIL before the change; Obsidian frontmatter and tags; written on the Pi → `tutorials/inbox/` | kb:tutorials/README.md:12-33, :34-90; kb:llm/tutoring.md:118-132 | CONFIRMED |
 | K17 | **Nothing is pushed**: "The work stays OFF GitHub"; "Nothing here is on Apertar-Core or Apertar-UI GitHub" | kb:working/prompt-start-port-tutorials.md:13; kb:working/ramp-ladder/build/STATUS.md:3 | CONFIRMED |
-| K18 | Commit house format: area, imperative, Why, Tested; "No Co-Authored-By on his commits" | kb:llm/tutoring.md:41 | CONFIRMED. Discrepancy: Patrik's commits on the GitHub tips (`87011d4`, `6ae70b5`, `ui:160898c`) carry `What:` and `Co-Authored-By: Claude` (tip check). Ask which he wants |
+| K18 | Commit house format: area, imperative, Why, Tested; "No Co-Authored-By on his commits" | kb:llm/tutoring.md:41 | CONFIRMED. Discrepancy: Patrik's commits on the GitHub tips (`bda2066`, `3c4f07d`, `ui:160898c`) carry `What:` and `Co-Authored-By: Claude` (tip check). Ask which he wants |
 | K19 | Find code via the chapter maps; never read `WebControlPage.cpp` / `ApertarCoreApp.cpp` whole; re-grep anchors on the **Pi tree** before writing a tutorial | kb:llm/README.md:18, :41-50; kb:llm/tutoring.md:124 | CONFIRMED |
 | K20 | Media root is not one truth: the UI hard-codes `/media/RAW`, Core uses `--media`. A WebUI player served by Core and the touch UI could list different roots if they differ | kb:architecture/ui.md:440; kb:llm/flows.md:87 | CONFIRMED (facts). The consequence is PROBABLE |
 | K21 | Keep port 8000 on a trusted network (no auth) | kb:lessons/upstream-issues.md:44 (#37) | CONFIRMED |
@@ -336,11 +336,11 @@ That is Cinemate-specific. Apertar's WebUI polls Core directly (§3.3).
 
 | KB line | Says | Now | Label |
 | --- | --- | --- | --- |
-| kb:sources/research-2026-10-25/ui-structure-notes.md:666 | "Only PCM16 sidecars are supported (`README.md:144`)" | The README limits *movie* playback to PCM16 sidecars. The controller plays PCM 16/24/32 and float 32 (`ui:src/playbackcontroller.cpp:963-964`, `:996-1001`@d8098d0) | CONFIRMED |
-| kb:architecture/core.md:342 | Media delete "checks `isRecording()` only" | Also checks the sound recorder and timelapse (`core:src/ApertarCoreApp.cpp:7660`, `:7732`@eb9cc39). Still no `mediaWritesPending` check, still outside `commandMutex_` | CONFIRMED |
-| kb:llm/core-map.md WCP / App line numbers (§3.1) | upstream-1.6.0 lines | Shifted at `eb9cc39` (new lines in §3.1). Anchors still hit once | CONFIRMED |
-| kb:llm/ui-map.md:180 | `clip_browser` at `Main.qml:320-321` | `Main.qml:319-322` at `d8098d0`. It toggles browser ↔ camera via `browserLayerVisible` and closes settings | CONFIRMED (the KB range is the body lines; no drift in the file) |
-| (missing) | — | The WebUI clip list uses the **current** camera fps for every clip's fps and duration (`core:src/ApertarCoreApp.cpp:7824`, `:6490-6493`@eb9cc39) | CONFIRMED (code). Not in the KB |
+| kb:sources/research-2026-10-25/ui-structure-notes.md:666 | "Only PCM16 sidecars are supported (`README.md:144`)" | The README limits *movie* playback to PCM16 sidecars. The controller plays PCM 16/24/32 and float 32 (`ui:src/playbackcontroller.cpp:963-964`, `:996-1001`@5aab7e2) | CONFIRMED |
+| kb:architecture/core.md:342 | Media delete "checks `isRecording()` only" | Also checks the sound recorder and timelapse (`core:src/ApertarCoreApp.cpp:7660`, `:7732`@0296ed1). Still no `mediaWritesPending` check, still outside `commandMutex_` | CONFIRMED |
+| kb:llm/core-map.md WCP / App line numbers (§3.1) | upstream-1.6.0 lines | Shifted at `0296ed1` (new lines in §3.1). Anchors still hit once | CONFIRMED |
+| kb:llm/ui-map.md:180 | `clip_browser` at `Main.qml:320-321` | `Main.qml:319-322` at `5aab7e2`. It toggles browser ↔ camera via `browserLayerVisible` and closes settings | CONFIRMED (the KB range is the body lines; no drift in the file) |
+| (missing) | — | The WebUI clip list uses the **current** camera fps for every clip's fps and duration (`core:src/ApertarCoreApp.cpp:7824`, `:6490-6493`@0296ed1) | CONFIRMED (code). Not in the KB |
 | (missing) | — | Core's DNGs carry no IFD1 thumbnail (F11) | PROBABLE. Not in the KB |
 | (missing) | — | Core's HTTP server has no Range support (§3.2) | CONFIRMED (grep). Not in the KB |
 

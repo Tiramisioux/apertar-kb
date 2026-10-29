@@ -21,8 +21,8 @@ Branch on the Pi: `git -C ~/ApertarCore checkout -b clearhdr-fixes f60e301 && gi
 
 ## Speed-ramp series (2026-10-27, on `cinemate-port`)
 
-Written in a cloud session on top of `cinemate-port`: Core `7a545d9` (the three Core patches also apply on the GitHub tip
-`6ae70b5`), Apertar-UI `dc471c1` (the GitHub tip). Each patch applies with plain `git am` in this order (checked in the cloud).
+Written in a cloud session on top of `cinemate-port`: Core `b606c4f` (the three Core patches also apply on the GitHub tip
+`3c4f07d`), Apertar-UI `dc471c1` (the GitHub tip). Each patch applies with plain `git am` in this order (checked in the cloud).
 **Not built on a Pi.**
 
 | # | Patch | Repo | Tutorial | What | Host checks |
@@ -36,7 +36,7 @@ Written in a cloud session on top of `cinemate-port`: Core `7a545d9` (the three 
 Patch 8 replaces the first T31 patch, which was written for the cloud branch `clearhdr-fixes` (`d4ad539`). On `cinemate-port`
 three things differ, and the tutorial says where: the session's `recordingBaseFps()` sits in the public section (no `friend`
 line; `8f7dc39`'s pattern), the WAV end uses the latest frame's duration (`d9f00d4`), and `fps-ramp.txt` is written inside the
-timed stop (`56d9137`). `CameraController.cpp` (patches 8 and 9) cannot be compiled off the Pi.
+timed stop (`0b1632f`). `CameraController.cpp` (patches 8 and 9) cannot be compiled off the Pi.
 
 On the Pi, after the KB is synced from the Mac (`working/sync.md`; only when Patrik says so):
 

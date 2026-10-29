@@ -1,7 +1,7 @@
 // Host test for the controls sketch: hardware/ActionCatalog.hpp and hardware/HardwareConfigText.hpp.
 // Build: g++ -std=c++20 -Wall -Wextra -Werror -I. -I<core>/src controls_test.cpp -o controls_test
 #include "hardware/HardwareConfigText.hpp"
-#include "old_normalizers.inc"   // the three real normalizeSingleAction copies at Core eb9cc39 (make_old.sh)
+#include "old_normalizers.inc"   // the three real normalizeSingleAction copies at Core 0296ed1 (make_old.sh)
 #include "old_extra.inc"         // v2: App's number parser and analog targets, Grove's targets, trigger events (make_old2.sh)
 
 #include <cmath>

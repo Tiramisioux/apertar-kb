@@ -1,6 +1,6 @@
 # Playback T46: measurements on Patrik's Pi
 
-Pi 5 (CM5), Core `2f4f0f6`, touch UI `92125a7`, 2026-10-29. Bench: `working/tools/playback/playback_bench`, built on the Pi
+Pi 5 (CM5), Core `909aaa5`, touch UI `7029db1`, 2026-10-29. Bench: `working/tools/playback/playback_bench`, built on the Pi
 from the sketch against the Pi's current Core sources (compiled without changes). Camera idle, nothing recording.
 
 ## M1. One 4K frame, one worker (Patrik ran it; CONFIRMED)
@@ -77,7 +77,7 @@ newest file's); `stat` of all 39 folders: 36 ms. A file written in place would n
 Design change (T47): the cache key is the folder's mtime alone. Sample facts, C0016: 25 fps, 03:29 (the span), 4,913 files,
 310 missing in 30 holes, "SDR 12-bit · lossless", timecode 00:00:00:00 (a Rec Run take), 32.0 GB.
 
-## T47 live on the Pi (Claude ran it with Patrik's OK; CONFIRMED), Core `ee246ff`
+## T47 live on the Pi (Claude ran it with Patrik's OK; CONFIRMED), Core `ab4cc92`
 
 | Check | Result |
 | --- | --- |
@@ -88,7 +88,7 @@ Design change (T47): the cache key is the folder's mtime alone. Sample facts, C0
 | in a 4 s take (`cDNG_26-10-29_C0001`, 46 of 46 frames written, 0 dropped) | list answers from the cache in 16 ms with `"held":"recording"` and 39 items; `/api/media/clip` of a cached clip: 200 with `held`; of the take being written: **409** `Playback held: recording.` |
 | list after the take | 28 ms; the test take was removed afterwards |
 
-## T48 live on the Pi (Claude ran it; CONFIRMED), Core `8d6aae9`
+## T48 live on the Pi (Claude ran it; CONFIRMED), Core `1af26c8`
 
 `GET /api/media/frame?kind=folder&id=&n=&w=`, cold, from the NVMe, Core's own HTTP time and `X-Decode-Ms`:
 
@@ -106,7 +106,7 @@ Same numbers as the bench (M1): 64 ms vs 64 ms (16-bit uncompressed), 166-170 ms
 "Frame not found."; width 500 400; unknown clip 404 `gone`; stale `v` 404 "The clip changed. Refresh Media." The pictures were
 looked at: the touch UI's look (flat, ungraded), the right clip, no artefacts. Host test `frames_test.cpp`: 14 of 14 on the Pi.
 
-## T49 the Clip Browser, in the WebUI (Claude built and drove it in headless Chrome against the real Core; CONFIRMED), Core `26742ce`, `3042652`
+## T49 the Clip Browser, in the WebUI (Claude built and drove it in headless Chrome against the real Core; CONFIRMED), Core `bc12c0a`, `27eac5a`
 
 Laptop 1280 px (4 columns), phone 390 px (2 columns, names cut in the middle, top buttons icon only); 39 cDNG takes. Opening the
 browser: the first list after a Core restart 4.0 s (once), then 17 ms; 16 thumbnails fetched for the visible cards (two at a
@@ -117,7 +117,7 @@ Each card shows duration, DROP N (C0016 DROP 310), name, "cDNG clip", the shot d
 show their time of day (C0024 22:04:35:00), Rec Run takes 00:00:00:00 (R1). Tapping a card opens its first picture at 1920 w in a
 new tab until the viewer (T50). Thumbnails fill the card to the top and the sides (Patrik).
 
-## T50 the Clip Viewer, page part (Claude drove it in headless Chrome against the real Core; Patrik tried it: "works well"), Core `6ffe564`
+## T50 the Clip Viewer, page part (Claude drove it in headless Chrome against the real Core; Patrik tried it: "works well"), Core `4629de2`
 
 Playing from the Mac over the LAN, Core decoding at 640 w with two lanes, 6 s each:
 
@@ -133,7 +133,7 @@ within 2 s of `playback_hold` and clears without resuming. The phone's Back leav
 touch-UI rows plus TIMECODE, SOUND, FORMAT, DROPPED. One bug found and fixed on the way: frames that arrived late were thrown
 away (nothing drew); a late frame is now shown when newer than the picture on screen.
 
-## T50 Core part live on the Pi (Claude ran it with Patrik's OK; CONFIRMED), Core `e69dc24`
+## T50 Core part live on the Pi (Claude ran it with Patrik's OK; CONFIRMED), Core `a37a902`
 
 A throttled ZIP download of C0016 (32 GB take) had streamed 64 MB after 2 s. `record_start`: the download ended **within about 0.3 s**
 (72.7 MB received, curl saw a normal end of stream: the archive is incomplete, as designed, Q21). In the take: a new download and a
@@ -143,7 +143,7 @@ download stopped just before it. After the take a download works (200); the rout
 is gone. Not tested live: Q23 (record_start refused while a delete runs: "Deleting media. One moment.") because a delete of one
 small take takes milliseconds; the code is in `handleCommand` and the delete routes, `mediaDeleteActive_`.
 
-## T51 sound, live on the Pi (Claude ran it in headless Chrome against the real Core; CONFIRMED), Core `0c9d194` + the look-ahead fix
+## T51 sound, live on the Pi (Claude ran it in headless Chrome against the real Core; CONFIRMED), Core `fa19856` + the look-ahead fix
 
 `/api/media/file` on C0016's WAV (60,170,586 B, s24 stereo 48 kHz, the span 209 s): `Range: bytes=0-99` 206 with `Content-Range: bytes 0-99/60170586`,
 `Content-Length: 100`, `Accept-Ranges: bytes`; `bytes=60170000-` 206 (586 B); `bytes=-1000` 206 (1000 B); `bytes=99999999999-` 416 with
@@ -154,4 +154,4 @@ the picture's lag in frames sampled over 5 s: **lossless C0016 (11 fps drawn): 0
 fix 7 frames (0.28 s); **Clear HDR 16-bit uncompressed C0021 (24 fps drawn): 0 frames**. Not tested: Safari and Firefox, a phone,
 Bluetooth latency (M6, M12 skipped by Patrik), a ramp take's "sound off" line.
 
-**Patrik, 2026-10-29: "sound works"** (his browser; he did not say which, nor on a phone). The look-ahead build (`727c9c8`) was the one he ran.
+**Patrik, 2026-10-29: "sound works"** (his browser; he did not say which, nor on a phone). The look-ahead build (`4fa0432`) was the one he ran.

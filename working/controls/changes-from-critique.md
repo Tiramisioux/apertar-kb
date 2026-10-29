@@ -3,8 +3,8 @@
 2026-10-28, designer pass v2. One row per critic point. Each row says whether the point was **accepted**, **changed** (accepted,
 but with a different fix or corrected evidence) or **rejected**, why, and where it landed in `design-controls.md` (v2).
 
-I checked every point against the code before accepting it, at Core `eb9cc39` (`core-tip`), touch UI `d8098d0` (`ui-tip`) and
-KB `d1d6a96`. "Checked" below means I opened the line or ran the command here. Where I ran something, the command or the
+I checked every point against the code before accepting it, at Core `0296ed1` (`core-tip`), touch UI `5aab7e2` (`ui-tip`) and
+KB `9ddac81`. "Checked" below means I opened the line or ran the command here. Where I ran something, the command or the
 sketch check is named.
 
 Sources: `critique-code.md` (`CC`), `critique-operator.md` (`CO`), `design-controls-v1.md` (v1), `design-controls.md` (v2).

@@ -12,7 +12,7 @@ Run on the host here:
   - every case the code critic reproduced (D1-D6);
   - the operator cases that live in the text model (9, 10, 11, 14);
   - App's number parser, both analog-target copies and the trigger-event parser, compared token by token with
-    read-only copies extracted from Core `eb9cc39` (`sketch/make_old2.sh`);
+    read-only copies extracted from Core `0296ed1` (`sketch/make_old2.sh`);
   - a dispatcher coverage check that reads App's source;
   - the generated `config.txt` command, run twice with GNU sed on a copy.
 - The critic's two probe programs (`critic-build/t_events.cpp`, `t_ids.cpp`), rebuilt against the v2 sketch:
@@ -20,7 +20,7 @@ Run on the host here:
   - the duplicate `d10` reads `eject`, as `GpioInput` does;
   - an INA219 with no `bus=` is reported;
   - adding a line above old errors gives 0 new errors.
-- `g++ -std=c++20 -fsyntax-only -Isrc -Iinclude` on Core `eb9cc39`: `ApertarCoreApp.cpp`, `GpioInput.cpp`, `NeoRotary4Input.cpp`,
+- `g++ -std=c++20 -fsyntax-only -Isrc -Iinclude` on Core `0296ed1`: `ApertarCoreApp.cpp`, `GpioInput.cpp`, `NeoRotary4Input.cpp`,
   `Pcf8574Input.cpp`, `Mpu6050RecordingSession.cpp`: 0 errors each (v1 run; the code critic reran it with libcamera headers
   too, also 0).
 - 56 tutor anchors and 39 plan search strings checked here. Each occurs once at the line given (`anchors.txt`, `search.txt` in this
@@ -30,13 +30,13 @@ Trees (every `path:line` below is at these commits unless marked):
 
 | Short name | File | Tree, commit |
 | --- | --- | --- |
-| `App`, `App.hpp` | `src/ApertarCoreApp.cpp`, `.hpp` | Core `scratchpad/controls/core-tip` `eb9cc39` = Patrik's GitHub `cinemate-port` tip |
+| `App`, `App.hpp` | `src/ApertarCoreApp.cpp`, `.hpp` | Core `scratchpad/controls/core-tip` `0296ed1` = Patrik's GitHub `cinemate-port` tip |
 | `Web`, `WS`, `CS` | `src/web/WebControlPage.cpp`, `src/web/WebServer.cpp`, `src/ipc/ControlServer.cpp` | same |
 | `HW/` | `src/hardware/` | same |
 | `SF`, `CP` | `src/util/SettingsFile.hpp`, `src/ipc/ControlProtocol.cpp` | same |
-| `UI:` | touch UI repo (`ApertarUI`, automounter, network helper, standby helpers) | `scratchpad/controls/ui-tip` `d8098d0` = GitHub `cinemate-port` tip |
+| `UI:` | touch UI repo (`ApertarUI`, automounter, network helper, standby helpers) | `scratchpad/controls/ui-tip` `5aab7e2` = GitHub `cinemate-port` tip |
 | `Cm:` | Cinemate | `/home/user/tiramisioux/cinemate` `d6cc93e` |
-| `SRC`, `HL`, `TIDX`, `TUT`, `tutorial.py`, `core.py` | KB `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md`, `tutorials/README.md`, `llm/tutoring.md`, `tutorials/tutorial.py`, `working/tools/core.py` | KB `/home/user/apertar-kb` `d1d6a96` (these files are unchanged since v1's `e35ffa7`) |
+| `SRC`, `HL`, `TIDX`, `TUT`, `tutorial.py`, `core.py` | KB `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md`, `tutorials/README.md`, `llm/tutoring.md`, `tutorials/tutorial.py`, `working/tools/core.py` | KB `/home/user/apertar-kb` `9ddac81` (these files are unchanged since v1's `b47f700`) |
 | `R1`-`R4`, `CC`, `CO` | the reader reports; `critique-code.md`, `critique-operator.md` | this folder |
 | `sketch` | `sketch/hardware/*.hpp`, `sketch/controls_test.cpp`, `sketch/make_old*.sh` | this folder (host-tested here) |
 
@@ -1232,7 +1232,7 @@ pins.
 
 ## 6. Implementation plan, file by file
 
-Order = build order. Line numbers are at `eb9cc39`/`d8098d0`, and **T33-T35 move them**: use the search string. Every search
+Order = build order. Line numbers are at `0296ed1`/`5aab7e2`, and **T33-T35 move them**: use the search string. Every search
 string below occurs once in its file at the tip (checked here, `search.txt`).
 
 Risk:
@@ -1587,7 +1587,7 @@ never `mv`: §3.4).
 
 ### Tutor blocks
 
-The anchors were checked here: each string occurs once in its file, at that line, at `eb9cc39` / `d8098d0`. There are no
+The anchors were checked here: each string occurs once in its file, at that line, at `0296ed1` / `5aab7e2`. There are no
 check pipes. T39-T45 tutor blocks are written with each note, since T36-T38 move App lines by several hundred.
 
 T36:
@@ -1874,8 +1874,8 @@ Prediction: under 200 ms with every bus present; about 1 s (not 4) when drivers 
 
 ### 9.5 Sources
 
-- Core `eb9cc39`, touch UI `d8098d0`, Cinemate `d6cc93e`, at the lines above.
-- KB `d1d6a96` (unchanged since `e35ffa7` for these files): `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`,
+- Core `0296ed1`, touch UI `5aab7e2`, Cinemate `d6cc93e`, at the lines above.
+- KB `9ddac81` (unchanged since `b47f700` for these files): `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`,
   `lessons/hardware-log.md` (2026-10-23, 2026-10-25), `tutorials/README.md`, `tutorials/tutorial.py`, `llm/tutoring.md` §5,
   `working/tools/core.py`.
 - The reader reports R1-R4; the critiques `critique-code.md` and `critique-operator.md`; `changes-from-critique.md` (all in

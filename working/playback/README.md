@@ -5,12 +5,12 @@ and behaves like the touch UI's Clip Browser and Clip Viewer; Cinemate supplies 
 extras.
 
 Status (cloud, 2026-10-29): designed, critiqued and revised in a cloud session. Trees read:
-Core `eb9cc39`, Apertar-UI `d8098d0`, Cinemate `d6cc93e`, the KB. Hand-over to Claude in VS Code: `HANDOFF-PROMPT.md`.
+Core `0296ed1`, Apertar-UI `5aab7e2`, Cinemate `d6cc93e`, the KB. Hand-over to Claude in VS Code: `HANDOFF-PROMPT.md`.
 Tutorials are numbered T46-T54 because the controls project uses T36-T45.
 
 **Built since (VS Code session, 2026-10-29): T47-T51, Claude on the Pi's `cinemate-port`, Patrik's choice.** See `HANDOFF-next.md` (where it stands, what is
-open), `decisions.md` (Patrik's answers and requirements), `measurements.md` (what ran on the Pi). Core `bc5d29d`/`ee246ff` (T47), `8d6aae9` (T48),
-`26742ce`/`3042652` (T49), `6ffe564`/`e69dc24` (T50), `0c9d194`/`727c9c8` (T51); fork-log has the rows. Not built: T52 MLV, T53 ProRes and H.264, T54
+open), `decisions.md` (Patrik's answers and requirements), `measurements.md` (what ran on the Pi). Core `f91fafa`/`ab4cc92` (T47), `1af26c8` (T48),
+`bc12c0a`/`27eac5a` (T49), `4629de2`/`a37a902` (T50), `fa19856`/`4fa0432` (T51); fork-log has the rows. Not built: T52 MLV, T53 ProRes and H.264, T54
 touch UI (no touch screen on this Pi), the extras W2 and O19.
 
 | File | What |

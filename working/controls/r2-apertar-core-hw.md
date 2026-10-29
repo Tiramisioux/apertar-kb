@@ -4,11 +4,11 @@ Reader report for the controls project ("port the GPIO dropdown and method assig
 
 Trees read (read only, nothing edited):
 
-- Apertar Core at `eb9cc39` (`.../scratchpad/controls/core-tip`).
-- Apertar touch UI repo at `d8098d0` (`.../scratchpad/controls/ui-tip`), only where it reads or writes the same file.
-- KB at `dbcbfca` for Patrik's fix (`sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`).
+- Apertar Core at `0296ed1` (`.../scratchpad/controls/core-tip`).
+- Apertar touch UI repo at `5aab7e2` (`.../scratchpad/controls/ui-tip`), only where it reads or writes the same file.
+- KB at `24a00da` for Patrik's fix (`sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`).
 
-Citation key. Core paths are relative to the Core tree and pinned `@eb9cc39`; `App` = `src/ApertarCoreApp.cpp`, `Web` = `src/web/WebControlPage.cpp`, `HW/` = `src/hardware/`. UI paths start with `UI/` and are pinned `@d8098d0`. So `App:4333` means `src/ApertarCoreApp.cpp:4333@eb9cc39`. Labels: **CONFIRMED** = I opened the cited lines; **PROBABLE** = derived from cited lines (the derivation is stated); **UNCONFIRMED** = not checked, or needs the Pi.
+Citation key. Core paths are relative to the Core tree and pinned `@0296ed1`; `App` = `src/ApertarCoreApp.cpp`, `Web` = `src/web/WebControlPage.cpp`, `HW/` = `src/hardware/`. UI paths start with `UI/` and are pinned `@5aab7e2`. So `App:4333` means `src/ApertarCoreApp.cpp:4333@0296ed1`. Labels: **CONFIRMED** = I opened the cited lines; **PROBABLE** = derived from cited lines (the derivation is stated); **UNCONFIRMED** = not checked, or needs the Pi.
 
 ---
 

@@ -1,7 +1,7 @@
 # Controls project: plan summary (one page, v2)
 
 2026-10-28. Full design: `design-controls.md` (**v2**, same folder). What changed after the two critiques, point by point:
-`changes-from-critique.md`. v1 is kept as `design-controls-v1.md` / `plan-summary-v1.md`. Core `eb9cc39`, touch UI `d8098d0`,
+`changes-from-critique.md`. v1 is kept as `design-controls-v1.md` / `plan-summary-v1.md`. Core `0296ed1`, touch UI `5aab7e2`,
 Cinemate `d6cc93e`. Host-tested sketch: `sketch/`, **78 of 78 checks** (v1: 51).
 
 ## Recommendation

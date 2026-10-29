@@ -14,12 +14,12 @@ Trees (every `path:line` below is at these commits unless marked):
 
 | Short name | File | Tree, commit |
 | --- | --- | --- |
-| `App`, `App.hpp`, `WS`, `Web`, `CP` | `src/ApertarCoreApp.cpp`, `.hpp`, `src/web/WebServer.cpp`, `src/web/WebControlPage.cpp`, `src/ipc/ControlProtocol.cpp` | Core, Patrik's GitHub `cinemate-port` tip `eb9cc39` (`scratchpad/controls/core-tip`) |
+| `App`, `App.hpp`, `WS`, `Web`, `CP` | `src/ApertarCoreApp.cpp`, `.hpp`, `src/web/WebServer.cpp`, `src/web/WebControlPage.cpp`, `src/ipc/ControlProtocol.cpp` | Core, Patrik's GitHub `cinemate-port` tip `0296ed1` (`scratchpad/controls/core-tip`) |
 | `CC`, `Cdng`, `IFD`, `LJE`, `Lossy`, `Mlv`, `CMake`, `H264C` | `src/camera/CameraController.cpp`, `src/cdng/CdngEncoder.cpp`, `src/cdng/IfdBuilder.hpp`, `src/cdng/LosslessJpegEncoder.cpp`, `src/lossydng/LossyDngEncoder.cpp`, `src/mlv/MlvEncoder.cpp`, `CMakeLists.txt`, `src/video/LibavH264EncoderClient.cpp` | same |
-| `CBP`, `CPP`, `Main`, `CamP` | `qml/ClipBrowserPage.qml`, `qml/ClipPlayerPage.qml`, `qml/Main.qml`, `qml/CameraPage.qml` | touch UI, GitHub `cinemate-port` tip `d8098d0` (`scratchpad/controls/ui-tip`) |
+| `CBP`, `CPP`, `Main`, `CamP` | `qml/ClipBrowserPage.qml`, `qml/ClipPlayerPage.qml`, `qml/Main.qml`, `qml/CameraPage.qml` | touch UI, GitHub `cinemate-port` tip `5aab7e2` (`scratchpad/controls/ui-tip`) |
 | `PC`, `CLM`, `CIP`, `DD`, `MLR`, `VP`, `VPL`, `VPA`, `UCMake` | `src/playbackcontroller.cpp`, `src/cliplistmodel.cpp`, `src/cdngimageprovider.cpp`, `src/dngdecoder.cpp`, `src/MlvReader.cpp`, `src/VideoPlayback.cpp`, `src/VideoPlaybackLibav.cpp`, `src/VideoPlaybackApi.h`, `CMakeLists.txt` | same |
 | `cm:` | Cinemate `dev` | `d6cc93e` (`/home/user/tiramisioux/cinemate`) |
-| `kb:`, `TP` | Apertar KB; `tutorials/tutorial.py` | `b137ae8` (`/home/user/apertar-kb`) |
+| `kb:`, `TP` | Apertar KB; `tutorials/tutorial.py` | `e8eeef2` (`/home/user/apertar-kb`) |
 | `sketch/` | design sketch, in no repository | `scratchpad/playback/sketch/` |
 
 Labels: **CONFIRMED** = I opened the line or ran the command in this session. **CONFIRMED (rN)** = reader N opened it; I did
@@ -111,7 +111,7 @@ The WebUI list is wrong today in two ways a player would inherit:
 
 ### 1.3 Code view: where clips, frames and sound come from today
 
-| Step | Touch UI (`d8098d0`) | Core / WebUI (`eb9cc39`) | Cinemate |
+| Step | Touch UI (`5aab7e2`) | Core / WebUI (`0296ed1`) | Cinemate |
 | --- | --- | --- | --- |
 | Clip list | `ClipListModel` scans `/media/RAW` itself (hard-coded, `CLM:174`), on the GUI thread; reads the **whole** first DNG of each take for its frame rate (`DD:1523-1530`, `readAll`) | `GET /api/media` → `discoverMediaLibraryItems(mediaRoot, fps)` walks and stats every file on each call (`App:6422-6497`) | index from first-frame tags, every 3 s (r1 §2.4) |
 | A picture | full raw decode in the UI process: libtiff + liblj92, quad debayer, fixed look (`CIP:577-698`) | none: no reader, no decoder; the DNGs carry no preview (F1) | the JPEG cinepi-raw embeds in each DNG (IFD1), served as is (r1 §2.3) |
@@ -649,7 +649,7 @@ through the existing `queryParameterValue` (URL-decoded, `App:5258`); errors as 
 `meta` values use the touch UI's formats (`PC:121-164`, `PC:1149-1205`): date "dd MMM yyyy  HH:mm" (two spaces), "%1 x %2",
 "%.3f fps", the metadata duration rule (F22), sizes base 1024 with one decimal below 100, "Unavailable" when missing. Core
 formats them, so both screens show one answer: Patrik's own precedent when the WebUI and the touch UI disagreed
-(`87011d4`, `6ae70b5`, r4 P4). `bit_depth` follows D9 ("12-bit, companded") unless Q6 says copy the touch UI.
+(`bda2066`, `3c4f07d`, r4 P4). `bit_depth` follows D9 ("12-bit, companded") unless Q6 says copy the touch UI.
 
 ### 4.4 `/api/media/frame`
 
@@ -769,7 +769,7 @@ Optional fixes, each small, each its own later tutorial (not in T46-T53):
 
 ## 6. Implementation plan, file by file
 
-Order = build order. Lines are at `eb9cc39`; **use the search string**, lines move (and the controls project, T36-T45, edits
+Order = build order. Lines are at `0296ed1`; **use the search string**, lines move (and the controls project, T36-T45, edits
 the same files first). Risk: **low** = checkable on the host (a header with its test, `ApertarCoreApp.cpp` with
 `g++ -fsyntax-only`, the page with `node --check` and a mocked Chromium); **medium** = changes what an existing screen does.
 No row is high risk: **no change in `CameraController.cpp`, in any writer, or in the web server's header code.**
@@ -866,7 +866,7 @@ No row is high risk: **no change in `CameraController.cpp`, in any writer, or in
 Each note: `tutorials/inbox/<YYYYMMDDHHMMSS> CINEMATE APERTAR T4x <topic>.md`, frontmatter as `kb:tutorials/README.md`
 (`datum`, `kontext: CINEMATE`, `projekt: "#APERTAR"`, `fritext`, `typ: digital anteckning`), sections 0-9, numbered steps,
 one **Check** per step, a `%% tutor` block, the tags `#CINEMATE` `#APERTAR`. Section 6 is "Commit" (house rule: nothing is
-pushed). Reading assignments name lines at `eb9cc39` / `d8098d0`; run `tutorial.py refs T4x` on the Pi first (lines move,
+pushed). Reading assignments name lines at `0296ed1` / `5aab7e2`; run `tutorial.py refs T4x` on the Pi first (lines move,
 and the controls tutorials edit the same files). A pipe inside a check is written `|` with no spaces (F28).
 
 ### T46. Measure first: what a playback frame costs on this Pi
@@ -946,7 +946,7 @@ and the controls tutorials edit the same files). A pipe inside a check is writte
 | T52 MLV | 4.1 reader, 4.2 ISP render, 4.3 facts and frames | host test with Core's `MlvEncoder`; parity test against `MlvReader` |
 | T53 ProRes/H.264 | 4.1 copy the two files, 4.2 CMake module, 4.3 loader, 4.4 facts and frames | `pkg-config --modversion libswscale` first (M10); then one ProRes and one H.264 take |
 
-### Tutor blocks (anchors checked here: each string occurs once in its file at `eb9cc39` / `d8098d0`)
+### Tutor blocks (anchors checked here: each string occurs once in its file at `0296ed1` / `5aab7e2`)
 
 T47 note:
 

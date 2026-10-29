@@ -11,8 +11,8 @@ This file describes **Cinemate only**: its UI, its backend, the recorder that fe
 | `cm:` | `/home/user/tiramisioux/cinemate` (branch `dev`) | `d6cc93e` |
 | `cr:` | `/home/user/tiramisioux/cinepi-raw` (branch `dev`) | `63a08d5` |
 | `hb:` | `/home/user/tiramisioux/cinemate-handbook` | `c99ff77` |
-| `ac:` | Apertar Core, `scratchpad/controls/core-tip` | `eb9cc39` |
-| `kb:` | `/home/user/apertar-kb` | `dbcbfca` |
+| `ac:` | Apertar Core, `scratchpad/controls/core-tip` | `0296ed1` |
+| `kb:` | `/home/user/apertar-kb` | `24a00da` |
 
 Shorthands:
 
@@ -545,7 +545,7 @@ Measured 2026-09-13 on an imx585 in 4K 16-bit ClearHDR with CineMate Log 12, 25 
 
 - **Placement.** The pane is a settings-editor tab on Flask/werkzeug, with its own markdown text system (`gui-text`). Apertar's WebUI is one Core-served page (`ac:src/web/WebControlPage.cpp`, 11,661 lines). [C] Line count from `wc`.
 - **Redis key names** (`is_writing_buf`, `storage_preroll_active`, ...) and the listener-alive check. [C] `SE.py:249-280`.
-- **The raw decoder.** Tuned to cinepi-raw: IFD at the end of the file, uncompressed, 2×2 cells, no white balance. Apertar's commit `eb9cc39` is titled "Clear HDR on = uncompressed, off = lossless", and `ac:src/cdng/LosslessJpegEncoder.cpp` exists, so most Apertar DNGs would hit `dp.py:488-489` ("compressed DNG frames are not supported"). [P]
+- **The raw decoder.** Tuned to cinepi-raw: IFD at the end of the file, uncompressed, 2×2 cells, no white balance. Apertar's commit `0296ed1` is titled "Clear HDR on = uncompressed, off = lossless", and `ac:src/cdng/LosslessJpegEncoder.cpp` exists, so most Apertar DNGs would hit `dp.py:488-489` ("compressed DNG frames are not supported"). [P]
 - **Vestigial parameters and fixed conventions.**
   - The `scale` and `mono` query parameters. [C]
   - The `/media/RAW*` root convention. [C]

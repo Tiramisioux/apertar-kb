@@ -6,9 +6,9 @@ code at the commits below. Read-only on every repository. Nothing ran on the Pi.
 
 - The sketch `sketch/hardware/ActionCatalog.hpp` + `sketch/hardware/HardwareConfigText.hpp` with `sketch/controls_test.cpp`
   (g++ 13.3, `-std=c++20 -Wall -Wextra -Werror`): **51 of 51 checks pass**. The test compiles the three real
-  `normalizeSingleAction` copies from Core `eb9cc39` (extracted read-only by `sketch/make_old.sh`) and compares them with the
+  `normalizeSingleAction` copies from Core `0296ed1` (extracted read-only by `sketch/make_old.sh`) and compares them with the
   new catalog on 355 tokens.
-- `g++ -std=c++20 -fsyntax-only -Isrc -Iinclude` on Core `eb9cc39`: `ApertarCoreApp.cpp`, `GpioInput.cpp`,
+- `g++ -std=c++20 -fsyntax-only -Isrc -Iinclude` on Core `0296ed1`: `ApertarCoreApp.cpp`, `GpioInput.cpp`,
   `NeoRotary4Input.cpp`, `Pcf8574Input.cpp`, `Mpu6050RecordingSession.cpp`: **0 errors each**. So, unlike T34, every Core file
   this project touches can be checked on the host before the Pi.
 
@@ -16,13 +16,13 @@ Trees (every `path:line` below is at these commits unless marked):
 
 | Short name | File | Tree, commit |
 | --- | --- | --- |
-| `App`, `App.hpp` | `src/ApertarCoreApp.cpp`, `.hpp` | Core `scratchpad/controls/core-tip` `eb9cc39` = Patrik's GitHub `cinemate-port` tip |
+| `App`, `App.hpp` | `src/ApertarCoreApp.cpp`, `.hpp` | Core `scratchpad/controls/core-tip` `0296ed1` = Patrik's GitHub `cinemate-port` tip |
 | `Web` | `src/web/WebControlPage.cpp` | same |
 | `HW/` | `src/hardware/` | same |
 | `SF`, `CP` | `src/util/SettingsFile.hpp`, `src/ipc/ControlProtocol.cpp` | same |
-| `UI:` | touch UI repo (`ApertarUI`, automounter, network helper, standby helpers) | `scratchpad/controls/ui-tip` `d8098d0` = GitHub `cinemate-port` tip |
+| `UI:` | touch UI repo (`ApertarUI`, automounter, network helper, standby helpers) | `scratchpad/controls/ui-tip` `5aab7e2` = GitHub `cinemate-port` tip |
 | `Cm:` | Cinemate | `/home/user/tiramisioux/cinemate` `d6cc93e` |
-| `SRC`, `HL`, `TIDX`, `TUT` | KB `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md`, `tutorials/README.md`, `llm/tutoring.md` | KB `/home/user/apertar-kb` `e35ffa7` |
+| `SRC`, `HL`, `TIDX`, `TUT` | KB `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md`, `tutorials/README.md`, `llm/tutoring.md` | KB `/home/user/apertar-kb` `b47f700` |
 | `R1`-`R4` | the reader reports | this folder |
 | `sketch` | `sketch/hardware/*.hpp`, `sketch/controls_test.cpp` | this folder (host-tested here) |
 
@@ -816,7 +816,7 @@ DPI line, and the buttons and the tally on DPI pins (sketch check 8).
 
 ## 6. Implementation plan, file by file
 
-Order = build order. Line numbers are at `eb9cc39`/`d8098d0`. **T33-T35 move them**: use the search string. Risk: **low** =
+Order = build order. Line numbers are at `0296ed1`/`5aab7e2`. **T33-T35 move them**: use the search string. Risk: **low** =
 host-tested header, or host-checked (`g++ -fsyntax-only`, `node --check` plus a mocked Chromium run, a Qt host build).
 **Medium** = threads, locks or a large JS block, host-checked but its behaviour seen only on the Pi. **High**: none. Nothing in
 `CameraController.cpp`.
@@ -1037,7 +1037,7 @@ Undo for all: `git revert` the commit, and restore `~/apertar-hardware.conf` fro
   - Change the IMU orientation on the touch screen → history shows `by imu`.
   - The card shows the NeoRotary connected.
 
-### Tutor blocks (anchors checked here: each string occurs once in its file at `eb9cc39` / `d8098d0`; no check pipes)
+### Tutor blocks (anchors checked here: each string occurs once in its file at `0296ed1` / `5aab7e2`; no check pipes)
 
 T36:
 
@@ -1239,8 +1239,8 @@ driver`.
 
 ### 9.5 Sources
 
-- Core `eb9cc39`, touch UI `d8098d0`, Cinemate `d6cc93e`, at the lines above.
-- KB `e35ffa7`: `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md` (2026-10-23, 2026-10-25),
+- Core `0296ed1`, touch UI `5aab7e2`, Cinemate `d6cc93e`, at the lines above.
+- KB `b47f700`: `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md` (2026-10-23, 2026-10-25),
   `tutorials/README.md`, `llm/tutoring.md` §5.
 - The reader reports R1-R4 (this folder).
 - The sketch: `sketch/hardware/ActionCatalog.hpp`, `sketch/hardware/HardwareConfigText.hpp`, `sketch/controls_test.cpp`,

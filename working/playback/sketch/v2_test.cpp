@@ -7,7 +7,7 @@
 //   slots    two slots, three requests: one 503; idle trim and hold trim (M5)
 //   alloc    a frame per new thread: v1 per-request buffers against v2 slot buffers (M5, critic A.3)
 //   sizes    Core-written 4056x3040 (IMX477) and 3840x2200 frames pass the v2 size cap (M9 cap check)
-// Build, from this folder (CORE = Core eb9cc39):
+// Build, from this folder (CORE = Core 0296ed1):
 //   gcc -O2 -c third_party/liblj92/lj92.c -o lj92.o
 //   g++ -std=c++20 -O2 -Wall -Wextra -Isrc/playback -Ithird_party/liblj92 -I$CORE/src -I$CORE/include v2_test.cpp
 //       $CORE/src/cdng/CdngEncoder.cpp $CORE/src/cdng/LosslessJpegEncoder.cpp $CORE/src/color/ColorProfileConfig.cpp

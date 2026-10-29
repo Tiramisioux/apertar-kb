@@ -4,8 +4,8 @@ Reader report for the playback project. Patrik's decision (2026-10-28): "make th
 
 Trees (read only):
 
-- `ui:` = Apertar touch UI at `d8098d0`, `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/controls/ui-tip`. **A path with no prefix is in this tree.**
-- `core:` = Apertar Core at `eb9cc39`, `.../scratchpad/controls/core-tip`.
+- `ui:` = Apertar touch UI at `5aab7e2`, `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/controls/ui-tip`. **A path with no prefix is in this tree.**
+- `core:` = Apertar Core at `0296ed1`, `.../scratchpad/controls/core-tip`.
 - `cm:` = Cinemate `dev` at `d6cc93e`, `/home/user/tiramisioux/cinemate`.
 
 Labels: **CONFIRMED** = I opened the line. **PROBABLE** = derived (the reasoning is given). **UNCONFIRMED** = not checked or not checkable here (no Pi, no measurements). One label covers a whole bullet or table row unless a cell has its own label.
@@ -422,7 +422,7 @@ Worked examples (PROBABLE, arithmetic from those lines):
   - Content slides in from x = ±44. Opacity 0→1 over 260 ms. Scale 0.985→1 over 320 ms. x→0 over 320 ms. All OutCubic.
   - Prev/next are disabled while this runs.
   - CONFIRMED `:114-119`, `:125-128`, `:1658-1694`.
-- `beginClipTransition()` (`:182-209`) is **dead code**. It refers to `outgoingClipContent` and `clipTransitionAnim`, which do not exist. No code calls it. It was already dead in the first upload. CONFIRMED (grep at `d8098d0`; `git show ac2b412:qml/ClipPlayerPage.qml:104-130`).
+- `beginClipTransition()` (`:182-209`) is **dead code**. It refers to `outgoingClipContent` and `clipTransitionAnim`, which do not exist. No code calls it. It was already dead in the first upload. CONFIRMED (grep at `5aab7e2`; `git show ac2b412:qml/ClipPlayerPage.qml:104-130`).
 - Buttons: press scale and colour animations (140–150 ms). Dialogs: opacity 220 ms and scale 0.96→1 over 240 ms. CONFIRMED.
 
 ### 3.4 Player states
@@ -613,7 +613,7 @@ Git history is not useful here. Only two commits touch these files (CONFIRMED `g
 - `ac2b412` "Add files via upload" (2026-04-26): the first browser and player.
 - `8847105` "Updated to version 1.6.0" (2026-10-23): +4405/−511. It added `MlvReader`, `VideoPlayback*`, `RawPreview.hpp`, audio and most of the current QML.
 
-There are no bug-fix commits. The later commits (`2d27c46` … `d8098d0`) are camera-page work. So the list below comes from reading the code.
+There are no bug-fix commits. The later commits (`2d27c46` … `5aab7e2`) are camera-page work. So the list below comes from reading the code.
 
 | # | Quirk | Label |
 | --- | --- | --- |

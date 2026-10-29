@@ -54,8 +54,8 @@ Pi state: Core `d9f00d4` running, 25 fps, uncompressed, Clear HDR 16-bit, system
 
 | ID | What | Repo | State on `cinemate-port` | Left to do |
 | --- | --- | --- | --- | --- |
-| T20 | WebUI "records" with no drive (WebUI half of T18) | Core (WebUI) | Steps 2, 3, 5 **done** by T28 + follow-ups; **Step 4 done** in `6ae70b5` (Core's `capture.storage` = "Media Removed"/"Media Error"): Core gate, HAT slot bit + pulled latch, `!hasMedia` in the record button's disabled rule, `hasMedia` from `media_alive`, MEDIA REMOVED pill | Step 4: capture strip / Settings media card say "Media removed" from `media_state` (the strip still prints `capture.storage`); Step 6 checklist incl. hardware button and `--simulate`. The note's `media_state` values (`ok/dead/none`) differ from T28's (`mounted/removed/error/none`): use T28's |
-| T21 | WebUI "Time left" vs HDMI | Core (+ UI later) | **done in `6ae70b5`** (estimate = touch UI model incl. 16-bit; label names format + "bar: 2 h"); test pending | Port the touch UI's per-frame model into `estimatedRawBytesPerSecond` (bits from `rawBitDepth`, **16 included**: Clear HDR 16-bit over-reports by about a third today), lossless/lossy/MLV/H.264 rules; truthful `time_left_label`; decide the 120-minute bar. T29's media profile does not touch it |
+| T20 | WebUI "records" with no drive (WebUI half of T18) | Core (WebUI) | Steps 2, 3, 5 **done** by T28 + follow-ups; **Step 4 done** in `3c4f07d` (Core's `capture.storage` = "Media Removed"/"Media Error"): Core gate, HAT slot bit + pulled latch, `!hasMedia` in the record button's disabled rule, `hasMedia` from `media_alive`, MEDIA REMOVED pill | Step 4: capture strip / Settings media card say "Media removed" from `media_state` (the strip still prints `capture.storage`); Step 6 checklist incl. hardware button and `--simulate`. The note's `media_state` values (`ok/dead/none`) differ from T28's (`mounted/removed/error/none`): use T28's |
+| T21 | WebUI "Time left" vs HDMI | Core (+ UI later) | **done in `3c4f07d`** (estimate = touch UI model incl. 16-bit; label names format + "bar: 2 h"); test pending | Port the touch UI's per-frame model into `estimatedRawBytesPerSecond` (bits from `rawBitDepth`, **16 included**: Clear HDR 16-bit over-reports by about a third today), lossless/lossy/MLV/H.264 rules; truthful `time_left_label`; decide the 120-minute bar. T29's media profile does not touch it |
 
 Before each tutorial: `python3 tutorials/tutorial.py refs TNN`. T27-T30 report many MOVED/MISSING refs because their line numbers
 are at the cloud session's patch commits (`9e6df59`, `f2fa35b`, `75e9f57`, `25397cd`), not at `d9f00d4`. Fix the refs in the note
@@ -92,18 +92,18 @@ Things the T22-T25 work changes for these notes:
 
 - **Session 2026-10-26 evening, summary:** T26 confirmed (driver crops, `cinemate-port` `24172e6`); Core binning `4ab1057`;
   T27 built and **left off** (sensor ~1.5 ppm vs the Pi crystal, lock flickers and drops frames on the lattice libcamera);
-  T28 applied (`438a342`, fix `e8bb1b7`) plus CFE follow-ups `56d9137`, `da48974`, `227ea7b` and UI `cinemate-port`
+  T28 applied (`438a342`, fix `e8bb1b7`) plus CFE follow-ups `0b1632f`, `a3ac8da`, `70e8376` and UI `cinemate-port`
   (`160898c`, `dc471c1`): CFE pull/re-insert works without reboot. Journal persistent (`50-apertar-persistent.conf`),
   `IPARPI:ERROR` drop-in, PCIe Gen 2 on test. Branches renamed: Core `clearhdr-fixes` and driver `apertar-tiramisioux` are now
   `cinemate-port`; UI got `cinemate-port` too.
-- ~~Open: a stopped take is lost if the card is pulled within ~30 s~~ `0586273`: syncfs once a second and at stop (to be tested,
-  also for throughput at Gen 2/Gen 3). T29 `ffb87db` (no direct I/O, helper not installed) and T30 `a99691e` applied, built, untested.
+- ~~Open: a stopped take is lost if the card is pulled within ~30 s~~ `4ce382e`: syncfs once a second and at stop (to be tested,
+  also for throughput at Gen 2/Gen 3). T29 `26da30e` (no direct I/O, helper not installed) and T30 `60ce8e9` applied, built, untested.
 - **T28 not finished:** 5.1 eject gate, USB-stick pull, 5.3 eject intent; T29/T30 after it.
 
-- **Temporary fixes to review (Patrik, 2026-10-27, all `temp:` in the subject, on GitHub `cinemate-port`):** Core `753f181` ISO
-  1600 in lossless, `c5d0c37` 33 fps (superseded by `315e390`), `13a350f` 16-bit Clear HDR = 25 fps uncompressed (switches to
-  12-bit SDR lossless above 25), `315e390` build fix + WebUI fps 25/33/50; UI `def5d45` ISO 1600, `f149744` FORMAT line bit
-  depth + Clear HDR, `0165b70` resolution button toggles Clear HDR 16 ↔ SDR 12, `2464b60` fps 25/33/50, `f23c243` HDMI RESOLUTION caption with bit depth + Clear HDR, Core `3c2f2c5` / UI `d8098d0` 25/33/50 everywhere incl. the rotary, rotary Clear HDR toggle, auto-return to 16-bit Clear HDR at ≤25 fps, IMX585 4K SDR 60, Core `eb9cc39` Clear HDR on = uncompressed / off = lossless however switched, **lossless cap 50 (unmeasured: 33/50 fps 12-bit lossless 4K may drop frames)**. Running on the Pi since 23:08 and working
+- **Temporary fixes to review (Patrik, 2026-10-27, all `temp:` in the subject, on GitHub `cinemate-port`):** Core `55e7ba9` ISO
+  1600 in lossless, `28ee0d3` 33 fps (superseded by `0d93f11`), `d084ed4` 16-bit Clear HDR = 25 fps uncompressed (switches to
+  12-bit SDR lossless above 25), `0d93f11` build fix + WebUI fps 25/33/50; UI `d5a1bf2` ISO 1600, `508d692` FORMAT line bit
+  depth + Clear HDR, `8fdd0e9` resolution button toggles Clear HDR 16 ↔ SDR 12, `d93c7e0` fps 25/33/50, `ea5662c` HDMI RESOLUTION caption with bit depth + Clear HDR, Core `0bac3db` / UI `5aab7e2` 25/33/50 everywhere incl. the rotary, rotary Clear HDR toggle, auto-return to 16-bit Clear HDR at ≤25 fps, IMX585 4K SDR 60, Core `0296ed1` Clear HDR on = uncompressed / off = lossless however switched, **lossless cap 50 (unmeasured: 33/50 fps 12-bit lossless 4K may drop frames)**. Running on the Pi since 23:08 and working
   (Patrik); still marked `temp:` for his review. 
 
 ## 5. Read first

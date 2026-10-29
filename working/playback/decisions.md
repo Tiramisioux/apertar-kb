@@ -63,12 +63,12 @@ T54 whether it stays, shrinks to the code changes only, or waits for a touch scr
 ## Note for O10 (added 2026-10-29)
 
 The timecode the DNGs carry is now its own setting: **File timecode** (Free Run or Rec Run), apart from the UI timecode
-(Core `2f4f0f6`, UI `92125a7`, `set_timecode_mode target=ui|files|both`). O10 shows the recorded start from DNG tag 51043,
+(Core `909aaa5`, UI `7029db1`, `set_timecode_mode target=ui|files|both`). O10 shows the recorded start from DNG tag 51043,
 so it shows what File timecode was set to for that take.
 
 ## Trees moved since the design
 
-Design: Core `eb9cc39`, touch UI `d8098d0`. The Pi on 2026-10-29: Core `2f4f0f6`, touch UI `92125a7`. Re-check every
+Design: Core `0296ed1`, touch UI `5aab7e2`. The Pi on 2026-10-29: Core `909aaa5`, touch UI `7029db1`. Re-check every
 `path:line` against the Pi trees before T47 (the WebUI page `WebControlPage.cpp` grew by about 1,500 lines).
 
 ## Still open

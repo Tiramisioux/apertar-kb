@@ -20,7 +20,7 @@ Then read, in this order:
    WebUI, §5 the hardware catalog with my rig, §6 the plan, §8 measurements, §9.2 my questions.
 3. `working/controls/changes-from-critique.md` where you doubt a decision.
 4. The sketch, `working/controls/sketch/`: build and run its test on the Pi (the command is in README.md) against my Core
-   tree, `~/ApertarCore/src`. It was written against Core `eb9cc39`; tell me if my tree has moved.
+   tree, `~/ApertarCore/src`. It was written against Core `0296ed1`; tell me if my tree has moved.
 
 What I want from you, in this order:
 1. Go through the questions in §9.2 (Q1-Q23) with me, one at a time, with the design's default and what changes if I say

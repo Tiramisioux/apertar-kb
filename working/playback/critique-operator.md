@@ -9,9 +9,9 @@ Trees I opened (every `path:line` below is at these commits):
 | Short name | File | Tree, commit |
 | --- | --- | --- |
 | `D` | `design-playback.md`, the design under review. `D:n` = its line n, `D§x` = its section | this folder |
-| `App`, `CC`, `Web`, `WS`, `Audio` | `src/ApertarCoreApp.cpp`, `src/camera/CameraController.cpp`, `src/web/WebControlPage.cpp`, `src/web/WebServer.cpp`, `src/audio/AudioRecordingSession.cpp` | Core `scratchpad/controls/core-tip` `eb9cc39` |
-| `PC`, `CPP`, `CBP`, `CamP`, `DD`, `VPL` | `src/playbackcontroller.cpp`, `qml/ClipPlayerPage.qml`, `qml/ClipBrowserPage.qml`, `qml/CameraPage.qml`, `src/dngdecoder.cpp`, `src/VideoPlaybackLibav.cpp` | touch UI `scratchpad/controls/ui-tip` `d8098d0` |
-| `HL`, `RA`, `RL`, `ST` | `lessons/hardware-log.md`, `working/ramp-answer.md`, `working/ramp-ladder/README.md`, `working/ramp-ladder/build/STATUS.md` | KB `/home/user/apertar-kb` `c108731` |
+| `App`, `CC`, `Web`, `WS`, `Audio` | `src/ApertarCoreApp.cpp`, `src/camera/CameraController.cpp`, `src/web/WebControlPage.cpp`, `src/web/WebServer.cpp`, `src/audio/AudioRecordingSession.cpp` | Core `scratchpad/controls/core-tip` `0296ed1` |
+| `PC`, `CPP`, `CBP`, `CamP`, `DD`, `VPL` | `src/playbackcontroller.cpp`, `qml/ClipPlayerPage.qml`, `qml/ClipBrowserPage.qml`, `qml/CameraPage.qml`, `src/dngdecoder.cpp`, `src/VideoPlaybackLibav.cpp` | touch UI `scratchpad/controls/ui-tip` `5aab7e2` |
+| `HL`, `RA`, `RL`, `ST` | `lessons/hardware-log.md`, `working/ramp-answer.md`, `working/ramp-ladder/README.md`, `working/ramp-ladder/build/STATUS.md` | KB `/home/user/apertar-kb` `457ad0d` |
 | `R1`-`R4` | the four reader reports | this folder |
 
 Labels:
@@ -145,7 +145,7 @@ The take is 4K SDR 12-bit lossless at 25 fps, 10 s long, with sound.
 
 ### W6. A speed-ramped take
 
-T31 is not on `eb9cc39`, but Patrik is building T31-T34 now (`ST:9-17`).
+T31 is not on `0296ed1`, but Patrik is building T31-T34 now (`ST:9-17`).
 
 | Step | Design | Operator sees | Problem |
 | --- | --- | --- | --- |
@@ -340,7 +340,7 @@ They are ordered by how much they hurt on set. Each says what goes wrong, the ev
 
 ### P7. Browser Back, phone sleep and long-press callouts (the touch UI never meets them)
 
-- **What** (CONFIRMED by grep at `eb9cc39`). `Web` has no `pushState`, `popstate`, `wakeLock`, `-webkit-touch-callout` or `contextmenu`. The viewport is `width=device-width, initial-scale=1` (`Web:11`). The thumbnails are `<img>` (`D:413`), selected by an 800 ms long press (`D:420`).
+- **What** (CONFIRMED by grep at `0296ed1`). `Web` has no `pushState`, `popstate`, `wakeLock`, `-webkit-touch-callout` or `contextmenu`. The viewport is `width=device-width, initial-scale=1` (`Web:11`). The thumbnails are `<img>` (`D:413`), selected by an 800 ms long press (`D:420`).
 - **Effect** (UNCONFIRMED: real phones only):
   - Android's Back button and iOS's edge swipe leave the WebUI or close the tab, instead of closing the viewer.
   - The phone's screen locks during a long take, because a canvas plus `<audio>` does not keep it awake. The tab is then hidden, and playback pauses (`D:542`).

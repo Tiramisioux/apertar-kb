@@ -8,7 +8,7 @@ typ: digital anteckning
 
 # T36. One action vocabulary: `ActionCatalog.hpp` and `list_actions`
 
-Status: **done 2026-10-29** by Claude on the Mac, built and tested on the Pi (Core `controls` branch, `d1b73e3`). First step of the Apertar Controls project (`working/controls/`).
+Status: **done 2026-10-29** by Claude on the Mac, built and tested on the Pi (Core `controls` branch, `916c1dd`). First step of the Apertar Controls project (`working/controls/`).
 
 **You will learn**
 - why copies of the same list drift apart, and how one header with a host test stops it;
@@ -32,7 +32,7 @@ Read: `src/hardware/ActionCatalog.hpp:122-132`, `src/hardware/ButtonActionList.h
 
 ## 3. Find it yourself
 
-**3.1 How many copies were there?** On the old tree: `git -C ~/ApertarCore show 727c9c8:src/hardware/GpioInput.cpp | grep -c 'std::string normalizeSingleAction'`. Prediction: 1 in each of the three files. Question: what did an unknown name become?
+**3.1 How many copies were there?** On the old tree: `git -C ~/ApertarCore show 4fa0432:src/hardware/GpioInput.cpp | grep -c 'std::string normalizeSingleAction'`. Prediction: 1 in each of the three files. Question: what did an unknown name become?
 
 > [!tip]- Answer
 > Itself. The copy returned the name unchanged and App ignored it at press time.
@@ -74,7 +74,7 @@ On the camera: turn each knob one detent each way, press each knob, press `d10` 
 
 ## 6. Commit
 
-Core `controls`, `d1b73e3`: `core: one action vocabulary in ActionCatalog.hpp, and list_actions (T36)`. KB: the host test and its generators in `working/tools/`. Not pushed to GitHub.
+Core `controls`, `916c1dd`: `core: one action vocabulary in ActionCatalog.hpp, and list_actions (T36)`. KB: the host test and its generators in `working/tools/`. Not pushed to GitHub.
 
 ## 7. If it went wrong
 
@@ -82,7 +82,7 @@ Core `controls`, `d1b73e3`: `core: one action vocabulary in ActionCatalog.hpp, a
 | --- | --- | --- |
 | A test FAIL line naming a token | an alias is missing from `kSpecs` | add it to that line's `aliases` |
 | `dispatcher coverage` FAIL naming an id | a catalog id has no branch in `handleSingleHardwareInputAction` (or the reverse) | add the branch, or the catalog line |
-| A button does nothing after the change | an alias lost | compare with the old code: `git show 727c9c8:src/hardware/GpioInput.cpp` |
+| A button does nothing after the change | an alias lost | compare with the old code: `git show 4fa0432:src/hardware/GpioInput.cpp` |
 | `Unknown command: list_actions` | Core is still the old binary | rebuild and restart |
 | Anything else | | `git -C ~/ApertarCore switch cinemate-port`, rebuild, restart |
 
@@ -94,7 +94,7 @@ Core `controls`, `d1b73e3`: `core: one action vocabulary in ActionCatalog.hpp, a
 
 ## 9. Sources
 
-`working/controls/design-controls.md` §3.2, §3.3, §6 (T36), §7 (T36); `working/controls/decisions.md` (Q10, Q11); Core `controls` `d1b73e3`; host test `working/tools/controls_test.cpp`.
+`working/controls/design-controls.md` §3.2, §3.3, §6 (T36), §7 (T36); `working/controls/decisions.md` (Q10, Q11); Core `controls` `916c1dd`; host test `working/tools/controls_test.cpp`.
 
 %% tutor
 ref core src/hardware/ActionCatalog.hpp 122 inline std::string canonicalAction(std::string_view text)
@@ -107,7 +107,7 @@ ref core src/hardware/RecordingIndicatorOutput.cpp 121 return hardware::isOutput
 ref core src/ApertarCoreApp.cpp 1488 return hardware::actions::suffixAfter(action, prefixViews(prefixes));
 ref core src/ApertarCoreApp.cpp 9864 const std::string suggestion = hardware::actions::suggestion(action);
 ref core src/ApertarCoreApp.cpp 10408 if (command.name == "list_actions") {
-check 3.1 | git -C /home/pi/ApertarCore show 727c9c8:src/hardware/GpioInput.cpp | std::string normalizeSingleAction
+check 3.1 | git -C /home/pi/ApertarCore show 4fa0432:src/hardware/GpioInput.cpp | std::string normalizeSingleAction
 check 4.1 | grep -c 'inline std::string canonicalAction' /home/pi/ApertarCore/src/hardware/ActionCatalog.hpp | ^1$
 check 4.3 | grep -c normalizeSingleAction /home/pi/ApertarCore/src/hardware/NeoRotary4Input.cpp | ^0$
 check 4.4 | grep -c canonicalAnalogTarget /home/pi/ApertarCore/src/hardware/GroveAnalogInput.cpp | ^1$

@@ -1,5 +1,5 @@
 // Design sketch: the Core-side copy of the touch UI's look (RawRender.hpp) against the touch UI's
-// own code (ApertarUI d8098d0: dngdecoder.cpp, cdngimageprovider.cpp), on the same Core-written DNGs.
+// own code (ApertarUI 5aab7e2: dngdecoder.cpp, cdngimageprovider.cpp), on the same Core-written DNGs.
 #include "DngFrameReader.hpp"
 #include "RawRender.hpp"
 #include "RawPreview.hpp"   // touch UI: renderRawFramePreview

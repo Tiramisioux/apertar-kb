@@ -30,12 +30,12 @@ Trees (every `path:line` below is at these commits unless marked):
 
 | Short name | File | Tree, commit |
 | --- | --- | --- |
-| `App`, `App.hpp`, `WS`, `Web`, `CP` | `src/ApertarCoreApp.cpp`, `.hpp`, `src/web/WebServer.cpp`, `src/web/WebControlPage.cpp`, `src/ipc/ControlProtocol.cpp` | Core, Patrik's GitHub `cinemate-port` tip `eb9cc39` (`scratchpad/controls/core-tip`) |
+| `App`, `App.hpp`, `WS`, `Web`, `CP` | `src/ApertarCoreApp.cpp`, `.hpp`, `src/web/WebServer.cpp`, `src/web/WebControlPage.cpp`, `src/ipc/ControlProtocol.cpp` | Core, Patrik's GitHub `cinemate-port` tip `0296ed1` (`scratchpad/controls/core-tip`) |
 | `CC`, `Cdng`, `IFD`, `LJE`, `Lossy`, `Mlv`, `Audio`, `CMake`, `H264C` | `src/camera/CameraController.cpp`, `src/cdng/CdngEncoder.cpp`, `src/cdng/IfdBuilder.hpp`, `src/cdng/LosslessJpegEncoder.cpp`, `src/lossydng/LossyDngEncoder.cpp`, `src/mlv/MlvEncoder.cpp`, `src/audio/AudioRecordingSession.cpp`, `CMakeLists.txt`, `src/video/LibavH264EncoderClient.cpp` | same |
-| `CBP`, `CPP`, `Main`, `CamP` | `qml/ClipBrowserPage.qml`, `qml/ClipPlayerPage.qml`, `qml/Main.qml`, `qml/CameraPage.qml` | touch UI, GitHub `cinemate-port` tip `d8098d0` (`scratchpad/controls/ui-tip`) |
+| `CBP`, `CPP`, `Main`, `CamP` | `qml/ClipBrowserPage.qml`, `qml/ClipPlayerPage.qml`, `qml/Main.qml`, `qml/CameraPage.qml` | touch UI, GitHub `cinemate-port` tip `5aab7e2` (`scratchpad/controls/ui-tip`) |
 | `PC`, `CLM`, `CIP`, `DD`, `MLR`, `VP`, `VPL`, `VPA`, `UCMake` | `src/playbackcontroller.cpp`, `src/cliplistmodel.cpp`, `src/cdngimageprovider.cpp`, `src/dngdecoder.cpp`, `src/MlvReader.cpp`, `src/VideoPlayback.cpp`, `src/VideoPlaybackLibav.cpp`, `src/VideoPlaybackApi.h`, `CMakeLists.txt` | same |
 | `cm:` | Cinemate `dev` | `d6cc93e` (`/home/user/tiramisioux/cinemate`) |
-| `kb:`, `TP` | Apertar KB; `tutorials/tutorial.py` | `b137ae8`; HEAD is now `11dad27`, two autosaves of `working/playback/` only (critic w9) |
+| `kb:`, `TP` | Apertar KB; `tutorials/tutorial.py` | `e8eeef2`; HEAD is now `9bf388f`, two autosaves of `working/playback/` only (critic w9) |
 | `sketch/` | design sketch v2, in no repository | `scratchpad/playback/sketch/` (v1: `sketch-v1/`) |
 
 Labels: **CONFIRMED** = I opened the line or ran the command in a designer pass (v1 or v2), or reproduced a critic's run.
@@ -133,7 +133,7 @@ The WebUI list is wrong today in two ways a player would inherit:
 
 ### 1.3 Code view: where clips, frames and sound come from today
 
-| Step | Touch UI (`d8098d0`) | Core / WebUI (`eb9cc39`) | Cinemate |
+| Step | Touch UI (`5aab7e2`) | Core / WebUI (`0296ed1`) | Cinemate |
 | --- | --- | --- | --- |
 | Clip list | `ClipListModel` scans `/media/RAW` itself (hard-coded, `CLM:174`), on the GUI thread; reads the **whole** first DNG of each take for its frame rate (`DD:1523-1530`); also lists movies copied to the root (`CLM:540-556`) | `GET /api/media` → `discoverMediaLibraryItems(mediaRoot, fps)` walks and stats every file on each call (`App:6422-6497`, `App:6055-6090`); folders only | index from first-frame tags, every 3 s (r1 §2.4) |
 | A picture | full raw decode in the UI process: libtiff + liblj92, quad debayer, fixed look (`CIP:577-698`) | none: no reader, no decoder; the DNGs carry no preview (F1) | the JPEG cinepi-raw embeds in each DNG (IFD1), served as is; raw decode turned off (`cm:src/module/app/playback.py:227-236`) |
@@ -181,7 +181,7 @@ The WebUI list is wrong today in two ways a player would inherit:
 | F35 | `installInteractions()` wires the old media overlay's ids with no null check, at top level, before the preview stream and the state poll start; `setMediaBrowserOpen` toggles `#mediaBrowserOverlay` with no null check | CONFIRMED `Web:11396-11407`, `Web:11610-11613`, `Web:11649-11653`, `Web:6181` |
 | F36 | The WebUI's delete helpers ask `window.confirm` themselves; `fetchMediaLibrary` drops a call while one is in flight | CONFIRMED `Web:10427`, `Web:10476`, `Web:10404-10405` |
 | F37 | The largest frame Core writes is the IMX477's 4056 × 3040; IMX585 4K is 3856 × 2180, the 16-bit Clear HDR readout 3840 × 2200 | CONFIRMED `CC:393-395`, `CC:417`, `CC:471-472` |
-| F38 | T31 speed ramps (Patrik is building them; **not** on `eb9cc39`): frames numbered by count, every frame's `FrameRate` pinned to the start rate, the WAV in real time, one `fps-ramp.txt` per take with `requested_frame applied_frame frame_us seen tc_at_base boot_us from_fps to_fps shutter_us` | CONFIRMED in the KB (`kb:working/ramp-ladder/README.md:29`, `kb:working/ramp-answer.md:14`, `:77`, `:92`); grep of `fps_ramp` in `eb9cc39`: 0 |
+| F38 | T31 speed ramps (Patrik is building them; **not** on `0296ed1`): frames numbered by count, every frame's `FrameRate` pinned to the start rate, the WAV in real time, one `fps-ramp.txt` per take with `requested_frame applied_frame frame_us seen tc_at_base boot_us from_fps to_fps shutter_us` | CONFIRMED in the KB (`kb:working/ramp-ladder/README.md:29`, `kb:working/ramp-answer.md:14`, `:77`, `:92`); grep of `fps_ramp` in `0296ed1`: 0 |
 | F39 | The WebUI page has no `pushState`, `popstate`, `wakeLock`, `-webkit-touch-callout` or `contextmenu`; it is served over plain HTTP, where the Screen Wake Lock API does not exist (secure contexts only) | CONFIRMED grep `Web`; the secure-context rule is PROBABLE (W3C spec, general web knowledge) |
 | F40 | `eject_media` and `format_media` run a plain `umount`, which fails while any file on the media is open | CONFIRMED `App:3779`, `App:3832`; the EBUSY rule PROBABLE (Linux) |
 
@@ -838,7 +838,7 @@ through the existing `queryParameterValue` (URL-decoded, `App:5258`); errors as 
   spaces), "%1 x %2", "%.3f fps", the metadata duration rule (F22) on the span (D15), sizes base 1024 with one decimal below
   100, "Unavailable" when missing; `bit_depth` as the touch UI reports it, "16-bit" for a companded or lossy take (D9). Core
   formats them, so both screens show one answer: Patrik's own precedent when the WebUI and the touch UI disagreed
-  (`87011d4`, `6ae70b5`, r4 P4). The date is `strftime("%d %b %Y  %H:%M")`; Core never calls `setlocale`, so the months are
+  (`bda2066`, `3c4f07d`, r4 P4). The date is `strftime("%d %b %Y  %H:%M")`; Core never calls `setlocale`, so the months are
   English (F23). If Q15 says follow the Pi's locale: `newlocale()` + `strftime_l` on this one call, never
   `setlocale(LC_ALL, "")`, which would change number parsing in Core's config files (`sv_SE`: "1,5"; critic m6).
 - `extra` holds the three WebUI-only rows (D16). FORMAT: 16-bit → "Clear HDR 16-bit"; 12-bit with a LinearizationTable in
@@ -972,7 +972,7 @@ frames are asked one at a time and in order (critic M6, operator P12).
 screen is where "review, then roll" happens most, and today the take records while its player reads and decodes from the
 card (§1.2). With T54 "recording wins" holds on both screens, and both show the same time:
 
-| # | Change | Where (`d8098d0`, search string) | Size |
+| # | Change | Where (`5aab7e2`, search string) | Size |
 | --- | --- | --- | --- |
 | U2 | Stop playback when a take starts; ignore the hardware `clip_browser` action in a take; Remove disabled in a take; the player shows the WebUI's hold text; `user_activity` while playing (if M5 says so) | `Main:511` `onRecordingChanged: {`; `Main:319` `if (action === "clip_browser") {`; `PC:542` `void PlaybackController::stop()` | ~40 |
 | U9 | The number clock (time → frame number → the frame at or before it, holding over holes and 0-byte frames) and the span DURATION | `PC:827` `void PlaybackController::updateFrameFromPlaybackClock()`, `PC:849` `const int newFrameIndex = qBound(0,`; `PC:1200` `: formatDurationText(m_frameFiles.size(), m_fps));`; `CLM:147` `QString durationTextForClip(int frameCount, double fps)` | ~50 |
@@ -995,7 +995,7 @@ Optional fixes, each small, each its own later tutorial:
 
 ## 6. Implementation plan, file by file
 
-Order = build order. Lines are at `eb9cc39` / `d8098d0`; **use the search string**, lines move (and the controls project,
+Order = build order. Lines are at `0296ed1` / `5aab7e2`; **use the search string**, lines move (and the controls project,
 T36-T45, edits the same files first). Every search string below occurs once in its file at that commit (checked here),
 except where a row says otherwise. Risk: **low** = checkable on the host (a header with its test, `ApertarCoreApp.cpp`
 with `g++ -fsyntax-only`, the page with `node --check` and a mocked Chromium); **medium** = changes what an existing screen
@@ -1112,7 +1112,7 @@ code.**
 Each note: `tutorials/inbox/<YYYYMMDDHHMMSS> CINEMATE APERTAR T4x <topic>.md`, frontmatter as `kb:tutorials/README.md`
 (`datum`, `kontext: CINEMATE`, `projekt: "#APERTAR"`, `fritext`, `typ: digital anteckning`), sections 0-9, numbered steps,
 one **Check** per step, a `%% tutor` block, the tags `#CINEMATE` `#APERTAR`. Section 6 is "Commit" (house rule: nothing is
-pushed). Reading assignments name lines at `eb9cc39` / `d8098d0`; run `tutorial.py refs T4x` on the Pi first (lines move,
+pushed). Reading assignments name lines at `0296ed1` / `5aab7e2`; run `tutorial.py refs T4x` on the Pi first (lines move,
 and the controls tutorials edit the same files). A pipe inside a check is written `|` with no spaces (F28).
 
 ### T46. Measure first: what a playback frame costs on this Pi
@@ -1204,7 +1204,7 @@ and the controls tutorials edit the same files). A pipe inside a check is writte
 | T53 ProRes/H.264 | 4.1 copy the two files, 4.2 CMake module and install, 4.3 loader with the decoder mutex, 4.4 facts, `.writing` and frames | `pkg-config --modversion libswscale` first (M10); then one ProRes and one H.264 take; M19 |
 | T54 Touch UI yields and keeps time | 4.1 pause in a take (54.1), 4.2 hardware action (54.2), 4.3 Remove (54.3), 4.4 the number clock (54.4), 4.5 the span duration (54.5), 4.6 parity (54.6) | the touch UI builds; the parity test; on the Pi: the same clap take on both screens, in time; record from the rig while the touch screen plays (it pauses) |
 
-### Tutor blocks (each `ref` string occurs once in its file at `eb9cc39` / `d8098d0`, at the stated line; each `check` gets through `tutorial.py`'s parser and safety filter; both checked here)
+### Tutor blocks (each `ref` string occurs once in its file at `0296ed1` / `5aab7e2`, at the stated line; each `check` gets through `tutorial.py`'s parser and safety filter; both checked here)
 
 T47 note:
 

@@ -1,13 +1,13 @@
 # Code critique: `design-playback.md` (v1, WebUI playback in the touch UI's shape)
 
 2026-10-29, cloud session, code critic. Read-only on every repository; nothing ran on the Pi. Checked against the trees
-and commits named in the design: Core `eb9cc39`, touch UI `d8098d0`, Cinemate `d6cc93e`, KB `b137ae8`. KB HEAD is now
-`11dad27` (two autosaves that touch only `working/playback/`). The design file is the same as the one at 23:57 (md5
+and commits named in the design: Core `0296ed1`, touch UI `5aab7e2`, Cinemate `d6cc93e`, KB `e8eeef2`. KB HEAD is now
+`9bf388f` (two autosaves that touch only `working/playback/`). The design file is the same as the one at 23:57 (md5
 `c00bf903…`).
 
-Short names are the design's: `App`, `App.hpp`, `WS`, `Web`, `CC`, `Cdng`, `CMake`, `H264C` are Core `eb9cc39`. `CBP`,
-`CPP`, `Main`, `CamP`, `PC`, `CLM`, `CIP`, `DD`, `VP`, `VPL`, `VPA`, `UCMake` are the touch UI `d8098d0`. `cm:` is
-Cinemate `d6cc93e`, `kb:` is the KB `b137ae8`, and `sketch/` is `scratchpad/playback/sketch/`.
+Short names are the design's: `App`, `App.hpp`, `WS`, `Web`, `CC`, `Cdng`, `CMake`, `H264C` are Core `0296ed1`. `CBP`,
+`CPP`, `Main`, `CamP`, `PC`, `CLM`, `CIP`, `DD`, `VP`, `VPL`, `VPA`, `UCMake` are the touch UI `5aab7e2`. `cm:` is
+Cinemate `d6cc93e`, `kb:` is the KB `e8eeef2`, and `sketch/` is `scratchpad/playback/sketch/`.
 
 Labels: **CONFIRMED** means I opened the line or ran the command in this session. **PROBABLE** means derived, and the
 derivation is given. **UNCONFIRMED** means only the Pi or a browser can settle it.
@@ -365,7 +365,7 @@ the only one this pass leaves behind.
 | w6 | F8 lists the limits | Add: a 33rd connection is closed with no reply (`WS:271-272`, M12) | |
 | w7 | Walkthrough B: `"recording"`, then `"writing"`, then `""` | `"writing"` shows only for still writes (M8) | reword |
 | w8 | "plugin missing" quotes `VP:35` as "Video playback decoder unavailable." | The full string ends "Build apertar-video-libav (libswscale-dev required)." | say it is shortened |
-| w9 | KB at `b137ae8`; "this pass wrote nothing into the KB" | The KB's autosaves `c108731` and `11dad27` committed `working/playback/` (the design file is identical) | note the autosave |
+| w9 | KB at `e8eeef2`; "this pass wrote nothing into the KB" | The KB's autosaves `457ad0d` and `9bf388f` committed `working/playback/` (the design file is identical) | note the autosave |
 
 Checked and correct (CONFIRMED):
 

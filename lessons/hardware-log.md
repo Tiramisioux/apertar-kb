@@ -341,9 +341,9 @@ Entry format:
 - Confirmed by: Patrik's report; the card's contents.
 - Tutorial: T28 5.2 (CFE variant).
 
-## 2026-10-26: CFE pull test with the HAT slot bit (56d9137): detection works; re-insert breaks the card; stop waited 22.6 s
+## 2026-10-26: CFE pull test with the HAT slot bit (0b1632f): detection works; re-insert breaks the card; stop waited 22.6 s
 
-- Tested: Core `56d9137` (HAT slot bit, bounded dead-medium stop), persistent journal, card pulled three times idle (22:46:09,
+- Tested: Core `0b1632f` (HAT slot bit, bounded dead-medium stop), persistent journal, card pulled three times idle (22:46:09,
   :25, :31) and re-inserted each time, then record (22:47:16), stop pressed during the take.
 - Seen: every pull logged `media: state=removed ... nvme_state=- hat_card=out` within the 1 s watcher cycle without touching the
   device; every re-insert `state=mounted ... nvme_state=live hat_card=in`. But the card was unusable after re-insert:
@@ -353,13 +353,13 @@ Entry format:
   (it reads the mount table via QStorageInfo, not Core's `media_alive`).
 - Why: **confirmed** the HAT bit sees pulls at once. **Confirmed** a Pi 5 cannot hot-plug the CFE NVMe: a re-inserted card needs
   a PCIe remove/rescan (remount) or a reboot. **Confirmed** the stop hang was writers stuck until the NVMe timeout (~24 s).
-- Fix: `da48974` (pulled latch per mount id; write-stall detection in the take and in every stop). Touch UI: open (UI repo).
+- Fix: `a3ac8da` (pulled latch per mount id; write-stall detection in the take and in every stop). Touch UI: open (UI repo).
 - Confirmed by: Core journal and dmesg on the Pi; Patrik's report on the UI.
 - Tutorial: T28 5.2.
 
-## 2026-10-26: CFE card pull and re-insert work end to end (Core da48974+227ea7b, UI 160898c+dc471c1); a stopped take is lost if pulled within ~30 s
+## 2026-10-26: CFE card pull and re-insert work end to end (Core a3ac8da+70e8376, UI 160898c+dc471c1); a stopped take is lost if pulled within ~30 s
 
-- Tested: Pi 5 (4 GB), PCIe Gen 2, Core `cinemate-port` `227ea7b`, UI `cinemate-port` `dc471c1` (automounter installed to
+- Tested: Pi 5 (4 GB), PCIe Gen 2, Core `cinemate-port` `70e8376`, UI `cinemate-port` `dc471c1` (automounter installed to
   `/usr/local/libexec` 22:59:19, backup `apertar-cfe-automounter.bak-1.6.0`), persistent journal. Boot 22:59:33.
 - Idle pull 22:59:56.42: automounter `card removed while mounted` (lazy unmount + PCIe remove); Core `state=none` 0.3 s later;
   touch UI NO MEDIA. Re-insert 23:00:00.07: `insert requested`, `resetting PCIe controller`, mounted 23:00:02.28; Core
@@ -378,7 +378,7 @@ Entry format:
 ## 2026-10-26: 3-minute 16-bit takes at Gen 3: a nearly full drive lost the frames, not the sync; capture gaps remain
 
 - Tested: Pi 5 (4 GB), PCIe Gen 3 again (`config.txt.bak-gen3` restored 23:07), Core `cinemate-port` (T28 follow-ups, T29
-  `ffb87db`, T30 `a99691e`, sync `0586273`, then `e2f55a2`), 4K Clear HDR 16-bit 25 fps uncompressed, `takes.sh 1 180`.
+  `26da30e`, T30 `60ce8e9`, sync `4ce382e`, then `0358fcf`), 4K Clear HDR 16-bit 25 fps uncompressed, `takes.sh 1 180`.
 - C0106 (drive ~77 % full, T29 exFAT row 2 writers/queue 16/+2 buffers, sync 1 s): 166 missing, queue full from ~140 s.
   C0107 (81 % full, 4 writers/queue 12, sync 1 s): 676 missing, queue full from ~95 s. Fio burst 818 MB/s (1 GiB, QD32).
   NVMe 55 °C (crit 85). After `format_media` exFAT (no trim): C0001 (Patrik, ~3 min): 4558 written, 0 queue drops,
@@ -393,7 +393,7 @@ Entry format:
 
 ## 2026-10-26: the once-a-second syncfs costs capture frames; a crash right after a PCIe re-insert at Gen 3
 
-- Tested: Core `e2f55a2`, Gen 3, freshly formatted exFAT, 16-bit 4K25 uncompressed, ~3 min takes by Patrik.
+- Tested: Core `0358fcf`, Gen 3, freshly formatted exFAT, 16-bit 4K25 uncompressed, ~3 min takes by Patrik.
   Sync on (`APERTAR_MEDIA_SYNC_MS` 1000): C0001 4558 frames, **12 capture gaps**. Sync off (drop-in `sync-off-test.conf`):
   C0003 4519 frames, **0 holes**, WAV = frames; C0002 (30 s) clean too. Queue peak 1/12 both ways; stop sync 67-68 ms.
 - Crash (Patrik: "it was a crash"): card pulled and re-inserted 23:33:28, automounter PCIe controller reset + mount at
@@ -408,50 +408,50 @@ Entry format:
 
 ## 2026-10-26: per-DNG writeback alone is clean; with the 1 s syncfs it stalls the writers
 
-- Tested: Core `775083f` (sync_file_range per DNG), Gen 3, `takes.sh 1 180` (12→16 reconfigure first), 16-bit 4K25.
+- Tested: Core `441e42a` (sync_file_range per DNG), Gen 3, `takes.sh 1 180` (12→16 reconfigure first), 16-bit 4K25.
 - Writeback, syncfs off (drop-in): C0004 4494 frames, 0 queue drops, no capture gaps, peak 1/12, stop sync 62 ms.
   Writeback + syncfs 1 s: C0005 3701 written, **782 queue drops**, 12 capture gaps, peak 12/12, stop sync 181 ms.
 - Why: **probable** that syncfs waits for all pages already in writeback and the DNG writers block behind it. Next:
-  `77867e6` (fsync of the clip folder instead).
+  `7d9dd60` (fsync of the clip folder instead).
 - Also: Core answers `record_start` in 0.24 s and emits its `recording` event; the touch UI's apparent delay during these
   tests is `takes.sh`'s 12→16 reconfigure (~11 s) before it records (**probable**; Patrik to check with his own press).
 - Audio drift figure with T30's writer still varies take to take (+18, +15, +64, -139, +156 ppm): open.
 
 ## 2026-10-26: writeback + folder fsync is clean; the touch UI misses takes started elsewhere
 
-- C0007 (Core `77867e6`: per-DNG `sync_file_range` + 1 s `fsync` of the clip folder; Gen 3; `takes.sh 1 180`): 4495 frames,
+- C0007 (Core `7d9dd60`: per-DNG `sync_file_range` + 1 s `fsync` of the clip folder; Gen 3; `takes.sh 1 180`): 4495 frames,
   0 missing, no capture gaps, queue peak 2/12, stop syncfs 59 ms, audio writer peak 9 KB.
 - Patrik: the tally LED lit "a couple of seconds" before the touch UI showed recording. Cause (code, **confirmed**):
   `ApertarCoreApp::publishEvent` collects events raised during a command into that command's reply unless they are on its
   broadcast list, and `recording` was not, so only the sender heard it; the tally reacts to the same event inside Core
   (`handleTriggerEvent`). The touch UI then learned on its next `get_state` poll (`kSteadyStatePollIntervalMs` 30 s).
-  Fix `a070e1b`. Upstream behaviour (**probable**: the list is unchanged from 1.6.0).
+  Fix `086443c`. Upstream behaviour (**probable**: the list is unchanged from 1.6.0).
 
 ## 2026-10-26: pull with writeback + folder fsync: folder and names survive, files are 0 bytes
 
-- Tested: Core `a070e1b` (writeback per DNG, 1 s folder fsync), take C0010 started 23:56:19.1, card pulled 23:56:21.28.
+- Tested: Core `086443c` (writeback per DNG, 1 s folder fsync), take C0010 started 23:56:19.1, card pulled 23:56:21.28.
 - Seen: automounter `card removed while mounted` + Core `recording failure ... media_removed` within 9 ms; `written=52`;
   `dead-medium stages raw_ms=20 audio_ms=1277`; re-insert remounted in 3.9 s. After: folder C0010 with 48 `.dng` names,
   **all 0 bytes**. C0008/C0009 (stopped normally just before) complete, WAV = frames.
 - Why: **probable** that the data blocks reached the card (writeback started per file) but each file's exFAT entry (size,
-  first cluster) was still dirty in memory; the folder fsync writes the folder, not the files' entries. Fix `6fee0e4`.
+  first cluster) was still dirty in memory; the folder fsync writes the folder, not the files' entries. Fix `5b68f1f`.
 - Confirmed by: the card's contents after re-insert.
 
 ## 2026-10-26: pull mid-take with per-file fsync: all frames up to ~0.9 s before the pull are readable
 
-- Tested: Core `6fee0e4` (writeback per DNG; 1 s sync thread fsyncs each finished DNG, then the folder), take C0011 (~11 s),
+- Tested: Core `5b68f1f` (writeback per DNG; 1 s sync thread fsyncs each finished DNG, then the folder), take C0011 (~11 s),
   card pulled 23:58:57.26.
 - Seen: HAT `hat_card=out pulled=1` → `recording failure ... media_removed` 0.6 ms later; automounter `card removed` 10 ms
   later; `written=280`; `dead-medium stages raw_ms=78 audio_ms=608`; re-insert mounted 23:59:08.4. On the card: 281 files,
   **258 full frames (readable, band level steady, max step 0.078 %) and 23 empty** (the last 0.9 s). `audio_capture.raw`
   0 bytes, no WAV (skipped on a dead medium by design).
 - Why: **confirmed** that fsyncing each finished file within a second keeps a pulled take readable to ~1 s before the pull.
-  Audio raw fix `7a545d9` (fsync once a second); `working/tools/raw2wav.py` turns a recovered raw file into a WAV.
+  Audio raw fix `b606c4f` (fsync once a second); `working/tools/raw2wav.py` turns a recovered raw file into a WAV.
 - Confirmed by: the card's contents after re-insert.
 
 ## 2026-10-27: pull mid-take keeps picture to ~0.8 s before the pull and all but the last moment of audio
 
-- Tested: Core `7a545d9` (audio raw fsync once a second), take `cDNG_26-10-27_C0001`, pulled 5.4 s in (00:01:53.43).
+- Tested: Core `b606c4f` (audio raw fsync once a second), take `cDNG_26-10-27_C0001`, pulled 5.4 s in (00:01:53.43).
 - Seen: 102 readable DNGs (4.1 s, band level steady, max step 0.058 %) + 21 empty; `audio_capture.raw` 1 445 778 bytes =
   5.02 s s24 stereo 48 kHz, real signal in all 502 sampled 10 ms blocks (peak -44.7 dBFS); `raw2wav.py` made
   `cDNG_26-10-27_C0001.recovered.wav`. Stop: `dead-medium stages raw_ms=2 audio_ms=488`; remount 7.4 s after the pull.
@@ -460,17 +460,17 @@ Entry format:
 
 ## 2026-10-27: 3-minute take with per-file fsync: clean
 
-- Core `7a545d9` (writeback per DNG; 1 s sync thread fsyncs each finished DNG, the folder; audio raw fsync), Gen 3, drive
+- Core `b606c4f` (writeback per DNG; 1 s sync thread fsyncs each finished DNG, the folder; audio raw fsync), Gen 3, drive
   38 % full, `takes.sh 1 180`: `cDNG_26-10-27_C0002` 4494 frames, 0 missing, no capture gaps, peak 2/12, stop syncfs 59 ms,
   audio drift -20 ppm. **Confirmed**: the per-file sync costs no frames; with C0011 / 2026-10-27 C0001 a pulled take keeps all
   but its last second, audio included.
 
 ## 2026-10-27: T21 time-left estimate and T30's fitted drift on the Pi
 
-- Tested: Core `6ae70b5` (restart 22:19:28), cDNG 12-bit lossless 4K25, 502 GB free.
+- Tested: Core `3c4f07d` (restart 22:19:28), cDNG 12-bit lossless 4K25, 502 GB free.
 - T21: `/api/state` `record_time_left_minutes` 36.7, `time_left_label` "cDNG 12-bit lossless estimate (bar: 2 h)",
   `time_left_percent` 30.6; by hand with the touch UI's model 8.69 MiB/frame → 36.7 min (old Core model: 24.9 min).
-- T30 (`e9dd6b2`): 70 s take C0013 (socket start/stop, no reconfigure): 1748 frames clean; `audio clock:
+- T30 (`ebdcd08`): 70 s take C0013 (socket start/stop, no reconfigure): 1748 frames clean; `audio clock:
   measured_drift_ppm=-15 points=6968 endpoint_ppm=-15 correction=none`. Media-tune helper: no call since the restart.
 - HDMI (touch UI) 35 min vs WebUI 36 after the C0013 take: Core 35.96 min from 468 997 MiB free; the WebUI rounds,
   the touch UI truncates whole seconds. **Confirmed**: the two models agree.
@@ -480,15 +480,15 @@ Entry format:
 
 ## 2026-10-27: 16-bit time left: WebUI 37 min (right), HDMI 50 min (touch UI read 16-bit as 12)
 
-- Tested: Core `6ae70b5`, cDNG 16-bit uncompressed Clear HDR 4K25, 997.6 GB free (Patrik's WebUI screenshot + HDMI).
+- Tested: Core `3c4f07d`, cDNG 16-bit uncompressed Clear HDR 4K25, 997.6 GB free (Patrik's WebUI screenshot + HDMI).
 - Core 37.7 min (16.8 MiB/frame; C0101's DNGs are ~17 MB). Touch UI `currentRawBitDepthNumber()` returned 12 for "16-bit"
-  → 12.6 MiB/frame → 50.3 min. **Confirmed** by the arithmetic and the code. Fix UI `2d27c46`; rounding `87011d4`.
-- After `87011d4` + `2d27c46` (Core and UI restarted 22:35): Core 37.8 min, WebUI and HDMI both 37 (Patrik: done).
+  → 12.6 MiB/frame → 50.3 min. **Confirmed** by the arithmetic and the code. Fix UI `2d27c46`; rounding `bda2066`.
+- After `bda2066` + `2d27c46` (Core and UI restarted 22:35): Core 37.8 min, WebUI and HDMI both 37 (Patrik: done).
 
 
 ## 2026-10-28: T31 speed ramping, first ramp take (1080p uncompressed, 25 → 50 → 25)
 
-- Tested: Core `47d44ff` (T31 without the `ramp_fps` stepper; restart 19:06:45), IMX585 1920x1080 (2×2 binned), cDNG
+- Tested: Core `faa2958` (T31 without the `ramp_fps` stepper; restart 19:06:45), IMX585 1920x1080 (2×2 binned), cDNG
   uncompressed, `fps_speed_ramp` on, shutter `angle`, 24000 µs at 25; pi-nvme exFAT. 25 `set_fps` steps of 1 fps every
   ~0.25 s up to 50, 5 s hold, 25 steps down, 5 s at 25; socket-driven (`/tmp/ramp-take.sh`).
 - `cDNG_26-10-28_C0030`: 1107 DNGs, 0 missing, `dropped_queue_full=0`, no `drop[...]` lines; stats `changes=50 base_fps=25
@@ -502,7 +502,7 @@ Entry format:
 
 ## 2026-10-28: Clear HDR ISO → gain code; 12-bit cap at ISO 720 (request 18)
 
-- Tested: Core `28bd441`, driver `cinemate-port` `24172e6`, 4K Clear HDR 12-bit lossless, preview only; `set_iso` then
+- Tested: Core `4f7975f`, driver `cinemate-port` `24172e6`, 4K Clear HDR 12-bit lossless, preview only; `set_iso` then
   `v4l2-ctl -d /dev/v4l-subdev2 --get-ctrl analogue_gain`. SDR ISO 800 → code 60.
 - Clear HDR 12-bit: ISO 600 → 51, 640 → 53, 680 → 55, 700/716 → 56, **720 → 57**, 750 → 58, 800 → 60; 900, 1600, 2000 → Core
   clamps to 800 (the lossless ISO cap, `CC:2572`), code 60. Mapping: code = 20·log10(ISO/100) / 0.3 dB. **Confirmed.**
@@ -515,9 +515,9 @@ Entry format:
 - Build note (2026-10-28): g++ 14 warns `-Warray-bounds` in `CdngEncoder::writeRawPayload` (`vld1q_u16` on a `uint16_t[8]`)
   whenever `CdngEncoder.cpp` is rebuilt; existing code, not from the speed-ramp/Clear HDR commits. Probably a false positive; unexamined.
 
-## 2026-10-28: Clear HDR holds ISO/WB and caps ISO (a89a5df), preview test
+## 2026-10-28: Clear HDR holds ISO/WB and caps ISO (8175273), preview test
 
-- Tested: Core `a89a5df` (restart 20:09:09), 4K uncompressed, preview only (`/tmp/hdr-hold-test.sh`), dark desk scene.
+- Tested: Core `8175273` (restart 20:09:09), 4K uncompressed, preview only (`/tmp/hdr-hold-test.sh`), dark desk scene.
 - SDR auto ISO + WB (code 60) → Clear HDR 12-bit: `iso_auto`/`wb_auto` false, `iso_auto_after_clear_hdr`/`wb_auto_after_clear_hdr`
   true, ISO held and capped to 720 (code 57), WB held at the measured 2815 K. `set_iso_auto`/`set_wb_auto` refused with the info
   message. `set_iso 1600`: 12-bit → 720 (code 57), 16-bit → 1585 (code 80); 3200 → 1585. A manual ISO in Clear HDR cleared the ISO
@@ -525,7 +525,7 @@ Entry format:
   flags persisted. **Confirmed.**
 - Seen: while auto ISO runs, the state's `iso` is the stored value (720 after the round trip), not the live gain; request 16.
 
-## 2026-10-28: H.264 on the IMX585 (Core 65b2bb2): 4K capture only, 30 fps cap, x264 has headroom
+## 2026-10-28: H.264 on the IMX585 (Core ac00fb0): 4K capture only, 30 fps cap, x264 has headroom
 
 - `set_record_format h264`: capture stays 3840x2160 (a 1920x1080 `set_resolution` is ignored), output 1920x1080, libx264
   `tune=zerolatency`, `input=staged-yuv`. `set_fps` 50 or 60 → 30.
@@ -534,19 +534,19 @@ Entry format:
 - The H.264 MP4 and the ProRes MOV are video-only (one stream: `LibavH264EncoderPlugin.cpp:124`, `ProresEncoder.cpp:929`);
   audio is the clip folder's WAV, as for cDNG. Speed ramping in H.264 stays refused (Patrik): 25 → 30 is too little.
 
-## 2026-10-28: experimental stretched WAV (78c980d), camera-wide switches, conform_fps
+## 2026-10-28: experimental stretched WAV (ca7b7c2), camera-wide switches, conform_fps
 
 - Rubber Band: `rubberband-cli` 3.3.0 installed by Patrik (`apt update` first: the image has no apt lists). Click test
   (real 4 s → 4 s, 6 s → 8 s, `-D 12 --timemap`): output 12.0000 s, clicks 1.0 / 5.976 / 10.0002 s. Key frames are exact; inside a
   re-timed stretch Rubber Band smooths by ~25 ms; nothing accumulates. ffmpeg `rubberband`/`atempo` with `asendcmd`: 20-50 ms off
   per change, accumulating. A `0 0` map line makes Rubber Band warn about a NaN ratio (dropped in the follow-up commit).
-- Core 78c980d (restart 20:54:18): `conform_fps` 25 by default, 24 accepted, 0 refused. Ramp, stretch and phase lock turned on in
-  H.264 stay on after switching to cDNG (84081f7, a56eae7).
+- Core ca7b7c2 (restart 20:54:18): `conform_fps` 25 by default, 24 accepted, 0 refused. Ramp, stretch and phase lock turned on in
+  H.264 stay on after switching to cDNG (92b4be3, 117065d).
 - `C0034` 1080p uncompressed 25 → 50 → 25 (set_fps steps): 909 DNGs = 36.36 s at 25; real-time WAV 25.809 s;
   `C0034_stretched.wav` 36.360 s, 48 kHz, written seconds after stop (50 key frames); `fps-ramp.txt` `applied_us` 5038579 for frame
   126 (= 5.04 s at 25). **Confirmed** length and pitch; how it sounds is for Patrik to judge.
 
-## 2026-10-28: iso_max per mode (Core 4d9b321, UI 92f1e73), restart 21:13:18
+## 2026-10-28: iso_max per mode (Core 6d217c7, UI f1edf96), restart 21:13:18
 
 - `get_state` `iso_max`: SDR lossless 800, SDR uncompressed 0, Clear HDR 12-bit 720 (ISO 800 capped to 720), Clear HDR
   16-bit 1585. **Confirmed.** UI started clean (`qml_aot=true`, no QML errors). The on-screen green values, the ISO lists and
@@ -556,7 +556,7 @@ Entry format:
   10/10 changes applied, 439 DNGs, 0 missing, no drops; `_stretched.wav` 17.56 s (= 439/25), real WAV 16.06 s; back at 25 after
   stop. Patrik: "ramp works". **Confirmed**: T32 from the controls.
 
-## 2026-10-28: T33 Core (6c34e8a), restart 21:35:30
+## 2026-10-28: T33 Core (b0e90ad), restart 21:35:30
 
 - Socket: `help` lists `set_value_steps`; built-in lists in the web state's `ui` object; `set_value_steps` writes `fpsSteps`,
   `shutterAngleSteps`, `flickerFreeShutterAngles`, `mainsHz`, `fpsFree`, `fpsFreeIncrement` to UI.conf and the state follows;
@@ -566,13 +566,13 @@ Entry format:
 
 ## 2026-10-28: T33 lists, lossless ISO 1600, recording frame and red timecode (Patrik: "now it works")
 
-- Core up to `b017004`, UI up to `632d840`. Patrik confirmed on the touch screen, HDMI and WebUI: value lists with greyed
+- Core up to `4d5fdd1`, UI up to `da2a9b5`. Patrik confirmed on the touch screen, HDMI and WebUI: value lists with greyed
   values above the ceiling and green caps / flicker-free angles, the WebUI Value Lists card, ISO up to 1585 in Clear HDR
   16-bit lossless, the recording frame and the red-timecode switches. **Confirmed.**
 
 ## 2026-10-28: T34 M1, how long a class switch takes (preview, Standard preview profile)
 
-- Core `b017004`, 4K, uncompressed; `set_clear_hdr` / `set_raw_bit_depth` timed from command to reply, three rounds, minus
+- Core `4d5fdd1`, 4K, uncompressed; `set_clear_hdr` / `set_raw_bit_depth` timed from command to reply, three rounds, minus
   the ~45 ms `get_state` round trip: HDR16 → SDR12 45-65 ms, SDR12 → HDR12 80-110 ms, HDR12 → HDR16 90-110 ms. Each
   reconfigure logs `camera configured` right after. **Confirmed as a lower bound**: the reply comes when the new mode is
   queued, before its first frame; the visible blink (first frame) is not measured (M2). Far below the ~1 s the design would
@@ -581,7 +581,7 @@ Entry format:
 
 ## 2026-10-28: T34 M3, 12-bit SDR at 50 fps, 60 s (3840x2076)
 
-- Core `b017004`, NVMe PCIe **Gen 3 x1** (8.0 GT/s), exFAT, drive 78 % → 82 % after; cDNG uncompressed, 3840x2076 (the 12-bit
+- Core `4d5fdd1`, NVMe PCIe **Gen 3 x1** (8.0 GT/s), exFAT, drive 78 % → 82 % after; cDNG uncompressed, 3840x2076 (the 12-bit
   crop mode Core allows 60 today; 3840x2160 SDR is still capped at 30, F5), speed ramp off.
 - `cDNG_26-10-28_C0025`: 2632 DNGs of ~2987, **355 missing**; `dropped_queue_full=0`, `peak_queue=2/12`, `write_failures=0`;
   `dropped_gap_estimate=355`, 13 `drop[capture-gap]` lines. 30 GB.
@@ -594,14 +594,14 @@ Entry format:
   3840x2076 (frame timing or CSI rate) rather than Core; unmeasured. Parked by Patrik for a longer test later (card nearly
   full). 1080p at 50 is clean (`C0030`).
 
-## 2026-10-28: ISO/WB dials to Auto, auto ISO in lossless (Core 12c9075, UI bd0e54d) — Patrik: "dial works"
+## 2026-10-28: ISO/WB dials to Auto, auto ISO in lossless (Core b5b787e, UI 682a186) — Patrik: "dial works"
 
 - ISO dial below the first value → Auto; WB dial below the lowest → Auto; shutter Auto white. **Confirmed.**
 - Auto ISO in IMX585 lossless: highest value seen **767** (gain 7.67), under the lossless cap 1600 and under the tuning's
   gain limit 8. **Confirmed for the default tuning in the scene tried** (`working/unverified-speed-ramp-port.md` #1: a dark
   scene and the `long` exposure mode are still untried).
 
-## 2026-10-28: T34 Core (aa74421, restart 22:42:48), first tests
+## 2026-10-28: T34 Core (0041ba0, restart 22:42:48), first tests
 
 - Socket: `get_mode_ladder` lists the probe's 40 modes as the pool; `set_mode_ladder … dry_run=true` with Patrik's ladder:
   rungs HDR16 ≤25 and SDR12 ≤30 (the 4K SDR cap), one warning (the look changes), no errors; bad rung text and falling
@@ -619,14 +619,14 @@ Entry format:
   NVMe logged "Volume was not properly unmounted… run fsck"; mounted and readable, 206 GB free. Run `fsck.exfat` when
   convenient (unmount first).
 - Correction: the Pi (CM5 + carrier) has a working RTC (`rpi-rtc` set the clock at boot, 22:49:22); journal times are reliable.
-- Take A rerun, alone, polled every 0.5 s (Core `aa74421`): rung 1 (HDR16 lossless) at 24 fps; `set_fps 50` at +4.5 s in the take →
+- Take A rerun, alone, polled every 0.5 s (Core `0041ba0`): rung 1 (HDR16 lossless) at 24 fps; `set_fps 50` at +4.5 s in the take →
   **25**, the take carried on, restored to 24 at stop. **Confirmed.** Take B (Ramp-ready) and the preset check also passed
   (the matching preset loads; one naming another mode is refused with the message). The first run's take A had ended ~16 ms
   before the request (the request then switched to rung 2, by design); cause unknown, not reproduced; two takes of 3.0 and
   3.85 s ran just before it. Possibly a record/stop pressed on the camera during the run; leave the camera alone during tests.
 - Clear HDR 16-bit **lossless** overflows the queue: `dropped_queue_full=19`, `peak_queue=24/24` in a 6.5 s take at 24 fps.
 
-## 2026-10-28: T34 compression per resolution (Core d0cb727 + a7e67da), restart 23:09:36
+## 2026-10-28: T34 compression per resolution (Core 3cae990 + ab972fe), restart 23:09:36
 
 - `get_mode_ladder` keys: `resolutions`, `resolutions_text`, `running_resolution`, `ceiling`, `enabled`, `ramp_ready`, `pool`, `errors`, `warnings`.
   Ladder `…hdr:25:none,…sdr::lossy_3to1`: dry run no errors, one warning; each resolution carries `compression` and
@@ -637,7 +637,7 @@ Entry format:
 - Short take at 24 fps in Clear HDR 16-bit uncompressed: 137 DNGs, `dropped_queue_full=0`, `peak_queue=2/12` (lossless in the
   same mode dropped 19 in 6.5 s). **Confirmed.**
 
-## 2026-10-28: ladder data for the approved UI (Core baa5fd6), restart 23:31:36
+## 2026-10-28: ladder data for the approved UI (Core e16033e), restart 23:31:36
 
 - `ladder_text`: "Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed", "Resolution 2 · 3840×2160 · SDR12 · ≤30 · Uncompressed",
   ladder off: "3840×2160 · SDR12 · Uncompressed (ladder off)"; `ladder_tops` [25, 30]; `ladder_enabled`, `ladder_count`. **Confirmed.**
@@ -647,7 +647,7 @@ Entry format:
 - An active ladder refuses `set_resolution`, `set_raw_bit_depth`, `set_clear_hdr` with the ladder message; with the ladder off they
   work again. **Confirmed.**
 
-## 2026-10-29: WebUI playback (T46-T51), Core `bc5d29d`..`727c9c8` (Patrik's Pi, CM5, NVMe exFAT PCIe Gen 3 x1)
+## 2026-10-29: WebUI playback (T46-T51), Core `f91fafa`..`4fa0432` (Patrik's Pi, CM5, NVMe exFAT PCIe Gen 3 x1)
 
 Full tables in `working/playback/measurements.md`; the findings Patrik confirmed by trying them ("works well", "sound works"):
 
@@ -664,7 +664,7 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 
 ## 2026-10-29: NeoRotary 4 on bus 1 `0x49` (ID `0x87`), hat on bus 1 `0x34` with a card
 
-- Tested: Patrik's Pi, IMX585 on cam0, RPI5-CFE-Hat, Core `727c9c8` (`cinemate-port`), Controls project M4. Core stopped for the seesaw read.
+- Tested: Patrik's Pi, IMX585 on cam0, RPI5-CFE-Hat, Core `4fa0432` (`cinemate-port`), Controls project M4. Core stopped for the seesaw read.
 - Worked: `i2cdetect -y 1` lists exactly `34` and `49`. Seesaw hardware ID read at `0x49` (`w2@0x49 0x00 0x01`, then `r1@0x49`): `0x87`. Hat status read twice at `0x34`: `0x02` (a card). Core's start lines: `cfexpress hat on bus=1 address=0x34`, `NeoRotary4 input enabled: /dev/i2c-1 address=0x49`.
 - Did not work: n/a
 - Why: the file has `[neorotary4] bus=1` and `[cfexpress_hat] bus=1` (the 2026-10-23 DPI fix); read with Core stopped so it cannot fire phantom knob turns.

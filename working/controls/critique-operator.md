@@ -8,11 +8,11 @@ Trees I opened (every `path:line` below is at these commits):
 | Short name | File | Tree, commit |
 | --- | --- | --- |
 | `D` | `design-controls.md` (the design under review; `D:n` = its line n, `D§x` = its section) | this folder |
-| `App`, `Web`, `WS`, `HW/` | `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `src/web/WebServer.cpp`, `src/hardware/` | Core `scratchpad/controls/core-tip` `eb9cc39` |
-| `UI:` | touch UI repo | `scratchpad/controls/ui-tip` `d8098d0` |
+| `App`, `Web`, `WS`, `HW/` | `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `src/web/WebServer.cpp`, `src/hardware/` | Core `scratchpad/controls/core-tip` `0296ed1` |
+| `UI:` | touch UI repo | `scratchpad/controls/ui-tip` `5aab7e2` |
 | `Cm ed.html` | Cinemate `src/module/app/templates/settings_editor.html` | `/home/user/tiramisioux/cinemate` `d6cc93e` |
 | `sketch` | `sketch/hardware/ActionCatalog.hpp`, `sketch/hardware/HardwareConfigText.hpp` | this folder |
-| `SRC`, `HL` | KB `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md` | `/home/user/apertar-kb` `e35ffa7` |
+| `SRC`, `HL` | KB `sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, `lessons/hardware-log.md` | `/home/user/apertar-kb` `b47f700` |
 | `R1`-`R4` | the reader reports | this folder |
 
 Labels: **CONFIRMED** = I opened the line. **PROBABLE** = derived; the derivation is given. **UNCONFIRMED** = only the Pi (or a

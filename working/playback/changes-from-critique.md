@@ -4,8 +4,8 @@
 (accepted, but with a different fix or corrected evidence) or **rejected**, why, and where it landed in
 `design-playback.md` (v2).
 
-I checked every point against the code before accepting it, at Core `eb9cc39` (`scratchpad/controls/core-tip`), touch UI
-`d8098d0` (`scratchpad/controls/ui-tip`), Cinemate `d6cc93e` and the KB (`b137ae8`; HEAD `11dad27`). "Checked" below means I
+I checked every point against the code before accepting it, at Core `0296ed1` (`scratchpad/controls/core-tip`), touch UI
+`5aab7e2` (`scratchpad/controls/ui-tip`), Cinemate `d6cc93e` and the KB (`e8eeef2`; HEAD `9bf388f`). "Checked" below means I
 opened the line or ran the command in this pass. Where I ran something, the run is named; the outputs are in
 `sketch/v2-*-host.txt`.
 
@@ -126,7 +126,7 @@ recommended). Size ~2,960 → ~3,900 lines; the sketch ~600 → ~1,150 lines of 
 | w6 F8 the 33rd connection | **accepted** | `WS:271-272` | F8 |
 | w7 walkthrough B "writing" | **accepted** | as M8 | walkthrough B |
 | w8 the plugin-missing text is shortened | **accepted** | `VP:35` | §4.8 uses the full string |
-| w9 KB autosaves | **accepted** | `git log`: `c108731`, `11dad27` touch only `working/playback/` | the trees table |
+| w9 KB autosaves | **accepted** | `git log`: `457ad0d`, `9bf388f` touch only `working/playback/` | the trees table |
 
 ### The critic's cost table (§6) and plan rows (§7)
 
@@ -162,7 +162,7 @@ recommended). Size ~2,960 → ~3,900 lines; the sketch ~600 → ~1,150 lines of 
 | Point | Verdict | Why (evidence checked here) | v2 |
 | --- | --- | --- | --- |
 | P1 drift on takes with dropped frames (both screens) | **accepted** | as CC M1; KB: 37-45 of 250 lost at 25 fps lossless (`kb:lessons/hardware-log.md:104-108`), one hole every 5-9 (`:165`); `v2_test` drift | the number clock (§2.6), `holes` in the clip JSON, `n=` route, span DURATION; U9 in T54; D15; M12 clap test; walkthrough D |
-| P2 ramp takes cut short and out of sync | **accepted** | KB: count numbering, start-rate `FrameRate`, real-time WAV, `fps-ramp.txt` (`kb:working/ramp-ladder/README.md:29`, `kb:working/ramp-answer.md:14`, `:77`, `:92`); T31 is **not** on `eb9cc39` (grep `fps_ramp`: 0), so the rule is written against the T31 patch and switches on only when `fps-ramp.txt` exists | §2.5, §2.6, §4.3 `ramp`, D21, walkthrough G, O3b, U10, Q30; `playclock.js` ramp check |
+| P2 ramp takes cut short and out of sync | **accepted** | KB: count numbering, start-rate `FrameRate`, real-time WAV, `fps-ramp.txt` (`kb:working/ramp-ladder/README.md:29`, `kb:working/ramp-answer.md:14`, `:77`, `:92`); T31 is **not** on `0296ed1` (grep `fps_ramp`: 0), so the rule is written against the T31 patch and switches on only when `fps-ramp.txt` exists | §2.5, §2.6, §4.3 `ramp`, D21, walkthrough G, O3b, U10, Q30; `playclock.js` ramp check |
 | P3 downloads and the WAV stream read the card in a take | **accepted** (a)-(d) | `App:7343-7360` no gate; `streamFileToClient` (`App:6333-6347`); a cut ZIP has no `Content-Length` (`App:6355-6420`) | §2.7 table (refuse, stop per chunk, end the `zip` child, toast); rows 50.8, 50.9, 51.1; Q21 default yes; M15 |
 | P4 the camera's own screen has no hold | **accepted** as T54 | `CamP:3754` greys only the button; `Main:319-322` not gated; `Main:511-516` only cancels a power-off warning; no `recording` in `PlaybackController` | T54 rows 54.1-54.3; §5; Q22 default yes; R18 |
 | P5 lossless looks worse than it is; skips vs drops | **changed** | true (`kb:lessons/hardware-log.md:108`, `:113`). Patrik's brief keeps Cinemate's features as options, so O4 and O5 stay options, both recommended; the take's own drops are a fact about the file, so DROPPED is a default metadata row (D16) | D16, O4, O5, Q24 |

@@ -45,7 +45,7 @@ Two file-selection rules exist:
 | --- | --- | --- |
 | Core inputs and outputs (PCF, GPIO, NeoRotary4, Grove, trigger, LED) | `ApertarCoreApp::start()` only. **Restart Core after editing** (`sudo systemctl restart apertar-core`) | `App:6881-6893` |
 | Core INA219 | once per process (`static const`) | `App:4602` |
-| Core `[camera]` (`cinemate-port` `a89a5df`) | once per process (`static const`, first use). **Restart Core after editing** | `CC` `clearHdrIsoLimits()` |
+| Core `[camera]` (`cinemate-port` `8175273`) | once per process (`static const`, first use). **Restart Core after editing** | `CC` `clearHdrIsoLimits()` |
 | Core IMU | every recording, calibration and IMU command | `Apertar-Core/src/hardware/Mpu6050RecordingSession.cpp:1040`, `:1176`, `:1297` |
 | Core `run_script` | every script action | `Apertar-Core/src/hardware/HardwareScriptRunner.cpp:38-96` |
 | Core NVMe watcher (Python) | each NVMe eject | `App:3568` |
@@ -114,7 +114,7 @@ Core and UI open the chip independently and both rewrite its config/calibration 
 
 The C++ Core never reads these sections. Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
 
-#### `[camera]` (Core, `cinemate-port` `a89a5df`, 2026-10-28)
+#### `[camera]` (Core, `cinemate-port` `8175273`, 2026-10-28)
 
 | Key | Default | Ref |
 | --- | --- | --- |

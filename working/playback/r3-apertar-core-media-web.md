@@ -16,16 +16,16 @@ It is a read of the code, not a design. Section 6 lists the gaps that follow fro
 
 | Prefix | File | Tree and commit |
 | --- | --- | --- |
-| `App` | `src/ApertarCoreApp.cpp` | Core, `scratchpad/controls/core-tip` @ `eb9cc39` |
-| `App.hpp` | `src/ApertarCoreApp.hpp` | Core @ `eb9cc39` |
-| `WS` | `src/web/WebServer.cpp` (`WS.hpp` for the header) | Core @ `eb9cc39` |
-| `Web` | `src/web/WebControlPage.cpp` (the WebUI page) | Core @ `eb9cc39` |
-| `CC` | `src/camera/CameraController.cpp` | Core @ `eb9cc39` |
-| `Cdng` | `src/cdng/CdngEncoder.cpp` | Core @ `eb9cc39` |
-| `Mlv` | `src/mlv/MlvEncoder.cpp` | Core @ `eb9cc39` |
-| `core:` | any other path in Core | Core @ `eb9cc39` |
-| `ui:` | Apertar touch UI, `scratchpad/controls/ui-tip` | `d8098d0` |
-| `kb:` | `/home/user/apertar-kb` | `7fe621b` (HEAD and clean when read) |
+| `App` | `src/ApertarCoreApp.cpp` | Core, `scratchpad/controls/core-tip` @ `0296ed1` |
+| `App.hpp` | `src/ApertarCoreApp.hpp` | Core @ `0296ed1` |
+| `WS` | `src/web/WebServer.cpp` (`WS.hpp` for the header) | Core @ `0296ed1` |
+| `Web` | `src/web/WebControlPage.cpp` (the WebUI page) | Core @ `0296ed1` |
+| `CC` | `src/camera/CameraController.cpp` | Core @ `0296ed1` |
+| `Cdng` | `src/cdng/CdngEncoder.cpp` | Core @ `0296ed1` |
+| `Mlv` | `src/mlv/MlvEncoder.cpp` | Core @ `0296ed1` |
+| `core:` | any other path in Core | Core @ `0296ed1` |
+| `ui:` | Apertar touch UI, `scratchpad/controls/ui-tip` | `5aab7e2` |
+| `kb:` | `/home/user/apertar-kb` | `7098b43` (HEAD and clean when read) |
 
 The scratchpad is `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad`.
 
@@ -116,7 +116,7 @@ All names use local time, `%y-%m-%d`, and a 4-digit counter running from 1 to 99
 | `audio_capture.raw` left behind | Medium gone at stop: the WAV is not finalised | Raw PCM | [C] `AudioRecordingSession.cpp:414` |
 | `<clip>.gcsv` | Gyro recording on | Gyroflow CSV | [C] `core:src/hardware/Mpu6050RecordingSession.cpp:1418-1421` |
 | `<clip>_recovery.json` | ProRes, written and fsync'd at clip open | JSON: clip path, width, height, fps, fourcc, pix_fmt `yuv422p10le`, colour profile | [C] `core:src/prores/ProresEncoder.cpp:1249-1282`; name at `core:src/prores/ProresRepair.cpp:167-173` |
-| `fps-ramp.txt` | **Not at this tip.** It belongs to the T31 speed-ramp work, which is not on `eb9cc39`. | — | [C] a grep for `ramp` in `core:src` finds no such file write (only `LossyJpeg12` and WebUI strings) |
+| `fps-ramp.txt` | **Not at this tip.** It belongs to the T31 speed-ramp work, which is not on `0296ed1`. | — | [C] a grep for `ramp` in `core:src` finds no such file write (only `LossyJpeg12` and WebUI strings) |
 | Per-clip metadata JSON | **None.** No writer creates one in a clip folder. | — | [C] a grep of `ofstream`/`fopen` in `core:src` lists only the WAV, the raw temp, the gyro files, the ProRes sidecar, presets and settings |
 
 **Audio inside the containers.** There is none: MP4, MOV and MLV are video-only.
@@ -603,7 +603,7 @@ This is derived; it is not in the code. [P]
 
 Each item is **[P]**, derived from the sections cited. None of them is a design decision.
 
-| # | Gap at `eb9cc39` | Evidence | Smallest Core-side change that would close it |
+| # | Gap at `0296ed1` | Evidence | Smallest Core-side change that would close it |
 | --- | --- | --- | --- |
 | G1 | No per-file media route (frame, WAV, MP4, MOV, MLV) | §3.2 | `GET /api/media/file?id=<clip>/<file>`, reusing `isSafeMediaRelativeId`, `resolveMediaLibraryPath` and `mediaContentTypeForFile`. The MIME map lacks `.mlv` (`App:6285-6305`). |
 | G2 | No Range, HEAD, length or cache control | §3.3-3.4 | Parse `Range` in the route and answer 206 with `Content-Range` and `Content-Length`, reading with `pread`. Add 206/304/409/416 to `reasonPhrase` (`WS:59-73`). Make `Cache-Control` overridable (`WS:134`). |

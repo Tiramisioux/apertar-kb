@@ -6,18 +6,18 @@ For the next session. Read `decisions.md` first (Patrik's answers), then `measur
 
 | Step | Core commits | What | Tested |
 | --- | --- | --- | --- |
-| T47 | `bc5d29d`, `ee246ff` | `src/playback/{PlaybackHold,ClipFrames,DngTags,ClipProbe}.hpp`; `/api/media` from a facts cache keyed on the folder mtime (4.2 s once, then 20 ms; was 6.8 s every call); each clip's own fps, span, holes, `timecode_start`; `/api/media/clip`; `playback_hold` in `/api/state`; the yield window in `handleCommand` and the media watcher | host 41 + 24 checks; live |
-| T48 | `8d6aae9` | `GET /api/media/frame` by frame number, liblj92 in `third_party/`, `DngFrameReader`, `RawRender`, `DecodeSlots`, `PlaybackFrames`; 2 slots, JPEG caches 8 + 24 MB | host 14 checks; live, pictures looked at |
-| T49 | `26742ce`, `3042652` | the Clip Browser (`#playbackOverlay`), cards with a full-bleed thumbnail, DROP N, recorded timecode, long-press selection, Remove/Download Selected | headless Chrome on the real Core; Patrik tried it |
-| T50 | `6ffe564`, `e69dc24` | the Clip Viewer (frame-number clock, black holes R2, scrub, step O1, honest rate O4, histogram, metadata, hold card); downloads and deletes yield to a take (Q21, Q23) | Chrome; live take (download stopped within 0.3 s); Patrik: works well; Q23 not tested live |
-| T51 | `0c9d194`, `727c9c8` | `GET /api/media/file` (WAV with Range), the `<audio>` as the clock, look-ahead = round trip | Range/416/names live; Chrome playback with sound; Patrik to listen in his browser |
+| T47 | `f91fafa`, `ab4cc92` | `src/playback/{PlaybackHold,ClipFrames,DngTags,ClipProbe}.hpp`; `/api/media` from a facts cache keyed on the folder mtime (4.2 s once, then 20 ms; was 6.8 s every call); each clip's own fps, span, holes, `timecode_start`; `/api/media/clip`; `playback_hold` in `/api/state`; the yield window in `handleCommand` and the media watcher | host 41 + 24 checks; live |
+| T48 | `1af26c8` | `GET /api/media/frame` by frame number, liblj92 in `third_party/`, `DngFrameReader`, `RawRender`, `DecodeSlots`, `PlaybackFrames`; 2 slots, JPEG caches 8 + 24 MB | host 14 checks; live, pictures looked at |
+| T49 | `bc12c0a`, `27eac5a` | the Clip Browser (`#playbackOverlay`), cards with a full-bleed thumbnail, DROP N, recorded timecode, long-press selection, Remove/Download Selected | headless Chrome on the real Core; Patrik tried it |
+| T50 | `4629de2`, `a37a902` | the Clip Viewer (frame-number clock, black holes R2, scrub, step O1, honest rate O4, histogram, metadata, hold card); downloads and deletes yield to a take (Q21, Q23) | Chrome; live take (download stopped within 0.3 s); Patrik: works well; Q23 not tested live |
+| T51 | `fa19856`, `4fa0432` | `GET /api/media/file` (WAV with Range), the `<audio>` as the clock, look-ahead = round trip | Range/416/names live; Chrome playback with sound; Patrik to listen in his browser |
 
-Also done in the same session (not playback): the Mode Ladder WebUI (`cbeeb9d`..`a9abd76`, pushed), the UI timecode / file timecode split
-(`2f4f0f6`, UI `92125a7`, **not pushed**), fork-log rows for all of it.
+Also done in the same session (not playback): the Mode Ladder WebUI (`1ef94fe`..`8050d56`, pushed), the UI timecode / file timecode split
+(`909aaa5`, UI `7029db1`, **not pushed**), fork-log rows for all of it.
 
 ## Open, in the order Patrik would want them
 
-1. **Push** (only when Patrik asks): Core `cinemate-port` from `7678cbf` to `727c9c8` (11 commits), UI `92125a7`, KB. Route: Pi -> Mac clone
+1. **Push** (only when Patrik asks): Core `cinemate-port` from `5dfbc6c` to `4fa0432` (11 commits), UI `7029db1`, KB. Route: Pi -> Mac clone
    (`git fetch pi cinemate-port`, ff-only) -> `git push origin cinemate-port`; the Pi has no GitHub access.
 2. Sound works in Patrik's browser (he did not say which); still untested: a phone (iPhone or Android? Q10), Safari, Firefox, Bluetooth latency (M6/M12 skipped).
 3. T52 MLV frame reader, T53 ProRes and H.264 (Core builds the touch UI's movie decoder as a plugin), W2 (a "Review last take" chip on the main page,

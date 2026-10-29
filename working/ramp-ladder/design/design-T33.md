@@ -33,7 +33,7 @@ off (see README request 23).
 
 - The operator's values; values above `iso_max` / `fps_max` greyed out; the cap added as the top selectable entry, green.
 - Flicker-free angles merged into the shutter list, green when not in the operator's list.
-- Auto at the top where the mode allows it; Lock while auto ISO runs (`fafc477`).
+- Auto at the top where the mode allows it; Lock while auto ISO runs (`646a194`).
 
 ## Hardware (encoder, pots, `*_up`/`*_down`)
 

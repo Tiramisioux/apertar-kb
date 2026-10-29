@@ -6,7 +6,7 @@ Trees I opened for this critique (every `path:line` below is at these commits):
 
 | Short name | Tree | Commit |
 | --- | --- | --- |
-| `CC`, `App`, `Web`, `RC` | Core `scratchpad/tip-core`: `src/camera/CameraController.cpp`, `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `include/apertar/core/RecordingCapabilities.hpp` | `119d0bb` (= `6ae70b5` + T31 + T32) |
+| `CC`, `App`, `Web`, `RC` | Core `scratchpad/tip-core`: `src/camera/CameraController.cpp`, `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `include/apertar/core/RecordingCapabilities.hpp` | `119d0bb` (= `3c4f07d` + T31 + T32) |
 | `GAI` | `src/hardware/GroveAnalogInput.cpp` | same |
 | `QML`, `SP`, `CB` | Apertar-UI `scratchpad/verify2/home/ApertarUI`: `qml/CameraPage.qml`, `qml/SettingsPage.qml`, `src/ApertarControlBridge.cpp` | `34499f1` |
 | cinemate | cinemate repository (`d6cc93e`) | `d6cc93e` |

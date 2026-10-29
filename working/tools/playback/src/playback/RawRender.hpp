@@ -2,7 +2,7 @@
 
 // Apertar playback, design sketch (not in any repository).
 // A Qt-free copy of the touch UI's raw preview look, so a WebUI frame looks like the
-// touch-UI frame of the same DNG. Source of truth today: ApertarUI d8098d0
+// touch-UI frame of the same DNG. Source of truth today: ApertarUI 5aab7e2
 // src/cdngimageprovider.cpp:380-698 (matrices, white balance, quad debayer, Reinhard,
 // saturation 1.35, highlight roll-off, gamma 2.2) and src/dngdecoder.cpp:455-536 plus
 // src/playbackcontroller.cpp:262-263 (48-bin raw histogram, ~16000 samples, counts^0.65).

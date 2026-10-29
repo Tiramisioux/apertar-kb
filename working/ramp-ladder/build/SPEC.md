@@ -10,7 +10,7 @@ design was written.
 
 | What | Where |
 | --- | --- |
-| Core work tree | `S/t34/core`: detached HEAD `be6775d` = GitHub `cinemate-port` `6ae70b5` + T31 + T32 patches (post-audit). Same content as the design's `119d0bb`, except a 16-line audit fix in `ApertarCoreApp.cpp`; the design's line numbers are close, so search for its strings |
+| Core work tree | `S/t34/core`: detached HEAD `be6775d` = GitHub `cinemate-port` `3c4f07d` + T31 + T32 patches (post-audit). Same content as the design's `119d0bb`, except a 16-line audit fix in `ApertarCoreApp.cpp`; the design's line numbers are close, so search for its strings |
 | Touch UI work tree | `S/t34/ui`: detached HEAD `9a6fc7d` = Apertar-UI `dc471c1` + the two T32 UI patches (the design's `34499f1` plus a small audit fix) |
 | Design (code sites, search strings, semantics) | `S/ladder-design/design-T34.md`: §3 (data, commands, state, refusals), §4 (file-by-file plan, code for `ladderStatesLocked`, `ladderRewriteLocked` and the `setFps` lines) |
 | Approved mockups | `S/ladder-mock/project/Main.dc.html` (WebUI Settings > Record: Mode Ladder, Speed Ramp, Activated sensor modes) and `Quick.dc.html` (WebUI Camera settings card). A small template language: `{{ x }}` bindings, `<sc-for>`, `<sc-if>`; behaviour is in the `Component` class (`renderVals`, `legal`, `normalize`, `spans`, `setThrAt`, `cropOf`, `sizeMB`). Live: https://claude.ai/artifact/YKbhhk8aMUS8sxEWa6UfRL |

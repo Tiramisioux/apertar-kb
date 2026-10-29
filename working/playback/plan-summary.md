@@ -2,8 +2,8 @@
 
 2026-10-29, designer pass v2, after the code and operator critiques. Full design: `design-playback.md` in this folder; every
 critic point, accepted, changed or rejected with its evidence: `changes-from-critique.md`; v1 is `design-playback-v1.md`
-(its summary `plan-summary-v1.md`). Trees: Core `eb9cc39`, touch UI `d8098d0`, Cinemate `d6cc93e`, KB `b137ae8` (HEAD
-`11dad27`). Nothing ran on the Pi.
+(its summary `plan-summary-v1.md`). Trees: Core `0296ed1`, touch UI `5aab7e2`, Cinemate `d6cc93e`, KB `e8eeef2` (HEAD
+`9bf388f`). Nothing ran on the Pi.
 
 ## Recommendation
 

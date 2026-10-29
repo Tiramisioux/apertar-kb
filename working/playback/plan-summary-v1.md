@@ -1,7 +1,7 @@
 # WebUI playback: plan on one page
 
 2026-10-28, designer pass v1 (resumed after the pause). Full design: `design-playback.md` in this folder; what changed from
-the paused draft is its §12. Trees: Core `eb9cc39`, touch UI `d8098d0`, Cinemate `d6cc93e`, KB `b137ae8`. Nothing ran on
+the paused draft is its §12. Trees: Core `0296ed1`, touch UI `5aab7e2`, Cinemate `d6cc93e`, KB `e8eeef2`. Nothing ran on
 the Pi.
 
 ## Recommendation

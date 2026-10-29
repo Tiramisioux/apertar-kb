@@ -19,7 +19,7 @@ SDR 4K keep 30.
 Tested: host g++ -fsyntax-only of WebControlPage.cpp and ApertarCoreApp.cpp; CameraController.cpp
 needs libcamera (Pi build).
 
-Rebased onto eb9cc39 (2026-10-28): the 16-bit cap sits on top of
+Rebased onto 0296ed1 (2026-10-28): the 16-bit cap sits on top of
 Patrik's 4K table (Clear HDR 12-bit 30 with the probe, 25 without; SDR
 60 with the probe, 30 without) in tableMaximumFpsForResolution,
 maximumPcfFpsForSettings and the WebUI's maximumSupportedFpsForSnapshot.

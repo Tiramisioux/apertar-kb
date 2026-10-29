@@ -8,7 +8,7 @@ Read only. Nothing in the KB, the code trees or Cinemate was edited. The only fi
 
 ## Citation key and labels
 
-All KB paths are relative to `/home/user/apertar-kb` and pinned **@a08da9a** (KB HEAD, clean tree). Abbreviations:
+All KB paths are relative to `/home/user/apertar-kb` and pinned **@0870615** (KB HEAD, clean tree). Abbreviations:
 
 | Short | KB file |
 | --- | --- |
@@ -21,7 +21,7 @@ All KB paths are relative to `/home/user/apertar-kb` and pinned **@a08da9a** (KB
 | `TIDX` | `tutorials/README.md` |
 | `CL` | `working/cinemate-lessons.md` |
 
-Code citations: `Core:` = Apertar Core tree at **@eb9cc39**, `UI:` = Apertar UI tree at **@d8098d0**, `Cm:` = Cinemate at
+Code citations: `Core:` = Apertar Core tree at **@0296ed1**, `UI:` = Apertar UI tree at **@5aab7e2**, `Cm:` = Cinemate at
 **@d6cc93e**. The KB's own code refs are against `upstream-1.6.0` (`LLM:53-58`); where I re-opened a line at the tips I say so.
 
 Labels:
@@ -32,7 +32,7 @@ Labels:
 - **UNCONFIRMED** = not established in the KB (or anywhere I read); the settling command is given where possible.
 
 Sibling reports already in the KB cover the code side in depth: `working/controls/r1-cinemate-gpio.md` (Cinemate editor) and
-`working/controls/r2-apertar-core-hw.md` (Core readers at eb9cc39). This report is the KB view and does not repeat them.
+`working/controls/r2-apertar-core-hw.md` (Core readers at 0296ed1). This report is the KB view and does not repeat them.
 
 ---
 
@@ -53,7 +53,7 @@ Sibling reports already in the KB cover the code side in depth: `working/control
    action normalisers, three templates, three value-list copies, hardware-action names in Core and QML), Patrik-only
    `config.txt`/sudo/reboots/restarts, `/boot` copies of the config are dead, four unlocked writers, no WebUI auth, driver
    errors only in the journal, and the "a default is a claim" lesson from Cinemate.
-5. **KB drift found while reading** (§5): `A-CONF:114` says Core's C++ never reads `[cfexpress_hat]`; at eb9cc39 it does
+5. **KB drift found while reading** (§5): `A-CONF:114` says Core's C++ never reads `[cfexpress_hat]`; at 0296ed1 it does
    (`Core:src/ApertarCoreApp.cpp:4552`, `:9310`). The hat bit-0 polarity `A-CORE:496` calls unconfirmed was settled on
    hardware (`HL:335-337`, `:346-349`). Two KB pages disagree on whether `pi` can read the journal.
 
@@ -144,7 +144,7 @@ Code defaults are from the KB (`A-CONF`, `A-CORE:450-459`, `CIN:683-695`); rows 
 | 2 | Reboot | `sudo reboot` | **Patrik only** | CONFIRMED `SRC:127`, `HL:24` |
 | 3 | Verify the bus | `pinctrl get 2,3` shows `SDA1`/`SCL1`; `i2cdetect -y 1` shows `34` and `49` | read-only | CONFIRMED `SRC:130`; result `HL:24-25` |
 | 4 | Point the config at bus 1 | `[cfexpress_hat] bus=1`; `[neorotary4] enabled=true bus=1 address=0x49` | Patrik types it (house rule) | CONFIRMED `SRC:131`, `HL:25` |
-| 5 | Restart every reader | reboot, or restart Core, the UI and `apertar-cfe-automounter` | **Patrik only** (service restarts) | CONFIRMED `SRC:131`; rule `working/handoff-T26-T30.md:36`. At eb9cc39 the readers of `[cfexpress_hat] bus` are four: Core media watcher (at thread start), Core's embedded Python reinsert helper (each eject), the automounter (daemon start), the UI's embedded Python (dead code) — CONFIRMED@tip `Core:src/ApertarCoreApp.cpp:9310`; others per `A-CONF:104-114`, `UIN:702` |
+| 5 | Restart every reader | reboot, or restart Core, the UI and `apertar-cfe-automounter` | **Patrik only** (service restarts) | CONFIRMED `SRC:131`; rule `working/handoff-T26-T30.md:36`. At 0296ed1 the readers of `[cfexpress_hat] bus` are four: Core media watcher (at thread start), Core's embedded Python reinsert helper (each eject), the automounter (daemon start), the UI's embedded Python (dead code) — CONFIRMED@tip `Core:src/ApertarCoreApp.cpp:9310`; others per `A-CONF:104-114`, `UIN:702` |
 | 6 | Two-masters check | if `34` also answers on bus 10, or `1a` on bus 1, JP3/JP4 bridge the header bus and the camera bus; open them | hardware change, Patrik | KB: **unconfirmed** on this rig after the fix (`SRC:132`) |
 | 7 | Side effect: HDMI became the main touch-UI screen at 720x720 | `[display] ui_width=1920 ui_height=1080 ui_layout=landscape_large`, or `hdmi_external_only=true`; restart the UI | Patrik | CONFIRMED `SRC:134-143`, `HL:28-30` |
 | 8 | Confirmation | Patrik at the rig: "now it works" | — | CONFIRMED `HL:31` |
@@ -222,7 +222,7 @@ Two cautions the KB supports for any probe or scan feature:
 | R15 | The WebUI has **no auth**; requests without `Origin` pass; anyone on the LAN can rewrite `apertar-hardware.conf`, including `[run_script]` paths | A config editor reachable from the browser can make the camera run arbitrary scripts; keep the camera on a trusted network or gate the `[run_script]` keys | CONFIRMED `UPI#37`; `A-CORE:324`; `CPN:639` |
 | R16 | In Standby any press only wakes and rotations are ignored; a rotation never fires `standby`; an unknown action name only logs `Hardware input action ignored: unknown action` | The editor should validate names against Core's vocabulary before saving | CONFIRMED `REC:96`; `A-CORE:446`; `LLM:131` |
 | R17 | Inputs know only "pressed": one action on the debounced press edge, no hold/release/double click (except the fixed power-button double press); ≤6 actions per mapping | Cinemate's gesture columns have no Apertar counterpart yet | CONFIRMED `A-CORE:446`, `:463`; `CIN:685`; details in `working/controls/r2-apertar-core-hw.md` §2 |
-| R18 | A take started from a hardware input reached the touch UI only on its 30 s poll (`recording` not broadcast); fixed in the fork `a070e1b` | Hardware-triggered events must be on the broadcast list | CONFIRMED `UPI#43`; `HL:424-428` |
+| R18 | A take started from a hardware input reached the touch UI only on its 30 s poll (`recording` not broadcast); fixed in the fork `086443c` | Hardware-triggered events must be on the broadcast list | CONFIRMED `UPI#43`; `HL:424-428` |
 | R19 | Helpers in `/usr/local/libexec` (automounter) are copies: a UI build does not update them; installing needs `sudo install` (Patrik) | Any change to the automounter's `[cfexpress_hat]` parsing needs a Patrik install step | CONFIRMED `LLM:120`; `REC:26`, `:78` |
 | R20 | Cinemate lessons that apply: "a default is a claim, not a fact" (six copies of a default, one checked); "a fallback whose failure mode is 'yes' is not a fallback" (CFE only via the `0x34` answer); "duplicated truth must be deleted, or carry a named reason and a check"; "a claim about what the machine does" needs the Pi (5 of 16 source-only predictions were wrong) | Bus defaults and probes must be checked on the Pi; one owner for the action vocabulary and the value lists | CONFIRMED `CL:19`, `:21`, `:25`, `:28` |
 | R21 | Value lists (ISO/shutter/FPS/WB) for pots and `*_up`/`*_down` buttons are planned to move to `UI.conf` `[General]` (T35), the build maximum to `apertar-hardware.conf` `[camera] max_fps` (T33, scratch). The split: per-build hardware facts in `apertar-hardware.conf`, operator preferences in `UI.conf` | The GPIO/action editor should follow the same split and not create a third store | CONFIRMED `working/ramp-ladder/README.md:60-89`; `working/handoff-speed-ramp.md:75-81`; `working/ramp-ladder/build/SPEC.md:63-70` |
@@ -243,7 +243,7 @@ CONFIRMED.
 
 | # | Finding | Label, cite |
 | --- | --- | --- |
-| K1 | `A-CONF:114` ("The C++ Core never reads these sections", `[cfexpress_hat]`/`[storage]`) is stale for the fork: at eb9cc39 Core's media watcher reads `[cfexpress_hat]` with its own parser (`loadCfeHatConfig`, enabled only when the section exists, default bus 10) | CONFIRMED@tip `Core:src/ApertarCoreApp.cpp:4550-4597`, `:9310-9313`; `Core:src/util/CfeHat.hpp:18-22` |
+| K1 | `A-CONF:114` ("The C++ Core never reads these sections", `[cfexpress_hat]`/`[storage]`) is stale for the fork: at 0296ed1 Core's media watcher reads `[cfexpress_hat]` with its own parser (`loadCfeHatConfig`, enabled only when the section exists, default bus 10) | CONFIRMED@tip `Core:src/ApertarCoreApp.cpp:4550-4597`, `:9310-9313`; `Core:src/util/CfeHat.hpp:18-22` |
 | K2 | `A-CORE:496` calls the hat's bit-0 polarity unconfirmed; the hardware log shows Core's C++ reader detecting pulls with "bit 0 = card out" (`hat_card=out` on every pull) | CONFIRMED `HL:335-337`, `:346-349`; `working/port-raw/y2-yank-core.md:377` (PROBABLE inversion in the Python helper) |
 | K3 | `SRC:159` (§6.6) has the PCF8574 bus defaults reversed; corrected in `A-CONF:265-275` and `UPI#2`. `SRC` is a frozen source, so the correction lives only in the other pages | CONFIRMED |
 | K4 | `run_pi_direct.sh` line refs: `SRC:136` says `:135-160`, `HL:30` says `:138-166` at upstream-1.6.0 | CONFIRMED `HL:29-30` |

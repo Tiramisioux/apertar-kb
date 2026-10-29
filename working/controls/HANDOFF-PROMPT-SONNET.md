@@ -39,7 +39,7 @@ git checkout origin/cloud/speed-ramp-2026-10-27 -- working/controls
 1. Small steps. A step is one tutorial row of the plan (T36, T37, …) or a part of one. Never start the next step before I
    confirm the last one.
 2. Never invent a file path, line number or function name. Find every code site in the Mac clone with the design's search
-   string (`grep -n`). The design was written against Core `eb9cc39` and touch UI `d8098d0`; the trees have moved since
+   string (`grep -n`). The design was written against Core `0296ed1` and touch UI `5aab7e2`; the trees have moved since
    (T33/T34). If a search string is missing or found twice, stop and tell me; do not guess.
 3. If the design and the code disagree, show both and ask which way to go.
 4. Match the surrounding code: naming, comment density, style. No drive-by refactors.
@@ -98,7 +98,7 @@ Then summarize what changed and stop.
 ## Phase 3. The sketch
 
 `working/controls/sketch/` (`hardware/ActionCatalog.hpp`, `hardware/HardwareConfigText.hpp`, `controls_test.cpp`; 78 checks
-pass in the cloud against Core `eb9cc39`). Build and run its test against the `controls` branch (the command is in
+pass in the cloud against Core `0296ed1`). Build and run its test against the `controls` branch (the command is in
 `README.md`; `-I` points at the clone's `src`), on the Mac if it builds there, else on the Pi. Show me the result. If a check
 fails because the tree moved, stop and show which.
 

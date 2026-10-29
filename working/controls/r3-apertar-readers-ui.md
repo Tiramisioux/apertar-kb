@@ -9,9 +9,9 @@ file, a section or a restart rule with the processes below.
 
 | Tree | Commit | Prefix used below |
 | --- | --- | --- |
-| Apertar touch UI and helper binaries: `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/controls/ui-tip` | `d8098d0` | `UI:` (every `UI:` citation is `@d8098d0`) |
-| Apertar Core: `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/controls/core-tip` | `eb9cc39` | `Core:` / `App:` = `Core:src/ApertarCoreApp.cpp` / `Web:` = `Core:src/web/WebControlPage.cpp` (every one is `@eb9cc39`) |
-| KB: `/home/user/apertar-kb` | `dbcbfca` | `KB:` (Pi readings are quoted as the KB records them. I did not touch the Pi) |
+| Apertar touch UI and helper binaries: `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/controls/ui-tip` | `5aab7e2` | `UI:` (every `UI:` citation is `@5aab7e2`) |
+| Apertar Core: `/tmp/claude-0/-home-user-apertar-kb/17fc979d-f346-53ac-97ad-c8caa225a57d/scratchpad/controls/core-tip` | `0296ed1` | `Core:` / `App:` = `Core:src/ApertarCoreApp.cpp` / `Web:` = `Core:src/web/WebControlPage.cpp` (every one is `@0296ed1`) |
+| KB: `/home/user/apertar-kb` | `24a00da` | `KB:` (Pi readings are quoted as the KB records them. I did not touch the Pi) |
 
 **Labels:**
 - **C** (CONFIRMED): I opened the cited line(s).
@@ -303,7 +303,7 @@ They show no hat bus or address. C.
   finds only the INA219 hint (`:4526`), the standby text (`:4581`) and unrelated hits.
 - No view of I2C buses, no device probe, and no display of hardware-input errors. Core's input drivers keep
   `lastError()`, but the KB note says nothing reads it (`KB:sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md:156`).
-  **C-KB.** Not re-checked at `eb9cc39`. **U**: `grep -n lastError App` near `get_state`.
+  **C-KB.** Not re-checked at `0296ed1`. **U**: `grep -n lastError App` near `get_state`.
 - The UI's only link to physical controls is the `hardware_action` event from Core. `ApertarControlBridge` emits
   `hardwareActionTriggered` (`UI:src/ApertarControlBridge.cpp:1269-1273`). `Main.qml` handles these UI-local
   actions (`UI:qml/Main.qml:288-332`). C.
@@ -634,7 +634,7 @@ These are the facts that limit what a system config can do with `config.txt`:
 | U8 | `capture-priority` drop-in installed | `systemctl cat apertar-core` |
 | U9 | QSettings handling of `;` / `#` inline in `[display]` | put `ui_width=1280 ; x` in a copy via `APERTAR_HARDWARE_CONFIG` and read the "Apertar display config" log line |
 | U10 | `QSaveFile` on a symlinked path (target or link replaced?) | throwaway test on the Pi |
-| U11 | Whether Core exposes input `lastError` in `get_state` at `eb9cc39` | `grep -n lastError Core:src/ApertarCoreApp.cpp` around `buildStateJson` |
+| U11 | Whether Core exposes input `lastError` in `get_state` at `0296ed1` | `grep -n lastError Core:src/ApertarCoreApp.cpp` around `buildStateJson` |
 
 ---
 
@@ -643,18 +643,18 @@ These are the facts that limit what a system config can do with `config.txt`:
 - `KB:architecture/config.md:20` ("every unit runs as `User=pi`") contradicts `KB:architecture/overview.md:145`
   (automounter is root). **C.**
 - The KB line numbers for Core (`App:4251-4269`, `App:3380-3602`, `App:6881-6893`, `App:4602`) were taken at
-  `65ccfa8`. At `eb9cc39` they are:
+  `65ccfa8`. At `0296ed1` they are:
 
-  | Item | Old (`65ccfa8`) | New (`eb9cc39`) |
+  | Item | Old (`65ccfa8`) | New (`0296ed1`) |
   | --- | --- | --- |
   | Candidate list | `App:4251-4269` | `App:4293-4311` |
   | Python watcher | `App:3380-3602` | `App:3419-3603` |
   | Input start | `App:6881-6893` | `App:7026-7038` |
   | INA219 `static` | `App:4602` | `App:4695` |
 
-  **C.** The UI line numbers in `KB:architecture/config.md` still match `d8098d0` for `DisplayConfigBridge`
+  **C.** The UI line numbers in `KB:architecture/config.md` still match `5aab7e2` for `DisplayConfigBridge`
   (`:587`, `:575`). **C.**
 - `KB:llm/change-recipes.md:80` cites `--check-config` at `CfeAutomounter.cpp:760-771`. It is `:793-802` at
-  `d8098d0`. **C.**
+  `5aab7e2`. **C.**
 - The KB says the UI's Python watcher is "dead code" in an overview row (`KB:architecture/overview.md:132`). It is
   dead for a stronger reason than the ready-file check: **it has no caller at all**. **C** (grep).
