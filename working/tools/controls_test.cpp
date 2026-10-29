@@ -5,6 +5,7 @@
 //        fixture = controls_fixture_apertar-hardware.conf, default next to the test)
 // The old_* copies are the code T36 deleted, read from the tree before the change (controls_make_old.sh, _old2.sh).
 #include "hardware/ControlsModel.hpp"
+#include "hardware/ButtonGesture.hpp"
 #include "controls_old_normalizers.inc"
 #include "controls_old_extra.inc"
 
@@ -589,6 +590,41 @@ int main(int argc, char **argv)
               has(settings, "\"key\":\"poll_ms\",\"label\":\"Poll every (ms)\",\"type\":\"number\",\"value\":\"12\"") &&
               has(settings, "\"key\":\"chip\",\"label\":\"GPIO chip\",\"type\":\"text\",\"value\":\"auto\""),
               "GPIO button settings from the live file: on, pull up, 60 ms debounce, 12 ms poll, chip auto");
+    }
+
+    std::printf("15. clicks and hold, like Cinemate (ButtonGesture)\n");
+    {
+        using G = apertar::hardware::ButtonGesture;
+        // A button pressed in the given [from, to) millisecond spans, polled every 10 ms up to endMs.
+        auto run = [](std::vector<std::pair<int, int>> presses, int endMs) {
+            G gesture;
+            std::string out;
+            for (int t = 0; t <= endMs; t += 10) {
+                bool down = false;
+                for (const auto &[from, to] : presses) down = down || (t >= from && t < to);
+                for (const auto event : gesture.update(down, t)) {
+                    static const char *names[] = {"press", "single", "double", "triple", "hold"};
+                    out += std::string(out.empty() ? "" : " ") + names[static_cast<int>(event)] + "@" + std::to_string(t);
+                }
+            }
+            return out;
+        };
+        const auto one = run({{0, 100}}, 1000);
+        check(one == "press@0 single@600", "one click: Press at once, Single 0.5 s after the release (" + one + ")");
+        const auto two = run({{0, 100}, {250, 350}}, 1500);
+        check(two == "press@0 press@250 double@850", "two clicks: Press each time, then Double (" + two + ")");
+        const auto three = run({{0, 100}, {200, 300}, {400, 500}}, 1500);
+        check(three == "press@0 press@200 press@400 triple@1000", "three clicks: Triple (" + three + ")");
+        const auto four = run({{0, 80}, {160, 240}, {320, 400}, {480, 560}}, 1500);
+        check(four == "press@0 press@160 press@320 press@480 triple@1060", "four clicks count as Triple, as in Cinemate (" + four + ")");
+        const auto hold = run({{0, 3500}}, 4500);
+        check(hold == "press@0 hold@3000", "held 3 s: Hold, and no click after it (" + hold + ")");
+        const auto longPress = run({{0, 700}}, 2000);
+        check(longPress == "press@0", "held 0.7 s: no click, no Hold (" + longPress + ")");
+        const auto clickThenLong = run({{0, 100}, {300, 1000}}, 2500);
+        check(clickThenLong == "press@0 press@300", "a click then a long press: the long press clears the count (" + clickThenLong + ")");
+        const auto apart = run({{0, 100}, {800, 900}}, 2000);
+        check(apart == "press@0 single@600 press@800 single@1400", "two clicks 0.8 s apart are two singles (" + apart + ")");
     }
 
     std::printf("%s: %d of %d checks\n", failures ? "FAILED" : "all ok", checks - failures, checks);
