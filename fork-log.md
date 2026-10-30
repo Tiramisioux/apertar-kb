@@ -126,6 +126,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `b74b4aa` | WebUI: push actions on knobs and PCF pins, + Add GPIO rotary encoder, tidier settings cards | fork-only |
 | `dcf09ee` | T39/T40/T42: saves apply without a restart (controls worker, per driver group, never in a take), Listen, history, `scan_i2c`, `test_output` | fork-only |
 | `8be1ab5` | T40-T43 WebUI: Listen, review, Undo, action chips, Turn adjusts, Scan, Test, text editor with line numbers, Check, diff, history | fork-only |
+| `a40112a` | WebUI Clip Browser: "Loading…" until the media list arrives, "Loading thumbnails…" while pictures come | fork-only |
 | `55e7ba9` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `28ee0d3` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `d084ed4` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -142,7 +143,6 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `08cefcf` | timecode modes named Time of Day and Clip | fork-only |
 | `ea44bd7` | T45: a Controls chip on the camera page and a read-only Controls card | fork-only |
-| `1cf98ad` | clip browser says Loading... while the media folder may still be mounting (15 s, then "not available") | fork-only |
 | `c716dec` | Touch UI: `ladderActive` in the control bridge; Compression field disabled, labelled "set by Mode Ladder"; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `35b31f6` | Touch screen + HDMI: system-decided values in italics instead of green (`TopDropdownStat.valueItalic`); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `682a186` | QML: ISO Auto offered everywhere but Clear HDR; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
