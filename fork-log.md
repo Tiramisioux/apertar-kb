@@ -142,6 +142,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `08cefcf` | timecode modes named Time of Day and Clip | fork-only |
 | `ea44bd7` | T45: a Controls chip on the camera page and a read-only Controls card | fork-only |
+| `1cf98ad` | clip browser says Loading... while the media folder may still be mounting (15 s, then "not available") | fork-only |
 | `c716dec` | Touch UI: `ladderActive` in the control bridge; Compression field disabled, labelled "set by Mode Ladder"; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `35b31f6` | Touch screen + HDMI: system-decided values in italics instead of green (`TopDropdownStat.valueItalic`); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `682a186` | QML: ISO Auto offered everywhere but Clear HDR; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
