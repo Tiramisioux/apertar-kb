@@ -109,6 +109,23 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `effb804` | T38 part 2: the Config page sends `X-Apertar-Revision`, shows Core's issues with line numbers and keeps the text on a refusal | fork-only |
 | `014fa22` | T38 part 3: a hardware file replaced by a default is detected (`get_controls` `replaced`, last-written copy) and `set_controls restore=true` puts it back | fork-only |
 | `7af9f13` | T38 part 5: Core's default hardware template is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`) | fork-only |
+| `a7b6f82` | the ladder's messages say resolution, not rung | fork-only |
+| `cdf83cd` | the ladder's API says resolutions, not rungs | fork-only |
+| `4fa0432` | WebUI viewer asks for the frame due when the answer arrives | fork-only |
+| `07afbc6` | Controls part 1: `set_controls` single-key edits; `get_controls` returns the page's rows | fork-only |
+| `d282de9` | Controls part 2: a dropdown of actions for every button, knob and pin | fork-only |
+| `243fe2c` | `clear_hdr` action (IMX585 Clear HDR on/off) for buttons and knob pushes; resolution labelled honestly | fork-only |
+| `166cc4d` | Controls part 3: the GPIO buttons as a peripheral with settings and what is detected | fork-only |
+| `2c259b9` | WebUI: timecode modes named Time of Day and Clip | fork-only |
+| `0a98868` | T44: Single/Double/Triple click and Hold on GPIO buttons (Cinemate timing), 1-0-1 buttons, I2C devices detected | fork-only |
+| `f5fe41b` | Controls for detected hardware, + for clicks and buttons, Hardware card on Config | fork-only |
+| `0c49601` | GPIO inputs wait for kernel edge events instead of 12 ms polling | fork-only |
+| `c34f844` | `[gpio_switches]` two- and three-way switches (applied at start); CFexpress hat in `get_controls` | fork-only |
+| `fa3a798` | WebUI: one card per device, gesture dropdowns, add buttons for buttons and switches | fork-only |
+| `c140c4f` | T44: clicks and Hold on NeoRotary pushes, PCF pins (1-0-1 too) and GPIO encoder pushes | fork-only |
+| `b74b4aa` | WebUI: push actions on knobs and PCF pins, + Add GPIO rotary encoder, tidier settings cards | fork-only |
+| `dcf09ee` | T39/T40/T42: saves apply without a restart (controls worker, per driver group, never in a take), Listen, history, `scan_i2c`, `test_output` | fork-only |
+| `8be1ab5` | T40-T43 WebUI: Listen, review, Undo, action chips, Turn adjusts, Scan, Test, text editor with line numbers, Check, diff, history | fork-only |
 | `55e7ba9` | ISO 1600 allowed in lossless cDNG (cap was 800) and in the WebUI's lossless list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `28ee0d3` | WebUI: 33 fps in the frame-rate list; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `d084ed4` | 16-bit Clear HDR = 25 fps uncompressed: >25 fps switches to 12-bit SDR (lossless cDNG); entering Clear HDR sets uncompressed and ≤25 fps; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
@@ -123,6 +140,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `7029db1` | Touch UI: Settings > Timecode has UI timecode and File timecode (bridge `fileTimecodeMode` from Core's state); the tap on the camera screen toggles the UI timecode only | fork-only, Pi only; building 2026-10-29, not tested |
 | `c9d841f` | T38 part 4: the touch UI no longer writes a default `apertar-hardware.conf` when it is missing (both bridges); local branch `controls` | fork-only |
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
+| `08cefcf` | timecode modes named Time of Day and Clip | fork-only |
+| `ea44bd7` | T45: a Controls chip on the camera page and a read-only Controls card | fork-only |
 | `c716dec` | Touch UI: `ladderActive` in the control bridge; Compression field disabled, labelled "set by Mode Ladder"; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `35b31f6` | Touch screen + HDMI: system-decided values in italics instead of green (`TopDropdownStat.valueItalic`); branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |
 | `682a186` | QML: ISO Auto offered everywhere but Clear HDR; branch `cinemate-port` | fork-only, on GitHub (`cinemate-port`, 2026-10-29); built 2026-10-28 |

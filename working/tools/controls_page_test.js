@@ -38,7 +38,9 @@ int main(int, char **argv) {
               << periph(doc, "pcf8574", "PCF8574 buttons", "{\"state\":\"found\",\"detail\":\"Found on bus 10 at 0x20, switched off.\",\"bus\":10,\"address\":\"0x20\"}") << ","
               << periph(doc, "grove_analog", "Grove analog (ADC)", "{\"state\":\"missing\",\"detail\":\"Not found on bus 1 at 0x04.\",\"bus\":1,\"address\":\"0x04\"}") << ","
               << periph(doc, "cfexpress_hat", "CFexpress hat", "{\"state\":\"running\",\"detail\":\"Card in the slot: Corsair MP600 MINI, 1.0 TB, 8.0 GT/s PCIe x1, mounted at /media/RAW.\",\"info\":\"Card in the slot: Corsair MP600 MINI, 1.0 TB, 8.0 GT/s PCIe x1, mounted at /media/RAW.\",\"bus\":1,\"address\":\"0x34\"}")
-              << "],\"i2c_buses\":[{\"bus\":0,\"name\":\"Synopsys DesignWare I2C adapter\"},{\"bus\":1,\"name\":\"Synopsys DesignWare I2C adapter\"},{\"bus\":10,\"name\":\"Synopsys DesignWare I2C adapter\"}]}}";
+              << ",{\"id\":\"recording_indicator\",\"section\":\"recording_indicator\",\"title\":\"Tally LED\",\"in_file\":true,\"output\":true,\"settings\":" << hwconf::peripheralSettingsJson(doc, "recording_indicator") << ",\"status\":{\"state\":\"running\",\"detail\":\"\"}}"
+              << ",{\"id\":\"trigger_output\",\"section\":\"trigger_output\",\"title\":\"Trigger output\",\"in_file\":true,\"output\":true,\"settings\":" << hwconf::peripheralSettingsJson(doc, "trigger_output") << ",\"status\":{\"state\":\"off\",\"detail\":\"Switched off in the file.\"}}"
+              << "],\"apply\":{\"state\":\"applied\",\"detail\":\"Applied.\",\"pending\":[{\"unit\":\"apertar-ui-direct\",\"what\":\"The camera screen reads the file again when it restarts.\",\"command\":\"sudo systemctl restart apertar-ui-direct\"}]},\"dpi_lines\":[],\"i2c_buses\":[{\"bus\":0,\"name\":\"Synopsys DesignWare I2C adapter\"},{\"bus\":1,\"name\":\"Synopsys DesignWare I2C adapter\"},{\"bus\":10,\"name\":\"Synopsys DesignWare I2C adapter\"}]}}";
 }
 `);
 execFileSync('g++', ['-std=c++20', '-I' + path.join(coreTree, 'src'), path.join(work, 'gen.cpp'), '-o', path.join(work, 'gen')]);
@@ -50,13 +52,26 @@ const getControls = execFileSync(path.join(work, 'gen'), [withSwitches, 'control
 const listActions = execFileSync(path.join(work, 'gen'), [fixture, 'actions'], { encoding: 'utf8' });
 const loadedRevision = JSON.parse(getControls).controls.revision;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-let sent = [], nextReply = null;
+let sent = [], nextReply = null, log = [], inputSeq = 1, configPosts = [];
+const fixtureText = fs.readFileSync(withSwitches, 'utf8');
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end(pageHtml); }
+  if (req.url.startsWith('/api/config')) {
+    if (req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, text: fixtureText, revision: loadedRevision, exists: true, display_path: '~/apertar-hardware.conf' })); }
+    let body = ''; req.on('data', (c) => body += c); req.on('end', () => { configPosts.push(body); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, revision: 'hNEW', issues: [] })); }); return;
+  }
   if (req.method === 'POST' && req.url === '/api/command') {
     let body = ''; req.on('data', (c) => body += c); req.on('end', () => {
       const cmd = JSON.parse(body); res.writeHead(200, { 'Content-Type': 'application/json' });
+      log.push(cmd);
       if (cmd.cmd === 'get_controls') return res.end(getControls);
+      if (cmd.cmd === 'controls_history') return res.end(JSON.stringify(cmd.name ? { ok: true, name: cmd.name, text: '[gpio_buttons]\nenabled=true\nd10=photo\n' }
+        : { ok: true, revision: loadedRevision, history: [{ name: '20261030-001000-h0123456789abcdef-webui.conf', saved_at: '2026-10-30 00:10', by: 'webui', revision: 'h0123456789abcdef' },
+                                                         { name: 'adopted-hfedcba9876543210.conf', saved_at: '', by: 'adopted', revision: 'hfedcba9876543210' }] }));
+      if (cmd.cmd === 'controls_last_input') return res.end(JSON.stringify({ ok: true, seq: inputSeq, section: 'gpio_buttons', key: 'd10', ms_ago: 5 }));
+      if (cmd.cmd === 'scan_i2c') return res.end(JSON.stringify({ ok: true, bus: cmd.bus, found: [{ address: '0x34', by: '', guess: 'CFexpress hat' }, { address: '0x49', by: 'core', guess: 'NeoRotary 4' }] }));
+      if (cmd.cmd === 'test_output') return res.end(JSON.stringify({ ok: true, which: cmd.which }));
+      if (cmd.cmd === 'set_controls' && cmd.dry_run) return res.end(JSON.stringify({ ok: true, written: false, issues: [{ line: 3, error: true, message: 'Line 3: GPIO 6 is used twice.' }] }));
       if (cmd.cmd === 'list_actions') return res.end(listActions);
       if (cmd.cmd === 'set_controls') { sent.push(cmd); return res.end(nextReply || JSON.stringify({ ok: true, revision: 'hNEW', written: true, issues: [] })); }
       res.end(JSON.stringify({ ok: false, error: 'mock: ' + cmd.cmd }));
@@ -110,21 +125,26 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     check('no settings on Controls; a running device shows no message, a found-but-off one says so (its switched-off pins are hidden)', heads.every((h) => h.settings === 0) && heads[0].pill === 'Detected' && heads[0].details.length === 0 && heads[2].pill === 'Detected, off' && /switched off/.test(heads[2].details.join(' ')) && heads[2].rows === 0);
     const titles = await q('[...document.querySelectorAll("#controlsRows .controls-row-title")].map(e=>e.textContent).join(", ")');
     console.log('    rows:', titles);
-    check('GPIO 10, GPIO 6, the two switches and the four knobs are there', ['GPIO 10', 'GPIO 6', 'GPIO 19', 'GPIO 22 + 23', 'Knob 1', 'Knob 4'].every((t) => titles.includes(t)));
+    check('GPIO 10, GPIO 6, the two switches and the four knobs are there', ['GPIO 10', 'GPIO 6', 'GPIO 19', 'GPIO 22 + 23', 'Adafruit rotary 0', 'Adafruit rotary 3'].every((t) => titles.includes(t)));
     const switchLines = await q(`JSON.stringify([...${rowOf("GPIO 22 + 23")}.querySelectorAll(".controls-line")].map(l=>l.querySelector(".controls-line-label").textContent+"="+l.querySelector("select").value))`).then(JSON.parse);
-    check('the three-way switch shows its three positions with their actions', switchLines.join('|') === 'Position 1 (GPIO 22)=record_toggle|Position 2 (middle)=none|Position 3 (GPIO 23)=photo');
+    check('the three-way switch shows its three positions with their actions', switchLines.join('|') === 'Position 0 (GPIO 22)=record_toggle|Position 1 (middle)=none|Position 2 (GPIO 23)=photo');
     const d10 = await q(`(() => { const s=${actionOf(lineOf("GPIO 10", 0))}; return JSON.stringify({value:s.value, label:s.selectedOptions[0].textContent, groups:s.querySelectorAll("optgroup").length}); })()`).then(JSON.parse);
     check('GPIO 10 shows "Record or photo (main button)" selected, with grouped options', d10.value === 'capture' && /Record or photo/.test(d10.label) && d10.groups >= 5);
-    const knob = await q(`JSON.stringify([...${rowOf("Knob 1")}.querySelectorAll(".controls-line")].filter(l=>l.querySelector("select")).map(l=>{ const s=[...l.querySelectorAll("select")]; const g=l.querySelector(".controls-line-label"); return (g?g.textContent:s[0].selectedOptions[0].textContent)+"="+s[s.length-1].value; }))`).then(JSON.parse);
-    check('Knob 1: clockwise iso_up, counter-clockwise iso_down, and its push as a gesture line: Press iso', knob.join('|') === 'Turn clockwise=iso_up|Turn counter-clockwise=iso_down|Press=iso');
-    await q(`[...${rowOf("Knob 1")}.querySelectorAll("button")].find(b=>b.textContent==="+ Add action").click(), 0`); await sleep(200);
-    await q(change(`[...${rowOf("Knob 1")}.querySelectorAll(".controls-line")][3].querySelectorAll("select")[1]`, 'photo')); await sleep(200);
-    check('a knob push gets + Add action too: it lands on Double click', await q(`[...${rowOf("Knob 1")}.querySelectorAll(".controls-line")][3].querySelector(".controls-gesture").value === "_double"`));
+    const knob = await q(`JSON.stringify([...${rowOf("Adafruit rotary 0")}.querySelectorAll(".controls-line")].filter(l=>l.querySelector("select")).map(l=>{ const s=[...l.querySelectorAll("select")]; const g=l.querySelector(".controls-line-label"); return (g?g.textContent:s[0].selectedOptions[0].textContent)+"="+s[s.length-1].value; }))`).then(JSON.parse);
+    check('Adafruit rotary 0: Turn adjusts ISO (clockwise up) in one line, and its push as a gesture line: Press iso', knob.join('|') === 'Turn adjusts=iso_up|iso_down|Press=iso');
+    await q(`[...${rowOf("Adafruit rotary 0")}.querySelectorAll("button")].find(b=>b.textContent==="+ Add action").click(), 0`); await sleep(200);
+    await q(change(`[...${rowOf("Adafruit rotary 0")}.querySelectorAll(".controls-line")][2].querySelectorAll("select")[1]`, 'photo')); await sleep(200);
+    check('a knob push gets + Add action too: it lands on Double click', await q(`[...${rowOf("Adafruit rotary 0")}.querySelectorAll(".controls-line")][2].querySelector(".controls-gesture").value === "_double"`));
     sent = []; await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1500);
     console.log('    Save sent:', JSON.stringify(sent[0]));
     check('Save sends set.neorotary4.encoder0_double=photo and nothing else', sent[0] && sent[0]['set.neorotary4.encoder0_double'] === 'photo' && sentKeys(sent[0]).length === 1);
-    const turnOpts = await q(`JSON.stringify([...${rowOf("Knob 1")}.querySelector("select").options].map(o=>o.value))`).then(JSON.parse);
-    check('a turn offers only stepping actions (no capture, no photo, no zoom)', turnOpts.includes('iso_up') && turnOpts.includes('fps_down') && !turnOpts.includes('capture') && !turnOpts.includes('photo') && !turnOpts.includes('zoom_toggle'));
+    const turnOpts = await q(`JSON.stringify([...${rowOf("Adafruit rotary 0")}.querySelector(".controls-turn").options].map(o=>o.textContent))`).then(JSON.parse);
+    console.log('    turn adjusts:', turnOpts.join(' | '));
+    check('Turn adjusts offers the stepping pairs both ways, Nothing, and separate actions', turnOpts.includes('ISO (clockwise up)') && turnOpts.includes('ISO (clockwise down)') && turnOpts[0] === 'Nothing' && /Separate/.test(turnOpts[turnOpts.length - 1]) && !turnOpts.some((o) => /photo|Record/i.test(o)));
+    await q(change(`${rowOf("Adafruit rotary 0")}.querySelector(".controls-turn")`, '__separate__')); await sleep(200);
+    const sepOpts = await q(`JSON.stringify([...${rowOf("Adafruit rotary 0")}.querySelector("select").options].map(o=>o.value))`).then(JSON.parse);
+    check('"Separate actions" shows the two turn lines; a turn offers only stepping actions (no capture, no photo, no zoom)', sepOpts.includes('iso_up') && sepOpts.includes('fps_down') && !sepOpts.includes('capture') && !sepOpts.includes('photo') && !sepOpts.includes('zoom_toggle'));
+    await q('document.getElementById("reloadControlsButton").click(); 0'); await sleep(1200);
     check('Save is disabled and the pill says Ready', await q('document.getElementById("saveControlsButton").disabled && document.getElementById("controlsStatePill").textContent==="Ready"'));
 
     console.log('--- a button line is a gesture dropdown, like Cinemate; + Add action');
@@ -152,7 +172,7 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     const hw = await q('JSON.stringify([...document.querySelectorAll("#hardwareDevices .controls-peripheral")].map(c=>({title:c.querySelector(".controls-row-title").textContent, pill:(c.querySelector(".online-pill")||{}).textContent||"", details:[...c.querySelectorAll(".controls-row-detail")].map(e=>e.textContent), fields:[...c.querySelectorAll(".controls-settings .field-stack")].map(f=>f.querySelector(".input-label").textContent+"="+(f.querySelector("select,input").value))})))').then(JSON.parse);
     console.log('    hardware:', JSON.stringify(hw.map((h) => h.title + ' [' + h.pill + '] ' + h.details.join(' / '))));
     check('it lists the I2C buses, with what Core finds on each', hw[0].title === 'I2C buses' && hw[0].details.some((d) => /^Bus 1 \(Synopsys DesignWare I2C adapter\): NeoRotary 4, CFexpress hat/.test(d)) && hw[0].details.some((d) => /^Bus 10 .*PCF8574 buttons/.test(d)));
-    check('then every device, detected or not: GPIO, NeoRotary 4, PCF8574, Grove ADC (Not found, with where it looked), CFexpress hat', hw.slice(1).map((h) => h.title).join('|') === 'Raspberry Pi GPIO|NeoRotary 4|PCF8574 buttons|Grove analog (ADC)|CFexpress hat' && hw[4].pill === 'Not found' && /Not found on bus 1 at 0x04/.test(hw[4].details.join(' ')));
+    check('then every device, detected or not: GPIO, NeoRotary 4, PCF8574, Grove ADC (Not found, with where it looked), CFexpress hat, tally, trigger', hw.slice(1).map((h) => h.title).join('|') === 'Raspberry Pi GPIO|NeoRotary 4|PCF8574 buttons|Grove analog (ADC)|CFexpress hat|Tally LED|Trigger output' && hw[4].pill === 'Not found' && /Not found on bus 1 at 0x04/.test(hw[4].details.join(' ')));
     check('the CFexpress hat card: Detected, what is in the slot, its settings from the file (on, bus 1, 0x34)', hw[5].pill === 'Detected' && /Card in the slot: Corsair/.test(hw[5].details.join(' ')) && hw[5].fields.join('|') === 'On=true|I2C bus=1|Address=0x34');
     check('a supported device that is not found is greyed out (the Grove ADC), the detected ones are not', await q('(() => { const c=[...document.querySelectorAll("#hardwareDevices .controls-peripheral")]; const by=t=>c.find(x=>x.querySelector(".controls-row-title").textContent===t); return by("Grove analog (ADC)").classList.contains("undetected") && getComputedStyle(by("Grove analog (ADC)")).opacity==="0.5" && !by("NeoRotary 4").classList.contains("undetected") && !by("Raspberry Pi GPIO").classList.contains("undetected") && !by("PCF8574 buttons").classList.contains("undetected") && !by("CFexpress hat").classList.contains("undetected"); })()'));
     check('the GPIO settings: On, Pressed (low), Pull up, Debounce 60; no poll, no chip', hw[1].fields.join('|') === 'On=true|Pressed=true|Pull=up|Debounce (ms)=60' &&
@@ -167,15 +187,15 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     await q('setSettingsPanel("controls"); 0'); await sleep(1200);
 
     console.log('--- change a button and a knob, then Save');
-    await q(change(actionOf(lineOf("GPIO 10", 0)), 'record_toggle')); await q(change(`${rowOf("Knob 2")}.querySelector("select")`, 'shutter_down')); await sleep(200);
+    await q(change(actionOf(lineOf("GPIO 10", 0)), 'record_toggle')); await q(change(`${rowOf("Adafruit rotary 1")}.querySelector(".controls-turn")`, 'shutter_down|shutter_up')); await sleep(200);
     check('Save is enabled and the pill says Unsaved', await q('!document.getElementById("saveControlsButton").disabled && document.getElementById("controlsStatePill").textContent==="Unsaved"'));
     check('the two changed rows are marked', await q('document.querySelectorAll("#controlsRows .controls-row.changed").length') === 2);
     sent = []; await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1500);
     const p = sent[0]; console.log('    Save sent:', JSON.stringify(p));
-    check('it sent set_controls with the loaded revision and only the two keys', p && p.cmd === 'set_controls' && p.base === loadedRevision && p['set.gpio_buttons.d10'] === 'record_toggle' && p['set.neorotary4.encoder1_cw'] === 'shutter_down' && sentKeys(p).length === 2);
+    check('it sent set_controls with the loaded revision and only those keys (a reversed turn pair is both turn keys)', p && p.cmd === 'set_controls' && p.base === loadedRevision && p['set.gpio_buttons.d10'] === 'record_toggle' && p['set.neorotary4.encoder1_cw'] === 'shutter_down' && p['set.neorotary4.encoder1_ccw'] === 'shutter_up' && sentKeys(p).length === 3);
     const msg = await q('document.getElementById("controlsMessage").hidden ? "(hidden)" : document.getElementById("controlsMessage").innerText');
     console.log('    message:', msg);
-    check('it says Saved and to restart Apertar Core; Save is disabled again', /Saved\. Restart Apertar Core/.test(msg) && await q('document.getElementById("saveControlsButton").disabled'));
+    check('it says Saved and that Core applies it now; Save is disabled again', /Saved\. Core applies it now/.test(msg) && await q('document.getElementById("saveControlsButton").disabled'));
 
     console.log('--- add a button, a two-way and a three-way switch; remove a button and a switch; then a refusal');
     check('the GPIO card has four add buttons', await q('[...document.querySelectorAll("#controlsRows .controls-add-bar button")].map(b=>b.textContent).join("|")') === '+ Add GPIO button|+ Add GPIO two-way switch|+ Add GPIO three-way switch|+ Add GPIO rotary encoder');
@@ -189,12 +209,12 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     await q(clickText('+ Add GPIO two-way switch')); await sleep(200);
     check('pin 17 is no longer offered to the new switch', await q(`![...${rowOf("New two-way switch")}.querySelector(".controls-pin").options].some(o=>o.value==="17")`));
     const two = await q(`JSON.stringify({pin:${rowOf("New two-way switch")}.querySelector(".controls-pin").value, lines:[...${rowOf("New two-way switch")}.querySelectorAll(".controls-line-label")].map(e=>e.textContent)})`).then(JSON.parse);
-    check('a new two-way switch has On and Off', two.lines.join('|') === 'On|Off');
-    await q(change(`${lineOf("New two-way switch", 0)}.querySelector("select")`, 'record_toggle')); await sleep(200);
+    check('a new two-way switch has On and Off', two.lines.join("|") === "Position 0 (open)|Position 1 (closed)");
+    await q(change(`${lineOf("New two-way switch", 1)}.querySelector("select")`, 'record_toggle')); await sleep(200);
     await q(clickText('+ Add GPIO three-way switch')); await sleep(200);
     const three = await q(`JSON.stringify({pins:[...${rowOf("New three-way switch")}.querySelectorAll(".controls-pin")].map(s=>s.value), lines:[...${rowOf("New three-way switch")}.querySelectorAll(".controls-line-label")].map(e=>e.textContent)})`).then(JSON.parse);
     console.log('    three-way:', JSON.stringify(three));
-    check('a new three-way switch has two different pins and a line per position, named after its pins', three.pins.length === 2 && three.pins[0] !== three.pins[1] && three.lines.join('|') === `Position 1 (GPIO ${three.pins[0]})|Position 2 (middle)|Position 3 (GPIO ${three.pins[1]})`);
+    check('a new three-way switch has two different pins and a line per position, named after its pins', three.pins.length === 2 && three.pins[0] !== three.pins[1] && three.lines.join('|') === `Position 0 (GPIO ${three.pins[0]})|Position 1 (middle)|Position 2 (GPIO ${three.pins[1]})`);
     await q(change(`${lineOf("New three-way switch", 0)}.querySelector("select")`, 'photo')); await sleep(200);
     await q(clickText('+ Add GPIO rotary encoder')); await sleep(200);
     const enc = await q(`JSON.stringify({pins:[...${rowOf("New rotary encoder")}.querySelectorAll(".controls-pin")].map(s=>s.selectedOptions[0].textContent), group:[...document.querySelectorAll("#controlsRows .controls-group-title")].map(e=>e.textContent).find(t=>/rotary/.test(t)), old:!!${rowOf("Encoder 0")}})`).then(JSON.parse);
@@ -224,6 +244,59 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     nextReply = null;
     await q('document.getElementById("reloadControlsButton").click(); 0'); await sleep(1200);
     check('Reload drops the unsaved choices', await q('controlsState.edits.size===0 && controlsState.added.length===0 && controlsState.removed.size===0 && !controlsDirty() && document.getElementById("saveControlsButton").disabled'));
+
+    console.log('--- T39: what applies when; T42: review, chips, Listen, Undo');
+    check('the still-to-do box names the service to restart, with the command', /sudo systemctl restart apertar-ui-direct/.test(await q('document.getElementById("controlsPending").innerText')) && await q('!document.getElementById("controlsPending").hidden'));
+    await q(change(actionOf(lineOf("GPIO 10", 0)), 'record_toggle')); await sleep(200);
+    const review = await q('document.getElementById("controlsReview").hidden ? "" : document.getElementById("controlsReview").innerText');
+    console.log('    review:', review.replace(/\n+/g, ' / '));
+    check('a change shows in plain words under the rows before it is saved', /Not saved yet/.test(review) && /GPIO 10 · Press → /.test(review));
+    await q(change(actionOf(lineOf("GPIO 10", 0)), '__several__')); await sleep(200);
+    check('"Several actions…" turns the line into chips with the action it had', await q(`(() => { const c=${lineOf("GPIO 10", 0)}.querySelectorAll(".action-chip"); return c.length===1; })()`));
+    await q(`(() => { const s=${lineOf("GPIO 10", 0)}.querySelector(".action-chips select"); s.value="photo"; s.dispatchEvent(new Event("change",{bubbles:true})); return 0; })()`); await sleep(200);
+    check('+ action adds a second chip, numbered in run order', await q(`[...${lineOf("GPIO 10", 0)}.querySelectorAll(".action-chip")].map(c=>c.firstChild.textContent).join("|")`).then((s) => /^1\. .+\|2\. Take a photo$/.test(s)));
+    sent = []; await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1500);
+    console.log('    Save sent:', JSON.stringify(sent[0]));
+    check('Save sends both actions on one key, in order', sent[0] && sent[0]['set.gpio_buttons.d10'] === 'record_toggle,photo');
+    inputSeq = 1; await sleep(2600);   // past the page's own re-read after the save
+    await q('document.getElementById("listenControlsButton").click(); 0'); await sleep(700);
+    inputSeq = 2; await sleep(900);
+    const heard = await q(`JSON.stringify({note:document.getElementById("controlsListenNote").innerText, lit:!!document.querySelector("#controlsRows .controls-row.heard .controls-row-title") && document.querySelector("#controlsRows .controls-row.heard .controls-row-title").textContent})`).then(JSON.parse);
+    console.log('    listen:', JSON.stringify(heard));
+    check('Listen: a press lights its row and names it', heard.lit === 'GPIO 10' && /Heard: GPIO 10 · Press/.test(heard.note));
+    await q('document.getElementById("listenControlsButton").click(); 0');
+    log = []; await q('document.getElementById("undoControlsButton").click(); 0'); await sleep(1500);
+    check('Undo last save reads the newest saved version and saves it back over the current revision',
+      log.some((c) => c.cmd === 'controls_history' && c.name === '20261030-001000-h0123456789abcdef-webui.conf') &&
+      log.some((c) => c.cmd === 'set_controls' && c.text === '[gpio_buttons]\nenabled=true\nd10=photo\n' && c.base === loadedRevision));
+
+    console.log('--- T40/T42: the Hardware card: Scan, outputs with Test');
+    await q('setSettingsPanel("config"); 0'); await sleep(1500);
+    await q('[...document.querySelectorAll("#hardwareDevices .controls-bus-line")].find(l=>/^Bus 1 /.test(l.innerText)).querySelector("button").click(), 0'); await sleep(800);
+    check('Scan on bus 1 lists what answers, and marks what Core reads', /0x34 CFexpress hat · 0x49 NeoRotary 4 \(Core reads it\)/.test(await q('document.getElementById("hardwareDevices").innerText')));
+    const outs = await q('JSON.stringify([...document.querySelectorAll("#hardwareDevices .controls-peripheral")].filter(c=>/Tally|Trigger/.test(c.innerText)).map(c=>({title:c.querySelector(".controls-row-title").textContent, test:!!c.querySelector("button") && !c.querySelector("button").disabled, fields:[...c.querySelectorAll(".input-label")].map(e=>e.textContent).join("|")})))').then(JSON.parse);
+    console.log('    outputs:', JSON.stringify(outs));
+    check('the tally LED and the trigger have cards with their settings; Test works only on the running one', outs.length === 2 && outs[0].title === 'Tally LED' && outs[0].test && !outs[1].test && outs[0].fields === 'On|Wired to|GPIO|PCF8574 pin|Active');
+    log = []; await q('[...document.querySelectorAll("#hardwareDevices .controls-peripheral")].find(c=>/Tally/.test(c.innerText)).querySelector("button").click(), 0'); await sleep(500);
+    check('Test sends test_output for the tally', log.some((c) => c.cmd === 'test_output' && c.which === 'recording_indicator'));
+
+    console.log('--- T43: the text editor: line numbers, Check, diff before Save, history');
+    await q('fetchConfigFile(true); 0'); await sleep(800);
+    check('line numbers run beside the text, one per line', await q('document.getElementById("settingsConfigGutter").textContent.split("\\n").length === document.getElementById("settingsConfigEditor").value.split("\\n").length'));
+    await q('document.getElementById("checkConfigButton").click(); 0'); await sleep(600);
+    check('Check shows what Core finds without saving', /Checked: 1 error/.test(await q('document.getElementById("settingsConfigIssues").innerText')) && log.some((c) => c.cmd === 'set_controls' && c.dry_run === 'true'));
+    await q('(() => { const e=document.getElementById("settingsConfigEditor"); e.value=e.value.replace("enabled=true\\nswitch0_pins=19","enabled=true\\nswitch0_pins=18"); e.dispatchEvent(new Event("input",{bubbles:true})); return 0; })()'); await sleep(200);
+    configPosts = [];
+    await q('document.getElementById("saveConfigButton").click(); 0'); await sleep(300);
+    const diff = await q('document.getElementById("settingsConfigDiff").hidden ? "" : document.getElementById("settingsConfigDiff").innerText');
+    console.log('    diff:', diff.split('\n').slice(0, 8).join(' / '));
+    check('Save first shows the changed lines, and saves nothing yet', /- switch0_pins=19/.test(diff) && /\+ switch0_pins=18/.test(diff) && configPosts.length === 0);
+    await q('[...document.querySelectorAll("#settingsConfigDiff button")].find(b=>b.textContent==="Save these changes").click(), 0'); await sleep(1200);
+    check('"Save these changes" saves the text', configPosts.length === 1 && /switch0_pins=18/.test(configPosts[0]));
+    const versions = await q('[...document.getElementById("configHistorySelect").options].map(o=>o.textContent).join("|")');
+    check('the history lists the saved versions and the one Core first found', /2026-10-30 00:10 · replaced by a webui save/.test(versions) && /Before Controls/.test(versions));
+    await q('(() => { const s=document.getElementById("configHistorySelect"); s.value="20261030-001000-h0123456789abcdef-webui.conf"; s.dispatchEvent(new Event("change",{bubbles:true})); return 0; })()'); await sleep(800);
+    check('choosing one puts it in the editor, unsaved', await q('document.getElementById("settingsConfigEditor").value === "[gpio_buttons]\\nenabled=true\\nd10=photo\\n" && !document.getElementById("saveConfigButton").disabled'));
     tab.close();
   } catch (e) { console.log('TEST ERROR:', e.message); results.push(['no script error', false]); }
   finally { chrome.kill(); server.close(); fs.rmSync(profile, { recursive: true, force: true }); fs.rmSync(work, { recursive: true, force: true }); }

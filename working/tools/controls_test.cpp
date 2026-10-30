@@ -559,7 +559,7 @@ int main(int argc, char **argv)
             for (const auto &row : rows) if (row.title == title) return &row;
             return nullptr;
         };
-        const auto *d10 = find("GPIO 10"), *d6 = find("GPIO 6"), *knob1 = find("Knob 1"), *knob4 = find("Knob 4");
+        const auto *d10 = find("GPIO 10"), *d6 = find("GPIO 6"), *knob1 = find("Adafruit rotary 0"), *knob4 = find("Adafruit rotary 3");
         check(d10 && d10->pin == 10 && d10->lines.size() == 1 && d10->lines[0].key == "d10" && d10->lines[0].actions == std::vector<std::string>{"capture"},
               "GPIO 10 is a button on d10 running capture");
         check(d6 && d6->lines[0].actions == std::vector<std::string>{"eject"}, "GPIO 6 runs eject");
@@ -686,8 +686,8 @@ int main(int argc, char **argv)
             for (const auto &key : row.keys) shape += " " + key;
             shape += "; ";
         }
-        check(shape == "GPIO 17 (switch2): On=photo Off=none keys switch0_pins switch0_on switch0_off; "
-                       "GPIO 22 + 23 (switch3): Position 1 (GPIO 22)=record_toggle Position 2 (middle)= Position 3 (GPIO 23)=photo keys switch1_pins switch1_position0 switch1_position2; ",
+        check(shape == "GPIO 17 (switch2): Position 0 (open)=none Position 1 (closed)=photo keys switch0_pins switch0_on switch0_off; "
+                       "GPIO 22 + 23 (switch3): Position 0 (GPIO 22)=record_toggle Position 1 (middle)= Position 2 (GPIO 23)=photo keys switch1_pins switch1_position0 switch1_position2; ",
               "the rows: a two-way switch with On and Off, a three-way with a line per position, and the keys a Remove unsets (" + shape + ")");
         const auto used = hc::gpioPinsInUse(hc::parse(text));
         check(std::count_if(used.begin(), used.end(), [](const auto &u) { return u.second.rfind("switch", 0) == 0; }) == 3,
@@ -713,12 +713,12 @@ int main(int argc, char **argv)
         check(plist.empty(), "the validator knows encoder0_double, pin3_triple and a GPIO encoder's encoder1_hold (" + plist + ")");
         std::string pshape;
         for (const auto &row : hc::controlRows(hc::parse(pushes))) {
-            if (row.title != "Knob 1" && row.source != "pcf8574" && row.source != "gpio_encoders") continue;
+            if (row.title != "Adafruit rotary 0" && row.source != "pcf8574" && row.source != "gpio_encoders") continue;
             pshape += row.title + " " + row.base + ":";
             for (const auto &line : row.lines) pshape += " " + line.label + "=" + line.raw;
             pshape += " [" + row.gestures[0].first + "]; ";
         }
-        check(pshape == "Knob 1 encoder0: Turn clockwise=iso_up Turn counter-clockwise= Press=iso Double click=photo [_press]; "
+        check(pshape == "Adafruit rotary 0 encoder0: Turn clockwise=iso_up Turn counter-clockwise= Press=iso Double click=photo [_press]; "
                         "PCF pin 3 pin3: Press= Triple click=photo []; Encoder 1 encoder1: Turn clockwise= Turn counter-clockwise= Press= Hold=standby [_press]; ",
               "knobs, PCF pins and GPIO encoders carry their push as gesture lines (" + pshape + ")");
     }
