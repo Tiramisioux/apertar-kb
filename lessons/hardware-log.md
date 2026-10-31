@@ -823,3 +823,18 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   raw streams record linear and the state says so); the buffer switch (`ram`) and the safety stop on the Pi.
 - Confirmed by: Patrik, restarted the services and recorded the take.
 - Tutorial: none.
+
+## 2026-10-31: the ladder showed "max 30 fps" for 4K SDR; the sensor probe says 60
+
+- Tested: `list_sensor_modes` and `get_mode_ladder` on the Pi (Core drop-frames build of 22:54), nothing recording.
+- Seen: the probe lists 3840x2160 SRGGB10 and SRGGB12 at `max_fps` 60.0 (crops 62.85 to 85.66; Clear HDR 12-bit 30; Clear HDR 16-bit
+  3840x2200 30), but the ladder's pool entries "4K SDR 10-bit" and "4K SDR 12-bit" had `mode_ceiling` 30 and ceilings 30 in every
+  compression (the WebUI card said "max 30 fps"). Right now (Clear HDR 16-bit, ladder on) `fps_max` was 27.
+- Why: read from the code: `tableMaximumFpsForResolution` ends its IMX585 4K branch with `return clearHdr && !sensorLimitKnown ? 25.0 : 30.0;`,
+  which gives 30 for SDR as well (the comment above it is about Clear HDR), and `maximumSupportedFpsForResolution` returned
+  `min(table, probed)`. Fixed on the branch: the probe is authoritative, the table is the fallback (`APERTAR_FPS_LIMIT=table` restores the
+  old rule); the 25 fps limit of 16-bit Clear HDR is a named back-end cap; lossless JPEG keeps its encoder limit.
+- Not yet known: the ladder's new ceilings and a 60 fps SDR 4K take on the Pi. 4K 12-bit at 60 fps is about 745 MB/s uncompressed, more than
+  this drive sustained in the tests, so the practical value is the operator's choice per rung (storage and build), not Core's.
+- Confirmed by: Patrik, saw "max 30 fps" on the ladder card, asked whether it was right and asked for the fps max to be read from the sensor.
+- Tutorial: none.

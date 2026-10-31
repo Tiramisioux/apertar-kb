@@ -386,6 +386,7 @@ How the services set them (Pi, 2026-10-25): `apertar-core.service` runs `/home/p
 | `APERTAR_CDNG_BUFFER` | Drop-frames: `frames` (default, the original 12-frame queue) or `ram` (byte-budget queue); overrides `[storage] buffer` | `CC` `planQueueBuffer` |
 | `APERTAR_CDNG_QUEUE_RAM_FRACTION`, `_FLOOR_MB`, `_MAX_FRACTION` | Drop-frames: the ram budget (0.6, 512, 0.5); override the `[storage] buffer_ram_*` keys; ram refuses itself when the budget is smaller than the frames-mode queue | `BufferBudget.hpp` |
 | `APERTAR_CDNG_BUFFER_STOP_PERCENT` | Drop-frames: safety-stop limit (0 or 50 to 99); overrides `[storage] buffer_stop_percent` | `BufferBudget.hpp` |
+| `APERTAR_FPS_LIMIT` | Drop-frames: `table` makes Core use `min(hard-coded table, probed sensor fps)` as before; default: the startup probe's value is the sensor maximum (the table is only the fallback) | `CC` `fpsLimitTableOnly`, `FpsCeiling.hpp` |
 | `APERTAR_MEDIA_TRIM` | Drop-frames: `0` turns Core's automatic trim of the recording drive off (default on; needs `/usr/local/libexec/apertar-media-trim` and its sudoers rule) | `App` `trimMedia`, `runMediaTrim` |
 | `APERTAR_LOSSYDNG_*` | `WORKERS`, `WRITER_BYTES`, `ASYNCWRITE` (legacy `QRAW_LOSSYDNG_ASYNCWRITE`) | `CC:3345`; `Apertar-Core/src/lossydng/LossyDngEncoder.cpp:100`, `:325-327` |
 | `APERTAR_RAW_CACHED_DMABUF` | Cached DMA heap for PiSP-compressed RAW (default on) | `CC:6321` |

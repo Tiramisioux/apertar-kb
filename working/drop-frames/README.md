@@ -15,7 +15,7 @@ The handoff for the Mac session that drives the work is `../handoff-drop-frames.
 **One sentence.** The dropped frames were the recording drive's state, not Apertar's buffer: after about 0.9 TB of writing
 without a trim the NVMe stalls for seconds (and can hang its controller); trimming it restores it. Core now trims by itself,
 and the campaign also added Log (smaller files), a switchable large RAM buffer with a safety stop, and an on-screen buffer
-indicator. Everything is on the `drop-frames` branches of Apertar-Core (`3993759`, squashed from 15 commits, base `a40112a`) and
+indicator. Everything is on the `drop-frames` branches of Apertar-Core (`400dd1f`, squashed from 16 commits, base `a40112a`) and
 Apertar-UI (`74f39c6`, squashed from 6 commits, base `ea44bd7`): local on the Mac and the Pi, nothing on GitHub.
 
 ### What a trim is, and what we gain
@@ -40,6 +40,7 @@ the standard explanation, not measured here.)
 | 7 | `takes.sh` `missing` cannot see capture gaps (the numbering counts written frames). Check frames written against fps x seconds and the `capture-gap` counter | A2 showed `missing=0` | measured |
 | 8 | CineMate has no trim or discard either (its automounter mounts exFAT `rw,noatime`, ext4 `rw,noatime,nodiratime,commit=60`); its big RAM buffer is burst absorption, not a faster disk | `storage-automount.py`, handbook grep | read from source |
 | 9 | The drive asks for 64 MiB of host memory and gets none (`nvme.max_host_mem_size_mb=0` in the boot arguments) | kernel log | whether it matters: untested |
+| 11 | The ladder and `fps_max` said 30 fps for 4K SDR; the startup sensor probe says 60 (10-bit and 12-bit; crops 62.85 to 85.66; Clear HDR 12-bit and 16-bit 30). Cause: the 4K branch of Core's hard-coded fps table returned 30 for SDR too and Core took `min(table, probe)`. Fixed: the probe is authoritative, the table is the fallback, the 16-bit Clear HDR 25 fps limit is a separate back-end cap, lossless JPEG keeps its encoder limit (30 at 4K); the operator sets the practical fps per rung in the Mode Ladder for the drive and build | `list_sensor_modes` and `get_mode_ladder` on the Pi (hardware-log 2026-10-31); code `tableMaximumFpsForResolution` | measured; the fix is not yet run on the Pi |
 | 10 | The CM5 RTC (`rpi-rtc`) works and reads the correct time, but every boot started at one stale time; Core's "Apply Date & Time" writes the RTC and never reads it, and swallows a missing-RTC error | hardware-log 2026-10-31 | partly inference; power-off test open |
 
 ### What was built
@@ -52,6 +53,7 @@ the standard explanation, not measured here.)
 | Buffer bar | The level drawn inside the REC/READY pill: red while recording, cropped by the pill's shape | option "Frame buffer bar" (off by default; WebUI Settings > Monitoring, touch UI Monitoring), `set_frame_buffer_bar_enabled` | WebUI, touch UI, HDMI |
 | Buffer switch | `frames` (the original 12-frame queue, drops a frame when full; default) or `ram` (a byte-budget queue like CineMate's RAM pool: 0.6 x MemAvailable minus 512 MiB, capped at 0.5 x MemTotal; refuses itself and stays on `frames` when that is smaller than the 12-frame queue, so a small machine such as a Pi Zero keeps the original behaviour) | `[storage] buffer=frames|ram`, `buffer_ram_fraction`, `buffer_ram_floor_mb`, `buffer_ram_max_fraction` in `apertar-hardware.conf` (Config pane, validated with line numbers, read at each take); env `APERTAR_CDNG_BUFFER` and friends override; command `set_buffer_mode`; Frames / RAM buttons (WebUI Settings > Record, touch UI Settings > Record); state `buffer_setting`, `buffer_note` | Core, WebUI, touch UI |
 | Safety stop | In `ram` mode the take ends by itself, cleanly, when the buffer is 90 % full (CineMate's "RAM pool exhausted" idea): the queue sets a lock-free flag, a thread runs the same path as `record_stop`. The pill turns green with the READY text hidden and only the bar emptying; the READY text returns at zero; one message says why | `[storage] buffer_stop_percent` (0 = off, 50 to 99; default 90 in ram mode, off in frames mode), env `APERTAR_CDNG_BUFFER_STOP_PERCENT`; state `buffer_safety_stop`, `buffer_stop_percent` | Core, WebUI, touch UI |
+| Max fps | The maximum fps of a mode is read from the sensor probe at startup, so 4K SDR offers 60; the table is only the fallback | `APERTAR_FPS_LIMIT=table` restores `min(table, probe)`; the UIs cut their fps lists at `fps_max` | Core (`FpsCeiling.hpp`, `CameraController.cpp`) |
 
 ### Ruled out or dropped
 
