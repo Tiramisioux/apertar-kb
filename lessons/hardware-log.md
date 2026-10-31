@@ -697,3 +697,129 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Why: `d10=capture`, `d6=eject`, `[recording_indicator] target=gpio line=21` in `~/apertar-hardware.conf`.
 - Confirmed by: Patrik, a reading (M5 output shown, "yes" to log it).
 - Tutorial: none.
+
+## 2026-10-30: the NVMe stalls after about 0.9 TB of writes without a trim; a trim restores it (Corsair MP600 Mini, exFAT, PCIe Gen 3 x1)
+
+- Tested: Patrik's Pi, kernel 6.12.75+rpt-rpi-2712, Corsair MP600 Mini (firmware ERFM11.1), 932 GB exFAT with 128 KB
+  clusters, mounted `rw,noatime` (no `discard`), PCIe Gen 3 x1; boot arguments include `nvme.max_host_mem_size_mb=0`.
+  Core stopped. Test program outside Core (`/home/pi/ab-tests/variant2.py single`): 4 writer threads, 25 files/s,
+  16.9 MB per file in 491 520-byte writes, one folder, 240 s per run, a frame dropped when 12 are queued. Drive
+  temperature read from sysfs every 5 s. 48 runs overnight (single folder, sub-folders of 500, files created ahead)
+  with one `fstrim` after run 4; then 23 runs in two arms: B = one trim, then back-to-back runs; A = a trim before
+  every run. Core takes from earlier the same day (A0 to A4, stall hunt) ran on a drive in unknown state.
+- Worked: after `sudo fstrim -v /media/RAW` (917.4 GiB) 9 runs in a row had 0 dropped, worst file 38 to 242 ms
+  (overnight runs 5 to 13, all three layouts). Arm B repeated it: runs 1 to 9 (up to 909 GB written) 0 dropped, worst
+  32 to 282 ms. Arm A, trim before every run: 12 of 12 runs 0 dropped, worst 34 to 265 ms, the first straight after
+  two bad runs. After the crash below, a reboot plus a trim gave a clean run (0 dropped, worst 26 ms).
+- Did not work: past about 0.9 TB without a trim every layout stalled: overnight runs 14 to 32 lost 29 to 77 %, worst
+  file 5.5 to 10.2 s; arm B run 10 lost 28.2 % (10.8 s), run 11 43.0 % (9.0 s). Heat is not the cause: clean runs
+  peaked at 60 to 72 C, bad ones at 65 to 70 C (the drive's warning limit is 82.9 C). Folder layout, creating files
+  ahead and sub-folders (500, 1000, 2500 files) made no difference. At 01:43 to 01:45 (Pi clock, 2026-10-30) four
+  256 KB writes got no answer for 30 s, the kernel logged `nvme nvme0: Disabling device after reset failure`, exFAT
+  set the volume read-only and `/sys/class/nvme/nvme0/state` read `dead`; a reboot brought it back. No under-voltage
+  (`throttled=0x0`), no PCIe error lines.
+- Why: observed: Core's writer threads, during the slow seconds of a take, sat in exFAT metadata calls
+  (`exfat_alloc_cluster` > `exfat_ent_set` > `__bread_gfp`; `exfat_write_inode` > `__wait_on_buffer`; others queued in
+  `exfat_lookup` / `path_openat`) with nothing in flight on the device (23 stack dumps, one 4-minute take); the same
+  bytes written into one large file were clean. Inference, not measured: the first bad run comes at about 909 to
+  981 GB, close to the volume size (917 GiB), so after one pass the writes land on deleted but never-trimmed areas and
+  the drive has to erase before it can write. CineMate has no trim either (`storage-automount.py` mounts exFAT
+  `rw,noatime` and ext4 `rw,noatime,nodiratime,commit=60`; no `fstrim` or `discard` in its source or handbook). The
+  drive asks for 64 MiB of host memory and gets none (`nvme: min host memory (64 MiB) above limit (0 MiB)`); whether
+  that matters is untested.
+- Not yet known: whether Core itself drops frames on a trimmed drive (the A0 to A4 takes and the stall hunt ran on a
+  drive in unknown state and must be redone); whether a `discard` mount keeps the drive clean without per-take trims.
+- Confirmed by: Patrik, ran the two trims, the reboot and the sudoers rule, read the results, and approved these
+  readings for the log.
+- Tutorial: none.
+
+## 2026-10-30: Core's 10-minute 4K25 16-bit take is clean on a freshly trimmed drive (A0, defaults)
+
+- Tested: Patrik's Pi, Core `a40112a` (binary built 2026-10-30 01:05), Corsair MP600 Mini, 932 GB exFAT,
+  `rw,noatime`. `~/ab_matrix.sh` v2: `fstrim -v /media/RAW` (917.1 GiB), Core restarted with the defaults
+  (`APERTAR_MEDIA_SYNC_MS=1000`, `APERTAR_DNG_WRITEBACK=1`, `APERTAR_CDNG_QUEUE_FRAMES=12`,
+  `APERTAR_RAW_CAMERA_BUFFERS=8`; read back from the unit), drive cooled to 34 C, then `takes.sh 1 600`: one
+  10-minute take, 4K, 25 fps, 16-bit Clear HDR, uncompressed cDNG, `media_class=pi-nvme`.
+- Worked: 15001 frames written, 0 missing (`files=15001 last=15000`), `enqueued=15001`, `dropped_queue_full=0`,
+  no `drop[...]` line of any kind, `write_failures=0`, `fault=` empty, `peak_queue=2/12`, `peak_backlog_kb=16`,
+  stop-time `syncfs` 214 ms, peak dirty 11 MB and writeback 8 MB, drive 34 C at the start and 54 C at the end,
+  NVMe state `live`. This meets the project's "done means" for the uncompressed case.
+- Did not work: n/a for this take. The same defaults lost 31 % of the frames (4479 of 14616 `queue-full`) in the
+  first matrix, on a drive that had not been trimmed.
+- Why: the earlier drops were the drive's state, not Core's buffer mechanics (see the entry above: stalls after
+  about 0.9 TB of writes without a trim). With the drive trimmed the queue never held more than 2 of 12 frames.
+- Not yet known: whether the take stays clean on a second and third run (one take only); A1 to A4 on a trimmed
+  drive (the matrix was stopped during A1); lossless JPEG, Log, and 50 fps SDR 12-bit on a trimmed drive; behaviour
+  after more than one card of writing with Core's own trim (not built on the Pi yet).
+- Confirmed by: Patrik, read the A0 result from the matrix summary and approved logging it.
+- Tutorial: none.
+
+## 2026-10-30: on a trimmed drive the in-take fsync is not needed; the per-frame writeback hint is (A1, A2)
+
+- Tested: the same rig and test as the A0 entry (Core `a40112a`, 4K 25 fps 16-bit Clear HDR uncompressed cDNG, one 10-minute
+  take per run, fresh `fstrim` before each, drive cooled to 55 C or below, service environment read back from the unit).
+  A1: `APERTAR_MEDIA_SYNC_MS=0` (no once-a-second fsync). A2: A1 plus `APERTAR_DNG_WRITEBACK=0` (no per-frame
+  `sync_file_range`, kernel writeback only).
+- Worked: A1: 15000 frames written, 0 dropped in every counter, `peak_queue=1/12`, stop `syncfs` 236 ms, peak dirty 3 MB.
+  The once-a-second fsync can go without any cost on a trimmed drive.
+- Did not work: A2: only 13503 of about 15000 frames written, `dropped_queue_full=0`, `peak_queue=1/12`, but
+  `dropped_gap_estimate=1491`: about 2.5 `capture-gap` events a second, each one frame (`dt_us` about 80 000 against 40 000
+  nominal). The writers kept up; the camera front end lost about 10 % of the frames.
+- Why: the only difference between A1 and A2 is the per-frame writeback hint, so that hint is what keeps the camera front
+  end from stalling; this answers open question 2 of the drop-frames project page (kernel writeback alone does disturb the CFE
+  on this board). It is one run; the mechanism inside the kernel is not measured. A bigger queue or buffer cannot help this:
+  the frames are lost before they reach the queue.
+- Not yet known: a repeat of A2; A3 (queue 64) and A4 (10 camera buffers) were not run (the matrix was stopped during A3).
+  Note for every future reading: `takes.sh` reports `missing` from holes in the file numbering, and the numbering counts
+  written frames, so capture gaps leave no hole (A2 showed `missing=0`). The check is frames written against fps x seconds,
+  plus the `drop[capture-gap]` counter and `dropped_gap_estimate` in the capture stats line.
+- Confirmed by: Patrik, read the matrix summary and asked for the results to be documented.
+- Tutorial: none.
+
+## 2026-10-31: short takes lose a few frames at capture; the 3-minute and 10-minute takes did not
+
+- Tested: Core `drop-frames` build before the safety stop, defaults (Core restarted by the stop block), takes started from
+  the WebUI, Core stopped nothing else, the Pi rebooted a few minutes earlier. Counters from the journal (`recording stats`,
+  `capture stats: dropped_gap_estimate`).
+- Seen: short takes: 351 frames written with a gap estimate of 2; 263 frames with 9; 145 frames with 4; 117 frames with 10
+  (that one with Log on). All with `dropped_queue_full=0`, `peak_queue=2/12`, no write failure. The first `drop[capture-gap]`
+  line came 2 to 4 s after the take started, each one frame (`dt_us` about 80 000). A later lossless-JPEG take of about 3
+  minutes (4476 frames, queue 24) had no `drop[...]` line at all; the 10-minute A0 and A1 takes had none either.
+- Why: not established. The writers are fine, so this is the camera front end. Two things differ from the clean 10-minute
+  takes: the WebUI (browser preview) was open during these short takes and nobody had it open during A0 and A1, and the
+  takes were short and started soon after a reboot. One of them overlapped with a read-only ssh command of mine (journal
+  query), so it is not a clean sample. Log cannot be the cause (the earlier short takes had no Log).
+- Not yet known: the two-take test (a 60 s take with every WebUI tab closed, then the same take with the WebUI open and left
+  alone) separates the browser preview from the rest; a take during `top -H` would show which thread competes.
+- Confirmed by: Patrik, reported "dropped frames after 3 seconds" and asked for the findings to be documented.
+- Tutorial: none.
+
+## 2026-10-31: the CM5 RTC exists and reads correctly, yet every boot started at an old fixed time
+
+- Tested: `timedatectl`, `/sys/class/rtc/rtc0` and `sudo hwclock -r` on Patrik's Pi (CM5), NTP active.
+- Seen: `rtc0` is `rpi-rtc`; RTC time equals the system time (21:22:51 UTC, `hwclock -r` 22:22:51 +01:00), System clock
+  synchronized: yes; `charging_voltage` 0 (no trickle charge, as for a primary cell). The journal's boot list shows every boot
+  of the day starting at `Thu 2026-10-29 22:37:32` and the clock stepping forward later (NTP).
+- Why: inference, not measured: the RTC is not supplying the boot clock (no battery on the RTC pins, or the OS does not read
+  it early). Core's "Apply Date & Time" (`syncHardwareClockIfAvailable` in `ApertarCoreApp.cpp`) sets the system clock with
+  `timedatectl` and then runs `sudo -n hwclock --systohc --utc` only if an RTC device exists; an error such as a missing clock
+  is swallowed and reported as success; Core never reads the RTC. Effect: until NTP answers, clip folder names, file times and
+  Time-of-Day timecode carry a wrong date (the clips of the day are named `26-10-29` and `26-10-30` out of order).
+- Not yet known: whether the RTC keeps time across a full power-off (power off, wait, power on, read the clock before NTP:
+  `journalctl -k -b | grep -iE "rtc|setting system clock"` and `hwclock -r`).
+- Confirmed by: Patrik, ran the commands and asked for the findings to be documented.
+- Tutorial: none.
+
+## 2026-10-31: first run of the drop-frames build on the Pi: trim at mount, Log 16 to 12
+
+- Tested: Core and UI `drop-frames` built on the Pi (Core 22:26, UI 22:28), helper and sudoers installed from the README block,
+  `systemctl restart apertar-core apertar-ui-direct`.
+- Worked: at startup Core trimmed the drive by itself: `ApertarCore media: trim /media/RAW reason=mount result=trimmed
+  bytes=927240290304 ms=467` (927 GB in 0.47 s). The state fields `cdng_log*`, `buffer_*`, `media_trim_*` and
+  `frame_buffer_bar_enabled` were present and `/api/buffer` answered. With Log on, the journal printed `CineMate Log 16->12
+  mu=10000 black=3200 white=65520 footroom=32/487` and one DNG frame was 12,451,344 bytes against about 16.6 MB linear (25 %
+  smaller). Not opened in Resolve yet.
+- Not yet known: that the frame decodes to the right linear picture in Resolve; Log on SDR modes (packed or PiSP-compressed
+  raw streams record linear and the state says so); the buffer switch (`ram`) and the safety stop on the Pi.
+- Confirmed by: Patrik, restarted the services and recorded the take.
+- Tutorial: none.

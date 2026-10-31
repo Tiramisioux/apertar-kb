@@ -111,8 +111,13 @@ Core and UI open the chip independently and both rewrite its config/calibration 
 | `cfexpress_hat.address` (`addr`) | `0x34` | AM, Py | `CfeAutomounter.cpp:39`; `App:3392` |
 | `storage.mount_path` | `/media/RAW`. Honoured by AM; **ignored by Core's watcher** (Core always sets `APERTAR_MEDIA_ROOT`) and by Core C++ (uses `--media`) | AM, Py | `CfeAutomounter.cpp:172-175`; `App:3457`, `:3594` |
 | `storage.pcie_controller` | `1000110000.pcie` | AM, Py | `CfeAutomounter.cpp:176-179`; `App:3395` |
+| `storage.buffer` | `frames` (absent = frames); `ram` = the large RAM write queue. Read at the start of each take (a save in the Config pane applies to the next take); the env variable `APERTAR_CDNG_BUFFER` wins; `set_buffer_mode` edits this key | Core (drop-frames) | `BufferBudget.hpp` `parseBufferConf`; `CC` `planQueueBuffer`; validator in `HardwareConfigText.hpp` |
+| `storage.buffer_ram_fraction` | `0.6` (0.05 to 0.9): share of `MemAvailable` for the ram queue | Core | same |
+| `storage.buffer_ram_floor_mb` | `512` (0 to 1048576): memory kept free | Core | same |
+| `storage.buffer_ram_max_fraction` | `0.5` (0.1 to 0.75): ceiling as a share of `MemTotal` | Core | same |
+| `storage.buffer_stop_percent` | 0 = never, or 50 to 99; absent = 90 in ram mode, off in frames mode: the take ends by itself (clean stop) when the write buffer reaches this fill | Core | same; `buffer_safety_stop` in the state |
 
-The C++ Core never reads these sections. Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
+The C++ Core never reads `[cfexpress_hat]` or `storage.mount_path` / `storage.pcie_controller`; it does read the `storage.buffer*` keys (drop-frames branch; a bad value is an error with its line number in the Config pane and Core uses the default). Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
 
 #### `[camera]` (Core, `cinemate-port` `8175273`, 2026-10-28)
 
@@ -378,6 +383,10 @@ How the services set them (Pi, 2026-10-25): `apertar-core.service` runs `/home/p
 | `APERTAR_H264_*` | `ENCODER`, `PRESET`, `TUNE`, `CRF`, `QP`, `BITRATE`, `MAXRATE`, `BUFSIZE`, `X264_PARAMS`, `BACKEND` (`pipe`), `THREADS`, `PIPE_BYTES`, `QUEUE_FRAMES`, `SIZE`, `CAMERA_BUFFERS`, `KEEP_RAW_STREAM`, `SINGLE_STREAM` | `CC:1127`, `:2779`, `:2843-2848`, `:3981`, `:4333-4467` |
 | `APERTAR_PRORES_*` | `CAMERA_BUFFERS`, `CACHED_DMABUF`, `THREADS`, `CSC_THREADS`, `ISP_FORMAT`, `ODIRECT`, `QP_PRED`, `TRANSFER`, `WRITEBACK`, `WRITER_THREAD`, `WRITER_QUEUE`, `WRITER_QUEUE_MB`, `WRITER_SLOW_MS` | `CC:1133`, `:6387`; `Apertar-Core/src/prores/ProresEncoder.cpp:827-1375`; `ProresRecorder.cpp:61` |
 | `APERTAR_CDNG_*` | `QUEUE_FRAMES`, `WORKERS`, `WORKER_NICE`, `TILE_ROWS`, `PROFILE_DETAIL` | `CC:3330-3359`; `Apertar-Core/src/cdng/CdngEncoder.cpp:55`, `:72` |
+| `APERTAR_CDNG_BUFFER` | Drop-frames: `frames` (default, the original 12-frame queue) or `ram` (byte-budget queue); overrides `[storage] buffer` | `CC` `planQueueBuffer` |
+| `APERTAR_CDNG_QUEUE_RAM_FRACTION`, `_FLOOR_MB`, `_MAX_FRACTION` | Drop-frames: the ram budget (0.6, 512, 0.5); override the `[storage] buffer_ram_*` keys; ram refuses itself when the budget is smaller than the frames-mode queue | `BufferBudget.hpp` |
+| `APERTAR_CDNG_BUFFER_STOP_PERCENT` | Drop-frames: safety-stop limit (0 or 50 to 99); overrides `[storage] buffer_stop_percent` | `BufferBudget.hpp` |
+| `APERTAR_MEDIA_TRIM` | Drop-frames: `0` turns Core's automatic trim of the recording drive off (default on; needs `/usr/local/libexec/apertar-media-trim` and its sudoers rule) | `App` `trimMedia`, `runMediaTrim` |
 | `APERTAR_LOSSYDNG_*` | `WORKERS`, `WRITER_BYTES`, `ASYNCWRITE` (legacy `QRAW_LOSSYDNG_ASYNCWRITE`) | `CC:3345`; `Apertar-Core/src/lossydng/LossyDngEncoder.cpp:100`, `:325-327` |
 | `APERTAR_RAW_CACHED_DMABUF` | Cached DMA heap for PiSP-compressed RAW (default on) | `CC:6321` |
 | `APERTAR_MLV_ENABLE_NEON_PACKER`, `APERTAR_MLV_HAS_NEON` | MLV packer | `Apertar-Core/src/mlv/MlvEncoder.cpp:23-25` |

@@ -10,6 +10,74 @@ Status words as in the rest of the KB: **confirmed** (read in the source or meas
 
 The handoff for the Mac session that drives the work is `../handoff-drop-frames.md`.
 
+## 0. Outcome (2026-10-31) {#outcome}
+
+**One sentence.** The dropped frames were the recording drive's state, not Apertar's buffer: after about 0.9 TB of writing
+without a trim the NVMe stalls for seconds (and can hang its controller); trimming it restores it. Core now trims by itself,
+and the campaign also added Log (smaller files), a switchable large RAM buffer with a safety stop, and an on-screen buffer
+indicator. Everything is on the `drop-frames` branches of Apertar-Core (`3993759`, squashed from 15 commits, base `a40112a`) and
+Apertar-UI (`74f39c6`, squashed from 6 commits, base `ea44bd7`): local on the Mac and the Pi, nothing on GitHub.
+
+### What a trim is, and what we gain
+
+An SSD cannot overwrite data in place: it must erase a block before it writes it. Deleting a file only removes it from the filesystem's
+list, so the drive never learns that the space is free. A trim (`fstrim`, also called discard) tells the drive which blocks are unused, so
+it can erase them in advance. Without it, a drive that has been written all over must erase while you record, and writes stall for
+seconds. Core now trims by itself after big deletes and when a drive is mounted, which takes under a second (927 GB in 0.47 s). The gain:
+no stalls, dropped frames or hung drive on a worn-in card. (Measured: the stalls and their cure; the erase-while-recording mechanism is
+the standard explanation, not measured here.)
+
+### Findings (each one has its hardware-log entry)
+
+| # | Finding | Evidence | Status |
+| --- | --- | --- | --- |
+| 1 | After about 0.9 TB of writes without a trim the NVMe (Corsair MP600 Mini, exFAT, mounted without `discard`) stalls for seconds: 18 to 77 % of frames lost, worst file 5 to 10 s; a trim restores it. The first bad run came at 909 to 981 GB, close to the volume size (917 GiB): inference, the filesystem walks the volume once and then rewrites never-trimmed space | 48 overnight runs and 23 two-arm runs: 9 clean runs after a trim, then bad, seen twice; trim before every run 12 of 12 clean (hardware-log 2026-10-30) | measured; the mechanism is inference |
+| 2 | In the worst case the drive hangs: four 256 KB writes got no answer for 30 s, `nvme nvme0: Disabling device after reset failure`, exFAT went read-only, `state=dead`, a reboot recovered it. No under-voltage, no PCIe errors, 57 C | kernel log 01:43 to 01:45 | measured |
+| 3 | Core itself is clean on a trimmed drive: 10-minute 4K 25 fps 16-bit Clear HDR uncompressed, 15001 frames, 0 dropped, `peak_queue=2/12`, stop `syncfs` 214 ms (A0) | hardware-log 2026-10-30 | measured, one take |
+| 4 | Folder layout (single, sub-folders of 500, 1000, 2500), creating files ahead, `fallocate` preallocation, heat (clean at 72 C, bad at 65 C; drive limit 82.9 C) and writer count did not matter. Preallocation was worse | synthetic tests outside Core, overnight set | measured |
+| 5 | The once-a-second fsync is not needed on a trimmed drive (A1 clean); the per-frame writeback hint is (A2 lost about 10 % of frames at capture: `dropped_gap_estimate=1491`, `queue-full` 0) | hardware-log 2026-10-30 | measured, one run each |
+| 6 | Short takes (a few seconds to 10 s) lose 2 to 10 frames at capture in the first seconds; the 3-minute lossless-JPEG take and the 10-minute A0 / A1 takes lost none | hardware-log 2026-10-31 | OPEN: WebUI preview open vs closed not yet separated |
+| 7 | `takes.sh` `missing` cannot see capture gaps (the numbering counts written frames). Check frames written against fps x seconds and the `capture-gap` counter | A2 showed `missing=0` | measured |
+| 8 | CineMate has no trim or discard either (its automounter mounts exFAT `rw,noatime`, ext4 `rw,noatime,nodiratime,commit=60`); its big RAM buffer is burst absorption, not a faster disk | `storage-automount.py`, handbook grep | read from source |
+| 9 | The drive asks for 64 MiB of host memory and gets none (`nvme.max_host_mem_size_mb=0` in the boot arguments) | kernel log | whether it matters: untested |
+| 10 | The CM5 RTC (`rpi-rtc`) works and reads the correct time, but every boot started at one stale time; Core's "Apply Date & Time" writes the RTC and never reads it, and swallows a missing-RTC error | hardware-log 2026-10-31 | partly inference; power-off test open |
+
+### What was built
+
+| Feature | What it does | How it is controlled | Where |
+| --- | --- | --- | --- |
+| Trim | `scripts/apertar-media-trim` (root helper, validates the path, needs discard support, 20 s limit) and Core's trim worker: trims `/media/RAW` after a delete batch that frees at least 1 GiB and when the drive is mounted; never during a take; `record_start`, photos and media actions wait at most 2 s for a running trim and then end it. A 927 GB trim took 0.47 s | `APERTAR_MEDIA_TRIM=0` turns it off; state `media_trim_last_result/bytes/ms/unix`, `media_trim_running`; manual install block in the Apertar-Core README ("Trim the recording drive") | Core |
+| Log | Stores 16-bit as 12, 12 as 10, 10 as 8 bit through a log curve (about 25 % smaller files at 16 to 12) in cDNG (uncompressed and lossless JPEG) and Lossy DNG; always one step down; the DNG carries the inverse as its LinearizationTable. Limits: only unpacked 2-byte raw streams (packed or PiSP-compressed raw records linear and `cdng_log_applied` says so); the 10-to-8 curve is provisional (derived, no CineMate spec); not opened in Resolve yet | one On/Off button (WebUI Recording format card, touch UI Settings > Record); `set_cdng_log value=off|auto` (legacy 12/10/8 read as On); state `cdng_log`, `cdng_log_bits`, `cdng_log_available`, `cdng_log_applied`; the format label says "· Log" | Core, WebUI, touch UI |
+| Write-buffer level | Lock-free gauge of the write queue (frames, or bytes in ram mode) | `GET /api/buffer`, state `buffer_used/capacity/fill/mode/unit`, a `buffer` socket event from its own lock-free thread (at most 4 a second) | Core |
+| Buffer bar | The level drawn inside the REC/READY pill: red while recording, cropped by the pill's shape | option "Frame buffer bar" (off by default; WebUI Settings > Monitoring, touch UI Monitoring), `set_frame_buffer_bar_enabled` | WebUI, touch UI, HDMI |
+| Buffer switch | `frames` (the original 12-frame queue, drops a frame when full; default) or `ram` (a byte-budget queue like CineMate's RAM pool: 0.6 x MemAvailable minus 512 MiB, capped at 0.5 x MemTotal; refuses itself and stays on `frames` when that is smaller than the 12-frame queue, so a small machine such as a Pi Zero keeps the original behaviour) | `[storage] buffer=frames|ram`, `buffer_ram_fraction`, `buffer_ram_floor_mb`, `buffer_ram_max_fraction` in `apertar-hardware.conf` (Config pane, validated with line numbers, read at each take); env `APERTAR_CDNG_BUFFER` and friends override; command `set_buffer_mode`; Frames / RAM buttons (WebUI Settings > Record, touch UI Settings > Record); state `buffer_setting`, `buffer_note` | Core, WebUI, touch UI |
+| Safety stop | In `ram` mode the take ends by itself, cleanly, when the buffer is 90 % full (CineMate's "RAM pool exhausted" idea): the queue sets a lock-free flag, a thread runs the same path as `record_stop`. The pill turns green with the READY text hidden and only the bar emptying; the READY text returns at zero; one message says why | `[storage] buffer_stop_percent` (0 = off, 50 to 99; default 90 in ram mode, off in frames mode), env `APERTAR_CDNG_BUFFER_STOP_PERCENT`; state `buffer_safety_stop`, `buffer_stop_percent` | Core, WebUI, touch UI |
+
+### Ruled out or dropped
+
+Sub-folders per clip, creating files ahead, `fallocate` preallocation, writer count, heat as the cause, a bigger queue or more camera buffers
+as the fix for capture gaps (they happen before the queue), no in-take sync by default (plan row 2: A2), media tuning, cached SDR buffers
+and scheduling parity (rows 3 to 5: shelved until a case needs them), the `discard` mount (deferred: the automounter lives in
+Apertar-UI and online discard on exFAT may slow big deletes), and a pre-roll warm-up (no stated mechanism anywhere; the A/B in step 0b
+is still written down but is low priority now that drive state explains the big effect).
+
+### Open items (what to do next, in order)
+
+1. The two-take test: a 60 s take with every WebUI tab closed, then the same with the WebUI open and left alone (finding 6).
+2. Open one Log frame in Resolve (12-bit LinearizationTable); check Log on the SDR modes (packed or compressed raw record linear).
+3. Try `buffer=ram` in the Config pane and force a stall to see the safety stop; check the pill states on the HDMI screen and in the WebUI.
+4. The acceptance test for trim: a series of 10-minute takes with deletes in between and no manual trims, past one full pass of the drive
+   (4 to 5 takes), against a control with `APERTAR_MEDIA_TRIM=0`.
+5. RTC power-off test; the `nvme.max_host_mem_size_mb=0` boot argument (remove it on a test boot).
+6. A repeat of A2 and the unfinished A3 / A4 on a trimmed drive; the pre-roll A/B (step 0b).
+
+### How to run the new build
+
+On the Pi (`controls` is the old branch, kept as the rollback): `git switch drop-frames` in `~/ApertarCore` and `~/ApertarUI`, then
+`cmake --build ~/ApertarCore-build -j2` and `cmake --build ~/ApertarUI/build -j2`, never during a take. The helper install block is in the
+Core README; then `sudo systemctl restart apertar-core apertar-ui-direct`. The `[storage]` keys are commented in the default file text; paste
+the block into the Config pane to use them.
+
 ## 1. The question
 
 Patrik sees more dropped frames with Apertar than with CineMate on the same kind of rig (Pi 5,
@@ -82,6 +150,12 @@ stays usable for regression tests.
 | 4 | **Cached buffers for SDR raw, 8 of them.** Extend the cached-heap condition to unpacked SDR; `kConfiguredBufferCount` 4 → 8; keep +2 for FAT/NTFS | `allocateCachedBuffers` call site, `rawCameraBufferCount` | `APERTAR_RAW_CACHED_DMABUF`, `APERTAR_RAW_CAMERA_BUFFERS` | copy-slot drops in SDR disappear; CMA use +4 × 16.9 MB |
 | 5 | **Scheduling parity.** `LimitRTPRIO=80` on `apertar-core.service`; start script prefix `chrt -f 70 ionice -c2 -n0 taskset -c 1-3` behind `APERTAR_RT=1`; fallback: SCHED_FIFO on the completion and copy threads only | `scripts/start-apertar-core.sh`, `config/` drop-in, `CameraSession::requestComplete` | `APERTAR_RT` | capture thread no longer waits behind writers and the WebUI |
 | 6 | **CineMate Log for Apertar** (§4): 20–25 % fewer bytes per frame at the same picture, in parallel with every compression | encoder + format model + UIs | setting, not env | the same card carries 25 fps with margin |
+
+### Where it stands
+
+See section 0 (outcome, findings, what was built). Rows 1 to 5 of the table above were re-planned by the findings:
+row 1 became the `frames` / `ram` buffer switch (done), row 2 is dropped (A2), rows 3 to 5 are shelved, row 6 (Log) and the
+new trim item are done and wait for their Pi tests.
 
 ### Step 0b: the pre-roll A/B (next step, after the overnight run)
 

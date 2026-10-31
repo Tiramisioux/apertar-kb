@@ -133,6 +133,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `0d93f11` | Clear HDR helpers moved above `setFps` (d084ed4 did not build); WebUI frame rates 25/33/50 for the IMX585 and others; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `0bac3db` | 25/33/50 fps for hardware inputs too; IMX585 4K SDR up to 60 (probe), lossless cap 50; rotary resolution press toggles 16-bit Clear HDR ↔ 12-bit SDR; back to ≤25 fps restores 16-bit Clear HDR after an automatic switch; WebUI shows 25/33/50 in Clear HDR; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `0296ed1` | Clear HDR on = uncompressed cDNG, off = lossless, also by toggle (rotary, touch UI, WebUI); branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
+| `3993759` | **drop-frames**, squashed from 15 commits: trim helper (`scripts/apertar-media-trim`) and Core's trim worker; Log On/Off in the files (cDNG, lossless JPEG, Lossy DNG); write-buffer level (state, `GET /api/buffer`, `buffer` event) and a red buffer bar; the `frames`/`ram` write-queue switch with `[storage]` keys and `set_buffer_mode`; the 90 % safety stop; WebUI: white dropdowns, a Tally LED card on Controls. Branch `drop-frames` (local: Mac and Pi, not on GitHub). Findings and how to use it: `working/drop-frames/README.md` section 0 | offer (in pieces, after the Pi tests: Log and the RAM queue are the upstream candidates) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
@@ -168,6 +169,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `66d6d19` | Stop tracking the committed `build/` tree (551 files, 18 MB, #5) | offer |
 | `29ed99b` | Executable bits and `mesa-minimal` symlinks restored (#6) | offer |
 | `4415a55` | Touch UI: "4K Clear HDR" resolution (quick menu + settings) and 16-bit bit depth, greyed where unavailable; bridge `clearHdr` / `applyClearHdr` | offer (needs Core `631721d`+) |
+| `74f39c6` | **drop-frames**, squashed from 6 commits: buffer bar in the REC pill, the safety-stop pill, Frames / RAM and Log buttons in Settings > Record, "· Log" in the format display. Branch `drop-frames` (local: Mac and Pi). Not compiled on the Mac; compiles on the Pi | offer (with the Core commit) |
 
 ## libcamera · `Tiramisioux/libcamera` branch `apertar` · base will127534 `qbc-pisp-handler` (`7e9fef0`)
 

@@ -313,6 +313,9 @@ Dispatch idiom: `    if (command.name == "<name>") {` at 4-space indent, plus `h
 | `set_resolution` | 9314 | camera_.setResolution | camera (SB) | y | y |
 | `set_record_format` | 9326 | camera_.setRecordingFormat | camera (SB) | y | y |
 | `set_cdng_compression` | 9340 | camera_.setCdngCompression | camera (SB) | y | y |
+| `set_cdng_log` | (drop-frames, grep it) | camera_.setCdngLog | camera (SB) | y | y |
+| `set_buffer_mode` | (drop-frames) | `hardware::configStore().edit` of `[storage] buffer=` | conf store (revision, history, backup) | y | y |
+| `set_frame_buffer_bar_enabled` | (drop-frames) | `handleUiToggle` (UI.conf `frameBufferBarEnabled`) | UI toggle | y | y |
 | `set_lossy_dng_ratio` | 9351 | camera_.setLossyDngRatio | camera (SB) | y | y |
 | `set_cdng_preview_color_profile` | 9360 | camera_.setCdngPreviewColorProfile | camera (SB) | y | y |
 | `set_prores_color_profile` | 9369 | camera_.setProresColorProfile | camera (SB) | y | y |
@@ -417,6 +420,7 @@ Idiom: `if (request.method == "<M>" && request.path == "<p>")` (exact) or `reque
 | `GET /preview.mjpeg` | 7109 | MJPEG stream (`streamMjpeg`); 503 without JPEG build |
 | `GET /icons/<name>` (prefix) | 7124 | PNG from `webIconsDirectory()` |
 | `GET /api/state` | 7154 | `buildWebStateJson` |
+| `GET /api/buffer` | (drop-frames) | the write buffer's live level, lock-free (`buffer_used/capacity/fill/mode/unit`, `buffer_setting`, `buffer_note`, `buffer_safety_stop`, `buffer_stop_percent`, `recording`); polled at 4 Hz by the WebUI |
 | `GET /api/media` | 7161 | `buildMediaLibraryJson` |
 | `GET /api/media/clip?kind=folder&id=` | (T47, after 2026-10-29 line numbers shift ~+2000: grep the path) | `clipInfoJson` over `clipFactsCache().get`; hold: cached facts or 409 |
 | `GET /api/media/frame?kind=&id=&n=&w=&v=` | (T48) | `playback::frameJpeg`; headers `X-Frame-Number/Index/Count`, `X-Histogram`, `X-Frame-Source`, `X-Decode-Ms`; 409 hold, 503 busy |
