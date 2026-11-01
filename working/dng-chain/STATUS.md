@@ -6,7 +6,7 @@ improvements for Apertar on exFAT / SSD (writing and mounting), explain the resi
 pre-roll has an effect. Sources: Apertar-Core `drop-frames` 92d0970, Apertar-UI `drop-frames` e061be8, cinemate `main`
 4990afc (full history), cinepi-raw `main` 63a08d5, cinemate-handbook c99ff77, this KB at 1899e8d, Linux v6.12 source.
 
-Method: nine reader reports (R1..R9, assignments in `assignments/`, rules in `BRIEF.md`), then three syntheses from
+Method: nine reader reports (R1..R9), three syntheses (S1..S3), a merged hypothesis list (M.md, 16 hypotheses), one adversarial verifier per hypothesis (V/), a review of the Core patches, a completeness critic. Original plan: nine reader reports (R1..R9, assignments in `assignments/`, rules in `BRIEF.md`), then three syntheses from
 different lenses, a merge, adversarial verification of every hypothesis (code, evidence, mechanism), a completeness critic.
 The answer page will be `working/dng-chain-answer.md`. Syntheses: S1 (storage), S2 (capture/CPU), S3 (evidence). Code changes made so far: `patches/README.md`.
 
