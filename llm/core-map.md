@@ -285,7 +285,7 @@ Commands handled by Core but **never sent by the WebUI**: `ping`, `help`, `get_s
 
 ---
 
-### 1.4 drop-frames additions (branch `drop-frames` `d44b177`; the line numbers above are `upstream-1.6.0`, so these have none: `git grep -nF '<name>' drop-frames`)
+### 1.4 drop-frames additions (branch `drop-frames` head `014a2bf`, base `d44b177`; the line numbers above are `upstream-1.6.0`, so these have none: `git grep -nF '<name>' drop-frames`)
 
 The table header says "Find by", not "Anchor", so `check-anchors.py` does not check these (it reads the checked-out branch, which is not `drop-frames`).
 
@@ -302,6 +302,9 @@ The table header says "Find by", not "Anchor", so `check-anchors.py` does not ch
 | `emitLogAppliedIfChangedLocked` | `CameraController` | Re-sends the settings event when only `cdng_log_applied` moved |
 | `planCdngLog` | `CameraController.cpp` | Maps the raw stream for Log: unpacked 2-byte only; `pisp_comp1` prints "cannot be mapped on the copy worker, recording linear" |
 | `estimatedRawBytesPerSecond` | `ApertarCoreApp.cpp` | Minutes-left estimate; counts Log's stored bits only when `cdng_log_applied` (the touch UI's twin is `estimatedFrameSizeMB` in `CameraPage.qml`) |
+| `abortSafetyStopFlushForRecord` / `abortSafetyFlush` | `ApertarCoreApp.cpp` anonymous namespace / queue class in `CameraController.cpp`; `bufferbudget::abortSafetyStopFlush` in `BufferBudget.hpp` | Record pressed during the safety-stop drain: clears the queue lock-free, counts `discarded_on_stop` and `buffer_flush_discarded` (called before any lock the drain holds) |
+| `ClipName.hpp` / `clipNameValues` | `src/util/ClipName.hpp`; `CameraController.cpp` | Clip-name template: tokens, rules, lowest free clip number; `set_clip_name_template` / `preview_clip_name` in `handleCommand`; host test `tools/clip_name_test.cpp` |
+| `lutPreviewSearchDirectories` | `ApertarCoreApp.cpp` | The folders searched for preview `.cube` LUTs |
 
 ## 2. Dispatch tables
 

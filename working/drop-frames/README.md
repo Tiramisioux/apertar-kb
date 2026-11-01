@@ -15,10 +15,10 @@ The handoff for the Mac session that drives the work is `../handoff-drop-frames.
 **One sentence.** The dropped frames were the recording drive's state, not Apertar's buffer: after about 0.9 TB of writing
 without a trim the NVMe stalls for seconds (and can hang its controller); trimming it restores it. Core now trims by itself,
 and the campaign also added Log (smaller files), a switchable large RAM buffer with a safety stop, and an on-screen buffer
-indicator. Everything is on the `drop-frames` branches of Apertar-Core (`d44b177`, one squashed commit, base `a40112a`) and
-Apertar-UI (`841d0ed`, one squashed commit, base `ea44bd7`): on the Mac, the Pi and GitHub (branch `drop-frames` of
+indicator. Everything is on the `drop-frames` branches of Apertar-Core (`d44b177`, one squashed commit, base `a40112a`, plus three commits on top: `fb5801c`, `c5db8b2`, `014a2bf`; branch head `014a2bf`) and
+Apertar-UI (`841d0ed`, one squashed commit, base `ea44bd7`, plus `4959513`, `96a7aa4`, `606f137`; branch head `606f137`): on the Mac, the Pi and GitHub (branch `drop-frames` of
 `Tiramisioux/Apertar-Core` and `Tiramisioux/Apertar-UI`; `main` untouched, nothing merged). Updated 2026-11-01: see
-"Added 2026-11-01" below (the earlier hashes were `400dd1f` and `74f39c6`).
+"Added 2026-11-01" and "Added 2026-11-01 (later)" below (the earlier hashes were `400dd1f` and `74f39c6`).
 
 ### What a trim is, and what we gain
 
@@ -72,6 +72,29 @@ the standard explanation, not measured here.)
 
 Host test for the pre-roll: `tools/storage_preroll_test.cpp` (on `src/util/StoragePreroll.hpp`).
 
+### Added 2026-11-01 (later): safety-stop pill and flush abort, clip names, preview LUTs
+
+Core `fb5801c`, `c5db8b2`, `014a2bf` and UI `4959513`, `96a7aa4`, `606f137`, on top of `d44b177` / `841d0ed`. On GitHub (branch `drop-frames`), the Mac and the Pi. Status per row: **read from code**, **measured**, **untested**.
+
+| Feature | What it does | Controlled by | Status |
+| --- | --- | --- | --- |
+| Pill READY green while the buffer empties (`fb5801c` / `4959513`) | After a safety stop the pill shows READY in green while the queue drains, also when the "Frame buffer bar" option is off (the WebUI polls `/api/buffer` for it) | none | read from code (WebUI, touch UI, HDMI) |
+| Record during the safety-stop flush (`c5db8b2` / `96a7aa4`) | The pill leaves REC at the safety stop (the recording event is sent before the drain; REC and tally go off). Pressing record during the flush aborts the drain (`abortSafetyStopFlush`, `abortSafetyFlush` in the queue): the frames still queued are DISCARDED, frames a writer already took finish, the new take starts at once. The discarded count goes to `discarded_on_stop` (journal), state `buffer_flush_discarded` (kept until the next safety stop) and one toast ("Record pressed during the flush: N unwritten frames at the end of the previous clip were discarded."). A normal stop's drain and the pre-roll are not abortable. **Decision (the owner, 2026-11-01): discard the queued frames and start at once; the old clip is cut short, the frames already written stay** | the record button / `record_start` (before any lock the drain holds) | read from code; the abort itself untested |
+| First real safety stop | 2026-11-01 01:00:35, 1289 of 1424 MiB, ram buffer, 4K lossless; the flush took about 3 s | `[storage] buffer=ram` | **measured** (hardware-log 2026-11-01) |
+| Configurable clip names (`014a2bf` / `606f137`) | The clip folder name (and the DNG frames, `.wav`, `.mp4` that derive from it) comes from a template. Tokens: `{format}` `{date}` `{date_}` `{yy}` `{mm}` `{dd}` `{time}` `{time-}` `{tc}` `{tc-}` `{clip}` `{cam}` `{sensor}` `{model}` `{res}` `{fps}` `{bits}` `{comp}` `{log}` and free text `{text:..}` (24 characters). Presets: Original (`{format}_{date}_{clip}`, the default; names unchanged), Time of day with dashes (`{format}_{date_}_{tc-}_{clip}`), Time of day compact (`{format}_{date_}_{tc}_{clip}`). Rules: the clip number is the LOWEST free one for the expanded name; `{clip}` exactly once (a missing one is appended as `_{clip}`); at most 100 characters; only `A-Za-z0-9._-`; separator runs collapse; an empty token (e.g. `{log}` with Log off) drops with its separator; the name may not start with `Timelapse` (reserved for timelapse folders). `{tc}` is the wall clock plus the frame within that second at the current fps, taken when the folder is created (the DNG TimeCode tag is 00:00:00:00 in RecRun, so it cannot be used) | commands `set_clip_name_template`, `preview_clip_name`; state `clip_name_template`, `clip_name_example`; WebUI Settings > Record > Clip names (pill composer: HTML5 drag and drop with the mouse, pointer-event long-press with touch or pen, tap a palette pill to add, x removes); touch UI Settings > Record > Clip names card (`ClipNameCard.qml`: QML `Drag` / `DropArea` with tap fallbacks) | Core read from code; host test `tools/clip_name_test.cpp` on `src/util/ClipName.hpp`; WebUI composer and touch card **untested** by hand (the touch UI could not be tried: no touch screen on the rig) |
+| Places that parsed the old name | Fixed to stop assuming `cDNG_<date>_C0001`: `ClipProbe.hpp` finds the lossy ratio from `cDNG_3to1` / `lossy3` anywhere in the name, `clipContainerTypeLabel` in `ApertarCoreApp.cpp`, the media library and clip labels, ProRes / H.264 detection | none | read from code |
+
+### Preview LUTs (2026-11-01; not in git)
+
+Core lists `*.cube` files from `/home/pi/LUTs`, `<media root>/LUTs`, `/media/RAW/LUTs` and `/media/*/LUTs` (`lutPreviewSearchDirectories`, `ApertarCoreApp.cpp`); the preview LUT is chosen with `set_lut_preview_file`.
+
+- **Copied from DaVinci Resolve** (private, for the owner's own camera, not redistributed and not in this KB): the Sony S-Log3 / S-Gamut3.Cine LUTs from Resolve's LUT folder, and a custom `CE_Sony_SLog3 to Rec709.cube`, in `/home/pi/LUTs`.
+- **Generated**: LogC4 / ARRI Wide Gamut 4, DaVinci Intermediate / DaVinci Wide Gamut and P3-D60 linear exist in Resolve only as built-in colour transforms (no `.cube` to copy), so three 65-point `.cube` files were computed from the published formulas: `Apertar ARRI LogC4 AWG4 to Rec709 gamma2.4.cube`, `Apertar DaVinci Intermediate DWG to Rec709 gamma2.4.cube`, `Apertar P3-D60 Linear to Rec709 gamma2.4.cube`.
+- **Method** (script `gen_preview_luts.py`): for each lattice point (red varies fastest, then green, then blue) decode the transfer function to scene-linear (LogC4 per ARRI's LogC4 specification; DaVinci Intermediate per Blackmagic's Wide Gamut Intermediate whitepaper; P3-D60 is already linear), convert the primaries to XYZ and then to Rec.709 (D65; P3-D60 is Bradford-adapted from the D60 white to D65), encode pure gamma 2.4, hard clip to 0..1. No tone mapping, no film look. Output is plain Rec.709 / gamma 2.4, the same as Apertar's "Rec709 / Gamma 2.4" preview profile.
+- **Checks done** (in the script's session): LogC4 18 % grey = 0.278396 in, DaVinci Intermediate grey = 0.336043 in, white and the neutral axis stay neutral. **Not compared with Resolve** (open test below).
+- **Pairing rule: use the LUT that matches the preview colour profile.** The LUT assumes what the preview image is encoded as; a LogC4 LUT on a Sony S-Log3 preview, or any log LUT on an already Rec.709 preview, gives wrong contrast and colour. Pick the preview colour profile first (`set_cdng_preview_color_profile`), then the LUT named for the same curve and gamut.
+- **Where the script lives**: `~/Downloads/apertar-preview-luts/` on the Mac (script plus the three `.cube`). The KB has `working/tools/` for helper scripts; moving it there is offered, not done (it was not asked, and the folder holds the generated LUTs too).
+
 ### Log works in Clear HDR 16-bit only (finding, 2026-11-01)
 
 In SDR (12/10-bit) with Lossless JPEG the raw stream is PiSP COMP1 (compressed, lossy, step of 16 codes or more; see `../research-30fps/q7-cinemate.md`). Log's copy worker maps only unpacked 2-byte streams (`planCdngLog`), so it cannot map it: the journal says
@@ -113,6 +136,9 @@ is still written down but is low priority now that drive state explains the big 
 9. Speed ramp "After the take": stay and return, with a ramp that ends on a valid and on an invalid fps (untested).
 10. Clear HDR override with the encoder: turn HDR on with the ladder on, check `ladder_override` and the 16-bit follow-up (untested).
 11. HDMI "· Log" following `cdng_log_applied` (the safety net is untested).
+12. The flush abort: provoke a safety stop (`buffer=ram`, a stalled drive or a low `buffer_stop_percent`), press record during the flush, then count the old clip's DNGs, read `discarded_on_stop` in the journal and `buffer_flush_discarded` in the state, and see the toast and the pill (REC leaves at the stop, READY green while it empties).
+13. The clip-name card: set Time of day compact, record, `ls` the clip folder (names and the `.wav` follow); set Original and check the names are identical to before; drag pills in a browser (mouse DnD, and long-press with touch); the same on the touch UI (not tried: no touch screen).
+14. The generated preview LUTs against Resolve exports of the same transforms (same test chart: grey ramp and a colour checker), per profile.
 
 ### How to run the new build
 

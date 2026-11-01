@@ -867,3 +867,31 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   settings event on change is the safety net, untested).
 - Confirmed by: the owner, the log line and the decision.
 - Tutorial: none.
+
+## 2026-11-01: the first real safety stop on the camera: 1289 of 1424 MiB, flush about 3 s
+
+- Tested: Pi 5, Core `drop-frames` with `buffer=ram`, 4K lossless, a take that filled the write buffer; the pill and the journal.
+- Worked: the safety stop fired at 01:00:35 with the buffer at 1289 of 1424 MiB (the 90 % threshold), the take ended cleanly and the queue drained in about 3 s.
+- Then built (read from code, untested on the camera): the pill leaves REC at the stop and is READY green while the buffer empties (also with the bar option off); pressing record during the flush discards the queued frames and starts at once (`abortSafetyStopFlush`, `buffer_flush_discarded`, `discarded_on_stop`, a toast). Decision (the owner): discard, the old clip is cut short, written frames stay.
+- Confirmed by: the owner, a take on the camera (the journal line at 01:00:35).
+- Tutorial: none.
+
+## 2026-11-01: forensics of the 2026-10-28 shooting day: which clips have a Core log, and which do not
+
+- Tested: the Pi's journal against the clips on the SEAGATE disk (`2026-10-28 NORDKAPAREN telefonbojen/RAW`, 38 clips), per-clip tags read from the DNGs (`clips-vs-logs-2026-10-28.csv`).
+- Seen: the Pi's journal only goes back to 2026-10-28 20:31 (journald is persistent, 200 MB; older boots were vacuumed). So the night shoot (clips C0001 to C0029, DNG capture times 01:40 to 03:20) and C0030 to C0032 (19:08 to 19:39) have no Core log. Of the 38 clips on the disk only the 4 H.264 clips and C0033 / C0034 match the journal.
+- Clip NAMES repeat across cards: the counter restarts when the card is cleared, so the Pi's own C0022 / C0025 / C0026 test takes of 21:17 to 22:52 are other footage than the disk's C0022 / C0025 / C0026. Match by capture time, never by name.
+- What can still be recovered per clip: the DNG tags (the CSV above), `fps-ramp.txt` (only C0030, C0031, C0032 and C0034), the ZOOM audio.
+- Lesson: **keep the journal that covers a shooting day (copy it off, or raise the journald limit) before the next card is cleared.**
+- Confirmed by: the owner, read from the journal and the disk (not re-run since).
+- Tutorial: none.
+
+## 2026-11-01: how to check a clip for dropped frames from its DNGs and WAV alone
+
+- Tested: `cDNG_26-10-27_C0001`: 920 frames and a WAV, no Core log.
+- Method: count the frames in each wall-clock second with `ExifIFD:DateTimeOriginal`. The DNG stamps each frame with the wall clock computed from the sensor timestamp (`wallClockForSensorTimestamp` in `CameraController.cpp`), so exactly fps frames in every FULL second means no drop (the first and last second are partial). Also compare frames / fps with the WAV duration.
+- Not usable: `IFD0:DateTimeOriginal` (the take start, the same in every frame) and `TimeCodes` (a running frame count, which cannot show a gap).
+- Result: 36 full seconds of exactly 25 frames, partial seconds of 2 and 18 frames, WAV 36.80 s = 920 / 25: no drops.
+- Not yet run over all clips (offered).
+- Confirmed by: the owner, the numbers above.
+- Tutorial: none.

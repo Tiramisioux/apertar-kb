@@ -126,6 +126,10 @@ Core and UI open the chip independently and both rewrite its config/calibration 
 
 State keys: `storage_preroll_active`, `storage_preroll_last` (e.g. `ok: 2.0 s at 60 fps (measured 60.0), 115 frames, 0.7 GB written and deleted`), `storage_preroll_fps` (the fps while it runs, else 0), `storage_preroll_auto` (the effective automatic setting), `storage_preroll_auto_env` (true when the env variable decides it). Commands `storage_preroll`, `set_storage_preroll`. Other drop-frames state added 2026-11-01: `ladder_override`, `fps_speed_ramp_after` (also the settings-file key and the preset key `cameraFpsSpeedRampAfter`). Measured: 4K 12-bit lossless pre-roll, 60.0 fps (hardware-log 2026-11-01).
 
+Clip names (drop-frames `014a2bf`): the template is not in a file you edit by hand; it lives in the camera settings and is set with `set_clip_name_template` (the WebUI and touch UI Clip names cards), previewed with `preview_clip_name`. State `clip_name_template` and `clip_name_example`. Default `{format}_{date}_{clip}` (names unchanged). Rules and tokens: `working/drop-frames/README.md` "Added 2026-11-01 (later)". Safety-stop state added with `c5db8b2`: `buffer_flush_discarded`.
+
+Preview LUT folders (Core, `lutPreviewSearchDirectories`): `/home/pi/LUTs`, `<media root>/LUTs`, `/media/RAW/LUTs`, `/media/*/LUTs`; every `*.cube` is offered. Pair the LUT with the preview colour profile (`working/drop-frames/README.md` "Preview LUTs").
+
 The C++ Core never reads `[cfexpress_hat]` or `storage.mount_path` / `storage.pcie_controller`; it does read the `storage.buffer*` keys (drop-frames branch; a bad value is an error with its line number in the Config pane and Core uses the default). Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
 
 #### `[camera]` (Core, `cinemate-port` `8175273`, 2026-10-28)
