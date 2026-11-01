@@ -2,6 +2,7 @@
 
 LLM navigation map for the three giant files plus the small dirs. Prose about *how* things work lives in the KB: [architecture/core.md](../architecture/core.md) (process, IPC, events, recording), [config.md](../architecture/config.md) (config keys, template drift), [build.md](../architecture/build.md). This file only says **where**.
 
+- **Not in the tables below (`drop-frames 4581a69` only, `src/ApertarCoreApp.cpp`):** Boot Config. `bootConfigMutex` :3452, `writeBootConfigText` :3472, `bootConfigGet` :3705, `bootConfigSet` :3714; routes `GET/POST /api/boot-config` :9068/:9077, `POST /api/boot-config/parse` :9107; socket commands `get_boot_config` :14043, `set_boot_config` :14046; `applyFanMode` moved to :3559. Engine `src/hardware/BootConfigText.hpp`. See [config.md §7.1](../architecture/config.md#71-boot-config-card-drop-frames). Unconfirmed on the Pi.
 - Refs: `upstream-1.6.0` (fork HEAD `ed400ba`, build-only commits on top; `src/` and `include/` identical to the tag). Every line number below came from `grep -n` on that tree, 2026-10-25.
 - Paths are repo-relative to `Apertar-Core/`. `App` = `src/ApertarCoreApp.cpp`, `CC` = `src/camera/CameraController.cpp`, `WCP` = `src/web/WebControlPage.cpp`.
 - **Use the grep anchor, not the line number**, once anything has been edited. Each anchor is a literal string that occurs exactly once in its file (checked with `grep -cF`).

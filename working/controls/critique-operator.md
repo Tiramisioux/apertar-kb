@@ -260,6 +260,8 @@ Ordered by harm on set.
   4. `dry_run` returns `apply` too, so Review says "After saving: Core applies the knobs now. You then restart the
      automounter (or the camera)."
 
+> **Note 2026-11-01:** the critique below is a dated record and assumes Apertar never writes config.txt. On `drop-frames 4581a69` Core's Boot Config card does edit it (in place, review of changed lines, `confirm_display` tick for a display change, backup `config.txt.apertar.bak`), as does the fan mode, both via `writeBootConfigText` / `apertar-boot-config`. The display tick and the backup answer part of the Fix below; the sysfs check for an attached DPI panel is not part of the card. Status: unconfirmed (Pi check pending). See [architecture/config.md §7.1](../../architecture/config.md#71-boot-config-card-drop-frames).
+
 ### 7. The DPI box can black out a camera that uses its DPI screen, and leaves the HDMI 720x720 surprise.
 
 - **What:**
