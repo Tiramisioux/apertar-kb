@@ -13,7 +13,7 @@ Every file and environment variable the Apertar stack reads, who parses it, and 
 | `~/.config/CinePi/DisplayCalibration.conf` | QSettings | UI | UI | UI start |
 | `~/.config/Apertar/StandbyBacklights.conf` | QSettings | UI | UI | standby |
 | `~/.local/share/Apertar-UI/presets/*.apertar-preset.json` | JSON | UI, Core | UI, Core WebUI | on demand |
-| `/boot/firmware/config.txt` | Pi config | Core, UI (fan block only) | Core (Boot Config card and fan mode, via `writeBootConfigText` / `apertar-boot-config`; `drop-frames`); UI fan block (`sudo -n install`, still its own writer) | on demand, boot |
+| `/boot/firmware/config.txt` | Pi config | Core, UI (fan block only) | Core (Boot Config card and fan mode, via `writeBootConfigText` / `apertar-boot-config`; `drop-frames`); UI fan mode via `set_fan_mode` since UI `41ff827` | on demand, boot |
 | `/home/pi/.apertar-tuning` | `NAME=VALUE` | Core (ProRes) | nobody | every ProRes clip open |
 | `$HOME/.cache/apertar-prores/<profile>.json` | libcamera tuning | libcamera | Core | camera open with a log profile |
 
@@ -384,7 +384,7 @@ Before this, Apertar edited config.txt only for the fan block. Branch `drop-fram
 - **Edit file** (`3b87d99`, `2a4266e`): the whole file as text; `set_boot_config` takes `text` and the card's choices go on top, reviewed against the file on disk (removed lines too, `lineChanges`). `state.managed` lists every line a control or the fan mode may change, commented ones included; the editor shows those line numbers in italics with a legend, and says own lines go at the end of the file (`[all]`) or in the board section.
 - **Found on the Pi (confirmed 2026-11-01):** switching Camera 0 IMX585 colour → mono → colour dropped `link-frequency=891000000` (two saves, journal `via helper`). Fixed in `b3e7f52`. The helper write path itself worked.
 - **Rollback:** copy `/boot/firmware/config.txt.apertar.bak` back over config.txt (with a card reader if the Pi does not boot).
-- **Second writer left:** `Apertar-UI/src/SystemActionBridge.cpp` still writes the fan block itself, outside Core's lock. Being moved to Core's `set_fan_mode` (in progress).
+- **One writer:** since UI `41ff827` (`drop-frames`) the touch UI's fan mode sends Core's `set_fan_mode`; `SystemActionBridge.cpp` only reads config.txt (`refreshFanMode`), like `DeviceInfoBridge`.
 
 All refs `drop-frames 4581a69`, `Apertar-Core-drop/src/ApertarCoreApp.cpp`.
 

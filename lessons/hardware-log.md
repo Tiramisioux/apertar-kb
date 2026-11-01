@@ -895,3 +895,11 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Not yet run over all clips (offered).
 - Confirmed by: the owner, the numbers above.
 - Tutorial: none.
+
+## 2026-11-01: imx585 `cinemate-port` `cd548ef` on the Pi: the new mode tables load and Core runs on them
+- Tested: CM5, kernel 6.12.75+rpt-rpi-2712, IMX585 colour on cam0 at `link-frequency=891000000`; driver `24172e6` → `cd548ef` (`./setup.sh`, DKMS 0.0.1), Core `drop-frames` `4b2eeac` (before the new-mode work), reboot.
+- Worked: probe reads the overlay (891 MHz, 4 lanes, CCMP default-on for colour); Core probed 187 sensor modes in about 0.4 s (libcamera 5.59 → 5.98 s) and reached `ready`, no configure refusals; 3840x2072 and 1920x1036 (the 1.85:1 crops of Core `900d282`) are among them at 10 and 12 bit. 891 MHz is still in the driver's link table, so config.txt needed no change.
+- Did not work: n/a. One driver audit warning: `supported_modes[5] and [67] both advertise 3840x2072` (`dev_warn`, `imx585.c` table audit); V4L2 lists the size twice and libcamera takes the first. Left for the owner to decide (driver tables are not changed from Core work).
+- Why: `/boot/overlays` is a symlink to `firmware/overlays` on this image, so `dkms.postinst` installing to `/boot/overlays/` already reaches the firmware's folder (the handoff's packaging worry does not apply here). DKMS `PACKAGE_VERSION` stays 0.0.1: tell builds apart by `modinfo` srcversion (`29403D42A3919123B7FA091` now, `C7771CBE2AC6D72E964F0C2` before).
+- Confirmed by: Patrik, ran `setup.sh` and rebooted; dmesg, the Core journal and `get_state` (`ready`) read by Claude. No takes yet.
+- Tutorial: none
