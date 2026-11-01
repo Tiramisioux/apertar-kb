@@ -167,6 +167,17 @@ closed, script `/tmp/take3.sh` (copy in the Mac scratchpad of that session):
   (the knob table says lossy then behaves as `off`); SDR 12-bit 33 fps; whether `sync` needs `APERTAR_MEDIA_SYNC_MS` > 0.
 - The `/run` drop-in `apertar-core.service.d/dontneed.conf` is active until the next reboot.
 
+### 10-minute take with `sync` (2026-11-01 23:02-23:12; measured)
+
+4K Clear HDR 16-bit uncompressed 25 fps, `APERTAR_DNG_DONTNEED=sync` (`/run` drop-in), original UI, peaking + zebra +
+audio meter on, WebUI closed: **14998 written, 25 lost (0.17 %)**, `dropped_queue_full=0`. Per minute: 0, 0, 3, 3, 3, 3, 5,
+5, 7, **25** (18 in the last minute). kswapd reclaimed 586 k pages in 10 min (the old default: ~3 M per 3 min). The drive
+was 97 % full (897 of 932 GB) after the take; the last-minute losses line up with the drive filling (probable, not
+established). Drive formatted again at 23:13 (exFAT, trimmed). Next: the same 10 minutes on the empty drive.
+
+Patrik's ladder since 22:59: rung 1 4K Clear HDR 16-bit lossless JPEG <= 25 (encoder ~17.5 fps: a 25 fps take fills the RAM
+buffer and safety-stops), rung 2 4K SDR 12-bit lossless JPEG 25-30 (27 s at 30 fps: 0 lost, encoder capacity 62.9 fps).
+
 ### Where we stopped (2026-11-01 22:20; read first next session)
 
 Measured tonight after the CPU-mask entry (hardware-log), **not yet confirmed by Patrik as a reading**:
