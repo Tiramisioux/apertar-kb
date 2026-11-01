@@ -1,7 +1,7 @@
 From e0fa8524133af0d9a5c1f1f8e6dbcc99e1606384 Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:16:34 +0000
-Subject: [PATCH 4/6] media: noatime and umask on the re-insert mount of a
+Subject: [PATCH 4/7] media: noatime and umask on the re-insert mount of a
  CFexpress card
 
 Why: Core's embedded Python watcher, which remounts a card after an eject and re-insert, mounted

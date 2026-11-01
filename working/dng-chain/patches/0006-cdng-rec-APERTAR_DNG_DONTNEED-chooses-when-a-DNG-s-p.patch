@@ -1,7 +1,7 @@
 From 0ed07eae099cfda1ad023408ff4545a34e052757 Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:18:57 +0000
-Subject: [PATCH 6/6] cdng, rec: APERTAR_DNG_DONTNEED chooses when a DNG's
+Subject: [PATCH 6/7] cdng, rec: APERTAR_DNG_DONTNEED chooses when a DNG's
  pages leave the page cache; dropped_copy_slot in the stats line
 
 Why: the writer calls posix_fadvise(POSIX_FADV_DONTNEED) right after writing a DNG. In Linux 6.12
