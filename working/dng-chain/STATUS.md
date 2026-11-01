@@ -19,7 +19,7 @@ The answer page will be `working/dng-chain-answer.md`.
 | R3 | Apertar-Core write chain on drop-frames and history | done |
 | R4 | Mounting: Apertar-UI automounter vs cinemate's, exFAT specifics | done |
 | R5 | Evidence pass over the kb and the handbook | done |
-| R6 | Domain: Linux exFAT internals, NVMe HMB, trim, bandwidth, writeback, libcamera | running |
+| R6 | Domain: Linux exFAT internals, NVMe HMB, trim, bandwidth, writeback, libcamera | done |
 | R7 | Apertar-Core capture side: completion thread, requeue, capture gaps, previews, pre-roll | done |
 | R8 | Apertar-Core encoder path and data-rate model per case | done |
 | R9 | What each stack asks libcamera for; the ISP back-end serial cycle; link utilisation | done |
@@ -96,3 +96,16 @@ and the critic as described above; write `working/dng-chain-answer.md` in the kb
     at 4K 50 fps 12-bit (70 % of the link, 80 % of the RP1 pixel rate); they do not separate the stacks (R9).
 22. Cheapest test for both residual cases: a tuning copy without the tdn blocks, selected with set_tuning_file / APERTAR_TUNING_FILE,
     measured with working/tools/be_cycle.py and a counted 60 s take (R9).
+
+### Added with R6 (kernel and drive domain)
+23. `nvme.max_host_mem_size_mb=0` is Raspberry Pi's own device-tree default on rpi-6.12.y (set after the HMB exhausted the 64 MiB CMA,
+    issue #6504); rpi-6.18.y moves the default to 32 MiB and says the 0 default can cost up to 50 % on random reads of DRAM-less drives.
+    Any non-zero value works; enabling it on 6.12 needs CMA headroom (cma- overlay parameter) (R6).
+24. In the 6.12 exfat driver every cache-miss FAT or directory read is a blocking read on the writer's thread; a create of a new name
+    scans every used and deleted directory entry under the superblock lock (O(N^2) per take, estimated 6 to 24 ms per create late in a
+    long take); fsync is a whole-device metadata flush plus an NVMe FLUSH; the allocation cursor wraps at the volume end (the 0.9 TB
+    mark) and resets to the front at every mount, so later takes become FAT-chain files (R6, mechanics confirmed, costs estimated).
+25. fstrim.timer is weekly and Persistent on Debian, so a missed run fires minutes after boot and trims every mount (Core's own trim
+    makes it redundant); exfat_trim_fs holds the bitmap lock for the whole walk (0.47 s here) (R6).
+26. libcamera's PiSP IPA caps the pixel rate at 390 Mpix/s unless the fork adapts it to the RP1 clock: 4K 50 fps needs 415 Mpix/s.
+    Both rigs run the RP1 overclock; whether each fork lifts the constant is to be verified (R6, R9).
