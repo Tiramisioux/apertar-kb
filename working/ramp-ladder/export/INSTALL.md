@@ -1,18 +1,18 @@
 # KB export: speed ramping on cinemate-port, 30 fps research, project status (cloud session, 2026-10-26/27)
 
 Files only: no commits, nothing pushed. `kb/` mirrors the knowledge base, so every file sits at the path it should have in
-`apertar-kb`. Base: GitHub `Tiramisioux/apertar-kb` `main` at `d65b2ef` (T22-T30 moved to Obsidian).
+`apertar-kb`. Base: GitHub `Tiramisioux/apertar-kb` `main` at `7886e5b` (T22-T30 moved to Obsidian).
 
 **For VS Code:** paste `HANDOFF-PROMPT.md` (next to this file) and attach the zip. It points the session at
 `kb/working/handoff-speed-ramp.md`.
 
-**This export replaces `apertar-kb-additions-2026-10-27.zip`.** Do not use that one: it was built on `2eee8f5`, it would put
+**This export replaces `apertar-kb-additions-2026-10-27.zip`.** Do not use that one: it was built on `bd334eb`, it would put
 T27-T30 back into `tutorials/inbox/`, and its T31 patch targets the cloud branch, not `cinemate-port`.
 
 ## What is in it
 
-1. **T31 speed ramping, moved to `cinemate-port`.** The patch applies with plain `git am` on Core `7a545d9` and on the
-   current tip `6ae70b5`. Neither T31 nor T32 is on GitHub `cinemate-port` yet. The tutorial's line
+1. **T31 speed ramping, moved to `cinemate-port`.** The patch applies with plain `git am` on Core `b606c4f` and on the
+   current tip `3c4f07d`. Neither T31 nor T32 is on GitHub `cinemate-port` yet. The tutorial's line
    numbers are on that tree with the patch applied. Three steps differ from the cloud version because of the port; the status
    line names them. Step 4.7 is also new: in a take, `ramp_fps` refuses up front with `set_fps`'s own errors (`fps_ramp` off;
    H.264, ProRes or still mode) instead of answering ok.
@@ -46,7 +46,7 @@ its own fixes, including `8f7dc39` for the T27 build error.
 
 ## Files
 
-NEW = not in the KB yet. REPLACES = the file at `d65b2ef` plus the lines listed.
+NEW = not in the KB yet. REPLACES = the file at `7886e5b` plus the lines listed.
 
 | Status | Path | Change |
 | --- | --- | --- |
@@ -72,11 +72,11 @@ NEW = not in the KB yet. REPLACES = the file at `d65b2ef` plus the lines listed.
 
 ## Install on the Mac
 
-**1. Check that the four replaced files have not changed since `d65b2ef`.**
+**1. Check that the four replaced files have not changed since `7886e5b`.**
 
 ```bash
 cd ~/Documents/Apertar/apertar-kb
-git diff --stat d65b2ef -- llm/tutoring.md tutorials/README.md working/patches/README.md working/tools/takes.sh
+git diff --stat 7886e5b -- llm/tutoring.md tutorials/README.md working/patches/README.md working/tools/takes.sh
 ```
 
 No output: safe to overwrite. A file is listed: do not overwrite it; add the lines from the table by hand (row text is in the
@@ -116,7 +116,7 @@ The Pi's `~/apertar-kb` is behind and does not have the five new patches until t
 ## On the Pi afterwards
 
 After step 5 (the patches must be in the Pi's `~/apertar-kb`): the handoff's point 1 checks whether T31 and T32 are on the
-Pi, then goes through what is missing. The patches are the reference (Core on `7a545d9` or `6ae70b5`, UI on `dc471c1`):
+Pi, then goes through what is missing. The patches are the reference (Core on `b606c4f` or `3c4f07d`, UI on `dc471c1`):
 
 ```bash
 git -C ~/ApertarCore am ~/apertar-kb/working/patches/0001-camera-speed-ramping-*.patch ~/apertar-kb/working/patches/0001-camera-cap-4K-*.patch ~/apertar-kb/working/patches/0001-web-speed-ramp-*.patch
@@ -124,7 +124,7 @@ git -C ~/ApertarUI am ~/apertar-kb/working/patches/0001-ui-4K-*.patch ~/apertar-
 ```
 
 Checked in the cloud, not on a Pi:
-- every patch applies in that order on `7a545d9` and `6ae70b5` (Core) and `dc471c1` (UI);
+- every patch applies in that order on `b606c4f` and `3c4f07d` (Core) and `dc471c1` (UI);
 - host `g++ -fsyntax-only` passes for the Core files that do not need libcamera;
 - `node --check` passes for the WebUI script, and the WebUI block was driven in Chromium against a mocked state;
 - the whole touch UI builds with Qt 6.4.2.

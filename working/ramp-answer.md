@@ -3,7 +3,7 @@
 Written 2026-10-26 in a cloud session. Trees: Apertar-Core branch `clearhdr-fixes`, HEAD `d4ad539` (the ramp commit, on top of `9d4f7fb`; base `f60e301`; the T27-T30 commits were renamed by the phase-lock compile fix, see §7); cinemate `d6cc93e`; cinepi-raw `63a08d5`; libcamera (cinemate) `bfe0b76`. Reader reports: `working/port-raw/r1-ramp-cinemate.md`, `r2-ramp-core.md` (every line there was opened on the stated tree, each with an adversarial verification appended); critic: `critic-ramp.md`. Labels: **confirmed** = line read; **probable** = derived, reason given; **unknown** = not derivable off the Pi. Tutorial: T31. Patch: `working/patches/0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch`.
 
 > [!note] 2026-10-27: line numbers here are at the cloud commit `d4ad539`. The patch in `working/patches/` is now the version
-> rebased onto `cinemate-port` `7a545d9`, and tutorial T31 cites that tree. Three details differ there (the T31 status line).
+> rebased onto `cinemate-port` `b606c4f`, and tutorial T31 cites that tree. Three details differ there (the T31 status line).
 
 > [!note] 2026-10-28: the on/off switch is renamed to match `fps_phase_lock`: `fps_speed_ramp`, `set_fps_speed_ramp`,
 > `fpsSpeedRamp`, `fps_speed_ramp_keep_exposure`, `fpsSpeedRampKeepExposure` (UI `m_fpsSpeedRamp`). This page keeps the old

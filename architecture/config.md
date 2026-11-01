@@ -13,7 +13,7 @@ Every file and environment variable the Apertar stack reads, who parses it, and 
 | `~/.config/CinePi/DisplayCalibration.conf` | QSettings | UI | UI | UI start |
 | `~/.config/Apertar/StandbyBacklights.conf` | QSettings | UI | UI | standby |
 | `~/.local/share/Apertar-UI/presets/*.apertar-preset.json` | JSON | UI, Core | UI, Core WebUI | on demand |
-| `/boot/firmware/config.txt` (fan block) | Pi config | Core, UI | Core, UI (`sudo -n install`) | on demand |
+| `/boot/firmware/config.txt` | Pi config | Core, UI (fan block only) | Core (Boot Config card and fan mode, via `writeBootConfigText` / `apertar-boot-config`; `drop-frames`); UI fan block (`sudo -n install`, still its own writer) | on demand, boot |
 | `/home/pi/.apertar-tuning` | `NAME=VALUE` | Core (ProRes) | nobody | every ProRes clip open |
 | `$HOME/.cache/apertar-prores/<profile>.json` | libcamera tuning | libcamera | Core | camera open with a log profile |
 
@@ -45,7 +45,7 @@ Two file-selection rules exist:
 | --- | --- | --- |
 | Core inputs and outputs (PCF, GPIO, NeoRotary4, Grove, trigger, LED) | `ApertarCoreApp::start()` only. **Restart Core after editing** (`sudo systemctl restart apertar-core`) | `App:6881-6893` |
 | Core INA219 | once per process (`static const`) | `App:4602` |
-| Core `[camera]` (`cinemate-port` `a89a5df`) | once per process (`static const`, first use). **Restart Core after editing** | `CC` `clearHdrIsoLimits()` |
+| Core `[camera]` (`cinemate-port` `8175273`) | once per process (`static const`, first use). **Restart Core after editing** | `CC` `clearHdrIsoLimits()` |
 | Core IMU | every recording, calibration and IMU command | `Apertar-Core/src/hardware/Mpu6050RecordingSession.cpp:1040`, `:1176`, `:1297` |
 | Core `run_script` | every script action | `Apertar-Core/src/hardware/HardwareScriptRunner.cpp:38-96` |
 | Core NVMe watcher (Python) | each NVMe eject | `App:3568` |
@@ -111,10 +111,28 @@ Core and UI open the chip independently and both rewrite its config/calibration 
 | `cfexpress_hat.address` (`addr`) | `0x34` | AM, Py | `CfeAutomounter.cpp:39`; `App:3392` |
 | `storage.mount_path` | `/media/RAW`. Honoured by AM; **ignored by Core's watcher** (Core always sets `APERTAR_MEDIA_ROOT`) and by Core C++ (uses `--media`) | AM, Py | `CfeAutomounter.cpp:172-175`; `App:3457`, `:3594` |
 | `storage.pcie_controller` | `1000110000.pcie` | AM, Py | `CfeAutomounter.cpp:176-179`; `App:3395` |
+| `storage.buffer` | `frames` (absent = frames); `ram` = the large RAM write queue. Read at the start of each take (a save in the Config pane applies to the next take); the env variable `APERTAR_CDNG_BUFFER` wins; `set_buffer_mode` edits this key | Core (drop-frames) | `BufferBudget.hpp` `parseBufferConf`; `CC` `planQueueBuffer`; validator in `HardwareConfigText.hpp` |
+| `storage.buffer_ram_fraction` | `0.6` (0.05 to 0.9): share of `MemAvailable` for the ram queue | Core | same |
+| `storage.buffer_ram_floor_mb` | `512` (0 to 1048576): memory kept free | Core | same |
+| `storage.buffer_ram_max_fraction` | `0.5` (0.1 to 0.75): ceiling as a share of `MemTotal` | Core | same |
+| `storage.buffer_stop_percent` | 0 = never, or 50 to 99; absent = 90 in ram mode, off in frames mode: the take ends by itself (clean stop) when the write buffer reaches this fill | Core | same; `buffer_safety_stop` in the state |
 
-The C++ Core never reads these sections. Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
+#### `[media]` (Core, `drop-frames`)
 
-#### `[camera]` (Core, `cinemate-port` `a89a5df`, 2026-10-28)
+| Key | Default | Meaning | Ref |
+| --- | --- | --- | --- |
+| `media.preroll` | `on` | `on` runs the storage pre-roll automatically (Core start, card insert, once after a format); `off` leaves only the manual `storage_preroll`. Env `APERTAR_STORAGE_PREROLL=0` or `=1` beats the file. Read at each request; `set_storage_preroll` edits this key | `StoragePreroll.hpp` `parsePrerollConf` |
+| `media.preroll_seconds` | `2` | Length of the pre-roll take, whole seconds 1 to 10 (a bad value is an error with its line number in the Config pane, Core uses 2) | same; validator in `HardwareConfigText.hpp` |
+
+State keys: `storage_preroll_active`, `storage_preroll_last` (e.g. `ok: 2.0 s at 60 fps (measured 60.0), 115 frames, 0.7 GB written and deleted`), `storage_preroll_fps` (the fps while it runs, else 0), `storage_preroll_auto` (the effective automatic setting), `storage_preroll_auto_env` (true when the env variable decides it). Commands `storage_preroll`, `set_storage_preroll`. Other drop-frames state added 2026-11-01: `ladder_override`, `fps_speed_ramp_after` (also the settings-file key and the preset key `cameraFpsSpeedRampAfter`). Measured: 4K 12-bit lossless pre-roll, 60.0 fps (hardware-log 2026-11-01).
+
+Clip names (drop-frames `014a2bf`): the template is not in a file you edit by hand; it lives in the camera settings and is set with `set_clip_name_template` (the WebUI and touch UI Clip names cards), previewed with `preview_clip_name`. State `clip_name_template` and `clip_name_example`. Default `{format}_{date}_{clip}` (names unchanged). Rules and tokens: `working/drop-frames/README.md` "Added 2026-11-01 (later)". Safety-stop state added with `c5db8b2`: `buffer_flush_discarded`.
+
+Preview LUT folders (Core, `lutPreviewSearchDirectories`): `/home/pi/LUTs`, `<media root>/LUTs`, `/media/RAW/LUTs`, `/media/*/LUTs`; every `*.cube` is offered. Pair the LUT with the preview colour profile (`working/drop-frames/README.md` "Preview LUTs").
+
+The C++ Core never reads `[cfexpress_hat]` or `storage.mount_path` / `storage.pcie_controller`; it does read the `storage.buffer*` keys (drop-frames branch; a bad value is an error with its line number in the Config pane and Core uses the default). Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
+
+#### `[camera]` (Core, `cinemate-port` `8175273`, 2026-10-28)
 
 | Key | Default | Ref |
 | --- | --- | --- |
@@ -349,10 +367,26 @@ UI-only keys: `horizontalLevelEnabled`, `horizontalLevelColor`, `monitoringOrder
 | --- | --- | --- |
 | Presets `*.apertar-preset.json` | UI: `~/.local/share/Apertar-UI/presets`, legacy `~/.config/CinePi/UI/presets`. Core: first existing of `$XDG_DATA_HOME/{Apertar-UI,ApertarUI}/presets`, `~/.local/share/{Apertar-UI,ApertarUI}/presets`, `~/.config/CinePi/UI/presets` | `Apertar-UI/src/SettingsBridge.cpp:1937-1958`; `App:5216-5262` |
 | `~/.config/CinePi/DisplayCalibration.conf` | `[builtin]`/`[hdmi]`: `enabled`, `red/green/blue`, `gamma`, `black`, `white` | `Apertar-UI/src/DisplayCalibration.cpp:49`, `:115-154` |
-| `/boot/firmware/config.txt` | `# BEGIN/END APERTAR FAN MODE` block (Silent / Full Blast; Auto removes it) | `App:3042-3178`; `Apertar-UI/src/SystemActionBridge.cpp:23-92` |
+| `/boot/firmware/config.txt` | `# BEGIN/END APERTAR FAN MODE` block (Silent / Full Blast; Auto removes it). On `drop-frames` the Boot Config card edits other lines too, see §7.1 | `App:3042-3178`; `Apertar-UI/src/SystemActionBridge.cpp:23-92` |
 | Tuning files | Default `/home/pi/Tuning-Files/defaults-pisp` (Pi 5), then `/home/pi/Tuning-Files/defaults`, `/usr/{local/,}share/libcamera/ipa/rpi/pisp` | `Apertar-Core/src/camera/DefaultTuningSelection.hpp:56-78` |
 | LUTs (`.cube`) | `/home/pi/LUTs`, `$APERTAR_MEDIA_ROOT/LUTs`, `/media/RAW/LUTs`, `/media/*/LUTs` | `Apertar-UI/src/SettingsBridge.cpp:140-162`; `App:5571-5600` |
 | `/home/pi/.apertar-tuning` | ProRes bench overrides; the environment wins | `Apertar-Core/src/prores/ProresEncoder.cpp:770-800` |
+
+### 7.1 Boot Config card (`drop-frames`)
+
+Before this, Apertar edited config.txt only for the fan block. Branch `drop-frames` (`4581a69`) adds a port of Cinemate's config.txt management. **Status: partly confirmed on the Pi (2026-11-01):** `get_boot_config` matched the file, writes go through the helper; the I²S round trip and Edit file are still to check. PR #1 merged into `drop-frames` (`4581a69`).
+
+- **Engine:** `src/hardware/BootConfigText.hpp`, pure text in, text out. Edits in place: comments/uncomments the existing line or changes its parameters; adds a line (next to lines of its kind) only when none exists. Every other byte is kept, the fan block included. It re-parses its result and refuses one that does not match the request, naming the line that still decides it. Test: `tools/boot_config_test.cpp` (63 checks; fixture is the dev Pi's real config.txt).
+- **Lines edited:** sensor per connector `dtoverlay=<sensor>[,cam0][,mono][,link-frequency=<Hz>]` in `[pi5]` (`[pi4]` on a Pi 4; cam1 is the overlay default, so no port word); `dtoverlay=rp1-clk-333mhz` in `[all]`; `dtparam=i2c_arm/i2s/spi=on` in the board section; `dtparam=audio=on` in `[all]`; display: the DPI list at the end (HDMI only / Waveshare 4" / Hyperpixel 4").
+- **Root helper:** `scripts/apertar-boot-config`, installed to `/usr/local/libexec/apertar-boot-config`, allowed by `config/apertar-boot-config.sudoers` (`/etc/sudoers.d/apertar-boot-config`). No arguments, new text on stdin. Keeps `config.txt.apertar.bak`, then syncs and renames. Test: `tools/boot_config_helper_test.sh` (10 checks).
+- **Core:** `writeBootConfigText()` (`App:3472`) is the one writer: direct write when allowed, else the helper, else `sudo -n install`. Fan mode (`applyFanMode`, `App:3559`) uses it too; both hold `bootConfigMutex()` (`App:3452`). Routes `GET/POST /api/boot-config` (`App:9068`, `:9077`) and `POST /api/boot-config/parse` (`App:9107`); socket commands `get_boot_config`, `set_boot_config` (`App:14043`, `:14046`). A POST takes `dry_run`, checks the `X-Apertar-Revision` header (409 when stale) and needs `confirm_display` for a display change.
+- **WebUI:** card in Settings → System, between Thermal and Power Actions. Save & Reboot lists the changed lines first; a display change needs a confirm tick. Also View file, Download, Upload.
+- **Edit file** (`3b87d99`, `2a4266e`): the whole file as text; `set_boot_config` takes `text` and the card's choices go on top, reviewed against the file on disk (removed lines too, `lineChanges`). `state.managed` lists every line a control or the fan mode may change, commented ones included; the editor shows those line numbers in italics with a legend, and says own lines go at the end of the file (`[all]`) or in the board section.
+- **Found on the Pi (confirmed 2026-11-01):** switching Camera 0 IMX585 colour → mono → colour dropped `link-frequency=891000000` (two saves, journal `via helper`). Fixed in `b3e7f52`. The helper write path itself worked.
+- **Rollback:** copy `/boot/firmware/config.txt.apertar.bak` back over config.txt (with a card reader if the Pi does not boot).
+- **Second writer left:** `Apertar-UI/src/SystemActionBridge.cpp` still writes the fan block itself, outside Core's lock. Being moved to Core's `set_fan_mode` (in progress).
+
+All refs `drop-frames 4581a69`, `Apertar-Core-drop/src/ApertarCoreApp.cpp`.
 
 Runtime markers (`/run/apertar-ui/{core-start-ready,main-ui-ready}`, `/run/apertar-cfe/ready`, `/run/apertar-standby-*`, `/run/apertar-network/*`) are covered in [core.md](core.md#24-the-startup-gate).
 
@@ -378,6 +412,13 @@ How the services set them (Pi, 2026-10-25): `apertar-core.service` runs `/home/p
 | `APERTAR_H264_*` | `ENCODER`, `PRESET`, `TUNE`, `CRF`, `QP`, `BITRATE`, `MAXRATE`, `BUFSIZE`, `X264_PARAMS`, `BACKEND` (`pipe`), `THREADS`, `PIPE_BYTES`, `QUEUE_FRAMES`, `SIZE`, `CAMERA_BUFFERS`, `KEEP_RAW_STREAM`, `SINGLE_STREAM` | `CC:1127`, `:2779`, `:2843-2848`, `:3981`, `:4333-4467` |
 | `APERTAR_PRORES_*` | `CAMERA_BUFFERS`, `CACHED_DMABUF`, `THREADS`, `CSC_THREADS`, `ISP_FORMAT`, `ODIRECT`, `QP_PRED`, `TRANSFER`, `WRITEBACK`, `WRITER_THREAD`, `WRITER_QUEUE`, `WRITER_QUEUE_MB`, `WRITER_SLOW_MS` | `CC:1133`, `:6387`; `Apertar-Core/src/prores/ProresEncoder.cpp:827-1375`; `ProresRecorder.cpp:61` |
 | `APERTAR_CDNG_*` | `QUEUE_FRAMES`, `WORKERS`, `WORKER_NICE`, `TILE_ROWS`, `PROFILE_DETAIL` | `CC:3330-3359`; `Apertar-Core/src/cdng/CdngEncoder.cpp:55`, `:72` |
+| `APERTAR_CDNG_BUFFER` | Drop-frames: `frames` (default, the original 12-frame queue) or `ram` (byte-budget queue); overrides `[storage] buffer` | `CC` `planQueueBuffer` |
+| `APERTAR_STORAGE_PREROLL` | Drop-frames: `0` or `1` decides the automatic storage pre-roll and beats `[media] preroll` (anything else counts as unset); state `storage_preroll_auto_env` says so | `StoragePreroll.hpp` |
+| `APERTAR_LOSSLESS_FPS_LIMIT` | Drop-frames: a number > 0 caps the IMX585 lossless-JPEG cDNG fps at `min(n, mode max)`; unset = the mode's own maximum (60 in 4K SDR 12-bit); `30` restores the old cap | `FpsCeiling.hpp` `losslessImx585Fps` |
+| `APERTAR_CDNG_QUEUE_RAM_FRACTION`, `_FLOOR_MB`, `_MAX_FRACTION` | Drop-frames: the ram budget (0.6, 512, 0.5); override the `[storage] buffer_ram_*` keys; ram refuses itself when the budget is smaller than the frames-mode queue | `BufferBudget.hpp` |
+| `APERTAR_CDNG_BUFFER_STOP_PERCENT` | Drop-frames: safety-stop limit (0 or 50 to 99); overrides `[storage] buffer_stop_percent` | `BufferBudget.hpp` |
+| `APERTAR_FPS_LIMIT` | Drop-frames: `table` makes Core use `min(hard-coded table, probed sensor fps)` as before; default: the startup probe's value is the sensor maximum (the table is only the fallback) | `CC` `fpsLimitTableOnly`, `FpsCeiling.hpp` |
+| `APERTAR_MEDIA_TRIM` | Drop-frames: `0` turns Core's automatic trim of the recording drive off (default on; needs `/usr/local/libexec/apertar-media-trim` and its sudoers rule) | `App` `trimMedia`, `runMediaTrim` |
 | `APERTAR_LOSSYDNG_*` | `WORKERS`, `WRITER_BYTES`, `ASYNCWRITE` (legacy `QRAW_LOSSYDNG_ASYNCWRITE`) | `CC:3345`; `Apertar-Core/src/lossydng/LossyDngEncoder.cpp:100`, `:325-327` |
 | `APERTAR_RAW_CACHED_DMABUF` | Cached DMA heap for PiSP-compressed RAW (default on) | `CC:6321` |
 | `APERTAR_MLV_ENABLE_NEON_PACKER`, `APERTAR_MLV_HAS_NEON` | MLV packer | `Apertar-Core/src/mlv/MlvEncoder.cpp:23-25` |

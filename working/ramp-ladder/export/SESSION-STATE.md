@@ -1,6 +1,6 @@
 # Cloud session state (2026-10-27): checkpoint, not part of the KB export
 
-This branch (`cloud/speed-ramp-2026-10-27`, local, never pushed) is GitHub `main` `d65b2ef` plus the export
+This branch (`cloud/speed-ramp-2026-10-27`, local, never pushed) is GitHub `main` `7886e5b` plus the export
 `apertar-kb-speed-ramp-2026-10-27.zip`, committed as work goes so nothing is lost if the session runs out.
 
 - `working/ramp-ladder/export/`: the zip's root files (`INSTALL.md`, `HANDOFF-PROMPT.md`) and this note.

@@ -2,6 +2,7 @@
 
 LLM navigation map for the three giant files plus the small dirs. Prose about *how* things work lives in the KB: [architecture/core.md](../architecture/core.md) (process, IPC, events, recording), [config.md](../architecture/config.md) (config keys, template drift), [build.md](../architecture/build.md). This file only says **where**.
 
+- **Not in the tables below (`drop-frames 4581a69` only, `src/ApertarCoreApp.cpp`):** Boot Config. `bootConfigMutex` :3452, `writeBootConfigText` :3472, `bootConfigGet` :3705, `bootConfigSet` :3714; routes `GET/POST /api/boot-config` :9068/:9077, `POST /api/boot-config/parse` :9107; socket commands `get_boot_config` :14043, `set_boot_config` :14046; `applyFanMode` moved to :3559. Engine `src/hardware/BootConfigText.hpp`. See [config.md §7.1](../architecture/config.md#71-boot-config-card-drop-frames). Unconfirmed on the Pi.
 - Refs: `upstream-1.6.0` (fork HEAD `ed400ba`, build-only commits on top; `src/` and `include/` identical to the tag). Every line number below came from `grep -n` on that tree, 2026-10-25.
 - Paths are repo-relative to `Apertar-Core/`. `App` = `src/ApertarCoreApp.cpp`, `CC` = `src/camera/CameraController.cpp`, `WCP` = `src/web/WebControlPage.cpp`.
 - **Use the grep anchor, not the line number**, once anything has been edited. Each anchor is a literal string that occurs exactly once in its file (checked with `grep -cF`).
@@ -285,6 +286,27 @@ Commands handled by Core but **never sent by the WebUI**: `ping`, `help`, `get_s
 
 ---
 
+### 1.4 drop-frames additions (branch `drop-frames` head `014a2bf`, base `d44b177`; the line numbers above are `upstream-1.6.0`, so these have none: `git grep -nF '<name>' drop-frames`)
+
+The table header says "Find by", not "Anchor", so `check-anchors.py` does not check these (it reads the checked-out branch, which is not `drop-frames`).
+
+| Find by | Where | What |
+| --- | --- | --- |
+| `StoragePreroll.hpp` | `src/util/StoragePreroll.hpp` | Host-testable part of the storage pre-roll: `[media]` parse and validation (`parsePrerollConf`, `prerollConfProblem`), `automaticEnabled` (env `APERTAR_STORAGE_PREROLL` beats the file), trigger names, the atomics and short strings behind `storage_preroll_*` state; test `tools/storage_preroll_test.cpp` |
+| `startStoragePreroll` / `finishStoragePreroll` | `CameraController` | Start: take a snapshot of the settings, set the pre-roll fps without commit (not saved, no settings event), start a take that ignores the safety stop and drop warnings; finish: stop, measure, restore settings from the copy, delete the clip, return `StoragePrerollResult` |
+| `runStoragePreroll` / `runStoragePrerollOnce` | `ApertarCoreApp` | The worker thread (`storagePrerollThread_`): waits for a trigger (Core start, card insert, format, manual), refuses while a take, photo, timelapse, format/eject/mount, speed test or standby is running, and publishes `storage_preroll_last` |
+| `prerollMaximumFps` | `CameraController.cpp` anonymous namespace | The target fps: probe (else table) for the running mode, with only the named back-end cap |
+| `setPrerollFps` / `waitForFramePeriod` | `CameraSession` (inside `CameraController.cpp`) | Pins `FrameDurationLimits {period, period}` on every request and waits (1 s) for the sensor's new period; fps measured from sensor timestamps. A controls-only change stayed at about 24 fps (hardware-log 2026-11-01) |
+| `ladderOverride_` | `CameraController` | An explicit `set_clear_hdr` applies while the Mode Ladder is on; cleared on fps / resolution / record format / bit depth / Ramp-ready / ladder changes; state `ladder_override` |
+| `restoreFpsAfterRampLocked` | `CameraController` | After a speed-ramp take: the `stay` branch keeps the end fps when `ladderRewriteLocked` reports no rung change and `sanitizeSettingsForSensor` leaves it; else (or `return`) restores `rampTakeBaseFps_` |
+| `losslessImx585Fps` | `src/camera/FpsCeiling.hpp` | Lossless JPEG ceiling = the mode's maximum, or `min(APERTAR_LOSSLESS_FPS_LIMIT, mode max)` |
+| `emitLogAppliedIfChangedLocked` | `CameraController` | Re-sends the settings event when only `cdng_log_applied` moved |
+| `planCdngLog` | `CameraController.cpp` | Maps the raw stream for Log: unpacked 2-byte only; `pisp_comp1` prints "cannot be mapped on the copy worker, recording linear" |
+| `estimatedRawBytesPerSecond` | `ApertarCoreApp.cpp` | Minutes-left estimate; counts Log's stored bits only when `cdng_log_applied` (the touch UI's twin is `estimatedFrameSizeMB` in `CameraPage.qml`) |
+| `abortSafetyStopFlushForRecord` / `abortSafetyFlush` | `ApertarCoreApp.cpp` anonymous namespace / queue class in `CameraController.cpp`; `bufferbudget::abortSafetyStopFlush` in `BufferBudget.hpp` | Record pressed during the safety-stop drain: clears the queue lock-free, counts `discarded_on_stop` and `buffer_flush_discarded` (called before any lock the drain holds) |
+| `ClipName.hpp` / `clipNameValues` | `src/util/ClipName.hpp`; `CameraController.cpp` | Clip-name template: tokens, rules, lowest free clip number; `set_clip_name_template` / `preview_clip_name` in `handleCommand`; host test `tools/clip_name_test.cpp` |
+| `lutPreviewSearchDirectories` | `ApertarCoreApp.cpp` | The folders searched for preview `.cube` LUTs |
+
 ## 2. Dispatch tables
 
 ### 2.1 Socket / `/api/command` commands (`App` `handleCommand`, 110 names)
@@ -313,6 +335,12 @@ Dispatch idiom: `    if (command.name == "<name>") {` at 4-space indent, plus `h
 | `set_resolution` | 9314 | camera_.setResolution | camera (SB) | y | y |
 | `set_record_format` | 9326 | camera_.setRecordingFormat | camera (SB) | y | y |
 | `set_cdng_compression` | 9340 | camera_.setCdngCompression | camera (SB) | y | y |
+| `set_cdng_log` | (drop-frames, grep it) | camera_.setCdngLog | camera (SB) | y | y |
+| `set_buffer_mode` | (drop-frames) | `hardware::configStore().edit` of `[storage] buffer=` | conf store (revision, history, backup) | y | y |
+| `storage_preroll` | (drop-frames) | `ApertarCoreApp::runStoragePreroll` (manual trigger) | worker thread, no setting | y | y |
+| `set_storage_preroll` | (drop-frames) | `hardware::configStore().edit` of `[media] preroll=` | conf store | y | y |
+| `set_fps_speed_ramp` (`after=stay\|return`) | (drop-frames adds `after`) | camera_.setFpsSpeedRamp | camera (SB), settings key `fps_speed_ramp_after` | WebUI only | y |
+| `set_frame_buffer_bar_enabled` | (drop-frames) | `handleUiToggle` (UI.conf `frameBufferBarEnabled`) | UI toggle | y | y |
 | `set_lossy_dng_ratio` | 9351 | camera_.setLossyDngRatio | camera (SB) | y | y |
 | `set_cdng_preview_color_profile` | 9360 | camera_.setCdngPreviewColorProfile | camera (SB) | y | y |
 | `set_prores_color_profile` | 9369 | camera_.setProresColorProfile | camera (SB) | y | y |
@@ -417,7 +445,11 @@ Idiom: `if (request.method == "<M>" && request.path == "<p>")` (exact) or `reque
 | `GET /preview.mjpeg` | 7109 | MJPEG stream (`streamMjpeg`); 503 without JPEG build |
 | `GET /icons/<name>` (prefix) | 7124 | PNG from `webIconsDirectory()` |
 | `GET /api/state` | 7154 | `buildWebStateJson` |
+| `GET /api/buffer` | (drop-frames) | the write buffer's live level, lock-free (`buffer_used/capacity/fill/mode/unit`, `buffer_setting`, `buffer_note`, `buffer_safety_stop`, `buffer_stop_percent`, `recording`); polled at 4 Hz by the WebUI |
 | `GET /api/media` | 7161 | `buildMediaLibraryJson` |
+| `GET /api/media/clip?kind=folder&id=` | (T47, after 2026-10-29 line numbers shift ~+2000: grep the path) | `clipInfoJson` over `clipFactsCache().get`; hold: cached facts or 409 |
+| `GET /api/media/frame?kind=&id=&n=&w=&v=` | (T48) | `playback::frameJpeg`; headers `X-Frame-Number/Index/Count`, `X-Histogram`, `X-Frame-Source`, `X-Decode-Ms`; 409 hold, 503 busy |
+| `GET /api/media/file?kind=&id=&name=<clip>.wav` | (T51) | `streamFileRangeToClient`; 200/206/416 with Range, 409 in a hold |
 | `GET /api/config` | 7168 | `buildHardwareConfigFileJson` |
 | `POST /api/config` | 7175 | `extractJsonStringField(text)` → `saveHardwareConfigFile` |
 | `GET /api/media/download?kind=&id=` | 7197 | `streamFileToClient` / zip of a folder |
@@ -438,6 +470,8 @@ Idiom: `if (request.method == "<M>" && request.path == "<p>")` (exact) or `reque
 | File | Lines | One line | Entry points |
 | --- | --- | --- | --- |
 | `src/main.cpp` | 141 | CLI flags, signal self-pipe, start/wait/stop | `main` |
+| `src/playback/{PlaybackHold,ClipFrames,DngTags,ClipProbe,DngFrameReader,RawRender,DecodeSlots}.hpp`, `PlaybackFrames.{hpp,cpp}` | (T47, T48; added 2026-10-29) | WebUI playback: the hold rule and yield window, frame lists and holes, DNG tags, per-clip facts and the cache, the sample reader, the touch UI's look, decode slots, one frame as a JPEG | `playbackHoldFor`, `PlaybackYield`, `listFrames`, `readDngInfo`, `probeClip`, `ClipFactsCache`, `frameJpeg` |
+| `third_party/liblj92/` | 3 files | the touch UI's lossless-JPEG decoder, byte-identical (`lj92.c` is built as C: CMake `LANGUAGES C CXX`) | `lj92_open`, `lj92_decode` |
 | `src/ApertarCoreApp.hpp` | 179 | App class, options, owned members (110–124) | `start`, `stop`, `wait`, `requestShutdown` |
 | `src/cdng/CdngEncoder.{hpp,cpp}` | 203 / 1901 | CinemaDNG writer: uncompressed, packed CSI-2, PiSP, LJ92 tiles | `CdngEncoder::writeDngFile`, `prepareRawLayout`, `writeRawPayload`, `losslessTileRows`; `Csi2RawConverter::unpack10Row/unpack12Row` |
 | `src/cdng/LosslessJpegEncoder.{hpp,cpp}` | 46 / 410 | LJ92 (SOF3) encoder | `encode`, `begin`, `appendRow`, `finish` |
@@ -535,7 +569,7 @@ Each row is one fact kept by hand in several places. Change one, change all. "Dr
 | Persisted camera settings keys (33) | write `writeCaptureSettings` `CC:742-779`; read `loadPersistedCaptureSettings` `CC:616-741` | Read also accepts legacy `wb_locked` |
 | `CaptureSettings` struct ↔ clamp ↔ sanitize | `Types.hpp:124-162`; `clampCaptureSettings` `CC:534`; `sanitizeSettingsForSensor` `CC:2707`; `supportedRecordingSettings` `RecordingCapabilities.hpp:79` | — |
 | UI.conf `[General]` keys | defaults `SharedUiSettingsSnapshot` `App:1581-1639`; parse `readSharedUiSettings` `App:1641-1813`; writers = each `updateSharedUiGeneralSettings` call in `handleCommand`; web state `"ui":{` `App:7965-8021`; `Apertar-UI/src/SettingsBridge.cpp` (e.g. `focusPeakingEnabled` `:327`, `:522`) | — |
-| Preset keys (`camera*` + UI.conf keys + `*Order`). `cinemate-port` `71487c5` adds `cameraClearHdr`, `cameraHdrThresholdHigh/Low`, `cameraHdrBlend`, `cameraHdrGainAdder`, `cameraFpsPhaseLock`, `cameraTimecodeMode`, `cameraFpsSpeedRamp`, `cameraFpsSpeedRampShutter`: Core reads and writes them, the JS allow-list does **not yet** (T32 WebUI step) | writer `buildCurrentPresetPayload` `App:6522-6697`; reader `apply_preset` `App:10230-10527`; JS allow-list `buildPresetApplyPayload` `WCP:10526+`; the `*Order` key list twice: `App:6691`, `App:10513` | **Drift**: JS allow-list lacks `cameraControlsMode`, `cameraControlsOpacity`, `cameraExposureCompensation`, `cameraExposureMetering`, `dateTimeOverlayEnabled`, `photoFormat`, `photoTimelapse`. A preset loaded from the WebUI library silently drops them; Core would accept them |
+| Preset keys (`camera*` + UI.conf keys + `*Order`). `cinemate-port` `8e8ea2e` adds `cameraClearHdr`, `cameraHdrThresholdHigh/Low`, `cameraHdrBlend`, `cameraHdrGainAdder`, `cameraFpsPhaseLock`, `cameraTimecodeMode`, `cameraFpsSpeedRamp`, `cameraFpsSpeedRampShutter`: Core reads and writes them, the JS allow-list does **not yet** (T32 WebUI step) | writer `buildCurrentPresetPayload` `App:6522-6697`; reader `apply_preset` `App:10230-10527`; JS allow-list `buildPresetApplyPayload` `WCP:10526+`; the `*Order` key list twice: `App:6691`, `App:10513` | **Drift**: JS allow-list lacks `cameraControlsMode`, `cameraControlsOpacity`, `cameraExposureCompensation`, `cameraExposureMetering`, `dateTimeOverlayEnabled`, `photoFormat`, `photoTimelapse`. A preset loaded from the WebUI library silently drops them; Core would accept them |
 | Favourites candidate ids | `favoriteCandidateOrder` `App:727` (filter `isFavoriteCandidateId` `App:765`, applied in `set_favorites_order` `App:10224` and when reading UI.conf `App:1808`; presets pass the raw string); JS `favoriteCandidateOrder` `WCP:4091` + `favoriteItemMeta` `WCP:4128`; QML `Apertar-UI/qml/SettingsPage.qml:838` | **Drift**: all three differ. WebUI ids `smpteBars`, `soundRecorder`, `gyroData`, `autofocus`, `cameraControlsOpacity` (and QML `horizontalLevel`, `tuningFile`, `formatMedia`, `hotspot`) are not in Core's list, so Core **drops them** on `set_favorites_order` and from the favourites it reads back out of UI.conf (`App:1808`) |
 | Battery types / capacities / voltages | `normalizeBatteryTypeValue` `App:571`, `batteryCapacityFitsType` `App:618`, `batteryDefaultFullVoltage` `App:593`, `defaultBatteryCapacityForType` `App:607`; JS `batteryTypeOptions` `WCP:4089`, `batteryCapacityOptionsForType` `WCP:5978`, `defaultBatteryFullVoltageForType` `WCP:5998` | Values agree today |
 | Assist option labels (guides, centre marker, anamorphic, peaking colour, ext. monitor, false colour, sleep) | normalisers `App:639-726`; JS option arrays `WCP:4076-4090`; JS converters `WCP:4516-4590` | — |
@@ -548,12 +582,12 @@ Each row is one fact kept by hand in several places. Change one, change all. "Dr
 > `maximumSupportedFpsForSnapshot`, and the touch UI `availableFpsOptions` / `maximumSupportedFpsForResolution`
 > (`Apertar-UI/qml/CameraPage.qml`). Tonight 33/50 fps was blocked by four separate 30-fps caps. The IMX585 list is now
 > 25/33/50 everywhere (**temp**). Since 2026-10-28 those `temp:` commits live on the Pi-local branch `cinemate-port-temp`;
-> `cinemate-port` is back at `87011d4` plus the speed-ramp/Clear HDR commits (core.md §11.6).
+> `cinemate-port` is back at `bda2066` plus the speed-ramp/Clear HDR commits (core.md §11.6).
 
 | Truth | Copies |
 | --- | --- |
 | Max fps per sensor and size | `CC:2493-2683` (`imx477MaximumSupportedFpsForResolution`, `maximumSupportedFpsForResolution`); `maximumPcfFpsForSettings` `App:1076`; JS `imx477MaximumSupportedFps` `WCP:4824`, `maximumSupportedFpsForSnapshot` `WCP:4928` (IMX577 101.68 / 62.81 / 45.19 appear in all three) |
-| Clear HDR ISO cap and auto-ISO/WB hold (`cinemate-port` `a89a5df`) | Core `enforceClearHdrExposureRules` in `sanitizeSettingsForSensor` (CC, anchor `void enforceClearHdrExposureRules`), limits from `[camera] clear_hdr_iso_max_12bit` (720) / `_16bit` (1585) in `apertar-hardware.conf`; Core template `defaultHardwareConfigTemplate` (App). Still to copy: the UI first-run template (`DisplayConfigBridge.cpp` `ensureDefaultHardwareConfigFile`), WebUI and touch-UI ISO lists (T32) |
+| Clear HDR ISO cap and auto-ISO/WB hold (`cinemate-port` `8175273`) | Core `enforceClearHdrExposureRules` in `sanitizeSettingsForSensor` (CC, anchor `void enforceClearHdrExposureRules`), limits from `[camera] clear_hdr_iso_max_12bit` (720) / `_16bit` (1585) in `apertar-hardware.conf`; Core template `defaultHardwareConfigTemplate` (App). Still to copy: the UI first-run template (`DisplayConfigBridge.cpp` `ensureDefaultHardwareConfigFile`), WebUI and touch-UI ISO lists (T32) |
 | Lossless 4K/2K caps | `CC:2424-2491`; JS `isLosslessFourKSnapshot` … `isLosslessImx585Snapshot` `WCP:4885-4927` |
 | Resolution / crop menus per sensor | `CC:355-533`, `normalizedResolutionForSensor` `CC:2372`; `availablePcfResolutionOptions` `App:1182`; JS `WCP:5029-5510` (`sensorResolutionOptions` 5112, `imx585CropRatioOptionsForSnapshot` 5249, `resolutionCommandPayload` 5452) |
 | H.264 sizes | `isSupportedH264Resolution` `CC:252`, `h264CaptureResolutionForSensor` `CC:1890`; `recordingCapabilitiesJson` `h264_max_*` `RecordingCapabilities.hpp:59-61`; JS `h264ResolutionOptions` `WCP:4054-4058`, `forcedH264CaptureResolutionForSnapshot` `WCP:5194` |

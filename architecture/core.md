@@ -552,7 +552,7 @@ committed with a `temp:` subject and wait for Patrik's review (list in `working/
 - **Pulled latch:** once the slot read empty for a mounted NVMe medium, that mount stays `removed` until
   `/proc/self/mountinfo` shows a new mount id (a Pi 5 cannot use a re-inserted NVMe without PCIe remove + rescan).
 - Record gate `mediaGateError` refuses on `removed`/`error`; a loss during a take calls `flagMediaFault` +
-  `checkRecordingFailure`. State fields: `media_state`, `media_alive` (also in the socket's `get_state` since `227ea7b`),
+  `checkRecordingFailure`. State fields: `media_state`, `media_alive` (also in the socket's `get_state` since `70e8376`),
   `media_device`, `media_fstype`, `recording_fault`; `capture.storage` reads "Media Removed"/"Media Error" (T20 Step 4).
 - The automounter (UI repo) now lazy-unmounts and removes the PCIe device on a pull (see ui.md), so in practice Core sees
   `state=none` 0.5 s after a pull and a re-insert remounts in 2-8 s.
@@ -576,12 +576,12 @@ it stalled the writers (782 queue drops, C0005). Result: a pull keeps all but th
 
 `publishEvent` folds events raised during a command into that command's reply unless they are on its broadcast list.
 `recording` was not on it (upstream issue #43), so the touch UI heard takes started from the socket/WebUI/buttons only on
-its 30 s poll; fixed in `a070e1b`. Add an event to that list whenever another client must react at once.
+its 30 s poll; fixed in `086443c`. Add an event to that list whenever another client must react at once.
 
-### 11.4 Sensor modes, Clear HDR and frame rates (**temp** `13a350f`, `315e390`, `3c2f2c5`, `eb9cc39`)
+### 11.4 Sensor modes, Clear HDR and frame rates (**temp** `d084ed4`, `0d93f11`, `0bac3db`, `0296ed1`)
 
 > Since 2026-10-28 these `temp:` commits are on the Pi-local branch `cinemate-port-temp`, **not** on `cinemate-port`
-> (reset to `87011d4`). Their `setFps` Clear HDR 16 → SDR 12 switch reconfigures without a take check; it must refuse or cap
+> (reset to `bda2066`). Their `setFps` Clear HDR 16 → SDR 12 switch reconfigures without a take check; it must refuse or cap
 > in a take before it comes back (T31 ramps would otherwise reconfigure mid-take).
 
 - Binning per mode = crop width / output width (`binningFromProperties`; source `driver`/`inferred`/`unknown`), in
@@ -607,19 +607,19 @@ its 30 s poll; fixed in `a070e1b`. Add an event to that list whenever another cl
 
 ### 11.6 Speed ramping, Clear HDR exposure rules, presets (2026-10-28, Pi `cinemate-port`, not on GitHub)
 
-`47d44ff`..`bcad104` on `87011d4`; tests in `lessons/hardware-log.md` 2026-10-28.
-- **Speed ramping** (`47d44ff`, T31 without its `ramp_fps` stepper): `set_fps_speed_ramp enabled=true|false
+`faa2958`..`e5757d7` on `bda2066`; tests in `lessons/hardware-log.md` 2026-10-28.
+- **Speed ramping** (`faa2958`, T31 without its `ramp_fps` stepper): `set_fps_speed_ramp enabled=true|false
   [shutter=angle|exposure]`; settings/state `fps_speed_ramp`, `fps_speed_ramp_keep_exposure` (per format profile, like every
   capture setting). With it on, any `set_fps` (WebUI, touch UI, pot, buttons) changes the rate inside a cDNG/MLV take; H.264,
   ProRes and stills refuse. Count-based frame numbers, one `FrameRate`/timecode base, real-time WAV, grace N+6 frames,
   `fps-ramp.txt`, restore at stop. Measured `lag_frames=7` (1080p uncompressed, NVMe exFAT).
-- **25 fps ceiling** for 4K Clear HDR 16-bit (`5aee785`) in the table, the PCF/button list and the WebUI ceiling.
-- **Clear HDR exposure rules** (`a89a5df`, one function in the sanitiser): auto ISO/WB off in Clear HDR, held at the measured
+- **25 fps ceiling** for 4K Clear HDR 16-bit (`b5847c7`) in the table, the PCF/button list and the WebUI ceiling.
+- **Clear HDR exposure rules** (`8175273`, one function in the sanitiser): auto ISO/WB off in Clear HDR, held at the measured
   values, `iso_auto_after_clear_hdr` / `wb_auto_after_clear_hdr` give auto back in SDR; `set_iso_auto` / `set_wb_auto` refused
   there with a message; a manual value clears the flag. ISO cap per mode from `[camera]` (`config.md`): 12-bit 720 (gain code
   57, the sensor's combine window), 16-bit 1585 (code 80, the driver's cap). Gain code = 20·log10(ISO/100) / 0.3 dB.
-- **Auto ISO lock** (`fafc477`, `bcad104`): `iso_actual` = gain in use × 100 (like `wb_actual_kelvin`); `set_iso_auto
+- **Auto ISO lock** (`646a194`, `e5757d7`): `iso_actual` = gain in use × 100 (like `wb_actual_kelvin`); `set_iso_auto
   enabled=false` locks there, rounded up so the sensor keeps its gain code.
-- **Presets** (`71487c5`) carry Clear HDR + knobs, phase lock, timecode mode, speed ramp + policy; knobs-only presets push to
+- **Presets** (`8e8ea2e`) carry Clear HDR + knobs, phase lock, timecode mode, speed ramp + policy; knobs-only presets push to
   the sensor. The WebUI preset allow-list does not have the new keys yet.
 

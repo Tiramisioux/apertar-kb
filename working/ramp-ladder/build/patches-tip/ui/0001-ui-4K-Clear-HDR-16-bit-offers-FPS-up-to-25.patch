@@ -13,7 +13,7 @@ keep 30.
 
 Tested: not built here (Qt is not on the host); one expression changed.
 
-Rebased onto d8098d0 (2026-10-28): the 25 sits on top of Patrik's expression
+Rebased onto 5aab7e2 (2026-10-28): the 25 sits on top of Patrik's expression
 (Clear HDR 30, SDR 60 per the sensor probe), so 12-bit Clear HDR keeps 30 and
 SDR 4K keeps 60. His availableFpsOptions() still lifts 16-bit Clear HDR to 50
 while Core switches to 12-bit SDR above 25, so the list there stays

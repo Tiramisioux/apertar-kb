@@ -9,7 +9,7 @@ Trees (every `path:line` below is at these commits unless marked):
 
 | Short name | File | Tree, commit |
 | --- | --- | --- |
-| `CC`, `Hdr` | `src/camera/CameraController.cpp`, `.hpp` | Core `scratchpad/tip-core` `119d0bb` = GitHub `cinemate-port` `6ae70b5` + T31 `5f38585` + T32 `cba1963`, `119d0bb` |
+| `CC`, `Hdr` | `src/camera/CameraController.cpp`, `.hpp` | Core `scratchpad/tip-core` `119d0bb` = GitHub `cinemate-port` `3c4f07d` + T31 `5f38585` + T32 `cba1963`, `119d0bb` |
 | `App`, `Web`, `Types`, `CP`, `GAI`, `RC`, `SF` | `src/ApertarCoreApp.cpp`, `src/web/WebControlPage.cpp`, `include/apertar/core/Types.hpp`, `src/ipc/ControlProtocol.cpp`, `src/hardware/GroveAnalogInput.cpp`, `include/apertar/core/RecordingCapabilities.hpp`, `src/util/SettingsFile.hpp` | same |
 | `CB`, `CBh`, `QML`, `SP` | `src/ApertarControlBridge.cpp`, `.hpp`, `qml/CameraPage.qml`, `qml/SettingsPage.qml` | Apertar-UI `scratchpad/verify2/home/ApertarUI` `34499f1` = `dc471c1` + the two T32 UI patches |
 | `HL`, `TP`, `tools/` | `lessons/hardware-log.md`, `tutorials/tutorial.py`, `working/tools/` | KB `scratchpad/verify3` `8b655da` |
@@ -977,7 +977,7 @@ here because the ladder already put rung 1 in place at 24.)
 
 > [!note] **Patrik's answers, 2026-10-28:** Q1 yes, A + R (B only if M1/M2/M6 say so). **Q2: allow a manual resolution /
 > bit-depth / Clear HDR change; it turns the ladder off** (not refused, not greyed). Q9 sticky. Q10 refuse with the message.
-> Q12 settled: T33 became the value lists (`6c34e8a`, `8fd44e3`, `07cd559`); T34 is the ladder. Since this design: no
+> Q12 settled: T33 became the value lists (`b0e90ad`, `ff33d2d`, `ed0d7b5`); T34 is the ladder. Since this design: no
 > `[camera] max_fps` (Patrik); rung 2's top is its threshold (50). Core still caps 4K SDR at 30 (F5), so T34 lifts it to the
 > probe. M0 done (T31 on the Pi: C0030, C0022). `fps_max`/`iso_max` are in the state.
 > **Cap decision (Patrik, 2026-10-28): 4K SDR stays capped at 30** until a longer M3 shows 50 holds (M3 at 3840x2076 lost

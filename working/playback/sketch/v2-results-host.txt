@@ -1,0 +1,58 @@
+frames
+  ok   7 frame files, all numbered (FRAMES = 7, as the touch UI counts)
+  ok   span 10, 3 numbers never written
+  ok   holes [3,+2] and [7,+1]
+  ok   one 0-byte frame
+  ok   DURATION = span / fps = 0.40 s (files / fps would say 0.28 s)
+  ok   t = 0.25 s -> number 6 -> FRAME 5 / 7
+  ok   over the hole 3-4 the frame before it (number 2) stays
+  ok   at the 0-byte number 8: FRAME 6 / 7, picture of number 6
+  ok   past the end: the last number
+  ok   DNG + JPEG pairs: 3 frames, each the DNG (today's list counts 6)
+  ok   unnumbered JPEGs: name order, number = position
+drift
+  files 208 of 250; position clock: at 5.0 s the picture shows 6.04 s (1.04 s ahead); the last file is reached at 8.32 s and held to 10 s
+  number clock: the picture is never ahead; at most 0.080 s behind (one hole)
+  ok   position clock: picture ahead of the sound by > 0.5 s at 5 s and ends before 9 s
+  ok   number clock: picture within one hole (<= 2 frames here) of the sound
+hold
+  ok   idle: no hold
+  ok   writes pending before standby
+  ok   a timelapse is a recording hold
+  ok   media gone: media
+  ok   record_start's yield holds before recording_ is visible
+  ok   the window ends after 3 s (the real signal takes over)
+  ok   the watcher keeps it open through the take; it closes 1.5 s after
+  ok   a shorter call never shortens an open window
+stop
+  hdr16_uncompressed.dng: stopped after 1 of 17 chunks of 128 rows, 7.64 ms, error "Playback is held."
+  ok   hdr16_uncompressed.dng: Stopped, one chunk read after the yield began
+  sdr12_lossless.dng: stopped after 1 of 17 tiles, 15.50 ms, error "Playback is held."
+  ok   sdr12_lossless.dng: Stopped, one chunk read after the yield began
+cache
+  hdr16_uncompressed.dng v1 (plain pread): page cache 0 % of the file before, 100 % after
+  ok   hdr16_uncompressed.dng: v1 leaves the whole frame cached (the critic's M4)
+  hdr16_uncompressed.dng v2 (drop per chunk + at close): page cache 0 % of the file before, 0 % after
+  ok   hdr16_uncompressed.dng: v2 leaves < 2 % of the frame in the page cache
+  sdr12_lossless.dng v1 (plain pread): page cache 0 % of the file before, 100 % after
+  ok   sdr12_lossless.dng: v1 leaves the whole frame cached (the critic's M4)
+  sdr12_lossless.dng v2 (drop per chunk + at close): page cache 0 % of the file before, 0 % after
+  ok   sdr12_lossless.dng: v2 leaves < 2 % of the frame in the page cache
+slots
+  ok   2 slots, 3 requests at once: 2 decode, 1 gets 503
+  ok   buffers kept while used recently
+  ok   freed after 30 s idle
+  ok   freed at once when a hold starts
+alloc
+  hdr16_uncompressed.dng   new thread per frame: per-request buffers 25.7 ms, slot buffers 25.2 ms (medians of 7)
+  ok   hdr16_uncompressed.dng: slot buffers no slower
+  sdr12_uncompressed.dng   new thread per frame: per-request buffers 27.6 ms, slot buffers 25.1 ms (medians of 7)
+  ok   sdr12_uncompressed.dng: slot buffers no slower
+  sdr12_lossless.dng       new thread per frame: per-request buffers 166.7 ms, slot buffers 164.3 ms (medians of 7)
+  ok   sdr12_lossless.dng: slot buffers no slower
+sizes
+  ok   size_4056x3040_12_lj.dng: passes the cap, bit-exact
+  ok   size_4056x3040_12_unc.dng: passes the cap, bit-exact
+  ok   size_3840x2200_16_unc.dng: passes the cap, bit-exact
+  ok   size_3840x2200_16_lj.dng: passes the cap, bit-exact
+v2 ok (38 checks)

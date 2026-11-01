@@ -7,19 +7,19 @@ the pages it points to, before touching anything.
 
 | Item | State |
 | --- | --- |
-| KB | GitHub `main` `d65b2ef` plus the export `apertar-kb-speed-ramp-2026-10-27.zip` (install: its `INSTALL.md`) |
-| Core | `cinemate-port` on GitHub at `6ae70b5`. The three Core patches (T31, T32 ×2) apply with plain `git am` on `7a545d9` and on `6ae70b5`, checked in the cloud |
+| KB | GitHub `main` `7886e5b` plus the export `apertar-kb-speed-ramp-2026-10-27.zip` (install: its `INSTALL.md`) |
+| Core | `cinemate-port` on GitHub at `3c4f07d`. The three Core patches (T31, T32 ×2) apply with plain `git am` on `b606c4f` and on `3c4f07d`, checked in the cloud |
 | UI | `cinemate-port` on GitHub at `dc471c1`. The two UI patches (T32) apply with plain `git am`; the whole UI built on the cloud host with Qt 6.4.2 |
-| T31 speed ramping | written, moved to `cinemate-port`; not on GitHub `cinemate-port` (`6ae70b5`). Point 1 checks the Pi |
+| T31 speed ramping | written, moved to `cinemate-port`; not on GitHub `cinemate-port` (`3c4f07d`). Point 1 checks the Pi |
 | T32 speed ramping from every control | written; not on GitHub. Point 1 checks the Pi |
 | T33 value lists + build `max_fps` | requirements and decisions only (`working/ramp-ladder/README.md` §3.1); no tutorial, no patch |
 | T34 mode ladder | requirements, facts and two designs (`working/ramp-ladder/README.md` §3.2); no tutorial, no patch |
 | 4K Clear HDR 16-bit | 25 fps is the accepted maximum (Patrik, 2026-10-27); T32 makes Core (its clamp and its PCF pot/button list) and both UIs stop there |
 
-> [!note] 2026-10-28 (VS Code session): point 0 done (KB `03d5166`, synced to the Pi). Point 1 check: neither T31 nor T32
-> on the Pi (every count 0). The Pi had `temp:` commits on top (Core 6 from `753f181`, UI 6 from `def5d45`); Patrik moved them
-> to the local branch `cinemate-port-temp` and reset Pi `cinemate-port` to Core `87011d4`, UI `2d27c46`. All five reference
-> patches apply cleanly there, so T31/T32 are typed as written. **Hazard if the temp work comes back:** `13a350f`/`3c2f2c5` put
+> [!note] 2026-10-28 (VS Code session): point 0 done (KB `60d7d3d`, synced to the Pi). Point 1 check: neither T31 nor T32
+> on the Pi (every count 0). The Pi had `temp:` commits on top (Core 6 from `55e7ba9`, UI 6 from `d5a1bf2`); Patrik moved them
+> to the local branch `cinemate-port-temp` and reset Pi `cinemate-port` to Core `bda2066`, UI `2d27c46`. All five reference
+> patches apply cleanly there, so T31/T32 are typed as written. **Hazard if the temp work comes back:** `d084ed4`/`0bac3db` put
 > a Clear HDR 16 → SDR 12 switch in `setFps` through `applySettingsLocked`, which has no take check; with T31 a ramp past 25 in
 > Clear HDR 16 would reconfigure the camera mid-take. It must refuse or cap in a take (design A). The running binaries are
 > still the temp build until the next Core/UI build.
@@ -52,7 +52,7 @@ not recorded in this export.
 
 Take Patrik through one at a time. Finish each with his result in the right log before starting the next.
 
-**0. Install the export.** Follow `INSTALL.md` from the zip: check the four replaced files against `d65b2ef`, copy `kb/.`, look
+**0. Install the export.** Follow `INSTALL.md` from the zip: check the four replaced files against `7886e5b`, copy `kb/.`, look
 at `git status`, commit when he is happy. Move the two inbox notes (T31, T32) into Obsidian and add them to the learning-path
 note. If he wants the patches on the Pi, sync the KB when he says so (`working/sync.md`: `pull pi main`, `push pi main` from
 the Mac); the Pi's `~/apertar-kb` is behind and has none of the five patches until then. The older

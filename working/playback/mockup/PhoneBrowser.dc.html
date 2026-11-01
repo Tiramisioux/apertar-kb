@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clip Browser, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; padding: 20px 14px 0; background: #09090b; color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif; overflow: hidden;">
+
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 0 4px;">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 3px; color: #9a9aa4;">PLAYBACK</div>
+<h1 style="margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.02em;">Clip Browser</h1>
+</div>
+<div style="display: flex; justify-content: flex-end; gap: 8px;">
+<button type="button" aria-label="Refresh Media" style="width: 46px; height: 46px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg>
+</button>
+<button type="button" style="display: flex; flex-direction: column; align-items: flex-start; justify-content: center; min-height: 46px; padding: 2px 16px; border-radius: 999px; border: 1px solid #3fd0ff; background: rgba(63, 208, 255, 0.08); color: #f4f4f5; font-family: inherit; cursor: pointer;">
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #79ddff;">SHOW</span>
+<span style="font-size: 13px; font-weight: 600;">Clips</span>
+</button>
+<button type="button" style="display: flex; align-items: center; gap: 6px; min-height: 46px; padding: 0 16px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>
+Back
+</button>
+</div>
+
+<div style="flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 16px 12px 0; border-radius: 28px 28px 0 0; border: 1px solid #27272a; border-bottom: none; background: #111113;">
+<div style="display: flex; align-items: center; gap: 8px;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M7 4v16"></path><path d="M17 4v16"></path><path d="M3 9h4"></path><path d="M3 15h4"></path><path d="M17 9h4"></path><path d="M17 15h4"></path></svg>
+<span style="font-size: 12px; font-weight: 700; letter-spacing: 0.14em;">CLIPS</span>
+<span style="flex: 1 1 auto;"></span>
+<button type="button" style="min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid #3fd0ff; background: rgba(63, 208, 255, 0.08); color: #79ddff; font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: 0.1em; cursor: pointer;">NEWEST FIRST</button>
+<span style="min-height: 32px; display: flex; align-items: center; padding: 0 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); color: #d4d4d8; font-size: 12px; font-weight: 600;">12 items</span>
+</div>
+<div style="font-size: 12px; color: #a1a1aa;">Found 12 clip(s) in /media/RAW.</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<sc-for list="{{ clips }}" as="c" hint-placeholder-count="6">
+<a href="PhoneViewer.dc.html" aria-label="Open {{ c.full }}" style="{{ c.cardStyle }}">
+<div style="{{ c.thumbStyle }}">
+<sc-if value="{{ c.noPreview }}" hint-placeholder-val="{{ false }}">
+<span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; letter-spacing: 0.14em; color: #8e8e98;">NO PREVIEW</span>
+</sc-if>
+<span style="position: absolute; left: 7px; bottom: 7px; padding: 3px 7px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: #f4f4f5;">{{ c.dur }}</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 0 3px 3px; min-width: 0;">
+<span style="font-size: 14px; font-weight: 700; color: #f4f4f5; white-space: nowrap;">{{ c.name }}</span>
+<span style="font-size: 12px; color: #a1a1aa;">{{ c.fmt }}</span>
+<span style="font-size: 11px; color: #8e8e98; white-space: nowrap;">{{ c.date }}</span>
+</div>
+</a>
+</sc-for>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    // Placeholder pictures: no real footage in the mockup. Names are elided in the middle so the counter stays.
+    const pic = (hi, a, b) => 'radial-gradient(70% 60% at ' + hi + ', rgba(255, 236, 214, 0.32), transparent 70%), linear-gradient(160deg, ' + a + ' 0%, ' + b + ' 100%)';
+    const list = [
+      ['C0007', '00:10', 'cDNG clip', '28 Oct 2026  14:03', pic('68% 32%', '#46505e', '#121418'), true],
+      ['C0006', '01:02', 'cDNG clip', '28 Oct 2026  13:51', pic('30% 40%', '#5a4a3c', '#16120f')],
+      ['C0005', '00:24', 'ProRes clip', '28 Oct 2026  13:40', pic('52% 22%', '#3b4a44', '#0f1513')],
+      ['C0004', '00:41', 'MLV clip', '28 Oct 2026  12:18', pic('80% 60%', '#4a3f52', '#141118')],
+      ['C0003', '00:08', 'cDNG clip', '28 Oct 2026  12:02', ''],
+      ['C0002', '02:13', 'H.264 clip', '27 Oct 2026  22:41', pic('40% 70%', '#2e3a4f', '#0c0f15')],
+    ];
+    const clips = list.map(([id, dur, fmt, date, bg, last]) => ({
+      name: 'cDNG_26…' + id, full: 'cDNG_26-10-28_' + id, dur, fmt, date, noPreview: !bg,
+      cardStyle: {
+        display: 'flex', flexDirection: 'column', gap: '8px', padding: '7px', borderRadius: '20px', minWidth: 0,
+        border: last ? '1px solid rgba(255, 255, 255, 0.22)' : '1px solid #27272a', background: last ? '#1d1d21' : '#18181b',
+      },
+      thumbStyle: { position: 'relative', aspectRatio: '16 / 9', borderRadius: '14px', overflow: 'hidden', background: bg || '#171717', border: '1px solid rgba(255, 255, 255, 0.06)' },
+    }));
+    return { clips };
+  }
+}
+</script>
+</body>
+</html>

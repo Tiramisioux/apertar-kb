@@ -1,0 +1,123 @@
+From c590b01577350ebc67622b0d860e6aa520bb5204 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:56 +0000
+Subject: [PATCH 7/8] web: APERTAR_WEB_PREVIEW_RECORDING_FPS caps or pauses the
+ web preview while a raw take runs
+
+Why: when a browser shows the live preview, captureWebPreviewFrame downsamples the 1280x720
+preview to 640x360 on libcamera's completion thread, inside the serial per-frame cycle, for
+every frame at up to 30 fps. The kb's research (working/dng-chain, R5, R7, S2) named it a
+candidate for the frames lost at capture in short takes with the WebUI open; verification
+(V/H4) found the kb had already profiled it at about 0.2 ms per frame idle (0.3 to 0.5 ms while
+recording), too small to explain those gaps alone. It stays the one per-frame image pass on that
+thread, so a cap or pause while recording is a cheap, measurable mitigation.
+
+What: a lock-free CameraController::rawTakeActive() (the write queue's gauge flag) tells the
+completion thread that a take runs; the web preview is then rate-limited to
+APERTAR_WEB_PREVIEW_RECORDING_FPS (default 30, unchanged; 0 = no web preview frames while
+recording; values below 0.5 count as 0; non-finite values fall back to 30). README row.
+
+Tested: both files syntax-check (CameraController.cpp with the libcamera block on, no new
+errors). Reviewed (V/PATCHES.md): the NaN case is now rejected and the accessor sits after
+frameBufferStatus. Not run on the Pi: the two-take test (60 s with the WebUI closed, then
+open) decides whether the knob matters.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ README.md                       |  1 +
+ src/ApertarCoreApp.cpp          | 27 +++++++++++++++++++++++++--
+ src/camera/CameraController.cpp |  5 +++++
+ src/camera/CameraController.hpp |  2 ++
+ 4 files changed, 33 insertions(+), 2 deletions(-)
+
+diff --git a/README.md b/README.md
+index 0d46847..8e5b248 100644
+--- a/README.md
++++ b/README.md
+@@ -290,6 +290,7 @@ Environment variables of the Core service (a systemd drop-in with `Environment=`
+ | `APERTAR_DNG_DONTNEED=sync` or `off` | writer | When a written DNG's pages leave the page cache: `writer` right after the write (as before; the pages are still dirty then, so the call frees nothing and costs a cross-CPU LRU drain per frame), `sync` on the once-a-second sync thread after the file's `fsync` (cDNG only; lossy DNG then behaves as `off`), `off` never. |
+ | `APERTAR_DNG_WRITEBACK=0` | on | No `sync_file_range` per written DNG (the kernel's own writeback only). |
+ | `APERTAR_MEDIA_SYNC_MS=0` | 1000 | No once-a-second `fsync` of the finished DNGs and the clip folder during a take; the stop-time `syncfs` stays. |
++| `APERTAR_WEB_PREVIEW_RECORDING_FPS=N` | 30 | The WebUI live preview's frame rate while a raw take runs (`0` pauses it). Its downsample runs on libcamera's completion thread, inside the per-frame cycle, whenever a browser shows the preview (about 0.2 to 0.5 ms per frame). |
+ | `APERTAR_RT=1` | off | The start script runs the whole Core process under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. An A/B instrument, not a recommendation: equal-priority FIFO threads never preempt each other, so the capture thread can wait behind FIFO writers. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in. |
+ | `APERTAR_MEDIA_TUNE=1` | off | Kernel-side knobs for the recording drive through the `apertar-media-tune` root helper (dirty-page cushion, scheduler, queue depth). |
+ 
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 34687b2..a28c734 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -79,6 +79,25 @@ constexpr uint32_t kWebPreviewMaxWidth = 640;
+ constexpr uint32_t kWebPreviewMaxHeight = 360;
+ constexpr double kWebPreviewMaxFps = 30.0;
+ constexpr int kWebPreviewJpegQuality = 75;
++
++// The web preview's rate while a raw take runs (APERTAR_WEB_PREVIEW_RECORDING_FPS): default the normal 30,
++// 0 = no web preview frames while recording. The downsample for it runs on libcamera's completion thread
++// (about 0.2 to 0.5 ms per frame measured idle in the kb), so this is the A/B knob for its share of the
++// WebUI-open drops (kb working/dng-chain, V/H4).
++double webPreviewRecordingFps()
++{
++    static const double fps = []() {
++        const char *text = std::getenv("APERTAR_WEB_PREVIEW_RECORDING_FPS");
++        if (!text || !*text)
++            return kWebPreviewMaxFps;
++        char *end = nullptr;
++        const double parsed = std::strtod(text, &end);
++        if (end == text || *end != '\0' || !std::isfinite(parsed) || parsed < 0.0 || parsed > kWebPreviewMaxFps)
++            return kWebPreviewMaxFps;
++        return parsed < 0.5 ? 0.0 : parsed;
++    }();
++    return fps;
++}
+ constexpr size_t kMaxEditableHardwareConfigBytes = 256 * 1024;
+ 
+ std::string resolveExecutablePath(std::initializer_list<const char *> candidates,
+@@ -9353,9 +9372,13 @@ void ApertarCoreApp::captureWebPreviewFrame(const PreviewFrameDescriptor &frame)
+         return;
+ 
+     // This runs on libcamera's completion thread. Camera stop/reconfigure holds
+-    // the control mutex while waiting for that thread, so never query it here.
++    // the control mutex while waiting for that thread, so never query it here
++    // (rawTakeActive reads one atomic).
++    const double maxFps = camera_.rawTakeActive() ? webPreviewRecordingFps() : kWebPreviewMaxFps;
++    if (maxFps <= 0.0)
++        return;
+     const auto minInterval = std::chrono::microseconds(
+-        static_cast<int64_t>(1'000'000.0 / kWebPreviewMaxFps));
++        static_cast<int64_t>(1'000'000.0 / maxFps));
+     const auto now = std::chrono::steady_clock::now();
+     {
+         std::lock_guard<std::mutex> lock(mjpegMutex_);
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index f3bcbfe..f1d0df0 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -12005,6 +12005,11 @@ CameraController::FrameBufferStatus CameraController::frameBufferStatus() const
+     return out;
+ }
+ 
++bool CameraController::rawTakeActive() const
++{
++    return frameBufferGauge().active.load(std::memory_order_acquire);
++}
++
+ CameraController::StillExposureStatus CameraController::stillExposureStatus() const
+ {
+     std::lock_guard lock(mutex_);
+diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
+index 579c0e1..e563129 100644
+--- a/src/camera/CameraController.hpp
++++ b/src/camera/CameraController.hpp
+@@ -123,6 +123,8 @@ public:
+         bool recording = false;  // frames are being accepted (false as soon as the take stops, while it drains)
+     };
+     FrameBufferStatus frameBufferStatus() const;
++    // Lock-free: true while the write queue accepts frames (a raw take runs). Safe on libcamera's thread.
++    bool rawTakeActive() const;
+     // True when CineMate Log is on and the CURRENT configured raw stream can really carry it (same test as
+     // the take: buildCdngLogTake). cdng_log_bits keeps meaning what the setting asks for.
+     bool cdngLogApplicable() const;
+-- 
+2.43.0
+

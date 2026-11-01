@@ -463,7 +463,7 @@ It notifies nobody. The UI sees the mount through its 1 s poll (`MediaStatusBrid
 - **Media state from Core** (`160898c`): `ApertarControlBridge` takes `media_state`/`media_alive` from the `media` event and
   `get_state`; `MediaStatusBridge::setCoreMediaState` shows MEDIA REMOVED / MEDIA ERROR without calling `QStorageInfo`.
 - `currentRawBitDepthNumber()` returns 16 for "16-bit" (`2d27c46`; the time left was a third too long at 16-bit).
-- **temp:** frame rates 25/33/50, IMX585 4K SDR up to 60 and lossless 50 (`d8098d0`, `2464b60`); ISO 1600 in lossless
-  (`def5d45`); FORMAT line `16-bit · Clear HDR · Uncompressed` (`f149744`); HDMI `RESOLUTION · 16-BIT · CLEAR HDR` caption in
-  `ExternalMonitorWindow.qml` (`f23c243`; the HDMI monitor is a separate page and needs its own change); the quick-menu
-  resolution button toggles 16-bit Clear HDR ↔ 12-bit SDR on the IMX585 (`0165b70`).
+- **temp:** frame rates 25/33/50, IMX585 4K SDR up to 60 and lossless 50 (`5aab7e2`, `d93c7e0`); ISO 1600 in lossless
+  (`d5a1bf2`); FORMAT line `16-bit · Clear HDR · Uncompressed` (`508d692`); HDMI `RESOLUTION · 16-BIT · CLEAR HDR` caption in
+  `ExternalMonitorWindow.qml` (`ea5662c`; the HDMI monitor is a separate page and needs its own change); the quick-menu
+  resolution button toggles 16-bit Clear HDR ↔ 12-bit SDR on the IMX585 (`8fdd0e9`).

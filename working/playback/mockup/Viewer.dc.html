@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Clip Viewer, laptop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#000}
+a{color:inherit;text-decoration:none}a:hover{color:inherit}
+</style>
+</helmet>
+<div style="width: 1280px; height: 820px; box-sizing: border-box; padding: 24px; background: radial-gradient(120% 72% at 50% -8%, #27272a 0%, #09090b 46%, #000000 100%); color: #f4f4f5; font-family: Inter, 'Segoe UI', sans-serif;">
+<div style="height: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; padding: 26px 28px 0; border-radius: 32px; border: 1px solid #27272a; background: rgba(9, 9, 11, 0.96); overflow: hidden;">
+
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+<div style="display: flex; flex-direction: column; gap: 6px;">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 3px; color: #9a9aa4;">PLAYBACK</div>
+<h1 style="margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.02em;">Clip Viewer</h1>
+</div>
+<a href="Main.dc.html" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; font-size: 14px; font-weight: 600;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"></path><path d="M11 6l-6 6 6 6"></path></svg>
+Back
+</a>
+</div>
+
+<div style="flex: 1 1 auto; min-height: 0; display: flex; gap: 20px; padding: 20px; border-radius: 28px 28px 0 0; border: 1px solid #27272a; border-bottom: none; background: #111113;">
+
+<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+<div role="img" aria-label="Frame {{ frame }} of 207" style="{{ pictureStyle }}">
+<span style="position: absolute; top: 14px; right: 14px; padding: 5px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 11px; font-weight: 700; letter-spacing: 0.08em;">25.000 FPS</span>
+<span style="position: absolute; left: 14px; bottom: 14px; padding: 5px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 11px; font-weight: 700; letter-spacing: 0.08em;">{{ stateBadge }}</span>
+<span style="position: absolute; right: 14px; bottom: 14px; padding: 5px 10px; border-radius: 999px; background: rgba(0, 0, 0, 0.7); border: 1px solid rgba(255, 255, 255, 0.12); font-size: 11px; font-weight: 700; letter-spacing: 0.08em;">FRAME {{ frame }} / 207</span>
+</div>
+
+<div onPointerDown="{{ scrub }}" role="slider" aria-label="Position" aria-valuemin="1" aria-valuemax="207" aria-valuenow="{{ frame }}" style="position: relative; height: 24px; display: flex; align-items: center; cursor: pointer; touch-action: none;">
+<div style="position: absolute; left: 0; right: 0; height: 6px; border-radius: 999px; background: #27272a;"></div>
+<div style="{{ fillStyle }}"></div>
+<div style="{{ handleStyle }}"></div>
+</div>
+<div style="font-size: 13px; color: #a1a1aa; font-variant-numeric: tabular-nums;">{{ timeText }}</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 4px;">
+<button type="button" style="display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: 999px; border: 1px solid rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.14); color: #fca5a5; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M6 7l1 13h10l1-13"></path><path d="M9 7V4h6v3"></path></svg>
+Remove
+</button>
+<div style="display: flex; align-items: center; gap: 14px;">
+<button type="button" aria-label="Previous clip" style="width: 52px; height: 52px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 6h2v12H7z"></path><path d="M18 6v12l-8.5-6z"></path></svg>
+</button>
+<button type="button" aria-label="{{ playLabel }}" onClick="{{ togglePlay }}" style="width: 64px; height: 64px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.9); background: #ffffff; color: #09090b; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+<sc-if value="{{ playing }}" hint-placeholder-val="{{ false }}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h4v14H7z"></path><path d="M13 5h4v14h-4z"></path></svg>
+</sc-if>
+<sc-if value="{{ paused }}" hint-placeholder-val="{{ true }}">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+</sc-if>
+</button>
+<button type="button" aria-label="Next clip" disabled="disabled" style="width: 52px; height: 52px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.03); color: #52525b; display: flex; align-items: center; justify-content: center; cursor: default;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M15 6h2v12h-2z"></path><path d="M6 6v12l8.5-6z"></path></svg>
+</button>
+</div>
+<div role="img" aria-label="Histogram of the frame on screen" style="width: 220px; height: 64px; box-sizing: border-box; display: flex; flex-direction: column; gap: 4px; padding: 8px 10px; border-radius: 16px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.05);">
+<span style="font-size: 9px; font-weight: 700; letter-spacing: 0.14em; color: #9a9aa4;">HISTOGRAM</span>
+<div style="flex: 1 1 auto; display: flex; align-items: flex-end; gap: 1px; border-bottom: 1px solid rgba(255, 255, 255, 0.25);">
+<sc-for list="{{ bars }}" as="b" hint-placeholder-count="48">
+<span style="{{ b.style }}"></span>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+
+<aside aria-labelledby="metaTitle" style="flex: 0 0 340px; display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 22px; border: 1px solid #27272a; background: #18181b; overflow: hidden;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d4d4d8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
+<h2 id="metaTitle" style="margin: 0; flex: 1 1 auto; font-size: 16px; font-weight: 700;">Clip Metadata</h2>
+<button type="button" aria-label="Download this clip" style="width: 40px; height: 40px; border-radius: 999px; border: 1px solid #27272a; background: rgba(255, 255, 255, 0.06); color: #f4f4f5; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"></path><path d="M7 10l5 5 5-5"></path><path d="M5 20h14"></path></svg>
+</button>
+</div>
+<div style="font-size: 15px; font-weight: 700; word-break: break-all;">cDNG_26-10-28_C0007</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px;">
+<sc-for list="{{ meta }}" as="m" hint-placeholder-count="8">
+<div style="{{ m.cellStyle }}">
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #9a9aa4;">{{ m.label }}</span>
+<span style="font-size: 13px; color: #f4f4f5; word-break: break-all;">{{ m.value }}</span>
+</div>
+</sc-for>
+</div>
+<div style="height: 1px; background: #27272a;"></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px;">
+<sc-for list="{{ extra }}" as="m" hint-placeholder-count="3">
+<div style="{{ m.cellStyle }}">
+<span style="font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #9a9aa4;">{{ m.label }}</span>
+<span style="{{ m.valueStyle }}">{{ m.value }}</span>
+</div>
+</sc-for>
+</div>
+</aside>
+
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { frame: 118, playing: true };
+    this.timer = null;
+  }
+
+  componentDidMount() { this.sync(); }
+  componentDidUpdate() { this.sync(); }
+  componentWillUnmount() { if (this.timer) clearInterval(this.timer); }
+
+  sync() {
+    // About 8 frames a second, what a lossless 4K take shows today.
+    if (this.state.playing && !this.timer)
+      this.timer = setInterval(() => this.setState({ frame: this.state.frame >= 207 ? 1 : this.state.frame + 1 }), 125);
+    if (!this.state.playing && this.timer) { clearInterval(this.timer); this.timer = null; }
+  }
+
+  renderVals() {
+    const st = this.state;
+    const pos = (st.frame - 1) / 206;
+    const secs = Math.round(pos * 10);
+    const pad = (n) => (n < 10 ? '0' : '') + n;
+    const hx = 30 + Math.round(pos * 50);
+    const bars = Array.from({ length: 48 }, (_, i) => {
+      const x = i / 47;
+      const h = Math.max(4, Math.round(100 * (0.55 * Math.exp(-Math.pow((x - 0.32) / 0.16, 2)) + 0.4 * Math.exp(-Math.pow((x - 0.7) / 0.12, 2)) + 0.05)));
+      return { style: { flex: '1 1 0', height: h + '%', background: 'linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,255,255,0.42))', borderRadius: '1px 1px 0 0' } };
+    });
+    const cell = (wide) => ({ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: 0, gridColumn: wide ? '1 / -1' : 'auto' });
+    const meta = [
+      ['CAPTURED', '28 Oct 2026 14:03'], ['TYPE', 'cDNG sequence'], ['RESOLUTION', '3840 x 2160'], ['BIT DEPTH', '12-bit'],
+      ['FRAME RATE', '25.000 fps'], ['DURATION', '00:10'], ['FRAMES', '207'], ['CLIP SIZE', '1.6 GB'],
+      ['PATH', '/media/RAW/cDNG_26-10-28_C0007', true],
+    ].map(([label, value, wide]) => ({ label, value, cellStyle: cell(wide) }));
+    const extra = [
+      ['SOUND', '24-bit 48 kHz stereo', false, '#f4f4f5'], ['FORMAT', 'SDR12 · Lossless JPEG', false, '#f4f4f5'],
+      ['DROPPED', '43 frames missing', true, '#fbbf24'],
+    ].map(([label, value, wide, color]) => ({ label, value, cellStyle: cell(wide), valueStyle: { fontSize: '13px', color } }));
+    return {
+      frame: st.frame, playing: st.playing, paused: !st.playing,
+      stateBadge: st.playing ? 'PLAYING' : 'PAUSED',
+      playLabel: st.playing ? 'Pause' : 'Play',
+      togglePlay: () => this.setState({ playing: !st.playing }),
+      timeText: '00:' + pad(secs) + ' / 00:10',
+      scrub: (e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const f = Math.min(207, Math.max(1, Math.round(1 + ((e.clientX - r.left) / r.width) * 206)));
+        this.setState({ frame: f });
+      },
+      pictureStyle: {
+        position: 'relative', width: '100%', aspectRatio: '16 / 9', borderRadius: '22px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.06)',
+        background: 'radial-gradient(70% 60% at ' + hx + '% 34%, rgba(255, 236, 214, 0.32), transparent 70%), linear-gradient(160deg, #46505e 0%, #121418 100%)',
+      },
+      fillStyle: { position: 'absolute', left: 0, width: (pos * 100) + '%', height: '6px', borderRadius: '999px', background: '#d4d4d8' },
+      handleStyle: { position: 'absolute', left: 'calc(' + (pos * 100) + '% - 9px)', width: '18px', height: '18px', borderRadius: '999px', background: '#f4f4f5', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.5)' },
+      bars, meta, extra,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -4,8 +4,8 @@ The look and behaviour Patrik approved for the Mode Ladder in the WebUI, the Cam
 The mockup is the reference: `../mockup/Main.dc.html` (Settings > Record) and `../mockup/Quick.dc.html` (Camera settings),
 live at https://claude.ai/artifact/YKbhhk8aMUS8sxEWa6UfRL (private to Patrik). Screenshots: `shots/mockup-*.png`.
 
-`shots/reference-*.png` are screenshots of a cloud build of the same design on Core `6ae70b5` + T31-T34
-(`../build/patches-on-6ae70b5/`). They show the real WebUI classes and states the mockup does not (recording, locked
+`shots/reference-*.png` are screenshots of a cloud build of the same design on Core `3c4f07d` + T31-T34
+(`../build/patches-on-3c4f07d/`). They show the real WebUI classes and states the mockup does not (recording, locked
 controls, phone width). Two things in them are out of date: the switches (now **Off/On buttons**) and the sensor modes grid
 (now **one column, collapsible groups**).
 

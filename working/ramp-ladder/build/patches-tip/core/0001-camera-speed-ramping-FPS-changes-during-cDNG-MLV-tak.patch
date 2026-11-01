@@ -57,13 +57,13 @@ post. Ported as an opt-in with the bookkeeping Core needs for it:
 - On cinemate-port: the WAV end in observeVideoFrame() uses the latest
   frame's own duration (videoLastDurationUs_, frames can arrive out of
   order since d9f00d4), and fps-ramp.txt is written right after the
-  timed raw-recorder stop (56d9137), before the sync at stop (0586273).
+  timed raw-recorder stop (0b1632f), before the sync at stop (4ce382e).
 
 Host-checked: ApertarCoreApp.cpp, AudioRecordingSession.cpp, CdngEncoder.cpp,
 LossyDngEncoder.cpp, MlvEncoder.cpp, WebControlPage.cpp pass g++
 -fsyntax-only. CameraController.cpp needs libcamera and is not compiled here.
 
-Rebased onto eb9cc39 (2026-10-28): Patrik's automatic Clear HDR switches
+Rebased onto 0296ed1 (2026-10-28): Patrik's automatic Clear HDR switches
 at the top of setFps (16-bit Clear HDR above 25 fps to 12-bit SDR, and
 back at 25 or less) are guarded with !recording_: both reconfigure, so
 they never run in a take; a ramp stays in the take's mode.

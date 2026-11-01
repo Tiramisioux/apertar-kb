@@ -1,0 +1,114 @@
+From 392d225e656fda10f132eb0c08ffdbf7b6f5d653 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:56 +0000
+Subject: [PATCH 5/8] scripts: APERTAR_RT=1 runs Core under SCHED_FIFO on cores
+ 1-3 like cinepi-raw; README knob table
+
+Why: cinemate starts cinepi-raw with chrt -f 70, ionice -c2 -n0 and taskset -c 1-3 (its
+LimitRTPRIO=80 unit), while Core relies on a nice -5 boost of the callback thread. Scheduling
+parity was plan row 5 of the drop-frames project; the kb's research (working/dng-chain, R2, R7,
+verified in V/H15) keeps it as an A/B instrument, not a default: whole-process FIFO is the wrong
+shape for Core (equal-priority FIFO threads never preempt each other, so the capture thread can
+wait behind FIFO writers), and the expected scheduling delay under the current nice -5 is tens
+to hundreds of microseconds.
+
+What: the start script prefixes the exec with chrt/ionice/taskset when APERTAR_RT=1 and chrt
+is permitted (APERTAR_RT_PRIORITY, APERTAR_RT_CPUS adjust it; an empty APERTAR_RT_CPUS skips the
+pinning), otherwise logs one line and starts as before. The capture-priority drop-in gains
+LimitRTPRIO=80, unused without APERTAR_RT=1. The README gets a table of the write-path knobs
+for A/B tests and the updated trim sentence.
+
+Tested: bash -n; the script run with a stand-in binary both with APERTAR_RT=1 (prefix logged) and
+without (plain exec). Reviewed (V/PATCHES.md): the empty-array expansion and the ${VAR-default}
+form behave under set -euo pipefail. Not run on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ README.md                                 | 16 ++++++++++++++-
+ config/apertar-core-capture-priority.conf |  3 +++
+ scripts/start-apertar-core.sh             | 25 ++++++++++++++++++++++-
+ 3 files changed, 42 insertions(+), 2 deletions(-)
+
+diff --git a/README.md b/README.md
+index ade27b6..bfa0dba 100644
+--- a/README.md
++++ b/README.md
+@@ -268,7 +268,7 @@ Settings are saved separately from recordings. Core's camera settings normally l
+ 
+ ### Trim the recording drive
+ 
+-After about one card of writing without a trim, the NVMe stalls for seconds. Core trims the recording drive after clips are deleted (when a delete frees at least 1 GiB) and when the drive is mounted, through a small root helper; `APERTAR_MEDIA_TRIM=0` turns it off.
++After about one card of writing without a trim, the NVMe stalls for seconds. Core trims the recording drive after clips are deleted (when a delete frees at least 1 GiB, also when the delete was made outside Core, for example from the touch UI), after the storage pre-roll's own clip is deleted, and when the drive is mounted, through a small root helper; `APERTAR_MEDIA_TRIM=0` turns it off.
+ 
+ ```bash
+ sudo install -m 0755 -o root -g root ~/ApertarCore/scripts/apertar-media-trim /usr/local/libexec/apertar-media-trim
+@@ -278,6 +278,20 @@ sudo visudo -cf /etc/sudoers.d/apertar-media-trim
+ sudo -n /usr/local/libexec/apertar-media-trim /media/RAW
+ ```
+ 
++### Write-path knobs for A/B tests
++
++Environment variables of the Core service (a systemd drop-in with `Environment=`). Each one restores an older behaviour or switches a measured option on, so a change can be compared on the same rig. Details and the measurements behind them: the Apertar knowledge base, `working/dng-chain`.
++
++| Variable | Default | What it changes |
++| --- | --- | --- |
++| `APERTAR_DNG_PAYLOAD_COPY=1` | off | Copies every frame's rows into the writer's scratch buffer before writing, even when the copy changes nothing (the behaviour before the direct write of 16-bit and 8-bit payloads). |
++| `APERTAR_DNG_WRITE_ROWS=N` | 64 | Rows per `write()` when the payload goes through the scratch buffer (packed 10/12-bit, PiSP-compressed and CineMate Log frames). |
++| `APERTAR_RAW_POOL_WARM=0` | on | Restores the old raw-copy pool: no copies allocated before a take starts, and at most workers + 2 kept while it runs. |
++| `APERTAR_DNG_WRITEBACK=0` | on | No `sync_file_range` per written DNG (the kernel's own writeback only). |
++| `APERTAR_MEDIA_SYNC_MS=0` | 1000 | No once-a-second `fsync` of the finished DNGs and the clip folder during a take; the stop-time `syncfs` stays. |
++| `APERTAR_RT=1` | off | The start script runs the whole Core process under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. An A/B instrument, not a recommendation: equal-priority FIFO threads never preempt each other, so the capture thread can wait behind FIFO writers. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in. |
++| `APERTAR_MEDIA_TUNE=1` | off | Kernel-side knobs for the recording drive through the `apertar-media-tune` root helper (dirty-page cushion, scheduler, queue depth). |
++
+ ## For Developers
+ 
+ ApertarCore is the source of truth for camera and capture state. Native UI commands, WebUI requests and hardware actions reach the same controller and busy-state checks.
+diff --git a/config/apertar-core-capture-priority.conf b/config/apertar-core-capture-priority.conf
+index c0df914..01cc640 100644
+--- a/config/apertar-core-capture-priority.conf
++++ b/config/apertar-core-capture-priority.conf
+@@ -1,3 +1,6 @@
+ [Service]
+ # Permit only a bounded, non-real-time boost for the camera callback thread.
+ LimitNICE=-5
++# Needed only with APERTAR_RT=1 in the unit's environment: the start script then runs Core under
++# SCHED_FIFO 70 (chrt), as cinemate runs cinepi-raw. Without APERTAR_RT=1 the limit is unused.
++LimitRTPRIO=80
+diff --git a/scripts/start-apertar-core.sh b/scripts/start-apertar-core.sh
+index 313f784..954a5d7 100755
+--- a/scripts/start-apertar-core.sh
++++ b/scripts/start-apertar-core.sh
+@@ -17,5 +17,28 @@ if [[ -n "${APERTAR_TUNING_FILE:-}" ]]; then
+     export LIBCAMERA_RPI_TUNING_FILE="$APERTAR_TUNING_FILE"
+ fi
+ 
++# APERTAR_RT=1: run Core under SCHED_FIFO (APERTAR_RT_PRIORITY, default 70) on the cores in
++# APERTAR_RT_CPUS (default 1-3, empty = no pinning) with the best-effort I/O class, the way
++# cinemate starts cinepi-raw (src/module/cinepi_multi.py run()). The unit needs LimitRTPRIO
++# (config/apertar-core-capture-priority.conf). When chrt is refused Core starts as before.
++# Off by default: the A/B in the kb (working/dng-chain) decides whether it stays.
++PREFIX=()
++if [[ "${APERTAR_RT:-0}" == "1" ]]; then
++    RT_PRIORITY="${APERTAR_RT_PRIORITY:-70}"
++    RT_CPUS="${APERTAR_RT_CPUS-1-3}"
++    if command -v chrt >/dev/null 2>&1 && chrt -f "$RT_PRIORITY" /bin/true 2>/dev/null; then
++        PREFIX+=(chrt -f "$RT_PRIORITY")
++        if command -v ionice >/dev/null 2>&1; then
++            PREFIX+=(ionice -c2 -n0)
++        fi
++        if [[ -n "$RT_CPUS" ]] && command -v taskset >/dev/null 2>&1; then
++            PREFIX+=(taskset -c "$RT_CPUS")
++        fi
++        echo "ApertarCore start: real-time scheduling on: ${PREFIX[*]}" >&2
++    else
++        echo "ApertarCore start: APERTAR_RT=1 but chrt -f $RT_PRIORITY is refused (is LimitRTPRIO set on the unit?); starting normally" >&2
++    fi
++fi
++
+ mkdir -p "$(dirname "$SOCKET_PATH")"
+-exec "$CORE_BIN" --socket "$SOCKET_PATH" --media "$MEDIA_ROOT"
++exec ${PREFIX[@]+"${PREFIX[@]}"} "$CORE_BIN" --socket "$SOCKET_PATH" --media "$MEDIA_ROOT"
+-- 
+2.43.0
+

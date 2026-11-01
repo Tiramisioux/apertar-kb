@@ -6,7 +6,7 @@ Trees read (all citations are at these commits unless a line says otherwise):
 
 | Short name | File | Tree and commit |
 | --- | --- | --- |
-| `CC` | `src/camera/CameraController.cpp` | `scratchpad/tip-core` at `119d0bb` = GitHub `cinemate-port` `6ae70b5` + T31 (`5f38585`) + T32 (`cba1963`, `119d0bb`), local commits |
+| `CC` | `src/camera/CameraController.cpp` | `scratchpad/tip-core` at `119d0bb` = GitHub `cinemate-port` `3c4f07d` + T31 (`5f38585`) + T32 (`cba1963`, `119d0bb`), local commits |
 | `Hdr` | `src/camera/CameraController.hpp` | same |
 | `App` | `src/ApertarCoreApp.cpp` | same |
 | `Web` | `src/web/WebControlPage.cpp` | same |

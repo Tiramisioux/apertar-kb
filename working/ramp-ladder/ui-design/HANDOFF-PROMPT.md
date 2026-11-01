@@ -27,8 +27,8 @@ Then read, in this order:
    rules for legal values (`normalize`, `legal`, `spans`, `setThrAt`), the crop graphic (`cropOf`) and the file sizes
    (`sizeMB`).
 4. Only if you need the Core side or a working example: `working/ramp-ladder/build/SPEC.md` (sections 2.5-2.7: commands,
-   the `mode_ladder` reply, the state fields) and the reference patches in `working/ramp-ladder/build/patches-on-6ae70b5/`
-   (built on Core `6ae70b5` + T31 + T32, not on my current tip, and reviewed: `critique-confirmed.json`, `fix-report.json`).
+   the `mode_ladder` reply, the state fields) and the reference patches in `working/ramp-ladder/build/patches-on-3c4f07d/`
+   (built on Core `3c4f07d` + T31 + T32, not on my current tip, and reviewed: `critique-confirmed.json`, `fix-report.json`).
 
 What I want from you:
 - Compare the design with what we have built so far for T33/T34 on my Pi tree and list the differences, screen by screen

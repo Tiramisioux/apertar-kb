@@ -1,6 +1,6 @@
 # Speed ramp project: requirements, status, next steps (cloud session, 2026-10-27)
 
-One project on Core `cinemate-port` (`7a545d9`) and Apertar-UI `cinemate-port` (`dc471c1`): ramp FPS during takes from every
+One project on Core `cinemate-port` (`b606c4f`) and Apertar-UI `cinemate-port` (`dc471c1`): ramp FPS during takes from every
 control, set the selectable values in the settings, and climb a mode ladder from the lowest FPS to 50. Nothing is pushed.
 Everything finished is a patch in `working/patches/` with a tutorial in `tutorials/inbox/`. The unfinished parts are below,
 with the decisions taken so far.
@@ -22,7 +22,7 @@ with the decisions taken so far.
 10. **Keep the WebUI "Camera settings" pane** (FPS / ISO / shutter-angle pills, `WebControlPage.cpp:2538-2560`). It fronts the
     selectable values and works as a quick-access menu in the field. §3.1 feeds it; it is not replaced.
 
-11. **(2026-10-28) Least API change.** T31 on the Pi is `47d44ff`: switch `set_fps_speed_ramp enabled= [shutter=angle|exposure]`,
+11. **(2026-10-28) Least API change.** T31 on the Pi is `faa2958`: switch `set_fps_speed_ramp enabled= [shutter=angle|exposure]`,
     state `fps_speed_ramp`, `fps_speed_ramp_keep_exposure`; no `ramp_fps` stepper. T32's "Ramp to … over …" steps with `set_fps`
     from the page.
 12. **(2026-10-28) System-controlled values are green** in the WebUI and the touch UI (auto ISO, a shutter the ramp rescales or
@@ -38,14 +38,14 @@ with the decisions taken so far.
     (1000 Hz test tone) but land 20-50 ms off per tempo change (clicks at 5 s/8 s → 6.032/10.048 s with rubberband,
     5.949/9.963 with atempo), so a stepped ramp (~50 changes) would drift. Exact options: `rubberband-cli --timemap`
     (apt package; only `librubberband2` 3.3.0 is installed, no CLI, no headers), own WSOLA in Core, or ffmpeg per segment.
-    Built 2026-10-28 as `78c980d` (+ `6ea848b`): Rubber Band CLI with a key-frame map, `<clip>_stretched.wav`, experimental,
+    Built 2026-10-28 as `ca7b7c2` (+ `b858d04`): Rubber Band CLI with a key-frame map, `<clip>_stretched.wav`, experimental,
     on by default. **Open check (Patrik): listen to a stretched WAV** (`C0034` was deleted from the drive; `C0022_stretched.wav` exists, a
     25 → 30 → 25 ramp, so a small effect; a new 1080p 25 → 50 → 25 take is the better test) under the clip
     on a 25 fps timeline in Resolve: does it follow the slow motion, any artefacts at the ramp steps? Length and pitch are
     confirmed; the sound is not.
 20. **(2026-10-28) Ramp button** ("ramps up to a set fps and back"): the WebUI block's Ramp / Back is liked; a hardware
     button for it is not asked for yet.
-21. **(2026-10-28) `conform_fps`**, the project's timeline rate, default 25: `61d5bd0`. Nothing uses it yet.
+21. **(2026-10-28) `conform_fps`**, the project's timeline rate, default 25: `d7ff071`. Nothing uses it yet.
 13 (status). The hardware ISO dial already has Auto at position 0 (`App` `pcfSettingStepMode(action, "iso")`); the touch UI
     and WebUI lists are still to check.
 
@@ -66,11 +66,11 @@ with the decisions taken so far.
     CCMP levels, `ccmp::kBlack16`).
 
 22. **(2026-10-28) Resolution line** shows bit depth and Clear HDR on the same line and size as the pixels, in all three
-    displays (raw takes): Core `8492488`, UI `b36891d`. The "storage indicator fix" Patrik meant is already on `cinemate-port`
-    (`6ae70b5`, `87011d4`, UI `2d27c46`); no temp commit touched storage.
+    displays (raw takes): Core `eaf9538`, UI `1367b7f`. The "storage indicator fix" Patrik meant is already on `cinemate-port`
+    (`3c4f07d`, `bda2066`, UI `2d27c46`); no temp commit touched storage.
 23. **(2026-10-28) T33 scope (Patrik):** ISO, shutter-angle, FPS and WB arrays; free stepping with an increment for all four;
-    flicker-free shutter angles switchable at run time, as in Cinemate. **No `[camera] max_fps`** (`c55c453` reverted by
-    `a55230a`); `fps_max` stays in the state as the mode's own ceiling. Cinemate (`cinepi_controller.py:1450-1459`,
+    flicker-free shutter angles switchable at run time, as in Cinemate. **No `[camera] max_fps`** (`97adea0` reverted by
+    `bcedbe5`); `fps_max` stays in the state as the mode's own ceiling. Cinemate (`cinepi_controller.py:1450-1459`,
     `:3286-3299`, worktree `raw-pane-bulk-download`) adds flicker-free angles for `settings.light_hz` [50, 60] on every fps
     change, with two formulas, both off: 1/mains misses half the angles, `hz/(fps*k)*360` yields non-flicker-free ones
     (240° at 25/50). Physics: lamps flicker at 2 x mains, so exposure = k/(2 x mains): 25 fps/50 Hz → 90, 180, 270, 360°.
@@ -78,11 +78,11 @@ with the decisions taken so far.
     adds the capped value (`fps_max`) as the top selectable entry, marked as camera-set. Same for ISO with `iso_max`.
 
 25. **(2026-10-28) Recording frame**: optional red frame at the edges of the touch screen, HDMI and WebUI preview during a take,
-    next to REC; default off; switches in touch Settings → Monitoring and WebUI Live preview. Core `cded727`, UI `632d840`.
-26. **(2026-10-28) Only the flicker-free angles the system adds are green** in the shutter lists (as built in `8fd44e3`, `07cd559`).
+    next to REC; default off; switches in touch Settings → Monitoring and WebUI Live preview. Core `f4fb084`, UI `da2a9b5`.
+26. **(2026-10-28) Only the flicker-free angles the system adds are green** in the shutter lists (as built in `ff33d2d`, `ed0d7b5`).
 27. **(2026-10-28) Red timecode while recording as an option**, default on (the touch screen and WebUI were always red, HDMI
-    never); with it off all three stay white. Same commits as 25. Also 2026-10-28: lossless ISO cap 1600 (`40747b9`, as temp
-    753f181), and the resolution line says "16-bit" again (16 b tried and reverted).
+    never); with it off all three stay white. Same commits as 25. Also 2026-10-28: lossless ISO cap 1600 (`2f43ecc`, as temp
+    55e7ba9), and the resolution line says "16-bit" again (16 b tried and reverted).
 
 28. **(2026-10-28) T34 decisions:** A + R; a manual mode change turns the ladder off; Ramp-ready sticky; a preset naming
     another mode is refused. Next: measurements M1 (switch blink) and M3 (4K SDR 12-bit at 50 for 3 min, needs the 30 cap lifted
@@ -92,25 +92,25 @@ with the decisions taken so far.
     (`C0025`, `C0026`), storage fine. Longer test later (Patrik). A 50 fps rung 2 at 4K is not proven usable.
 
 30. **(2026-10-28) Unverified items** (auto ISO in lossless, stretched WAV sound, 50 fps, dials, …): `../unverified-speed-ramp-port.md`.
-    Also: ISO and WB dials reach Auto below the first value (`5778b70`, `12c9075`; Auto offered everywhere but Clear HDR).
+    Also: ISO and WB dials reach Auto below the first value (`60645d4`, `b5b787e`; Auto offered everywhere but Clear HDR).
 
 31. **(2026-10-28) Naming:** it is a *resolution*, not a rung, in messages and in the API (`resolutions`, `ladder_resolution`).
 32. **(2026-10-28) Compression is defined per ladder resolution** (none / lossless_jpeg / lossy_3to1 / lossy_5to1; default Clear HDR
     uncompressed, SDR lossless), and an active ladder overrides the Recording format's compression: greyed out with a note in both
-    UIs, refused in Core. Clear HDR 16-bit lossless overflowed the write queue, hence the default (`75e8de4`, `d0cb727`).
+    UIs, refused in Core. Clear HDR 16-bit lossless overflowed the write queue, hence the default (`f2ebe6e`, `3cae990`).
 
 ## 2. Done (patches and tutorials in this export)
 
 | Tutorial | Patches (apply in this order) | What |
 | --- | --- | --- |
-| T31 | Core `0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch` | FPS changes inside cDNG/MLV takes behind `fps_speed_ramp` (count-based numbering, one `FrameRate`/timecode base, real-time WAV, shutter policy, grace, `fps-ramp.txt`, `ramp_fps` stepper, which refuses up front in a take it cannot ramp). Rebased onto `cinemate-port` `7a545d9`; three steps differ from the first cloud version (tutorial status line) |
+| T31 | Core `0001-camera-speed-ramping-FPS-changes-during-cDNG-MLV-tak.patch` | FPS changes inside cDNG/MLV takes behind `fps_speed_ramp` (count-based numbering, one `FrameRate`/timecode base, real-time WAV, shutter policy, grace, `fps-ramp.txt`, `ramp_fps` stepper, which refuses up front in a take it cannot ramp). Rebased onto `cinemate-port` `b606c4f`; three steps differ from the first cloud version (tutorial status line) |
 | T32 | Core `0001-camera-cap-4K-Clear-HDR-16-bit-at-25-fps.patch`, `0001-web-speed-ramp-block-in-the-Recording-format-card.patch`; UI `0001-ui-4K-Clear-HDR-16-bit-offers-FPS-up-to-25.patch`, `0001-ui-FPS-picker-sends-only-set_fps-during-a-speed-ramp.patch` | 25 fps ceiling for 4K Clear HDR 16-bit in Core (clamp and PCF pot/button list), WebUI and touch UI; Speed Ramp block under Bit Depth in Settings → Record → Recording format (On/Off, Shutter Sync Angle/Exposure, Ramp to … over …, ×2, Back); the touch UI picker leaves the shutter to Core in a camera ramp take (not in a sound-only take) |
 
 FPS controls during a take with `fps_speed_ramp` on: WebUI pills and the Speed Ramp block, PCF pot, `fps:<n>`/`fps_up`/`fps_down` buttons
 (all `set_fps` or `ramp_fps`), touch UI picker (after T32 4.9). The touch UI's `ensureValidFpsSelection()` returns early with a
 bridge (`qml/CameraPage.qml:1557-1558`), so it does not fight a stepper.
 
-Neither is on GitHub `cinemate-port` (`6ae70b5`) yet. Checked in the cloud: every Core patch applies with plain `git am` on `7a545d9` and on the later tip `6ae70b5`, both UI patches on `dc471c1`; host
+Neither is on GitHub `cinemate-port` (`3c4f07d`) yet. Checked in the cloud: every Core patch applies with plain `git am` on `b606c4f` and on the later tip `3c4f07d`, both UI patches on `dc471c1`; host
 `g++ -fsyntax-only` of the Core files that do not need libcamera; `node --check` of the WebUI script; the WebUI block driven in
 Chromium against a mocked `/api/state`; the whole touch UI built with Qt 6.4.2. `CameraController.cpp` was not compiled
 (libcamera). Nothing ran on the Pi in the cloud session.
