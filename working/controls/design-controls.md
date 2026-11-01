@@ -1092,13 +1092,15 @@ The probes:
 > DRM says: `card1-DPI-1 connected, 1 mode` (information only; it says the same without a panel).
 > **[Yes, a DPI screen]** → "Then bus 1 stays gone: the DPI screen needs GPIO 2/3. Feed the hat's Qwiic hub 3.3 V and use
 > bus 10 with poll 50 ms (KB SRC §5)." No commands.
-> **[No, HDMI only]** → the commands, which **you** run (Apertar never edits config.txt):
+> **[No, HDMI only]** → the commands, which **you** run (Apertar never edits config.txt; *superseded, see the note below*):
 
 ```bash
 sudo cp /boot/firmware/config.txt /boot/firmware/config.txt.$(date +%Y%m%d-%H%M%S)
 sudo sed -i -E 's/^(dtoverlay=(vc4-kms-DPI-4inch|waveshare-4dpi|waveshare-touch-4dpi)([,[:space:]]|$))/#\1/' /boot/firmware/config.txt
 sudo reboot
 ```
+
+> **Note 2026-11-01:** "Apertar never edits config.txt" no longer holds on branch `drop-frames`. Core's Boot Config card (Settings → System) edits config.txt in place, with a review of the changed lines, a confirm tick for a display change and a backup (`config.txt.apertar.bak`). The fan mode writes through the same path. Both go through `writeBootConfigText` / `apertar-boot-config` (`drop-frames 4581a69`, `src/ApertarCoreApp.cpp:3472`). Status: unconfirmed (Pi check pending). See [architecture/config.md §7.1](../../architecture/config.md#71-boot-config-card-drop-frames).
 
 - The `sed` is generated from the overlay names Core found (`dpiCommands`), not from line numbers, which shift when the file
   is edited.

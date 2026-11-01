@@ -696,7 +696,7 @@ them:
 
 | Condition | Evidence | Card text |
 | --- | --- | --- |
-| Bus 1 missing, DPI overlay active | no `/dev/i2c-1`; `config.txt` has uncommented `dtoverlay=vc4-kms-DPI-*`, `waveshare-*dpi*` or `hyperpixel*` that apply to a Pi 5 (`[all]`/`[pi5]`, sketch check 9) | "Bus 1 does not exist. GPIO 2/3 are taken by the DPI overlay on /boot/firmware/config.txt lines 76-78 (vc4-kms-DPI-4inch, waveshare-4dpi, waveshare-touch-4dpi). Without a DPI panel you can turn them off. **You** run this; Apertar never edits config.txt:" + the box below. "With a DPI panel in use, bus 1 stays gone: feed the hat's Qwiic hub 3.3 V and use bus 10 with poll 50 ms (KB SRC §5)." |
+| Bus 1 missing, DPI overlay active | no `/dev/i2c-1`; `config.txt` has uncommented `dtoverlay=vc4-kms-DPI-*`, `waveshare-*dpi*` or `hyperpixel*` that apply to a Pi 5 (`[all]`/`[pi5]`, sketch check 9) | "Bus 1 does not exist. GPIO 2/3 are taken by the DPI overlay on /boot/firmware/config.txt lines 76-78 (vc4-kms-DPI-4inch, waveshare-4dpi, waveshare-touch-4dpi). Without a DPI panel you can turn them off. **You** run this; Apertar never edits config.txt (*superseded 2026-11-01, see the note below the table*):" + the box below. "With a DPI panel in use, bus 1 stays gone: feed the hat's Qwiic hub 3.3 V and use bus 10 with poll 50 ms (KB SRC §5)." |
 | Bus 1 missing, no `i2c_arm` | no `dtparam=i2c_arm=on` under `[all]`/`[pi5]` | "I2C on the header is off. Add `dtparam=i2c_arm=on` under `[all]` in /boot/firmware/config.txt (sudo nano), then reboot. Appending at the end lands under the last filter." |
 | Any bus missing | `/dev/i2c-N` absent | "Bus 4 does not exist on this Pi (buses: 1, 10, 13, 14). INA219: pick a bus that exists, or turn it off." |
 | Wrong seesaw | ID ≠ `0x87` | "0x48 on bus 10 answered 0x12, not 0x87: not a NeoRotary 4. 0x48 is the StarlightEye's TMP117." |
@@ -704,6 +704,8 @@ them:
 | Two masters | `0x34` on bus 1 **and** bus 10 | "The hat answers on bus 1 and bus 10. If JP3/JP4 are closed the hat joins the header bus and the camera bus. Unconfirmed: the StarlightEye's own controller may answer at 0x34 on bus 10 (KB R4 Q4)." |
 | Device on the camera bus | `bus=10` or `11` | "Bus 10 also carries the sensor's per-frame writes: use poll 50 ms or more." |
 | Saved, not applied elsewhere | `pending` | "Still to do (you): sudo systemctl restart apertar-cfe-automounter" |
+
+> **Note 2026-11-01:** "Apertar never edits config.txt" no longer holds on branch `drop-frames`. Core's Boot Config card edits config.txt in place, and the fan mode writes through the same path (`writeBootConfigText` / `apertar-boot-config`, `drop-frames 4581a69`). Status: unconfirmed (Pi check pending). See [architecture/config.md §7.1](../../architecture/config.md#71-boot-config-card-drop-frames).
 
 The command box is generated from the line numbers Core found. Contiguous lines become one `sed` range; otherwise one `-e`
 per line. It always starts with a backup:

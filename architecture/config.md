@@ -13,7 +13,7 @@ Every file and environment variable the Apertar stack reads, who parses it, and 
 | `~/.config/CinePi/DisplayCalibration.conf` | QSettings | UI | UI | UI start |
 | `~/.config/Apertar/StandbyBacklights.conf` | QSettings | UI | UI | standby |
 | `~/.local/share/Apertar-UI/presets/*.apertar-preset.json` | JSON | UI, Core | UI, Core WebUI | on demand |
-| `/boot/firmware/config.txt` (fan block) | Pi config | Core, UI | Core, UI (`sudo -n install`) | on demand |
+| `/boot/firmware/config.txt` | Pi config | Core, UI (fan block only) | Core (Boot Config card and fan mode, via `writeBootConfigText` / `apertar-boot-config`; `drop-frames`); UI fan block (`sudo -n install`, still its own writer) | on demand, boot |
 | `/home/pi/.apertar-tuning` | `NAME=VALUE` | Core (ProRes) | nobody | every ProRes clip open |
 | `$HOME/.cache/apertar-prores/<profile>.json` | libcamera tuning | libcamera | Core | camera open with a log profile |
 
@@ -367,10 +367,26 @@ UI-only keys: `horizontalLevelEnabled`, `horizontalLevelColor`, `monitoringOrder
 | --- | --- | --- |
 | Presets `*.apertar-preset.json` | UI: `~/.local/share/Apertar-UI/presets`, legacy `~/.config/CinePi/UI/presets`. Core: first existing of `$XDG_DATA_HOME/{Apertar-UI,ApertarUI}/presets`, `~/.local/share/{Apertar-UI,ApertarUI}/presets`, `~/.config/CinePi/UI/presets` | `Apertar-UI/src/SettingsBridge.cpp:1937-1958`; `App:5216-5262` |
 | `~/.config/CinePi/DisplayCalibration.conf` | `[builtin]`/`[hdmi]`: `enabled`, `red/green/blue`, `gamma`, `black`, `white` | `Apertar-UI/src/DisplayCalibration.cpp:49`, `:115-154` |
-| `/boot/firmware/config.txt` | `# BEGIN/END APERTAR FAN MODE` block (Silent / Full Blast; Auto removes it) | `App:3042-3178`; `Apertar-UI/src/SystemActionBridge.cpp:23-92` |
+| `/boot/firmware/config.txt` | `# BEGIN/END APERTAR FAN MODE` block (Silent / Full Blast; Auto removes it). On `drop-frames` the Boot Config card edits other lines too, see §7.1 | `App:3042-3178`; `Apertar-UI/src/SystemActionBridge.cpp:23-92` |
 | Tuning files | Default `/home/pi/Tuning-Files/defaults-pisp` (Pi 5), then `/home/pi/Tuning-Files/defaults`, `/usr/{local/,}share/libcamera/ipa/rpi/pisp` | `Apertar-Core/src/camera/DefaultTuningSelection.hpp:56-78` |
 | LUTs (`.cube`) | `/home/pi/LUTs`, `$APERTAR_MEDIA_ROOT/LUTs`, `/media/RAW/LUTs`, `/media/*/LUTs` | `Apertar-UI/src/SettingsBridge.cpp:140-162`; `App:5571-5600` |
 | `/home/pi/.apertar-tuning` | ProRes bench overrides; the environment wins | `Apertar-Core/src/prores/ProresEncoder.cpp:770-800` |
+
+### 7.1 Boot Config card (`drop-frames`)
+
+Before this, Apertar edited config.txt only for the fan block. Branch `drop-frames` (`4581a69`) adds a port of Cinemate's config.txt management. **Status: partly confirmed on the Pi (2026-11-01):** `get_boot_config` matched the file, writes go through the helper; the I²S round trip and Edit file are still to check. PR #1 merged into `drop-frames` (`4581a69`).
+
+- **Engine:** `src/hardware/BootConfigText.hpp`, pure text in, text out. Edits in place: comments/uncomments the existing line or changes its parameters; adds a line (next to lines of its kind) only when none exists. Every other byte is kept, the fan block included. It re-parses its result and refuses one that does not match the request, naming the line that still decides it. Test: `tools/boot_config_test.cpp` (63 checks; fixture is the dev Pi's real config.txt).
+- **Lines edited:** sensor per connector `dtoverlay=<sensor>[,cam0][,mono][,link-frequency=<Hz>]` in `[pi5]` (`[pi4]` on a Pi 4; cam1 is the overlay default, so no port word); `dtoverlay=rp1-clk-333mhz` in `[all]`; `dtparam=i2c_arm/i2s/spi=on` in the board section; `dtparam=audio=on` in `[all]`; display: the DPI list at the end (HDMI only / Waveshare 4" / Hyperpixel 4").
+- **Root helper:** `scripts/apertar-boot-config`, installed to `/usr/local/libexec/apertar-boot-config`, allowed by `config/apertar-boot-config.sudoers` (`/etc/sudoers.d/apertar-boot-config`). No arguments, new text on stdin. Keeps `config.txt.apertar.bak`, then syncs and renames. Test: `tools/boot_config_helper_test.sh` (10 checks).
+- **Core:** `writeBootConfigText()` (`App:3472`) is the one writer: direct write when allowed, else the helper, else `sudo -n install`. Fan mode (`applyFanMode`, `App:3559`) uses it too; both hold `bootConfigMutex()` (`App:3452`). Routes `GET/POST /api/boot-config` (`App:9068`, `:9077`) and `POST /api/boot-config/parse` (`App:9107`); socket commands `get_boot_config`, `set_boot_config` (`App:14043`, `:14046`). A POST takes `dry_run`, checks the `X-Apertar-Revision` header (409 when stale) and needs `confirm_display` for a display change.
+- **WebUI:** card in Settings → System, between Thermal and Power Actions. Save & Reboot lists the changed lines first; a display change needs a confirm tick. Also View file, Download, Upload.
+- **Edit file** (`3b87d99`, `2a4266e`): the whole file as text; `set_boot_config` takes `text` and the card's choices go on top, reviewed against the file on disk (removed lines too, `lineChanges`). `state.managed` lists every line a control or the fan mode may change, commented ones included; the editor shows those line numbers in italics with a legend, and says own lines go at the end of the file (`[all]`) or in the board section.
+- **Found on the Pi (confirmed 2026-11-01):** switching Camera 0 IMX585 colour → mono → colour dropped `link-frequency=891000000` (two saves, journal `via helper`). Fixed in `b3e7f52`. The helper write path itself worked.
+- **Rollback:** copy `/boot/firmware/config.txt.apertar.bak` back over config.txt (with a card reader if the Pi does not boot).
+- **Second writer left:** `Apertar-UI/src/SystemActionBridge.cpp` still writes the fan block itself, outside Core's lock. Being moved to Core's `set_fan_mode` (in progress).
+
+All refs `drop-frames 4581a69`, `Apertar-Core-drop/src/ApertarCoreApp.cpp`.
 
 Runtime markers (`/run/apertar-ui/{core-start-ready,main-ui-ready}`, `/run/apertar-cfe/ready`, `/run/apertar-standby-*`, `/run/apertar-network/*`) are covered in [core.md](core.md#24-the-startup-gate).
 
