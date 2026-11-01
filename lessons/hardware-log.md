@@ -1035,7 +1035,7 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   The touch UI's display work was the last straw on that memory load, not the root cause (probable mechanism; the
   measured part is the table). This also explains why a reboot looked like a cure and why the evening drifted.
 - Consequences: the UI A/B results of the evening (peaking cost, CPU mask, display plane, preview cap) were measured under
-  this pressure and are not valid as they stand; re-check them with `sync` before keeping any UI change. Core `a65b4e1`
+  this pressure and are not valid as they stand; re-check them with `sync` before keeping any UI change. Core `adac040`
   (Mac, not yet on the Pi) makes `sync` the default; `APERTAR_DNG_DONTNEED=writer` restores the old one. `sync` needs the
   sync thread (`APERTAR_MEDIA_SYNC_MS` > 0, default 1000); lossy DNG has none and behaves as `off`.
 - Not yet known: a 10-minute take; lossy DNG and SDR 12-bit 33 fps under `sync`; whether the I2C encoder poll (NeoRotary 4,
