@@ -24,7 +24,7 @@ at 598 MB/s); mode (B) is 3840x2200 unpacked 16-bit at 25 fps (415 MB/s linear, 
   `6ef0ddc` is byte-identical to `4d5fdd1` apart from pre-roll bookkeeping and an off-by-default RT knob (direct diff, V-F5 row 14). Confidence:
   LOW either way.
 - **(A) has two independent gates and both are open.** Cycle: the record brackets it at **−2.7 ms (M3) to ≥ +2.5 ms** (the 2026-11-01 pre-roll:
-  115 frames at a measured 60.0 fps, 3840x2160 lossless, `d44b177`, 2 s, probably 8 raw buffers ⇒ mean cycle ≤ 17.5 ms; derived, V-F2 §3.2); the
+  115 frames at a measured 60.0 fps, 3840x2160 lossless, `d44b177`, 2 s, probably 8 raw buffers ⇒ mean cycle ≤ 17.5 ms; derived, V-F2 §3.2; V-F6 §5 states ≤ 16.7 ms and ≥ +3.3 ms assuming 4 buffers, and this page follows V-F2, which traced the 8-buffer drop-in); the
   two models (F2: 10-14 ms; R9/L2 scaling: 19-20 ms, TDN on) disagree and cannot arbitrate (V-F2 §3.1). Storage: 622 MB/s against **733-759 MB/s**
   direct `dd` for ≤ 5 s inside the pSLC cache (measured, `T22.md:17`, `clearhdr-design.md:130`), **556-572 MB/s** buffered single `dd` (measured),
   **525 MB/s for 60 s** (the most Core has sustained, derived, `hardware-log.md:586-590`): no datum ≥ 600 MB/s longer than 5 s exists (V-F4 row 3);
@@ -39,17 +39,19 @@ at 598 MB/s); mode (B) is 3840x2200 unpacked 16-bit at 25 fps (415 MB/s linear, 
   736-764`), all with the WebUI closed; the fourth (A2, 1491 one-frame gaps, `APERTAR_DNG_WRITEBACK=0`, speed ramp probably on, WebUI state
   unrecorded) is unexplained. The conditions are the A0 protocol: WebUI closed (or `APERTAR_WEB_PREVIEW_RECORDING_FPS=0`), drive trimmed, speed
   ramp off, first take after any reconfigure or reboot discarded, nothing else running on the Pi. Margin **+2.0 to +5.3 ms** at the A0 load
-  (derived from the 30 fps L1/L2 cycle windows 34.7-38.0 ms, `hardware-log.md:210,225`; V-F2 §5), load-dependent: no 25 fps cycle window exists, and
+  (derived from the 30 fps L1/L2 cycle windows 34.7-38.0 ms, `hardware-log.md:210,225`; V-F2 §5; V-F6 §5 gives ≥ +3.8 ms steady from the pre-L1 window alone, and this page follows V-F2's range), load-dependent: no 25 fps cycle window exists, and
   the four 2026-10-31 short takes with the WebUI open lost 2-10 frames each. **No (B) take of any length exists on `d44b177` or later** (V-F5 §1).
 - **(B) with Log: UNKNOWN.** One take: 117 frames, 10 gaps, WebUI open, pre-squash build (`hardware-log.md:782-784`). The LUT runs on the copy worker
   after the camera request is released (code, `CameraController.cpp:4871-4890@6ef0ddc`), so it is neutral on the serial cycle by construction, but it
   adds +0.62 GB/s of DRAM traffic net (derived, V-F3) against a back end measured to stretch 2.6x under such traffic, and that one take had the worst
   gap rate of its evening (6.9 ms/frame after the first gap, V-F6 E6). Storage is not the question (311 MB/s, 42 % of the measured ceiling).
 - **The decisive measurement for both modes** is one `LIBCAMERA_LOG_LEVELS=RPI:0,RPiStream:0` window per mode parsed with
-  `working/tools/be_cycle.py` on counted 60 s takes, default tuning then the `_notdn` copy, with every confounder read back (section 6). For (B) it
+  `working/tools/be_cycle.py` on counted 60 s takes, default tuning then the `_notdn` copy, with every confounder read back (section 6). The first act, before any take, is the read-only rig state (section 6 test 2: the
+  `tdn` count in the tuning files, the libcamera build, free space, priorities), which decides whether the tuning lever exists at all and whether a
+  10 min (A) take fits the card; the DNG clock forensics (test 1) run beside it at zero rig time and change no verdict on their own. For (B) it
   decides the margin; for (A) it decides whether the 22.7 ms cycle reproduces on the shipping build and whether TDN is the term.
 - **Levers, in the order they pay:** the tuning copies without `tdn` (two files, `set_tuning_file`; estimated, the only double-digit lever in (B));
-  WebUI preview paused during takes (−0.2 to −0.5 ms/frame, measured on an old build); O_DIRECT for the uncompressed writer, promoted by V-F6 because
+  WebUI preview paused during takes (0.23 ms/frame measured idle on an old build, 0.3-0.5 ms estimated while recording); O_DIRECT for the uncompressed writer, promoted by V-F6 because
   writer-side state produced capture gaps twice (T22's buffered `dd` with Core idle; A2); the rest are jitter absorbers (8 raw buffers, FE config
   queue depth, per-thread FIFO, `DONTNEED=sync`), storage-side fits (10-bit, 2076, Log, RAM mode) or hygiene (trim, ramp off, swap off, first-take
   discard). The reference the operator raised, cinemate, has no counted take of either mode; its own May-2026 table rated 4K 12-bit at 38 fps
@@ -114,7 +116,7 @@ this load at all.
   withdrawn in favour of "the two SDR models bracket the budget; only `be_cycle.py` decides" (V-F2 §5).
 - **TDN state is unverified.** Every TDN-on figure assumes `rpi.denoise.tdn` is present in `/home/pi/Tuning-Files/defaults-pisp/imx585.json`
   (probable, strongly: every PiSP IMX585 tuning of that size class carries three `tdn` blocks, V/H2); the file is on the Pi only. If TDN is already
-  off, the top lever is moot and M3's 22.7 ms is not the back end (F2 A.4).
+  off, the top lever is moot and M3's 22.7 ms is not the back end (F2 §1, V-F2 §3.1).
 - **Two IPA facts banked for (A).** At 50 fps the IPA already runs its algorithms on alternate frames by default (`controller_min_frame_duration_us`
   33333, `ipa_base.cpp:480-498@c682979`), so S1 averages ~0.8 ms, not 1.6 (V-F6 E8). And the FE Config queue is 2 deep: a CameraManager-thread
   stall longer than ~24 ms starves the FE_CONFIG node with the same dt = 2T signature as a raw-pool starvation (V-F1 E2); no measurement shows it
@@ -133,11 +135,11 @@ this load at all.
   20 ms period in the last minutes. c has never been measured; A0/A1 (75,000 dentries, clean) only exclude c ≳ 450 ns (V-F4 E1). Break-even between
   minute 3 and minute 10.
 - **Thermal and link.** 415 MB/s for 10 min took the drive from 34 to 54 °C (measured, `hardware-log.md:745-748`); at 622 MB/s a cold start lands
-  around 60-65 °C and a back-to-back take 75-85 °C against an 82.9 °C warning threshold (estimated, linear-with-rate model). Two unplanned controller
+  60-85 °C depending on the start temperature against an 82.9 °C warning threshold (estimated, linear-with-rate model). Two unplanned controller
   drops at Gen 3 on 2026-10-26 (idle) and `errors=remount-ro` mean a single I/O error ends the take (F4 §2.2-2.3).
 - **The formats that fit by arithmetic** (storage side only; none changes the cycle, since COMP1 is 1 B/px at every SDR depth): 10-bit **518.5 MB/s**
   (71 % of 733; `set_raw_bit_depth 10`, writer path exists); 3840x2076 **598.0 MB/s** (82 %; M3's mode, −3.9 % rows); lossless JPEG **299-455 MB/s**
-  (one scene measured at 5.98 MB/frame; encoder ~69 fps estimated, ~57 % of 4 cores at 50 fps). 60 fps uncompressed (746.6 MB/s) does not fit.
+  (one scene measured at 5.98 MB/frame; encoder ~69 fps estimated, ~57 % of 4 cores at 50 fps; R8 §4 case 5, F4 L2). 60 fps uncompressed (746.6 MB/s) does not fit.
 - **Free-space precondition:** ≥ 373 GB free for one 10-minute uncompressed take at 2160 (359 GB at 2076, 311 GB at 10-bit); the drive is 932 GB and
   held 206 GB free on the M3 day (V-F6 E4). 2.5-2.7 takes walk the allocation cursor around the volume once; Core's trim (at mount, after ≥ 1 GiB
   deletes, after pre-roll deletes) is what keeps the wrap harmless (12 of 12 trimmed synthetic runs clean, `hardware-log.md:708-712`).
@@ -162,7 +164,7 @@ Every step records: WebUI clients (`ss -tnp state established '( sport = :8080 )
 
 | Take | Build, conditions | Result | Label | Source |
 |---|---|---|---|---|
-| C0101 (2026-10-26) | `114bfb9`, 4 writers / queue 12 / 8 raw buffers, drive 35 % full, never trimmed, no sync thread yet, WebUI state unrecorded | **10 min, 15019 / 15019 frames, 0 holes**, WAV = frames | measured | `hardware-log.md:386, 389`; `T27.md:12`; V-F4 row 9 (F4 had omitted it) |
+| C0101 (2026-10-26) | `114bfb9`, 4 writers / queue 12 / 8 raw buffers, drive 35 % full, never trimmed, no sync thread yet, WebUI state unrecorded | **10 min, 15019 / 15019 frames, 0 holes**, WAV = frames | measured | `hardware-log.md:386, 388`; `T27.md:12`; V-F4 row 9 (F4 had omitted it) |
 | A0 (2026-10-30) | `a40112a`, defaults (`SYNC_MS=1000 WRITEBACK=1 QUEUE=12 BUFFERS=8`), fstrim before, **WebUI closed**, Core restarted before the take, speed ramp probably on (persisted; harmless by code) | **10 min, 15001 frames, no `drop[...]` line of any kind**, `peak_queue=2/12`, dirty 11 MB, stop syncfs 214 ms, drive 34 → 54 °C | measured | `hardware-log.md:736-755`; V-F5 row 11 |
 | A1 (2026-10-30) | as A0 with `SYNC_MS=0` | **10 min, 15000 frames, 0 in every counter**, `peak_queue=1/12` | measured | `hardware-log.md:757-764` |
 | A2 (2026-10-30) | as A0 with `SYNC_MS=0 WRITEBACK=0`; WebUI state not stated; speed ramp **on (probable)**: `missing=0` beside 1491 timestamp holes is only possible with count-based numbering (`nextFrameIndex`, `CameraController.cpp:4471-4480@6ef0ddc`, V-F5 row 13) | **13503 of ~15000, `dropped_gap_estimate=1491`**, ~2.5 one-frame gaps/s at dt ≈ 80,000 µs, steady, queue 1/12 ⇒ an effective surplus of **4.4 ms/frame** (derived) | measured; cause unexplained | `hardware-log.md:765-777`; V-F2 row 9; V-F6 E2 |
@@ -173,7 +175,7 @@ Every step records: WebUI clients (`ss -tnp state established '( sport = :8080 )
 
 Frequency, honestly stated: 3 of 4 ten-minute linear takes clean on trimmed or lightly filled drives, 0 of 0 on the shipping build, 0 of 4 short takes
 clean with the WebUI open (V-F5 §5). The only variable with a consistent split for capture gaps is the WebUI state (closed in all three clean 10-minute
-takes, open in all four lossy short takes, unknown in A2), and its measured cost (0.3-0.5 ms/frame) is too small to be the whole deficit (V/H4), so
+takes, open in all four lossy short takes, unknown in A2), and its cost (0.23 ms/frame measured idle, 0.3-0.5 ms estimated while recording) is too small to be the whole deficit (V/H4), so
 something co-varied (reboot, Log, the ssh query, DRAM bursts).
 
 ### 3.2 The margin
@@ -196,7 +198,7 @@ something co-varied (reboot, Log, the ssh query, DRAM bursts).
 
 WebUI closed (or `APERTAR_WEB_PREVIEW_RECORDING_FPS=0`), drive trimmed by Core (`media_trim_last_unix` before the take), `fps_speed_ramp` off and
 read back, phase lock off, `APERTAR_STORAGE_PREROLL=0` for the series (else every restart runs a 60 fps burst with its own drops), the first take after
-any reconfigure or reboot discarded (3 of 4 first takes were lossy on 2026-10-26), nothing else on the Pi (no ssh journal queries during a take),
+any reconfigure or reboot discarded (first takes after a reconfigure were often lossy on 2026-10-26; F5 B2, unverified as a rate), nothing else on the Pi (no ssh journal queries during a take),
 defaults otherwise (`SYNC_MS=1000`, `WRITEBACK=1`, `DONTNEED=writer`, 8 raw buffers, 4 writers / queue 12), and every confounder read back as in §2.5.
 Judge drops from `dropped_gap_estimate`, `dropped_queue_full`, `dropped_copy_slot` and frames against WAV seconds × fps, never from `takes.sh missing`.
 
@@ -248,7 +250,7 @@ Ordered by expected gain per unit cost. "Gain" is per frame inside the serial cy
 | 2 | WebUI preview paused while recording | Core callback (serial) | **−0.2 to −0.5 ms** per frame whenever a browser streams (measured idle 0.23 ms on an old build, 0.3-0.5 recording estimated; V/H4); plus the MJPEG thread's 2-5 ms/frame of CPU and the page's polling threads off the box | no browser preview during takes (HDMI unaffected) | nil | drop-in `Environment=APERTAR_WEB_PREVIEW_RECORDING_FPS=0` (or `10`); today: close the tab | yes (fb557e9) |
 | 3 | Trim before every series | drive | removes the 0.9 TB post-wrap stall class (queue-full bursts; 12/12 trimmed synthetic runs clean vs 29-77 % lost untrimmed, `hardware-log.md:708-716`); 0 on capture gaps | 0.47 s per trim; never during a take | — | automatic in 6ef0ddc (mount, Core deletes ≥ 1 GiB, free-space jump ≥ 1 GiB, pre-roll deletes); `sudo fstrim -v /media/RAW` before a series; check `media_trim_last_unix` | yes |
 | 4 | Speed ramp off (`set_fps_speed_ramp false`) | sensor / bookkeeping | 0 on the mean; removes the confounder that made A2's `missing=0` beside 1491 gaps (count-based numbering only with the ramp on, `CameraController.cpp:4471-4480, 9022@6ef0ddc`) and the period changes that cost frames (phase lock 10 holes/60 s measured) | none | none | socket / UI; read `fps_speed_ramp` from `get_state` before every take | yes |
-| 5 | First-take discard | procedure | 3 of 4 first takes after a reconfigure were lossy on 2026-10-26 (`clearhdr-design.md:111-119`); the 2026-10-31 gaps came minutes after a reboot | one wasted take per series | — | discard the first take after any reconfigure, Core restart or reboot; compare first and second | — |
+| 5 | First-take discard | procedure | first takes after a reconfigure were often lossy on 2026-10-26 (F5 B2 reads 3 of 4, unverified; `clearhdr-design.md:111-135` shows 2 of 5 and 4 of 5 in two series); the 2026-10-31 gaps came minutes after a reboot | one wasted take per series | — | discard the first take after any reconfigure, Core restart or reboot; compare first and second | — |
 | 6 | 8 raw buffers in SDR (`APERTAR_RAW_CAMERA_BUFFERS=8`; 12 in Clear HDR) | CFE pool | **0 on the mean** (M3: 355 vs 358 lost, measured); one-off lateness tolerance 64 → 144 ms at 50 fps, 287 → 447 ms at 25 fps with 12 (derived, V-F1 E1); hides a transient (first-seconds) deficit entirely | +33 MB (8, SDR) / +68 MB (12, HDR) of cached heap; N frames of preview latency while a backlog drains | none | drop-in `Environment=` (the unit carried 8 since 10-28, state today unverified) | yes |
 | 7 | FE config queue depth (`num_cfe_config_queue: 4` in the pipeline handler YAML, `/usr/share/libcamera/pipeline/rpi/pisp/*.yaml`; 12 are allocated, 2 in flight by default, `pisp.cpp:1381-1382@c682979`, same in the fork clone) | CFE config node | CameraManager-thread stall tolerance before a config starvation: 2T − R = **24 → 64 ms** at (A), 47 → 127 ms at (B) (derived, V-F1 E2); 0 on the mean; no measurement shows the node firing | zero memory | the installed YAML's key is unverified; a stage-1-only idle window with `LIBCAMERA_LOG_LEVELS=RPI:0,RPiStream:0` and `grep 'CFE Config'` shows the re-queue latency first | edit the YAML (or `LIBCAMERA_RPI_CONFIG_FILE` to a copy), restart Core | libcamera config only |
 | 8 | Per-thread SCHED_FIFO on the completion thread (`APERTAR_RT_CAPTURE_PRIORITY=70`) | scheduling | **0 to −2 ms on tails**, tens-hundreds of µs expected, only when all four cores are busy (≈ 5 % of wake-ups by the independence model, more with the WebUI and with correlated writer wake-ups, V-F3 item 8); 0 on the mean | reinstall `config/apertar-core-capture-priority.conf` (now with `LimitRTPRIO=80`), `daemon-reload`, restart; the IPA proxy thread stays SCHED_OTHER unless `chrt -f -p 70 <tid>` | RT throttling only if a Core thread spins (none found); whole-process `APERTAR_RT=1` is the wrong shape (FIFO writers can block the capture thread) and stays a control arm | drop-in; verify the journal line `capture scheduling: … SCHED_FIFO priority=70`; `/proc/<pid>/task/<tid>/schedstat` for the wait per frame | yes (`CameraController.cpp:8672-8699`) |
@@ -271,7 +273,9 @@ NVMe (the Gen 3 x1 link is the ceiling), a USB SSD (neither mode fits linear; (B
 ## 5. Corrections this phase makes to `dng-chain-answer.md` and `dng-chain/STATUS.md`
 
 Each entry: where, the exact old statement, the new statement, who established it. None of these flips a verdict of the earlier page; several change
-numbers or labels that later pages must not repeat.
+numbers or labels that later pages must not repeat. **Applied 2026-11-01** (kb commit `fba14dc`): items 1, 4, 5, 6, 9, 10, 11 and 12 are now inline in
+`dng-chain-answer.md`, `dng-chain/STATUS.md` and `V/VERDICTS.md`, item 7 as a qualification of the blanket sentence; the quoted old statements and
+line numbers below are those of the pages before that edit, kept so the change can be audited.
 
 1. **CFE raw pools are 4 and 8, not 6 and 10.** `dng-chain-answer.md:140`: "unchanged when the raw buffers went from 4 to 8 (CFE pools of 6 and 10
    with libcamera's two internal buffers)". New: "unchanged when the raw buffers went from 4 to 8 (the CFE pool is exactly Core's count: the raw stream is
@@ -339,7 +343,7 @@ numbers or labels that later pages must not repeat.
     takes". New: "C0101 (2026-10-26, `114bfb9`, 35 % full, untrimmed, 15019/15019), A0 and A1 (`a40112a`, trimmed, WebUI closed); 3 of 4 ten-minute takes
     on trimmed or lightly filled drives, A2 the unexplained fourth; 4 of 4 three-minute (B) takes clean without the whole-fs `syncfs` (2 of 2 on today's
     default policy)". V-F4 row 9, V-F5 E2.
-12. (Addition) **M3 wrote 525 MB/s, not 500; and `hardware-log.md:775` is wrong as a rule.** F5's "~500 MB/s (11.4 MB/frame)" → 2632 × 11.96 MB / 60 s =
+12. (Addition) **M3 wrote 525 MB/s, not 500; and `hardware-log.md:773-774` is wrong as a rule.** F5's "~500 MB/s (11.4 MB/frame)" → 2632 × 11.96 MB / 60 s =
     525 MB/s (V-F5 E1; the brief's figure). The log entry's "the numbering counts written frames, so capture gaps leave no hole" holds only with the speed
     ramp on (`countOnly = settings_.fpsSpeedRamp`, `CameraController.cpp:9022@6ef0ddc`); with it off a gap leaves a numbering hole (V-F5 E5). Also:
     C0016 (2026-10-29, 310 missing in 30 holes) is an SDR 12-bit lossless 25 fps take, not a (B) take (V-F5 E3).
@@ -357,7 +361,7 @@ E-plan step is the one in `dng-chain-answer.md` §6. Every take records the conf
 | 3 | **Drive sustained-write curve, Core stopped** | the pSLC knee and the post-cache plateau on this x1 link; temperature; link state; flush counts | `sudo fio --name=w --filename=/media/RAW/fio.bin --rw=write --bs=1M --direct=1 --iodepth=32 --numjobs=1 --size=400G --write_bw_log=… --log_avg_msec=1000` on the trimmed, cooled drive; `/sys/block/nvme0n1/stat`, `nvme smart-log` temperature, `lspci -vv … LnkSta`, `dmesg -w` per second | **10 min** (knee at ~1.5 min, thermal plateau at 5-10 min) | plateau ≥ 700 MB/s for all 600 s, no thermal dip, link at 8 GT/s x1 throughout | (A)'s storage gate for uncompressed 2160 (622 MB/s); below ~650-700 ⇒ 10-bit (518.5) or 2076 (598.0) | E4 storage part (answer §6 item 4) |
 | 4 | **The real file pattern, Core stopped** | four-writer exFAT create + write at (A)'s rate; the per-dentry constant c | `/home/pi/ab-tests/variant2.py` at 50 files/s × 12,443,140 B, one folder, 12-deep queue, per-file open/write/close latency vs index; `iostat -x 1 nvme0n1`; or a 30,000-file `open(O_CREAT)` loop with names `cDNG_26-11-01_C0001_%09d.dng` timing each create (slope ÷ 5 = c) | 10 min | 50 files/s held for 600 s, queue never above 6/12, per-file latency at file 30,000 no worse than at file 1,000 by more than 10 ms | whether the O(N) create scan overruns the 20 ms period before minute 10, and whether Core's buffered 4-writer path reaches 622 MB/s at all | F4 §4 step 2; V-F4 §5 |
 | 5 | **Stage-1-only idle windows** (Core running, not recording) | CFE frame-start cadence per mode with the pipeline idle; Config re-queue latency | drop-in `LIBCAMERA_LOG_LEVELS=RPI:0,RPiStream:0` + `LIBCAMERA_LOG_FILE=/dev/shm/rpi0.log`; `be_cycle.py` on the `CFE Image buffer dequeue` timestamps; `grep 'CFE Config'`; `csi2_errors` and `dmesg | grep -c Orphanded` before/after (needs `rp1_cfe.track_csi2_errors=1`) | 60 s per mode (3840x2160 50 fps; 3840x2076; Clear HDR 25 fps); one 10 min idle window at 4K50 for D-PHY integrity | frame count = 60 × fps ± 1; every dt = period ± 0.05 ms; counters 0; no Orphanded line | clears the sensor/link/RP1/CFE stage per mode, so any gap while recording is the cycle or the pool | F1 §4; V-F1 §5 |
-| 6 | **(A) 60 s cycle windows** | S1-S4 and the cycle per frame while recording; the four counters | same drop-in, `APERTAR_STORAGE_PREROLL=0`, WebUI closed, ramp off, ladder off, trimmed; `takes.sh 1 60` at 3840x2160 12-bit uncompressed 50 fps; `python3 -I working/tools/be_cycle.py /dev/shm/rpi0.log`; then 3840x2076; then lossless; then **with `imx585_notdn.json`**; then one arm with `APERTAR_DNG_WRITEBACK=0` and one idle `dd conv=fdatasync` repeat on this build | 60 s per arm (~3000 cycles; the SDR pool hides ≤ 2-6 frames) | gap 0; cycle median ≤ 20 ms and p90 ≤ 20 + slack (~64 ms with 4 buffers, 144 with 8) | whether M3's 22.7 ms reproduces on `6ef0ddc`; S2 ≥ 17 ms ⇒ BE-bound and TDN off applies (S2 falls with bytes); S2 small with a long cycle ⇒ software latency (FIFO, WebUI pause, config queue, pipelining); S2 unchanged with TDN off ⇒ compute-bound, no configuration lever left; the writeback arm separates the BE-bytes and writeback suspects | E4 → E5 (+ V-F6 §5 arms) |
+| 6 | **(A) 60 s cycle windows** | S1-S4 and the cycle per frame while recording; the four counters | same drop-in, `APERTAR_STORAGE_PREROLL=0`, WebUI closed, ramp off, ladder off, trimmed; `takes.sh 1 60` at 3840x2160 12-bit uncompressed 50 fps; `python3 -I working/tools/be_cycle.py /dev/shm/rpi0.log`; then 3840x2076; then lossless; then **with `imx585_notdn.json`**; then one arm with `APERTAR_DNG_WRITEBACK=0` and one idle `dd conv=fdatasync` repeat on this build; `top -H -b -d 1` and `hwcount.py` on the CameraManager tid during one arm (no per-thread CPU reading exists in this mode, V-F3 §5) | 60 s per arm (~3000 cycles; the SDR pool hides ≤ 2-6 frames) | gap 0; cycle median ≤ 20 ms and p90 ≤ 20 + slack (~64 ms with 4 buffers, 144 with 8) | whether M3's 22.7 ms reproduces on `6ef0ddc`; S2 ≥ 17 ms ⇒ BE-bound and TDN off applies (S2 falls with bytes); S2 small with a long cycle ⇒ software latency (FIFO, WebUI pause, config queue, pipelining); S2 unchanged with TDN off ⇒ compute-bound, no configuration lever left; the writeback arm separates the BE-bytes and writeback suspects | E4 → E5 (+ V-F6 §5 arms) |
 | 7 | **(B) 60 s cycle windows** | the first 25 fps cycle measurement in the kb, linear and Log, default tuning and `_clearHDR_notdn`; S2 before and after | same instrument at 3840x2200 16-bit 25 fps, A0 protocol | 60 s per arm | cycle median ≤ 40 ms; p90 ≤ 36 ms with the default tuning ⇒ the copy is optional; S2 ≈ 35 → ≈ 12 ms with TDN off ⇒ memory-bound | the real (B) margin; whether TDN off is mandatory; Log's cycle cost on the current build | E5 |
 | 8 | **(B) 10-minute soaks on `6ef0ddc`** | the shipping build under the A0 protocol | `takes.sh 1 600` × 3 linear, × 3 Log, then one with the WebUI open (`APERTAR_WEB_PREVIEW_RECORDING_FPS` 30 vs 0); `top -H -b -d 1` and `hwcount.py` on the CameraManager tid during one take (CPU and IPC) | 10 min each (A2's class shows in 60 s, the 10-31 class in 5 s, the drive class needs minutes) | 0 in every counter, `peak_queue` ≤ 2/12, stop `syncfs` < 200 ms in 3 of 3 | (B) linear YES on the shipping build; Log's status; whether "WebUI closed" stays a condition | E2, E1 |
 | 9 | **(A) 10-minute acceptance** (only after tests 3 and 6 pass) | the whole chain at 622 MB/s (or 518.5 / 598.0) | three interleaved 10 min takes in the chosen format; `peak_queue`, `/sys/block/nvme0n1/stat`, temperature, `dmesg` per second; one take with the WebUI open | 10 min × 3 | as test 8; `peak_queue` ≤ 3/12 throughout (a climb from minute ~2 is the post-pSLC rate binding) | (A) YES UNDER CONDITIONS in that format, or the storage fallback | E4 acceptance |

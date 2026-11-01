@@ -6,7 +6,7 @@ below the line as the first message, or say "read `~/Documents/Apertar/apertar-k
 and start".
 
 The verdict page is `working/dng-chain-feasibility.md`; the earlier answer page is `working/dng-chain-answer.md`; the code is
-draft PR Tiramisioux/Apertar-Core#3. This file is the work order.
+Core PR #3, merged into `drop-frames` on 2026-11-01. This file is the work order.
 
 ---
 
@@ -27,9 +27,11 @@ decisions they unlock. Nothing from that session has run on the Pi yet.
 4. The Core README's "Write-path knobs for A/B tests" table on branch `claude/adoring-euler-n8zi0j` (the nine knob-gated
    commits over `drop-frames` 92d0970; PR #3, draft, unbuilt).
 
-Both repositories' work is on GitHub branch `claude/adoring-euler-n8zi0j` (kb PR #3 against `main`, Core PR #3 against
-`drop-frames`). Fetch and check out those branches on the Mac first (`git fetch origin claude/adoring-euler-n8zi0j` in
-both), or ask Patrik whether he wants the PRs merged first. Run `~/.claude/skills/apertar-dev/scripts/apertar_status.sh`
+Both PRs were merged by Patrik on 2026-11-01: Core PR #3 into `drop-frames` (its head `6ef0ddc`; PRs #4 and #5 from other
+sessions landed on `drop-frames` right after it, so build the `drop-frames` head, not `6ef0ddc`), and kb PR #3 into `main`.
+One kb follow-up (the critic's fixes to the feasibility page and this paragraph) is on branch `claude/adoring-euler-n8zi0j` as a
+new draft PR; merge or fetch it. On the Mac: `git -C ~/Documents/Apertar/Apertar-Core fetch origin drop-frames` and
+`git -C ~/Documents/Apertar/apertar-kb pull origin main`. Then run `~/.claude/skills/apertar-dev/scripts/apertar_status.sh`
 and report the Core and kb branch tips on the Mac, the Pi and GitHub before anything else.
 
 ## Patrik's rules for this effort
@@ -84,8 +86,8 @@ Bad worker tasks: deciding whether a verdict changes, writing the log entry, cho
 4. **The real file pattern, Core stopped.** `variant2.py` (or a 30,000-file `open(O_CREAT)` loop) at 50 files/s x 12,443,140 B
    in one folder for 10 min, timing each create. Pass: 50 files/s held, per-file latency at file 30,000 no worse than at
    file 1,000 by more than 10 ms. Decides whether exFAT's directory scan overruns the 20 ms period before minute 10.
-5. **Build the branch on the Pi, then stage-1-only idle windows.** Fetch `claude/adoring-euler-n8zi0j` into the Pi's
-   checkout as a work branch, build, Patrik restarts. Drop-in `LIBCAMERA_LOG_LEVELS=RPI:0,RPiStream:0` and
+5. **Build `drop-frames` on the Pi, then stage-1-only idle windows.** Fetch `drop-frames` (which now contains the nine knob
+   commits) into the Pi's checkout, build, Patrik restarts. Drop-in `LIBCAMERA_LOG_LEVELS=RPI:0,RPiStream:0` and
    `LIBCAMERA_LOG_FILE=/dev/shm/rpi0.log`; 60 s idle per mode; `python3 -I working/tools/be_cycle.py /dev/shm/rpi0.log`.
    Pass: frame count = 60 x fps +- 1, every dt = period +- 0.05 ms, `csi2_errors` 0. Decides that the sensor/link/CFE stage
    is clean, so any later gap is the cycle or the pool.
