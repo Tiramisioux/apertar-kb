@@ -12,6 +12,12 @@ The handoff for the Mac session that drives the work is `../handoff-drop-frames.
 
 ## 0. Outcome (2026-10-31) {#outcome}
 
+> **2026-11-01 night (read first): [night-2026-11-01.md](night-2026-11-01.md).** The remaining capture losses at 4K Clear
+> HDR 16-bit 25 fps came from page-cache pressure: Core's per-frame `posix_fadvise(DONTNEED)` on still-dirty pages (the old
+> default `APERTAR_DNG_DONTNEED=writer`, the same call is hard-coded upstream). `APERTAR_DNG_DONTNEED=sync` took 3-minute
+> takes to 0 lost and a 10-minute take to 0.17 %; Core `a65b4e1` (Mac only) makes it the default. The evening's UI A/B
+> results were measured under that pressure and need re-checking. Every take of the evening: [takes-2026-11-01.md](takes-2026-11-01.md).
+
 **One sentence.** The dropped frames were the recording drive's state, not Apertar's buffer: after about 0.9 TB of writing
 without a trim the NVMe stalls for seconds (and can hang its controller); trimming it restores it. Core now trims by itself,
 and the campaign also added Log (smaller files), a switchable large RAM buffer with a safety stop, and an on-screen buffer

@@ -1,7 +1,7 @@
 # Handoff: fewer dropped frames in Apertar + CineMate Log (Mac, Claude Code in VS Code)
 
 > **Superseded (2026-11-01).** W1 to W6 are built or re-planned (the cause was the drive's trim state, not the queue).
-> Do not follow the work order below. Start from `working/drop-frames/README.md` §0 "Open items"; Core and UI are on the
+> Do not follow the work order below. Start from `working/drop-frames/night-2026-11-01.md`, then `working/drop-frames/README.md` §0; Core and UI are on the
 > local/GitHub branch `drop-frames` (not `cinemate-port`). Kept for the history of the plan.
 
 
