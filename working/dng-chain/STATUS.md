@@ -22,7 +22,7 @@ The answer page will be `working/dng-chain-answer.md`.
 | R6 | Domain: Linux exFAT internals, NVMe HMB, trim, bandwidth, writeback, libcamera | running |
 | R7 | Apertar-Core capture side: completion thread, requeue, capture gaps, previews, pre-roll | done |
 | R8 | Apertar-Core encoder path and data-rate model per case | done |
-| R9 | What each stack asks libcamera for; the ISP back-end serial cycle; link utilisation | running |
+| R9 | What each stack asks libcamera for; the ISP back-end serial cycle; link utilisation | done |
 
 ## Findings already firm enough to act on (each has its refs in the report named)
 
@@ -84,3 +84,15 @@ and the critic as described above; write `working/dng-chain-answer.md` in the kb
 18. The raw copy pool holds 6 vectors for 4 writers plus a 12-frame queue, so pool misses recur whenever the queue holds more than
     about two frames; each miss zero-fills a fresh 16.6 MB vector while holding the mutex libcamera's thread needs (R3, R7).
 19. Swap was on and in use during takes on the Pi (hardware-log 2026-10-26); cinemate's installer disables swap (R3).
+
+### Added with R9 (libcamera configuration and the ISP back end)
+20. Both stacks ask libcamera for the same two streams (a 1280x720 YUV420 preview and the raw stream). The decisive difference is
+    the tuning file: cinemate's installer overwrites libcamera's imx585.json with a 5-algorithm file that has NO rpi.denoise, so the
+    PiSP back end runs without temporal denoise (TDN); Apertar's tuning (not in any repo) probably carries TDN. TDN reads and writes a
+    full frame at the CFE format inside the serial per-frame cycle: back-end bytes per 4K SDR frame 29.0 MB (Apertar, COMP1, TDN on)
+    against 19.8 MB (cinemate, 16-bit container, no TDN), and 57.6 against 20.0 MB in Clear HDR 16-bit. Bytes-scaled from the one
+    measured cycle, Apertar's SDR cycle at 50 fps is 19-23 ms (T34 M3 delivered 44 fps = 22.7 ms); with TDN off 8-11 ms (R9, probable).
+21. Link and RP1 are identical on both rigs (891 MHz = 1782 Mbps/lane on the D-PHY's 1500 bin, RP1 overclock) and inside the envelope
+    at 4K 50 fps 12-bit (70 % of the link, 80 % of the RP1 pixel rate); they do not separate the stacks (R9).
+22. Cheapest test for both residual cases: a tuning copy without the tdn blocks, selected with set_tuning_file / APERTAR_TUNING_FILE,
+    measured with working/tools/be_cycle.py and a counted 60 s take (R9).
