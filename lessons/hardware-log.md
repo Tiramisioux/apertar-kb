@@ -903,3 +903,29 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Why: `/boot/overlays` is a symlink to `firmware/overlays` on this image, so `dkms.postinst` installing to `/boot/overlays/` already reaches the firmware's folder (the handoff's packaging worry does not apply here). DKMS `PACKAGE_VERSION` stays 0.0.1: tell builds apart by `modinfo` srcversion (`29403D42A3919123B7FA091` now, `C7771CBE2AC6D72E964F0C2` before).
 - Confirmed by: Patrik, ran `setup.sh` and rebooted; dmesg, the Core journal and `get_state` (`ready`) read by Claude. No takes yet.
 - Tutorial: none
+
+## 2026-11-01: the running touch UI costs about 7 % of frames at capture; A0 was clean with it running (regression)
+
+- Tested: Core `drop-frames` `4b2eeac`, UI `drop-frames` `41ff827`, Pi up 10 min, drive trimmed at mount and after the
+  pre-roll's delete (`media: trim ... result=trimmed`), `buffer=ram`, env `APERTAR_RAW_CAMERA_BUFFERS=8`. Three 60 s takes,
+  4K 25 fps Clear HDR 16-bit uncompressed cDNG, Log off, ladder off for the test, driven over the socket (`core.py
+  record_start/record_stop`), no other ssh traffic during a take. WebUI clients counted with `ss` on `:8000`.
+- Seen:
+
+  | Take | Touch UI | WebUI | Written / 1500 | `dropped_gap_estimate` |
+  | --- | --- | --- | --- | --- |
+  | 19:09 | running | closed | 1389 | 104 (6.9 %) |
+  | 19:11 | running (restarted 3 to 5 s in) | open, one tab | 1357 | 136 (9.1 %) |
+  | 19:13 | stopped | closed | 1500 | 0, no `drop[...]` line |
+
+  All three: `dropped_queue_full=0`, `peak_queue=2/12`, no write failure, stop sync 20 to 22 ms. Every gap is one missing
+  frame (`dt_us` about 80 000 at a 40 000 nominal), about 1.7 to 2.3 a second, steady from second 3 to 5 to the end. The
+  start-up pre-roll showed the same shortfall (60 requested, 56.8 measured).
+- Why: the touch UI running is the main cause; the WebUI preview adds about a third more. The writers and the drive are
+  clean. The 10-minute A0 take (2026-10-30, Core `a40112a`) lost 0 of 15001 with the touch UI running (started 2026-10-30
+  01:04:19, A0 at 08:30), so this is a regression since then, in the UI (8 commits since `ea44bd7`) or in what Core sends
+  it (preview feed, `buffer` events, settings re-emits): not yet split. It replaces the reading of the 2026-10-31 entry
+  ("short takes lose a few frames"): it is a steady loss through the whole take, not a start-up effect.
+- Not yet known: which side changed (one take with the A0-era UI `ea44bd7` on today's Core splits it); the mechanism.
+- Confirmed by: Patrik ("touch ui was running for a0"; confirmed the reading).
+- Tutorial: none.
