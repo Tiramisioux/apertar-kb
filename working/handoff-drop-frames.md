@@ -1,5 +1,10 @@
 # Handoff: fewer dropped frames in Apertar + CineMate Log (Mac, Claude Code in VS Code)
 
+> **Superseded (2026-11-01).** W1 to W6 are built or re-planned (the cause was the drive's trim state, not the queue).
+> Do not follow the work order below. Start from `working/drop-frames/README.md` §0 "Open items"; Core and UI are on the
+> local/GitHub branch `drop-frames` (not `cinemate-port`). Kept for the history of the plan.
+
+
 For: the next `apertar-dev` session on the Mac, in Claude Code inside VS Code, with Sonnet workers
 for the scoped tasks. Written 2026-10-29 in a cloud session from source. Paste the part below the
 line as the first message, or say "read `~/Documents/Apertar/apertar-kb/working/handoff-drop-frames.md`
