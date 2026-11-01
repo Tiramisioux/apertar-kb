@@ -176,7 +176,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `a51c95e` | `APERTAR_PREVIEW_PEAKING=fast`: focus peaking from the Y plane (R8 EGLImage per buffer, 3 single-channel fetches) instead of 3 YUV-to-RGB samples; Pi 4/5 external path only, Pi 3 planar path unchanged; branch `drop-frames` | fork-only; on the Pi, not on GitHub |
 | `322d329` | `APERTAR_PREVIEW_DIRECT=1`: the processed preview drawn straight into the window (the Pi 3 path) on Pi 4/5, no display-size FBO + blit per redraw; A/B for the capture losses; branch `drop-frames` | fork-only; on the Pi, not on GitHub |
 | `4724007` | `APERTAR_PREVIEW_PEAKING=cpu`: the focus-peaking edge mask computed on the CPU from the Y plane once per preview frame (8-bit, source size), the shader only reads it; Pi 4/5 external path; branch `drop-frames` | fork-only; on the Pi, not on GitHub |
-| `3238472` | `APERTAR_PREVIEW_PLANE=1`: live picture on the DRM primary plane from the camera dma-buf (like rpicam-apps DRM preview), Qt in atomic mode on an ARGB overlay plane, zebra/peaking drawn as marks only; new `DrmPreviewPlane`, links libdrm; branch `drop-frames` | fork-only; on the Pi, not on GitHub |
+| `c13b846` | `APERTAR_PREVIEW_PLANE=1`: live picture on the DRM primary plane from the camera dma-buf (like rpicam-apps DRM preview), Qt in atomic mode on an ARGB overlay plane, zebra/peaking drawn as marks only; new `DrmPreviewPlane`, links libdrm; branch `drop-frames` | fork-only; on the Pi, not on GitHub |
 
 ## libcamera · `Tiramisioux/libcamera` branch `apertar` · base will127534 `qbc-pisp-handler` (`7e9fef0`)
 
