@@ -142,6 +142,31 @@ is still written down but is low priority now that drive state explains the big 
 13. The clip-name card: set Time of day compact, record, `ls` the clip folder (names and the `.wav` follow); set Original and check the names are identical to before; drag pills in a browser (mouse DnD, and long-press with touch); the same on the touch UI (not tried: no touch screen).
 14. The generated preview LUTs against Resolve exports of the same transforms (same test chart: grey ramp and a colour checker), per profile.
 
+### Found after the reboot (2026-11-01 22:28-22:54; measured, reading not yet confirmed by Patrik)
+
+**`APERTAR_DNG_DONTNEED=sync` (PR #3 knob) makes 4K Clear HDR 16-bit 25 fps clean with the touch UI running.**
+3-minute takes, Core `64bbbaa`, UI `c13b846` with no switch, normal GPU preview, peaking + zebra on, audio meter off, WebUI
+closed, script `/tmp/take3.sh` (copy in the Mac scratchpad of that session):
+
+| Uptime | Core setting | Lost / 4500 | Free memory before | `pgsteal_kswapd` during the take | low-watermark hits |
+| --- | --- | --- | --- | --- | --- |
+| 1 min | default `writer` | 1 | fresh boot | not measured | - |
+| 5 min | `writer` | 34 | 300 MB | 3.45 M pages | 1805 |
+| 9 min | `writer` | 153 | 275 MB | 3.04 M | 948 |
+| 13 min | `writer` | 71 | 327 MB | 3.02 M | 990 |
+| 19 min | **`sync`** | **0** | 646 MB | 47 k | 8 |
+| 23 min | **`sync`** | **0** | 507 MB | 58 k | 11 |
+
+- Probable mechanism: with `writer` the fadvise(DONTNEED) runs on still-dirty pages, frees nothing and drains the per-CPU
+  LRU lists on every core per frame (README knob table); the page cache fills (~2.6 GB) and kswapd then reclaims ~13 GB per
+  3-minute take. That memory/CPU load plus the UI's display work starves the capture path (single-frame capture gaps).
+  `sync` drops the pages after the once-a-second fsync, when they are clean.
+- This explains the evening's drift and why a fresh boot was clean; the UI A/B results above were all measured under this
+  cache pressure and need re-checking with `sync` before any UI change is kept (with `sync` the original UI is clean).
+- Not yet done: a 10-minute take; making `sync` the default in Core (a one-line default change, Patrik decides); lossy DNG
+  (the knob table says lossy then behaves as `off`); SDR 12-bit 33 fps; whether `sync` needs `APERTAR_MEDIA_SYNC_MS` > 0.
+- The `/run` drop-in `apertar-core.service.d/dontneed.conf` is active until the next reboot.
+
 ### Where we stopped (2026-11-01 22:20; read first next session)
 
 Measured tonight after the CPU-mask entry (hardware-log), **not yet confirmed by Patrik as a reading**:
