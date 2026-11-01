@@ -992,7 +992,7 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   | `APERTAR_UI_PREVIEW_RECORDING_FPS=12` (preview 12/s while recording) | on / on | 9.1 % | 43 (2.9 %) |
   | `APERTAR_UI_PREVIEW_RECORDING_FPS=0` (preview held while recording) | on / on | 4.7 % | **0** (1498 written) |
   | `APERTAR_PREVIEW_PEAKING=fast` (edge from the Y plane, fewer fetches) | on / on | 12 % | 132 (8.8 %): no gain |
-  | `fast` + `APERTAR_PREVIEW_DIRECT=1` (no display-size FBO + blit) | on / on | 13 % | 81 (5.4 %) |
+  | `fast` + `APERTAR_PREVIEW_DIRECT=1` (no display-size FBO + blit) | on / on | 13 % | 81 (5.4 %): **no-op, read as spread** (correction, same day: with `hdmi_external_only=true` the main window is hidden and the HDMI picture comes from the external-monitor window, whose renderer already draws straight into the window) |
   | `APERTAR_PREVIEW_PEAKING=cpu` (edge mask on the CPU, shader reads it) | on / on | 19.6 % | **58 (3.9 %)**; peaking looks the same |
   | Core `APERTAR_RAW_CAMERA_BUFFERS=12` (UI unchanged) | on / on | - | 158 (10.5 %): no effect |
 
