@@ -20,7 +20,7 @@ The answer page will be `working/dng-chain-answer.md`.
 | R4 | Mounting: Apertar-UI automounter vs cinemate's, exFAT specifics | done |
 | R5 | Evidence pass over the kb and the handbook | done |
 | R6 | Domain: Linux exFAT internals, NVMe HMB, trim, bandwidth, writeback, libcamera | running |
-| R7 | Apertar-Core capture side: completion thread, requeue, capture gaps, previews, pre-roll | running |
+| R7 | Apertar-Core capture side: completion thread, requeue, capture gaps, previews, pre-roll | done |
 | R8 | Apertar-Core encoder path and data-rate model per case | done |
 | R9 | What each stack asks libcamera for; the ISP back-end serial cycle; link utilisation | running |
 
@@ -62,3 +62,15 @@ and the critic as described above; write `working/dng-chain-answer.md` in the kb
     the 0.9 TB stall can come back in a record/delete session driven from the touch UI (R4, lead L1).
 11. A `discard` mount is not a substitute for the fstrim helper: the 6.12 exfat driver issues one synchronous discard per freed 128 KB
     cluster under `bitmap_lock` (~1.9 million for a 15000-frame clip) (R4).
+
+### Added with R7 (capture side)
+12. A capture gap is pure sensor-timestamp arithmetic (dt > 1.5 periods between recorded frames); the timestamp is the kernel's SOF
+    stamp, so a gap always means the CFE did not deliver a frame (no raw buffer queued at SOF, or a CSI-2 discard). Core reads no
+    sequence numbers, so it cannot attribute a gap; it only bounds its own share with drop[copy-slot], which never appears in the logs (R7).
+13. One blocking hazard on libcamera's thread remains: hasCapacityForFrame takes DngRecordingQueue::mutex_, which the copy worker holds
+    while it zero-fills a fresh 16.6 MB vector when the raw pool is cold (first ~6 frames after a reconfigure, or queue depth > 6) (R7).
+14. When a browser streams the WebUI preview, a 1280x720 -> 640x360 downsample runs on libcamera's completion thread every frame (R5, R7).
+15. No SCHED_FIFO or CPU affinity anywhere in Core; the nice -5 on the callback thread depends on a LimitNICE drop-in that nothing
+    installs (whether it is in effect on the Pi is unconfirmed) (R7).
+16. The pre-roll is a real take through the same queue; a pre-roll that writes >= 1 GiB (4K 12-bit uncompressed at 60 fps ~1.43 GB)
+    queues a full fstrim right before the operator's first take, and record_start kills a trim that runs longer than 2 s (R7).
