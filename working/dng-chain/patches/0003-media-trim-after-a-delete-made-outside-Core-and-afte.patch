@@ -1,0 +1,62 @@
+From 04bac896961b8fb76d878aea481154a138fd069d Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 12:16:34 +0000
+Subject: [PATCH 3/5] media: trim after a delete made outside Core, and after
+ every pre-roll clip delete
+
+Why: Core trims the drive after its own deletes that free 1 GiB or more, but the touch UI
+deletes clips itself (Apertar-UI cliplistmodel.cpp removes the files directly), so a shooting
+day driven from the touch UI never trims and the stall after about 0.9 TB of writing can come
+back. The storage pre-roll deletes 0.7 to 1.4 GB per run, below or around the threshold, right
+before the operator's first take. Found by the kb's research (working/dng-chain, R4 and R5/R7).
+
+What: the media watcher asks for a trim when the mounted medium gains 1 GiB or more between two
+polls while nothing records and no Core delete runs (reason "free-space"); the pre-roll always
+asks for one after it removes its clip. Both go through the existing idle-only trim worker and
+coalesce with pending requests.
+
+Tested: the file syntax-checks on the host. Not run on the Pi: delete a clip from the touch UI
+and expect "media: trim ... reason=free-space" in the journal within a second or two.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ src/ApertarCoreApp.cpp | 13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 95d0766..5873990 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -3863,11 +3863,11 @@ def mount_partition(device_path):
+         return False
+ 
+     if fs_type == "ntfs":
+-        command = ["mount", "-t", "ntfs3", "-o", "uid=1000,gid=1000", device_path, MOUNT_PATH]
++        command = ["mount", "-t", "ntfs3", "-o", "uid=1000,gid=1000,umask=0002,noatime", device_path, MOUNT_PATH]
+     elif fs_type == "ext4":
+-        command = ["mount", "-t", "ext4", device_path, MOUNT_PATH]
++        command = ["mount", "-t", "ext4", "-o", "noatime", device_path, MOUNT_PATH]
+     elif fs_type == "exfat":
+-        command = ["mount", "-t", "exfat", "-o", "uid=1000,gid=1000", device_path, MOUNT_PATH]
++        command = ["mount", "-t", "exfat", "-o", "uid=1000,gid=1000,umask=0002,noatime", device_path, MOUNT_PATH]
+     else:
+         return False
+ 
+@@ -10464,6 +10464,13 @@ void ApertarCoreApp::runMediaWatcher()
+             mediaSnapshot_ = current;
+             mediaSnapshotValid_ = true;
+         }
++        // A delete made outside Core (the touch UI removes clips itself) frees space without a trim: when the
++        // mounted medium gains 1 GiB or more between two polls while nothing records, ask for one. Core's own
++        // deletes already request theirs; repeated requests coalesce (kb working/dng-chain, R4).
++        if (havePrevious && current.mounted() && previous.mounted() && current.sameMedium(previous) &&
++            current.freeBytes > previous.freeBytes && current.freeBytes - previous.freeBytes >= (1ULL << 30) &&
++            !camera_.isRecording() && !mediaDeleteActive_.load())
++            trimMedia("free-space");
+         if (!havePrevious || !current.sameMedium(previous)) {
+             std::cerr << "ApertarCore media: state=" << current.stateName()
+                       << " device=" << current.device << " fstype=" << current.fstype
+-- 
+2.43.0
+

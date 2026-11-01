@@ -8,7 +8,7 @@ pre-roll has an effect. Sources: Apertar-Core `drop-frames` 92d0970, Apertar-UI 
 
 Method: nine reader reports (R1..R9, assignments in `assignments/`, rules in `BRIEF.md`), then three syntheses from
 different lenses, a merge, adversarial verification of every hypothesis (code, evidence, mechanism), a completeness critic.
-The answer page will be `working/dng-chain-answer.md`.
+The answer page will be `working/dng-chain-answer.md`. Syntheses: S1 (storage), S2 (capture/CPU), S3 (evidence). Code changes made so far: `patches/README.md`.
 
 ## State (updated as reports land)
 
