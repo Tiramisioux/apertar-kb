@@ -16,7 +16,7 @@ The answer page will be `working/dng-chain-answer.md`.
 | --- | --- | --- |
 | R1 | cinepi-raw DNG write chain and history | done |
 | R2 | cinemate storage, mounting, kernel tuning, scheduling, pre-roll, docs, history | done |
-| R3 | Apertar-Core write chain on drop-frames and history | running |
+| R3 | Apertar-Core write chain on drop-frames and history | done |
 | R4 | Mounting: Apertar-UI automounter vs cinemate's, exFAT specifics | done |
 | R5 | Evidence pass over the kb and the handbook | done |
 | R6 | Domain: Linux exFAT internals, NVMe HMB, trim, bandwidth, writeback, libcamera | running |
@@ -74,3 +74,13 @@ and the critic as described above; write `working/dng-chain-answer.md` in the kb
     installs (whether it is in effect on the Pi is unconfirmed) (R7).
 16. The pre-roll is a real take through the same queue; a pre-roll that writes >= 1 GiB (4K 12-bit uncompressed at 60 fps ~1.43 GB)
     queues a full fstrim right before the operator's first take, and record_start kills a trim that runs longer than 2 s (R7).
+
+### Added with R3 (Apertar write chain)
+17. Per uncompressed 4K DNG Core makes ~43 syscalls (open, fadvise, 1 + 34 + 1 write()s of 64-row chunks, fadvise DONTNEED, close,
+    reopen + sync_file_range + close) and three full copies of the frame (copy worker memcpy, writer scratch pack, kernel copy), four
+    with Log; cinepi-raw makes 4 syscalls and two copies. About 99.5 MB of memory traffic per 16-bit frame (2.5 GB/s at 25 fps)
+    against cinepi-raw's 66 MB (R3, R8). For 16-bit the writer's scratch pass is a plain memcpy of rows with stride == rowBytes:
+    an avoidable full pass.
+18. The raw copy pool holds 6 vectors for 4 writers plus a 12-frame queue, so pool misses recur whenever the queue holds more than
+    about two frames; each miss zero-fills a fresh 16.6 MB vector while holding the mutex libcamera's thread needs (R3, R7).
+19. Swap was on and in use during takes on the Pi (hardware-log 2026-10-26); cinemate's installer disables swap (R3).
