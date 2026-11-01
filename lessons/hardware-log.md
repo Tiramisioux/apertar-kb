@@ -973,3 +973,38 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Targets (Patrik, 2026-11-01): 4K Clear HDR 16-bit at 25 fps first; 4K SDR 12-bit at 33 fps.
 - Confirmed by: Patrik ("ok" to the readings).
 - Tutorial: none.
+
+## 2026-11-01: the losses follow the touch UI's GPU preview work, mostly focus peaking; what helped and what did not
+
+- Tested: Core `drop-frames` `64bbbaa` (Core restarted between some runs), UI `drop-frames` `c234d77` to `4724007` with A/B
+  environment switches on `apertar-ui-direct` (`/run` drop-ins), 60 s takes over the socket, 4K Clear HDR 16-bit
+  uncompressed 25 fps, ladder off for the take, WebUI closed and no build on the Pi (checked before and after each take),
+  HDMI 1920x1080@60. UI CPU from `pidstat` during the take.
+- Seen (lost = `dropped_gap_estimate`; all `dropped_queue_full=0`, queue peak 2/12):
+
+  | UI setting during the take | Peaking / zebra | UI CPU | Lost |
+  | --- | --- | --- | --- |
+  | unchanged | on / on | 12 % | 6-10 % (several takes) |
+  | unchanged | **on / off** | 13 % | 156 (10.4 %) |
+  | unchanged | off / off | 12 % | 25 (1.7 %) |
+  | unchanged, audio meter off | on / on | 13 % | 133 (8.9 %) |
+  | `QT_QPA_EGLFS_SWAPINTERVAL=2` and `=4` | on / on | 12 % | 130, 95: no effect (eglfs_kms ignores it here) |
+  | `APERTAR_UI_PREVIEW_RECORDING_FPS=12` (preview 12/s while recording) | on / on | 9.1 % | 43 (2.9 %) |
+  | `APERTAR_UI_PREVIEW_RECORDING_FPS=0` (preview held while recording) | on / on | 4.7 % | **0** (1498 written) |
+  | `APERTAR_PREVIEW_PEAKING=fast` (edge from the Y plane, fewer fetches) | on / on | 12 % | 132 (8.8 %): no gain |
+  | `fast` + `APERTAR_PREVIEW_DIRECT=1` (no display-size FBO + blit) | on / on | 13 % | 81 (5.4 %) |
+  | `APERTAR_PREVIEW_PEAKING=cpu` (edge mask on the CPU, shader reads it) | on / on | 19.6 % | **58 (3.9 %)**; peaking looks the same |
+  | Core `APERTAR_RAW_CAMERA_BUFFERS=12` (UI unchanged) | on / on | - | 158 (10.5 %): no effect |
+
+  Qt render timing (`QSG_RENDER_TIMING=1`, 20 s each, not counted for losses): the UI redraws about 30 times a second;
+  aids on: frame 13.6 ms mean, swap 8.7 ms mean / 32 ms p95, 186 of 582 frames >= 20 ms; aids off: 9.7 ms, swap
+  6.3 / 29 ms, 96 of 612 frames >= 20 ms.
+- Why: the capture losses follow the GPU work of the touch UI's live preview, and focus peaking is most of it (zebra is
+  close to free). Less GPU work per camera frame helps in proportion; fewer camera buffers are not the cause (12 changed
+  nothing). Probable mechanism: memory-bus contention between the GPU and the capture path; not established. Upstream
+  Apertar draws peaking the same way (shader step 1/1920 x 1/1080 on Core's 1280x720 preview, `kPreviewWidth/Height`).
+  CineMate shows its preview on a DRM display plane with no GPU per frame (rpicam-apps DRM preview); its capture path
+  (two copies, buffered writes) is otherwise the same as Core's.
+- Not yet known: the DRM-plane preview (`APERTAR_PREVIEW_PLANE`, being written); whether CPU peaking plus the plane reaches 0.
+- Confirmed by: Patrik ("put the results in the hardware log"; peaking with the CPU mask "looks the same").
+- Tutorial: none.
