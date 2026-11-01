@@ -1,0 +1,192 @@
+From 15cac85d1719d3a70a124f4c36476f850141d476 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:56 +0000
+Subject: [PATCH 2/8] rec: allocate raw copies outside the queue mutex, warm
+ the pool at take start, keep it through the take
+
+Why: the copy worker allocated a fresh 16.6 MB vector (zero-fill and page faults, 3 to 5 ms on
+the Pi's 16 KiB pages) while holding DngRecordingQueue::mutex_, the mutex libcamera's completion
+thread takes for every frame in hasCapacityForFrame; the pool kept only workers + 2 copies
+against a 12-frame queue, so a miss recurred at every new high of circulating copies, and the
+first take after a (re)configure started with an empty pool. Verification (kb working/dng-chain,
+V/H5) shows the completion thread can only meet the held mutex when the copy worker already lags
+by most of a frame period, which no take has shown: this is hygiene with an expected effect on
+drops near zero, not a fix.
+
+What: acquireRawBuffer releases the mutex before it allocates. warmRawPool() allocates the idle
+pool (the old count) before the writers start, outside the lock. While a take runs the pool may
+keep queue + workers + 2 copies (frames mode) or whatever the ram budget allows, so no copy is
+freed and allocated again mid-take; stop() trims the pool back to the idle count. The byte cap in
+recycleRawBuffer is skipped for the unbounded ram-mode count. APERTAR_RAW_POOL_WARM=0 restores the
+old rule for the A/B. Memory: up to 16 pooled copies (265 MB at 4K 16-bit) while a take runs,
+the idle count (66 to 100 MB) after it.
+
+Tested: the whole file syntax-checks with the libcamera block enabled against generated upstream
+libcamera headers (same 25 fork-versus-upstream errors before and after, none new). Reviewed
+(V/PATCHES.md): no lock nesting, no double lock, overflow guarded, pool trimmed only after the
+writers are joined. Not built or run on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ src/camera/CameraController.cpp | 110 ++++++++++++++++++++++++++------
+ 1 file changed, 90 insertions(+), 20 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index edbcc74..debf59f 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -4150,6 +4150,7 @@ public:
+                           : normalWorkerCount));
+         workerCount_ = workerCount;
+         workers_.reserve(workerCount);
++        warmRawPool();   // the idle pool, allocated before any writer or copy worker runs
+         // Once a second, fsync the files written since the last tick and then the
+         // clip folder, so a pull or a crash leaves readable frames up to about a
+         // second before it; the data is already on its way (startWriteback). syncfs
+@@ -4282,6 +4283,7 @@ public:
+             }
+         }
+         workers_.clear();
++        trimRawPoolToIdle();
+         // A sync thread left behind may still use its descriptor.
+         if (mediaDirFd_ >= 0 && joinAll)
+             ::close(mediaDirFd_);
+@@ -4622,26 +4624,84 @@ public:
+ 
+     std::vector<uint8_t> acquireRawBuffer(size_t size)
+     {
++        {
++            std::lock_guard<std::mutex> lock(mutex_);
++            expectedRawBufferSize_ = size;
++            auto reusable = std::min_element(rawPool_.begin(), rawPool_.end(), [size](const std::vector<uint8_t> &lhs,
++                                                                                       const std::vector<uint8_t> &rhs) {
++                const bool lhsFits = lhs.capacity() >= size;
++                const bool rhsFits = rhs.capacity() >= size;
++                if (lhsFits != rhsFits)
++                    return lhsFits;
++                return lhs.capacity() < rhs.capacity();
++            });
++            if (reusable != rawPool_.end() && reusable->capacity() >= size) {
++                std::vector<uint8_t> buffer = std::move(*reusable);
++                rawPool_.erase(reusable);
++                pooledRawBytes_ = pooledRawBytes_ > buffer.capacity()
++                    ? (pooledRawBytes_ - buffer.capacity())
++                    : 0;
++                buffer.resize(size);
++                return buffer;
++            }
++        }
++        // A pool miss allocates without the lock: libcamera's completion thread takes mutex_ for every frame
++        // (hasCapacityForFrame), and a 16.6 MB zero-fill under it held that thread up (kb dng-chain, R3/R7).
++        return std::vector<uint8_t>(size);
++    }
++
++    // APERTAR_RAW_POOL_WARM=0 restores the old pool rule for the A/B: no copies allocated before the take
++    // starts, and at most workers + 2 pooled copies while it runs (a deep queue then frees and allocates
++    // 16.6 MB vectors frame after frame).
++    static bool rawPoolWarmEnabled()
++    {
++        static const bool enabled = boolEnvValue("APERTAR_RAW_POOL_WARM", true);
++        return enabled;
++    }
++
++    // The first take after a (re)configure found the pool empty. Allocate the idle pool before the writers
++    // start, outside the lock, so the copy worker never allocates its first copies with mutex_ held.
++    void warmRawPool()
++    {
++        if (!rawPoolWarmEnabled())
++            return;
++        const size_t frameBytes = static_cast<size_t>(frameBytesHint_);
++        if (frameBytes == 0)
++            return;
++        size_t missing = 0;
++        {
++            std::lock_guard<std::mutex> lock(mutex_);
++            expectedRawBufferSize_ = frameBytes;
++            size_t fitting = 0;
++            for (const std::vector<uint8_t> &buffer : rawPool_)
++                if (buffer.capacity() >= frameBytes)
++                    ++fitting;
++            const size_t want = idleRawPoolSize();
++            missing = fitting < want ? want - fitting : 0;
++        }
++        if (missing == 0)
++            return;
++        std::vector<std::vector<uint8_t>> fresh;
++        fresh.reserve(missing);
++        for (size_t i = 0; i < missing; ++i)
++            fresh.emplace_back(frameBytes);
+         std::lock_guard<std::mutex> lock(mutex_);
+-        expectedRawBufferSize_ = size;
+-        auto reusable = std::min_element(rawPool_.begin(), rawPool_.end(), [size](const std::vector<uint8_t> &lhs,
+-                                                                                   const std::vector<uint8_t> &rhs) {
+-            const bool lhsFits = lhs.capacity() >= size;
+-            const bool rhsFits = rhs.capacity() >= size;
+-            if (lhsFits != rhsFits)
+-                return lhsFits;
+-            return lhs.capacity() < rhs.capacity();
+-        });
+-        if (reusable == rawPool_.end() || reusable->capacity() < size)
+-            return std::vector<uint8_t>(size);
++        for (std::vector<uint8_t> &buffer : fresh) {
++            pooledRawBytes_ += buffer.capacity();
++            rawPool_.push_back(std::move(buffer));
++        }
++    }
+ 
+-        std::vector<uint8_t> buffer = std::move(*reusable);
+-        rawPool_.erase(reusable);
+-        pooledRawBytes_ = pooledRawBytes_ > buffer.capacity()
+-            ? (pooledRawBytes_ - buffer.capacity())
+-            : 0;
+-        buffer.resize(size);
+-        return buffer;
++    // Between takes the pool keeps the idle number of copies; what a take grew beyond that is freed here.
++    void trimRawPoolToIdle()
++    {
++        std::lock_guard<std::mutex> lock(mutex_);
++        const size_t keep = idleRawPoolSize();
++        while (rawPool_.size() > keep) {
++            const size_t capacity = rawPool_.back().capacity();
++            pooledRawBytes_ = pooledRawBytes_ > capacity ? pooledRawBytes_ - capacity : 0;
++            rawPool_.pop_back();
++        }
+     }
+ 
+     // Drop the pooled raw copy buffers. The pool survives takes, so the camera
+@@ -5138,7 +5198,7 @@ private:
+ 
+         const size_t expectedSize = expectedRawBufferSize_;
+         const size_t maxRetainedBuffers = preferredRawPoolSize();
+-        const size_t maxRetainedBytes = expectedSize > 0 ? expectedSize * maxRetainedBuffers : 0;
++        const size_t maxRetainedBytes = expectedSize > 0 && maxRetainedBuffers <= 4096u ? expectedSize * maxRetainedBuffers : 0;
+         const size_t oversizeThreshold = expectedSize > 0 ? expectedSize + (expectedSize / 2) : 0;
+ 
+         if ((expectedSize > 0 && capacity > oversizeThreshold)
+@@ -5229,11 +5289,21 @@ private:
+         std::cerr << "ApertarCore buffer: " << plan.reason << (plan.ram ? (fromEnv ? " source=env" : " source=conf") : "") << "\n";
+     }
+ 
+-    size_t preferredRawPoolSize() const
++    // Pooled copies kept between takes (the rule since db17860).
++    size_t idleRawPoolSize() const
+     {
+         return std::min(maxQueuedFrames_, std::max<size_t>(workerCount_ + 2u, 4u));
+     }
+ 
++    // While a take runs: room for every frame the queue and the writers can hold at once, so a copy is never
++    // freed and allocated again mid-take (in ram mode the byte budget in recycleRawBuffer is the bound).
++    size_t preferredRawPoolSize() const
++    {
++        if (rawPoolWarmEnabled() && active_.load(std::memory_order_acquire))
++            return ramMode_ ? std::numeric_limits<size_t>::max() : maxQueuedFrames_ + workerCount_ + 2u;
++        return idleRawPoolSize();
++    }
++
+     CaptureSettings settings_{};
+     RecordingFormat recordingFormat_ = RecordingFormat::Cdng;
+     std::filesystem::path folderPath_;
+-- 
+2.43.0
+

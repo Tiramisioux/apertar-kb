@@ -1,7 +1,7 @@
 From c57c284238646bc6a824f82feb821b3018ed66e5 Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:16:34 +0000
-Subject: [PATCH 5/7] scripts: APERTAR_RT=1 runs Core under SCHED_FIFO on cores
+Subject: [PATCH 5/9] scripts: APERTAR_RT=1 runs Core under SCHED_FIFO on cores
  1-3 like cinepi-raw; README knob table
 
 Why: cinemate starts cinepi-raw with chrt -f 70, ionice -c2 -n0 and taskset -c 1-3 (its

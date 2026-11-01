@@ -1,7 +1,7 @@
 From fb557e990f6bec3be7a556a9af09d8c8bf8e881d Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:23:27 +0000
-Subject: [PATCH 7/7] web: APERTAR_WEB_PREVIEW_RECORDING_FPS caps or pauses the
+Subject: [PATCH 7/9] web: APERTAR_WEB_PREVIEW_RECORDING_FPS caps or pauses the
  web preview while a raw take runs
 
 Why: when a browser shows the live preview, captureWebPreviewFrame downsamples the 1280x720

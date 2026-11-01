@@ -1,7 +1,7 @@
 From 4abbef088ec55a32afcb9e38d4caaef829332638 Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:14:01 +0000
-Subject: [PATCH 2/7] rec: allocate raw copies outside the queue mutex, warm
+Subject: [PATCH 2/9] rec: allocate raw copies outside the queue mutex, warm
  the pool at take start, keep it through the take
 
 Why: the copy worker allocated a fresh 16.6 MB vector (zero-fill and page faults) while holding

@@ -1,0 +1,338 @@
+From 1b11c9bb08dcfe6ac1d16aa356fc50affec9c0f5 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:56 +0000
+Subject: [PATCH 1/8] cdng: write unpacked 16-bit and 8-bit payloads straight
+ from the frame, in one write()
+
+Why: for Clear HDR 16-bit (and 1-byte 8-bit) frames the writer's row pass is a plain
+memcpy of rows whose stride equals the row length, so every DNG cost a second full copy
+of the frame (16.6 MB at 4K) through a 491,520-byte scratch and 34 write() calls, where
+cinepi-raw writes the assembled frame once. The kb's research (working/dng-chain, R3 and
+R8, verified in V/H8) counts three full copies per frame in Core against cinepi-raw's two;
+the extra memory traffic is an upper bound (the scratch is cache-resident), and the kb
+measured libcamera's thread losing instructions per cycle while recording, so the pass is
+avoidable cost on a memory-bound board, not a proven cause of drops.
+
+What: writeRawPayload writes the payload from the frame itself when writeDngRowBytes would
+copy the row unchanged (unpacked 16-bit, unpacked 1-byte 8-bit): one write() when the rows
+are contiguous, one iovec per row (writev, IOV_MAX rows per call) when the stride is padded.
+Packed, PiSP-compressed and 10/12-bit unpacked layouts keep the scratch path. Two knobs for
+the A/B: APERTAR_DNG_PAYLOAD_COPY=1 forces the scratch path for every frame (the old
+behaviour); APERTAR_DNG_WRITE_ROWS (default 64, the old 64-row chunk) sets the rows per
+write() on the scratch path.
+
+Tested: tools/dng_payload_write_test.sh on the host: six layouts (4K 16-bit contiguous and
+padded stride, 8-bit mono, 12-bit unpacked and CSI2-packed controls, a small odd stride)
+written with the direct path, the forced scratch path and APERTAR_DNG_WRITE_ROWS=512 are
+byte-identical; strace counts 1 write() for the 4K 16-bit frame instead of 36. Reviewed
+(kb working/dng-chain/V/PATCHES.md): no finding. Not run on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ src/cdng/CdngEncoder.cpp         | 108 +++++++++++++++++++++++++++++-
+ tools/dng_payload_write_test.cpp | 110 +++++++++++++++++++++++++++++++
+ tools/dng_payload_write_test.sh  |  30 +++++++++
+ 3 files changed, 246 insertions(+), 2 deletions(-)
+ create mode 100644 tools/dng_payload_write_test.cpp
+ create mode 100755 tools/dng_payload_write_test.sh
+
+diff --git a/src/cdng/CdngEncoder.cpp b/src/cdng/CdngEncoder.cpp
+index 45425af..ac57172 100644
+--- a/src/cdng/CdngEncoder.cpp
++++ b/src/cdng/CdngEncoder.cpp
+@@ -24,7 +24,9 @@
+ #include <vector>
+ 
+ #include <fcntl.h>
++#include <limits.h>
+ #include <sys/stat.h>
++#include <sys/uio.h>
+ #include <unistd.h>
+ 
+ #if defined(__ARM_NEON) || defined(__ARM_NEON__)
+@@ -76,6 +78,38 @@ bool detailedLosslessProfilingEnabled()
+     return enabled;
+ }
+ 
++// Rows per write() when the payload is packed through the scratch buffer (APERTAR_DNG_WRITE_ROWS,
++// default 64: 491,520 bytes for a 16-bit 4K row, 34 writes a frame). The row packers decide the
++// bytes; this only decides how many rows go to the kernel per call.
++uint32_t configuredPayloadWriteRows()
++{
++    static const uint32_t value = []() {
++        const char *text = std::getenv("APERTAR_DNG_WRITE_ROWS");
++        if (!text || !*text)
++            return 64u;
++
++        char *end = nullptr;
++        errno = 0;
++        const unsigned long parsed = std::strtoul(text, &end, 10);
++        if (errno != 0 || end == text || *end != '\0' || parsed < 1 || parsed > 4096)
++            return 64u;
++        return static_cast<uint32_t>(parsed);
++    }();
++    return value;
++}
++
++// APERTAR_DNG_PAYLOAD_COPY=1 keeps the old path for every frame: rows copied into the scratch
++// buffer and written from there, even when the copy changes nothing (the A/B knob).
++bool payloadCopyForced()
++{
++    static const bool forced = []() {
++        const char *text = std::getenv("APERTAR_DNG_PAYLOAD_COPY");
++        return text && *text && std::strcmp(text, "0") != 0 &&
++            std::strcmp(text, "false") != 0 && std::strcmp(text, "off") != 0;
++    }();
++    return forced;
++}
++
+ uint32_t packedRowBytes(uint32_t width, RawBitDepth bitDepth)
+ {
+     return static_cast<uint32_t>((static_cast<uint64_t>(width) * static_cast<unsigned int>(bitDepth) + 7u) / 8u);
+@@ -1020,6 +1054,71 @@ void unpackPispCompressedRowToPacked10(const uint8_t *src, uint8_t *dst, uint32_
+     }
+ }
+ 
++// True when writeDngRowBytes would copy the row unchanged: unpacked 16-bit samples, or unpacked
++// 8-bit samples that already take one byte each. Those rows can go to the file straight from the
++// frame, without the pass through the scratch buffer (one full copy of the frame per DNG less:
++// 16.6 MB at 4K 16-bit, the Clear HDR case).
++bool rowCopyIsIdentity(const RawFrameView &frame)
++{
++    if (frame.packing == PixelPacking::Csi2Packed || frame.packing == PixelPacking::PispCompressed1)
++        return false;
++    if (frame.bitDepth == RawBitDepth::Bits16)
++        return true;
++    if (frame.bitDepth == RawBitDepth::Bits8)
++        return unpackedBytesPerSampleForFrame(frame) == 1u;
++    return false;
++}
++
++// writev() until every iovec is written; adjusts the vector for a partial write.
++bool writevAll(int fd, struct iovec *iov, int count)
++{
++    while (count > 0) {
++        const ssize_t written = ::writev(fd, iov, count);
++        if (written < 0) {
++            if (errno == EINTR)
++                continue;
++            return false;
++        }
++        if (written == 0) {
++            errno = EIO;
++            return false;
++        }
++        size_t remaining = static_cast<size_t>(written);
++        while (count > 0 && remaining >= iov->iov_len) {
++            remaining -= iov->iov_len;
++            ++iov;
++            --count;
++        }
++        if (count > 0 && remaining > 0) {
++            iov->iov_base = static_cast<uint8_t *>(iov->iov_base) + remaining;
++            iov->iov_len -= remaining;
++        }
++    }
++    return true;
++}
++
++// The payload straight from the frame. One write() when the rows are contiguous (stride ==
++// rowBytes, the usual case); otherwise one iovec per row, IOV_MAX rows per writev().
++bool writeRowsDirect(int fd, const RawFrameView &frame, uint32_t rowBytes)
++{
++    if (frame.stride == rowBytes)
++        return writeAll(fd, frame.data, static_cast<size_t>(rowBytes) * frame.height);
++
++    const uint32_t rowsPerCall = static_cast<uint32_t>(std::min<long>(IOV_MAX, 1024));
++    std::vector<struct iovec> iov(std::min<uint32_t>(rowsPerCall, frame.height));
++    for (uint32_t y = 0; y < frame.height;) {
++        const uint32_t rows = std::min<uint32_t>(rowsPerCall, frame.height - y);
++        for (uint32_t i = 0; i < rows; ++i) {
++            iov[i].iov_base = const_cast<uint8_t *>(frame.data + static_cast<size_t>(y + i) * frame.stride);
++            iov[i].iov_len = rowBytes;
++        }
++        if (!writevAll(fd, iov.data(), static_cast<int>(rows)))
++            return false;
++        y += rows;
++    }
++    return true;
++}
++
+ void writeDngRowBytes(const RawFrameView &frame,
+                       const CdngEncoder::EncodedRawLayout &layout,
+                       const uint8_t *src,
+@@ -1866,11 +1965,16 @@ bool CdngEncoder::writeRawPayload(int fd, const RawFrameView &frame, const Encod
+         return false;
+     }
+ 
++    // Rows that need no repacking are written from the frame itself (cinepi-raw's one write per
++    // frame); APERTAR_DNG_PAYLOAD_COPY=1 forces the scratch path for the A/B.
++    if (!payloadCopyForced() && rowCopyIsIdentity(frame))
++        return writeRowsDirect(fd, frame, layout.rowBytes);
++
+     const size_t targetChunkSize = std::max<size_t>(
+         static_cast<size_t>(layout.rowBytes),
+-        std::min<size_t>(4u * 1024u * 1024u,
++        std::min<size_t>(64u * 1024u * 1024u,
+                          std::max<size_t>(256u * 1024u,
+-                                          static_cast<size_t>(layout.rowBytes) * 64u)));
++                                          static_cast<size_t>(layout.rowBytes) * configuredPayloadWriteRows())));
+     std::vector<uint8_t> scratch = takePayloadScratch(targetChunkSize);
+     size_t bufferedBytes = 0;
+ 
+diff --git a/tools/dng_payload_write_test.cpp b/tools/dng_payload_write_test.cpp
+new file mode 100644
+index 0000000..a9c06c6
+--- /dev/null
++++ b/tools/dng_payload_write_test.cpp
+@@ -0,0 +1,110 @@
++// Host test for the DNG payload write path in src/cdng/CdngEncoder.cpp: the rows that need no
++// repacking (unpacked 16-bit, unpacked 1-byte 8-bit) go to the file straight from the frame; every
++// other layout still passes through the scratch buffer. The files must be byte-identical either way.
++//
++//   tools/dng_payload_write_test.sh      (builds, runs both paths, compares the files)
++//
++// This binary writes one DNG per case into the directory given as its argument and prints the sizes.
++#include "cdng/CdngEncoder.hpp"
++#include <apertar/core/Types.hpp>
++
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <string>
++#include <vector>
++
++using namespace apertar;
++
++namespace {
++
++struct Case {
++    const char *name;
++    uint32_t width, height, stride;
++    RawBitDepth bitDepth;
++    uint8_t bytesPerSample;
++    PixelPacking packing;
++};
++
++// 3840x2160 16-bit is the Clear HDR frame; stride 7744 exercises the padded-stride (writev) path;
++// the 12-bit unpacked and the CSI2-packed cases are controls that keep the scratch path.
++const Case kCases[] = {
++    { "hdr16_contiguous", 3840, 2160, 7680, RawBitDepth::Bits16, 2, PixelPacking::Unpacked },
++    { "hdr16_padded_stride", 3840, 2160, 7744, RawBitDepth::Bits16, 2, PixelPacking::Unpacked },
++    { "mono8_contiguous", 1920, 1080, 1920, RawBitDepth::Bits8, 1, PixelPacking::Unpacked },
++    { "sdr12_unpacked_pack_path", 1920, 1080, 3840, RawBitDepth::Bits12, 2, PixelPacking::Unpacked },
++    { "sdr12_csi2_pack_path", 1920, 1080, 2880, RawBitDepth::Bits12, 0, PixelPacking::Csi2Packed },
++    { "hdr16_small_odd_stride", 96, 70, 200, RawBitDepth::Bits16, 2, PixelPacking::Unpacked },
++};
++
++void fill(std::vector<uint8_t> &bytes, uint32_t seed)
++{
++    uint32_t x = seed * 2654435761u + 12345u;
++    for (uint8_t &b : bytes) {
++        x = x * 1664525u + 1013904223u;
++        b = static_cast<uint8_t>(x >> 24);
++    }
++}
++
++} // namespace
++
++int main(int argc, char **argv)
++{
++    if (argc != 2) {
++        std::fprintf(stderr, "usage: %s <output directory>\n", argv[0]);
++        return 2;
++    }
++    const std::string dir = argv[1];
++    CdngEncoder encoder;
++    int failed = 0;
++    unsigned int seed = 1;
++    for (const Case &c : kCases) {
++        std::vector<uint8_t> bytes(static_cast<size_t>(c.stride) * c.height);
++        fill(bytes, seed++);
++        RawFrameView frame;
++        frame.data = bytes.data();
++        frame.size = bytes.size();
++        frame.width = c.width;
++        frame.height = c.height;
++        frame.stride = c.stride;
++        frame.bitDepth = c.bitDepth;
++        frame.unpackedBytesPerSample = c.bytesPerSample;
++        frame.sampleBits = static_cast<unsigned int>(c.bitDepth);
++        frame.packing = c.packing;
++        frame.bayerPattern = c.bitDepth == RawBitDepth::Bits8 ? BayerPattern::Monochrome : BayerPattern::RGGB;
++        CdngEncoder::Metadata metadata;
++        metadata.compression = CdngCompression::Uncompressed;
++        metadata.clipName = "cDNG_test_C0001";
++        metadata.frameFileName = std::string(c.name) + ".dng";
++        metadata.reelName = metadata.clipName;
++        metadata.wallClockTimestampUs = 1761955200000000ULL;   // fixed: the two runs must produce identical files
++        metadata.timecodeWallClockUs = metadata.wallClockTimestampUs;
++        metadata.sensorTimestampUs = 1000000;
++        const std::string path = dir + "/" + c.name + ".dng";
++        try {
++            encoder.writeDngFile(path, frame, metadata);
++        } catch (const std::exception &e) {
++            std::printf("FAIL %s: %s\n", c.name, e.what());
++            ++failed;
++            continue;
++        }
++        FILE *f = std::fopen(path.c_str(), "rb");
++        long size = -1;
++        if (f) {
++            std::fseek(f, 0, SEEK_END);
++            size = std::ftell(f);
++            std::fclose(f);
++        }
++        const uint64_t rowBytes = c.packing == PixelPacking::Csi2Packed ? static_cast<uint64_t>(c.width) * 12u / 8u
++            : c.bitDepth == RawBitDepth::Bits16 ? static_cast<uint64_t>(c.width) * 2u
++            : c.bitDepth == RawBitDepth::Bits8 ? c.width
++            : static_cast<uint64_t>(c.width) * 12u / 8u;
++        const uint64_t payload = rowBytes * c.height;
++        const bool ok = size > 0 && static_cast<uint64_t>(size) > payload && static_cast<uint64_t>(size) < payload + 65536;
++        std::printf("%s %s size=%ld payload=%llu\n", ok ? "ok  " : "FAIL", c.name, size,
++                    static_cast<unsigned long long>(payload));
++        if (!ok)
++            ++failed;
++    }
++    return failed == 0 ? 0 : 1;
++}
+diff --git a/tools/dng_payload_write_test.sh b/tools/dng_payload_write_test.sh
+new file mode 100755
+index 0000000..3d8071b
+--- /dev/null
++++ b/tools/dng_payload_write_test.sh
+@@ -0,0 +1,30 @@
++#!/bin/sh
++# Host test: the direct payload write (default) and the scratch-copy path (APERTAR_DNG_PAYLOAD_COPY=1)
++# must produce byte-identical DNGs, for every layout; APERTAR_DNG_WRITE_ROWS must not change the bytes.
++#   sh tools/dng_payload_write_test.sh
++set -eu
++cd "$(dirname "$0")/.."
++OUT=${TMPDIR:-/tmp}/apertar-dng-payload-test
++rm -rf "$OUT"; mkdir -p "$OUT/direct" "$OUT/copy" "$OUT/rows512"
++g++ -std=c++20 -O2 -Wall -Wextra -I src -I include tools/dng_payload_write_test.cpp \
++    src/cdng/CdngEncoder.cpp src/cdng/LosslessJpegEncoder.cpp src/color/ColorProfileConfig.cpp \
++    -o "$OUT/test" -lyaml -lpthread
++"$OUT/test" "$OUT/direct"
++APERTAR_DNG_PAYLOAD_COPY=1 "$OUT/test" "$OUT/copy"
++APERTAR_DNG_PAYLOAD_COPY=1 APERTAR_DNG_WRITE_ROWS=512 "$OUT/test" "$OUT/rows512"
++status=0
++for f in "$OUT"/direct/*.dng; do
++    n=$(basename "$f")
++    if cmp -s "$f" "$OUT/copy/$n" && cmp -s "$f" "$OUT/rows512/$n"; then
++        echo "identical $n"
++    else
++        echo "DIFFERENT $n"; status=1
++    fi
++done
++if command -v strace >/dev/null 2>&1; then
++    echo "write() calls, direct path:"; strace -f -c -e trace=write,writev "$OUT/test" "$OUT/direct" 2>&1 | grep -E 'write|total' || true
++    echo "write() calls, copy path:";  APERTAR_DNG_PAYLOAD_COPY=1 strace -f -c -e trace=write,writev "$OUT/test" "$OUT/copy" 2>&1 | grep -E 'write|total' || true
++fi
++rm -rf "$OUT"
++[ "$status" -eq 0 ] && echo "PASS" || echo "FAIL"
++exit $status
+-- 
+2.43.0
+

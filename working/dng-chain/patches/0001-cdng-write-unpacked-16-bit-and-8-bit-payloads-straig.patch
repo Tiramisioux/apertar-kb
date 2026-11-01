@@ -1,7 +1,7 @@
 From e55557d92713c1a5009d3e869e710194e7614627 Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:11:16 +0000
-Subject: [PATCH 1/7] cdng: write unpacked 16-bit and 8-bit payloads straight
+Subject: [PATCH 1/9] cdng: write unpacked 16-bit and 8-bit payloads straight
  from the frame, in one write()
 
 Why: for Clear HDR 16-bit (and 1-byte 8-bit) frames the writer's row pass is a plain

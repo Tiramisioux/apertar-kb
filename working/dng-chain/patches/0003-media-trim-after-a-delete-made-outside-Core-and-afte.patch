@@ -1,7 +1,7 @@
 From 04bac896961b8fb76d878aea481154a138fd069d Mon Sep 17 00:00:00 2001
 From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
 Date: Sun, 1 Nov 2026 12:16:34 +0000
-Subject: [PATCH 3/7] media: trim after a delete made outside Core, and after
+Subject: [PATCH 3/9] media: trim after a delete made outside Core, and after
  every pre-roll clip delete
 
 Why: Core trims the drive after its own deletes that free 1 GiB or more, but the touch UI
