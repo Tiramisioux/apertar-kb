@@ -124,7 +124,7 @@ is still written down but is low priority now that drive state explains the big 
 
 ### Open items (what to do next, in order)
 
-1. **Targets (Patrik): 4K Clear HDR 16-bit 25 fps first, 4K SDR 12-bit 33 fps.** Both lose 6-9 % at capture while the touch UI draws (hardware-log 2026-11-01, "need the touch UI drawing AND a high data rate"). Next A/B: the UI at 30 Hz (`QT_QPA_EGLFS_SWAPINTERVAL=2`, a `/run` drop-in on `apertar-ui-direct`); if it helps, a proper "draw less while recording" in the UI. The A0-UI split is moot (the cause is the UI's drawing combined with the data rate, not a UI commit).
+1. **Targets (Patrik): 4K Clear HDR 16-bit 25 fps first, 4K SDR 12-bit 33 fps.** Both lose 6-9 % at capture while the touch UI draws (hardware-log 2026-11-01, "need the touch UI drawing AND a high data rate"). Next A/B: the UI at 30 Hz (`QT_QPA_EGLFS_SWAPINTERVAL=2`, a `/run` drop-in on `apertar-ui-direct`); if it helps, a proper "draw less while recording" in the UI. Still open: A0 (10-30) was clean with the touch UI running, so what changed since then (the A0-era UI `1cf98ad`, built in `~/ApertarUI-a0`, needs one clean take on today's Core: both earlier tries were spoilt by a build on the Pi).
 2. Open one Log frame in Resolve (12-bit LinearizationTable). Log on the SDR modes is settled: it records linear (see "Log works in Clear HDR 16-bit only").
 3. Try `buffer=ram` in the Config pane and force a stall to see the safety stop; check the pill states on the HDMI screen and in the WebUI.
 4. The acceptance test for trim: a series of 10-minute takes with deletes in between and no manual trims, past one full pass of the drive
