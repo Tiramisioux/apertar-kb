@@ -1008,3 +1008,37 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Not yet known: the DRM-plane preview (`APERTAR_PREVIEW_PLANE`, being written); whether CPU peaking plus the plane reaches 0.
 - Confirmed by: Patrik ("put the results in the hardware log"; peaking with the CPU mask "looks the same").
 - Tutorial: none.
+
+## 2026-11-01: page-cache pressure, not the UI alone, made 4K Clear HDR 16-bit 25 fps lose frames; APERTAR_DNG_DONTNEED=sync fixes it
+
+- Tested: after a reboot (22:27), Core `drop-frames` `64bbbaa`, UI `c13b846` with no A/B switch, normal GPU preview,
+  focus peaking + zebra on, audio meter off, WebUI closed, no build on the Pi, card formatted (exFAT) at 21:50.
+  3-minute takes at 4K Clear HDR 16-bit uncompressed 25 fps (`/tmp/take3.sh`: per-minute count, `/proc/meminfo`,
+  `/proc/vmstat` reclaim and compaction deltas).
+- Seen:
+
+  | Uptime | `APERTAR_DNG_DONTNEED` | Lost / 4500 | MemFree before | `pgsteal_kswapd` in the take | low-watermark hits |
+  | --- | --- | --- | --- | --- | --- |
+  | 1 min | default `writer` | 1 | fresh boot | - | - |
+  | 5 min | `writer` | 34 | 300 MB | 3.45 M pages | 1805 |
+  | 9 min | `writer` | 153 | 275 MB | 3.04 M | 948 |
+  | 13 min | `writer` | 71 | 327 MB | 3.02 M | 990 |
+  | 19 min | `sync` (`/run` drop-in) | **0** | 646 MB | 47 k | 8 |
+  | 23 min | `sync` | **0** | 507 MB | 58 k | 11 |
+
+  Compaction was busy in clean and bad takes alike (47-232 kcompactd wakes per take): not the cause. Earlier the same
+  evening the same setup drifted from ~7 % (19:09, 10 min after boot) to 11-18 % (22:00-22:20) while Core, UI and card were
+  fresh; with the UI stopped it stayed clean.
+- Why: with `writer`, Core's fadvise(DONTNEED) runs right after each write on still-dirty pages: it frees nothing and
+  drains the per-CPU LRU lists on every core per frame; the page cache fills (~2.6 GB) and kswapd then reclaims ~13 GB per
+  3-minute take. `sync` drops the pages after the once-a-second fsync, when they are clean, so kswapd stays nearly idle.
+  The touch UI's display work was the last straw on that memory load, not the root cause (probable mechanism; the
+  measured part is the table). This also explains why a reboot looked like a cure and why the evening drifted.
+- Consequences: the UI A/B results of the evening (peaking cost, CPU mask, display plane, preview cap) were measured under
+  this pressure and are not valid as they stand; re-check them with `sync` before keeping any UI change. Core `a65b4e1`
+  (Mac, not yet on the Pi) makes `sync` the default; `APERTAR_DNG_DONTNEED=writer` restores the old one. `sync` needs the
+  sync thread (`APERTAR_MEDIA_SYNC_MS` > 0, default 1000); lossy DNG has none and behaves as `off`.
+- Not yet known: a 10-minute take; lossy DNG and SDR 12-bit 33 fps under `sync`; whether the I2C encoder poll (NeoRotary 4,
+  bus 1, 30 ms, ~570 interrupts/s on CPU0) matters at all.
+- Confirmed by: Patrik ("all of the above", after the two clean takes).
+- Tutorial: none.
