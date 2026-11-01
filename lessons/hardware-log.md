@@ -929,3 +929,15 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Not yet known: which side changed (one take with the A0-era UI `ea44bd7` on today's Core splits it); the mechanism.
 - Confirmed by: Patrik ("touch ui was running for a0"; confirmed the reading).
 - Tutorial: none.
+
+## 2026-11-01: the dropped-frames chip shows the number (Core `64bbbaa`, UI `68e1a41`)
+
+- Tested: Core `drop-frames` `64bbbaa` (on `dd00206`), UI `68e1a41`, both restarted 19:43. One 20 s take, 4K 25 fps Clear HDR
+  16-bit uncompressed, ladder off for the take, touch UI running, WebUI closed, no build on the Pi.
+- Worked: `recording_dropped_frames` 3 at 10 s, 18 after the stop (kept after the take); journal `dropped_gap_estimate=18`,
+  `dropped_queue_full=0`, `dropped_copy_slot=0`; 478 written. The chip on the HDMI screen counted up and showed the number.
+- Did not work: n/a. The first UI build failed on an ambiguous `qBound<qint64>` (Qt 6 on the Pi); `std::clamp` fixed it,
+  folded into the feature commit.
+- Seen in passing: 18 in 20 s is 3.6 %, against about 7 % in the 60 s takes on `4b2eeac`; one short take, not a finding.
+- Confirmed by: Patrik ("numbers work").
+- Tutorial: none.
