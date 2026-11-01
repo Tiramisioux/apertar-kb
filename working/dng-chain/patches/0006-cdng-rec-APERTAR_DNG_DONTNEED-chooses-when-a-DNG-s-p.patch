@@ -1,0 +1,152 @@
+From 0ed07eae099cfda1ad023408ff4545a34e052757 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 12:18:57 +0000
+Subject: [PATCH 6/6] cdng, rec: APERTAR_DNG_DONTNEED chooses when a DNG's
+ pages leave the page cache; dropped_copy_slot in the stats line
+
+Why: the writer calls posix_fadvise(POSIX_FADV_DONTNEED) right after writing a DNG. In Linux 6.12
+(mm/fadvise.c) that call starts the file's writeback and then, because the pages are still dirty
+or in flight, fails to invalidate them and runs lru_add_drain_all(): work queued on every CPU and
+waited for, 25 to 50 times a second, freeing nothing. The per-frame sync_file_range that follows
+starts a writeback the DONTNEED already started. The kb's research (working/dng-chain, R3, R5,
+R6) found this and showed the A1-versus-A2 reading of 2026-10-30 rests on it. cinepi-raw makes
+no such call. The stop-time stats printed dropped_copy_slot only when it was above zero, so a
+clean take could not show the counter was watched.
+
+What: APERTAR_DNG_DONTNEED=writer (default, unchanged), sync (the sync thread drops a file's pages
+after its fsync, when they are clean and the call is cheap) or off. With sync and the sync thread
+disabled, Core logs one line. dropped_copy_slot is now a field of the "recording stats" line.
+
+Tested: the encoder and the whole CameraController.cpp syntax-check (libcamera block on, no new
+errors); tools/dng_payload_write_test.sh passes. Not run on the Pi: the A/B is A0 against
+APERTAR_DNG_DONTNEED=sync against =off, 10 minutes each, with Cached from /proc/meminfo sampled
+and bpftrace counting lru_add_drain_all.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ README.md                       |  1 +
+ src/camera/CameraController.cpp | 12 ++++++++++++
+ src/cdng/CdngEncoder.cpp        | 24 +++++++++++++++++++++++-
+ src/cdng/CdngEncoder.hpp        |  7 +++++++
+ 4 files changed, 43 insertions(+), 1 deletion(-)
+
+diff --git a/README.md b/README.md
+index 2731aed..a97a33a 100644
+--- a/README.md
++++ b/README.md
+@@ -287,6 +287,7 @@ Environment variables of the Core service (a systemd drop-in with `Environment=`
+ | `APERTAR_DNG_PAYLOAD_COPY=1` | off | Copies every frame's rows into the writer's scratch buffer before writing, even when the copy changes nothing (the behaviour before the direct write of 16-bit and 8-bit payloads). |
+ | `APERTAR_DNG_WRITE_ROWS=N` | 64 | Rows per `write()` when the payload goes through the scratch buffer (packed 10/12-bit, PiSP-compressed and CineMate Log frames). |
+ | `APERTAR_RAW_POOL_WARM=0` | on | Restores the old raw-copy pool: no copies allocated before a take starts, and at most workers + 2 kept while it runs. |
++| `APERTAR_DNG_DONTNEED=sync` or `off` | writer | When a written DNG's pages leave the page cache: `writer` right after the write (as before; the pages are still dirty then, so the call frees nothing and costs a cross-CPU LRU drain per frame), `sync` on the once-a-second sync thread after the file's `fsync`, `off` never. |
+ | `APERTAR_DNG_WRITEBACK=0` | on | No `sync_file_range` per written DNG (the kernel's own writeback only). |
+ | `APERTAR_MEDIA_SYNC_MS=0` | 1000 | No once-a-second `fsync` of the finished DNGs and the clip folder during a take; the stop-time `syncfs` stays. |
+ | `APERTAR_RT=1` | off | The start script runs Core under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in. |
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index debf59f..c41765c 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -4165,6 +4165,13 @@ public:
+             mediaDirFd_ = ::open(folderPathString_.c_str(), O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+             if (mediaDirFd_ >= 0)
+                 spawnWorker([this, syncMs, fd = mediaDirFd_] { syncLoop(fd, std::chrono::milliseconds(syncMs)); });
++        } else if (dngPageCacheDrop() == DngPageCacheDrop::Sync) {
++            static bool warned = false;
++            if (!warned) {
++                warned = true;
++                std::cerr << "ApertarCore recording: APERTAR_DNG_DONTNEED=sync needs the sync thread (APERTAR_MEDIA_SYNC_MS > 0); "
++                             "written frames stay in the page cache until the kernel reclaims them\n";
++            }
+         }
+         for (unsigned int i = 0; i < workerCount; ++i)
+             spawnWorker([this] { workerLoop(); });
+@@ -4309,6 +4316,7 @@ public:
+                       << " write_failures=" << summary.writeFailures
+                       << " discarded_on_failure=" << summary.discardedOnFailure
+                       << " skipped_after_failure=" << summary.skippedAfterFailure
++                      << " dropped_copy_slot=" << droppedNoRequestSlot_.load(std::memory_order_relaxed)
+                       << " fault=" << mediaFaultName(fault_.load(std::memory_order_acquire))
+                       << " peak_queue=" << summary.peakQueueDepth << "/" << summary.maxQueueDepth;
+             if (summary.ramMode)
+@@ -4542,6 +4550,10 @@ public:
+                 const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+                 if (fd >= 0) {
+                     ::fsync(fd);
++                    // APERTAR_DNG_DONTNEED=sync: the pages are clean now, so this call frees them without
++                    // the cross-CPU drain the writer's call pays on dirty pages.
++                    if (dngPageCacheDrop() == DngPageCacheDrop::Sync)
++                        ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+                     ::close(fd);
+                 }
+             }
+diff --git a/src/cdng/CdngEncoder.cpp b/src/cdng/CdngEncoder.cpp
+index ac57172..9d601be 100644
+--- a/src/cdng/CdngEncoder.cpp
++++ b/src/cdng/CdngEncoder.cpp
+@@ -17,6 +17,7 @@
+ #include <cstring>
+ #include <filesystem>
+ #include <iomanip>
++#include <iostream>
+ #include <limits>
+ #include <sstream>
+ #include <stdexcept>
+@@ -78,6 +79,26 @@ bool detailedLosslessProfilingEnabled()
+     return enabled;
+ }
+ 
++} // namespace
++
++DngPageCacheDrop dngPageCacheDrop()
++{
++    static const DngPageCacheDrop mode = []() {
++        const char *text = std::getenv("APERTAR_DNG_DONTNEED");
++        if (!text || !*text || std::strcmp(text, "writer") == 0 || std::strcmp(text, "1") == 0)
++            return DngPageCacheDrop::Writer;
++        if (std::strcmp(text, "sync") == 0)
++            return DngPageCacheDrop::Sync;
++        if (std::strcmp(text, "off") == 0 || std::strcmp(text, "0") == 0 || std::strcmp(text, "false") == 0)
++            return DngPageCacheDrop::Off;
++        std::cerr << "ApertarCore cdng: APERTAR_DNG_DONTNEED=" << text << " is not writer|sync|off: using writer\n";
++        return DngPageCacheDrop::Writer;
++    }();
++    return mode;
++}
++
++namespace {
++
+ // Rows per write() when the payload is packed through the scratch buffer (APERTAR_DNG_WRITE_ROWS,
+ // default 64: 491,520 bytes for a 16-bit 4K row, 34 writes a frame). The row packers decide the
+ // bytes; this only decides how many rows go to the kernel per call.
+@@ -1876,7 +1897,8 @@ void CdngEncoder::writeDngFile(const std::string &path,
+     if (ok)
+         ok = writeAll(fd, ifdBytes.data(), ifdBytes.size());
+     int writeErrno = ok ? 0 : errno;
+-    ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
++    if (dngPageCacheDrop() == DngPageCacheDrop::Writer)
++        ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+     if (!output.borrowed && ::close(fd) != 0 && ok) {
+         ok = false;
+         writeErrno = errno;
+diff --git a/src/cdng/CdngEncoder.hpp b/src/cdng/CdngEncoder.hpp
+index 2462ab7..b98f9d8 100644
+--- a/src/cdng/CdngEncoder.hpp
++++ b/src/cdng/CdngEncoder.hpp
+@@ -10,6 +10,13 @@
+ 
+ namespace apertar {
+ 
++// When the page cache gives a written DNG's pages back (APERTAR_DNG_DONTNEED): "writer" (default) right after the
++// write, as always; "sync" on the sync thread after the file's fsync, when the pages are clean; "off" never (the
++// kernel reclaims them). See the kb, working/dng-chain: after a write the pages are still dirty, so the writer's
++// call cannot free them and ends in a cross-CPU LRU drain for every frame.
++enum class DngPageCacheDrop { Writer, Sync, Off };
++DngPageCacheDrop dngPageCacheDrop();
++
+ class Csi2RawConverter {
+ public:
+     static void unpack10Row(const uint8_t *src, uint16_t *dst, uint32_t width);
+-- 
+2.43.0
+
