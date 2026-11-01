@@ -1,0 +1,42 @@
+From e0fa8524133af0d9a5c1f1f8e6dbcc99e1606384 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 12:16:34 +0000
+Subject: [PATCH 4/9] media: noatime and umask on the re-insert mount of a
+ CFexpress card
+
+Why: Core's embedded Python watcher, which remounts a card after an eject and re-insert, mounted
+exFAT and NTFS with uid/gid only: no noatime (relatime writes a directory entry on the first read
+of each DNG by the clip browser) and no umask, unlike Core's mount_media and the UI automounter
+(kb working/dng-chain, R4).
+
+What: the watcher mounts exFAT and ntfs3 with uid=1000,gid=1000,umask=0002,noatime and ext4 with
+noatime, the same options as Core's own mount path.
+
+Tested: the file syntax-checks on the host; the Python text is unchanged apart from the option
+strings. Not run on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ src/ApertarCoreApp.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 5873990..34687b2 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -10873,8 +10873,9 @@ void ApertarCoreApp::runStoragePrerollOnce(storagepreroll::Trigger trigger, unsi
+     }
+     storagepreroll::prerollState().fps.store(0.0, std::memory_order_release);
+     storagepreroll::prerollState().active.store(false, std::memory_order_release);
+-    if (result.bytes >= (1ULL << 30))
+-        trimMedia("delete");   // the delete freed 1 GiB or more: the usual trim, now that the medium is free again
++    // The deleted clip (0.7 GB at 4K lossless, 1.4 GB at 4K 12-bit 60 fps) would otherwise sit untrimmed under the
++    // next take; the trim is quick (927 GB in 0.47 s measured) and runs only while the medium is idle.
++    trimMedia("delete");
+ }
+ 
+ MediaSnapshot ApertarCoreApp::mediaSnapshot() const
+-- 
+2.43.0
+

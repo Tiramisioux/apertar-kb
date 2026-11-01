@@ -1,0 +1,45 @@
+From 52edecf1f3f03d0e67e2dbf646d1b8850b16e8e8 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:56 +0000
+Subject: [PATCH 4/8] media: noatime and umask on the re-insert mount of a
+ CFexpress card
+
+Why: Core's embedded Python watcher, which remounts a card after an eject and re-insert, mounted
+exFAT and NTFS with uid/gid only: no noatime (relatime writes a directory entry on the first read
+of each DNG by the clip browser) and no umask, unlike Core's mount_media and the UI automounter
+(kb working/dng-chain, R4).
+
+What: the watcher mounts exFAT and ntfs3 with uid=1000,gid=1000,umask=0002,noatime and ext4 with
+noatime, the same options as Core's own mount path.
+
+Tested: the file syntax-checks on the host; the Python text is unchanged apart from the option
+strings. Not run on the Pi.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ src/ApertarCoreApp.cpp | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index e58a43d..34687b2 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -3863,11 +3863,11 @@ def mount_partition(device_path):
+         return False
+ 
+     if fs_type == "ntfs":
+-        command = ["mount", "-t", "ntfs3", "-o", "uid=1000,gid=1000", device_path, MOUNT_PATH]
++        command = ["mount", "-t", "ntfs3", "-o", "uid=1000,gid=1000,umask=0002,noatime", device_path, MOUNT_PATH]
+     elif fs_type == "ext4":
+-        command = ["mount", "-t", "ext4", device_path, MOUNT_PATH]
++        command = ["mount", "-t", "ext4", "-o", "noatime", device_path, MOUNT_PATH]
+     elif fs_type == "exfat":
+-        command = ["mount", "-t", "exfat", "-o", "uid=1000,gid=1000", device_path, MOUNT_PATH]
++        command = ["mount", "-t", "exfat", "-o", "uid=1000,gid=1000,umask=0002,noatime", device_path, MOUNT_PATH]
+     else:
+         return False
+ 
+-- 
+2.43.0
+

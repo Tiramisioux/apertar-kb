@@ -1,0 +1,63 @@
+From 49d4adac5ca6baab4989d3ed6216ed00f9a21375 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:56 +0000
+Subject: [PATCH 3/8] media: trim after a delete made outside Core, and after
+ every pre-roll clip delete
+
+Why: Core trims the drive after its own deletes that free 1 GiB or more, but the touch UI
+deletes clips itself (Apertar-UI cliplistmodel.cpp removes the files directly; Core has no
+delete socket command the UI could call), so a shooting day driven from the touch UI never
+trims and the stall after about 0.9 TB of writing can come back. The storage pre-roll deletes
+0.7 to 1.5 GB per run, below the threshold for 16-bit Clear HDR and lossless takes, right
+before the operator's first take. Found by the kb's research (working/dng-chain, R4; verified
+in V/H6).
+
+What: the media watcher asks for a trim when the mounted medium gains 1 GiB or more between two
+polls while nothing records and no Core delete runs (reason "free-space"); the pre-roll always
+asks for one after it removes its clip. Both go through the existing idle-only trim worker and
+coalesce with pending requests. Cost: on exFAT every fstrim re-discards all free space, so a
+mount now runs two or three full trims (0.47 s each measured) before the first take.
+
+Tested: the file syntax-checks on the host. Reviewed (V/PATCHES.md): a format cannot trigger it
+(the medium is unmounted); one-by-one deletes below 1 GiB each do not. Not run on the Pi: delete
+a clip from the touch UI and expect "media: trim ... reason=free-space" in the journal.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ src/ApertarCoreApp.cpp | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 95d0766..e58a43d 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -10464,6 +10464,13 @@ void ApertarCoreApp::runMediaWatcher()
+             mediaSnapshot_ = current;
+             mediaSnapshotValid_ = true;
+         }
++        // A delete made outside Core (the touch UI removes clips itself) frees space without a trim: when the
++        // mounted medium gains 1 GiB or more between two polls while nothing records, ask for one. Core's own
++        // deletes already request theirs; repeated requests coalesce (kb working/dng-chain, R4).
++        if (havePrevious && current.mounted() && previous.mounted() && current.sameMedium(previous) &&
++            current.freeBytes > previous.freeBytes && current.freeBytes - previous.freeBytes >= (1ULL << 30) &&
++            !camera_.isRecording() && !mediaDeleteActive_.load())
++            trimMedia("free-space");
+         if (!havePrevious || !current.sameMedium(previous)) {
+             std::cerr << "ApertarCore media: state=" << current.stateName()
+                       << " device=" << current.device << " fstype=" << current.fstype
+@@ -10866,8 +10873,9 @@ void ApertarCoreApp::runStoragePrerollOnce(storagepreroll::Trigger trigger, unsi
+     }
+     storagepreroll::prerollState().fps.store(0.0, std::memory_order_release);
+     storagepreroll::prerollState().active.store(false, std::memory_order_release);
+-    if (result.bytes >= (1ULL << 30))
+-        trimMedia("delete");   // the delete freed 1 GiB or more: the usual trim, now that the medium is free again
++    // The deleted clip (0.7 GB at 4K lossless, 1.4 GB at 4K 12-bit 60 fps) would otherwise sit untrimmed under the
++    // next take; the trim is quick (927 GB in 0.47 s measured) and runs only while the medium is idle.
++    trimMedia("delete");
+ }
+ 
+ MediaSnapshot ApertarCoreApp::mediaSnapshot() const
+-- 
+2.43.0
+

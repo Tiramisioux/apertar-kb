@@ -1,0 +1,114 @@
+From 98d8f603d0360cf4166bfdc3a8ecebb4a7d24e96 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:27:57 +0000
+Subject: [PATCH 8/8] rec: APERTAR_RT_CAPTURE_PRIORITY=N puts libcamera's
+ completion thread alone on SCHED_FIFO
+
+Why: the scheduling A/B of the drop-frames project (plan row 5) compares Core with cinemate's
+chrt -f 70 on the whole cinepi-raw process. Verification of that comparison (kb working/
+dng-chain, V/H15) found whole-process FIFO the wrong shape for Core: equal-priority FIFO threads
+never preempt each other, so a FIFO capture thread could wait unbounded behind FIFO writers and
+HTTP threads, worse than today's nice -5 under CFS. The right shape is SCHED_FIFO for the
+capture callback thread alone, which then preempts every SCHED_OTHER thread of Core; the writers,
+the copy worker and the WebUI keep their priorities.
+
+What: when APERTAR_RT_CAPTURE_PRIORITY is 1 to 99, the completion thread's one-time priority
+step calls sched_setscheduler(SCHED_FIFO, N) on itself and logs it; when refused (no LimitRTPRIO)
+it logs the reason and falls back to the existing nice -5. Off by default. The capture-priority
+drop-in's comment and the README name both knobs; the README gives the drop-in install line.
+
+Tested: the whole file syntax-checks with the libcamera block on (no new errors). Not run on the
+Pi: the A/B is the WebUI-open 60 s take with the journal's "capture scheduling" line showing
+SCHED_FIFO, against the same take at nice -5; watch journalctl -k for RT throttling.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ README.md                                 |  3 ++-
+ config/apertar-core-capture-priority.conf |  5 ++--
+ src/camera/CameraController.cpp           | 32 ++++++++++++++++++-----
+ 3 files changed, 31 insertions(+), 9 deletions(-)
+
+diff --git a/README.md b/README.md
+index 8e5b248..3436cbc 100644
+--- a/README.md
++++ b/README.md
+@@ -291,7 +291,8 @@ Environment variables of the Core service (a systemd drop-in with `Environment=`
+ | `APERTAR_DNG_WRITEBACK=0` | on | No `sync_file_range` per written DNG (the kernel's own writeback only). |
+ | `APERTAR_MEDIA_SYNC_MS=0` | 1000 | No once-a-second `fsync` of the finished DNGs and the clip folder during a take; the stop-time `syncfs` stays. |
+ | `APERTAR_WEB_PREVIEW_RECORDING_FPS=N` | 30 | The WebUI live preview's frame rate while a raw take runs (`0` pauses it). Its downsample runs on libcamera's completion thread, inside the per-frame cycle, whenever a browser shows the preview (about 0.2 to 0.5 ms per frame). |
+-| `APERTAR_RT=1` | off | The start script runs the whole Core process under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. An A/B instrument, not a recommendation: equal-priority FIFO threads never preempt each other, so the capture thread can wait behind FIFO writers. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in. |
++| `APERTAR_RT_CAPTURE_PRIORITY=N` | off | `SCHED_FIFO` priority N (1 to 99) for libcamera's completion thread alone, set from Core when the first frame arrives; the writers and the WebUI keep their normal priorities. Needs `LimitRTPRIO` on the unit (the capture-priority drop-in). The preferred shape of the scheduling A/B. |
++| `APERTAR_RT=1` | off | The start script runs the whole Core process under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. An A/B instrument, not a recommendation: equal-priority FIFO threads never preempt each other, so the capture thread can wait behind FIFO writers. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in (`sudo install -m 0644 config/apertar-core-capture-priority.conf /etc/systemd/system/apertar-core.service.d/` and `daemon-reload`). |
+ | `APERTAR_MEDIA_TUNE=1` | off | Kernel-side knobs for the recording drive through the `apertar-media-tune` root helper (dirty-page cushion, scheduler, queue depth). |
+ 
+ ## For Developers
+diff --git a/config/apertar-core-capture-priority.conf b/config/apertar-core-capture-priority.conf
+index 01cc640..1363a82 100644
+--- a/config/apertar-core-capture-priority.conf
++++ b/config/apertar-core-capture-priority.conf
+@@ -1,6 +1,7 @@
+ [Service]
+ # Permit only a bounded, non-real-time boost for the camera callback thread.
+ LimitNICE=-5
+-# Needed only with APERTAR_RT=1 in the unit's environment: the start script then runs Core under
+-# SCHED_FIFO 70 (chrt), as cinemate runs cinepi-raw. Without APERTAR_RT=1 the limit is unused.
++# Needed only with APERTAR_RT_CAPTURE_PRIORITY=N (SCHED_FIFO for libcamera's completion thread alone)
++# or APERTAR_RT=1 (the start script runs the whole process under chrt -f 70, as cinemate runs
++# cinepi-raw) in the unit's environment. Without either the limit is unused.
+ LimitRTPRIO=80
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index f1d0df0..4b4ac69 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -67,6 +67,7 @@
+ #include <vector>
+ 
+ #if defined(__linux__)
++#include <sched.h>
+ #include <sys/resource.h>
+ #include <sys/syscall.h>
+ #include <unistd.h>
+@@ -8670,14 +8671,33 @@ private:
+         noteFrameForPreroll(request);
+         if (!capturePriorityAdjusted_) {
+             capturePriorityAdjusted_ = true;
+-            // LimitNICE=-5 permits this bounded boost without CAP_SYS_NICE.
+             // Only this callback thread changes priority, not encoder workers.
+             const int tid = static_cast<int>(::syscall(SYS_gettid));
+-            if (::setpriority(PRIO_PROCESS, static_cast<id_t>(tid), -5) == 0)
+-                std::cerr << "ApertarCore capture scheduling: thread=" << tid << " nice=-5\n";
+-            else
+-                std::cerr << "ApertarCore capture scheduling: normal priority retained ("
+-                          << std::strerror(errno) << ")\n";
++            // APERTAR_RT_CAPTURE_PRIORITY=1..99: SCHED_FIFO for this thread alone (needs LimitRTPRIO on the
++            // unit). The capture callback then preempts every SCHED_OTHER thread of Core (writers, copy worker,
++            // WebUI) instead of competing with them under CFS; the writers keep their priorities, unlike the
++            // whole-process chrt of APERTAR_RT=1 (kb working/dng-chain, V/H15). Off by default.
++            const unsigned int rtPriority = unsignedEnvValue("APERTAR_RT_CAPTURE_PRIORITY", 0, 0, 99);
++            bool realtime = false;
++            if (rtPriority > 0) {
++                sched_param param{};
++                param.sched_priority = static_cast<int>(rtPriority);
++                if (::sched_setscheduler(tid, SCHED_FIFO, &param) == 0) {
++                    realtime = true;
++                    std::cerr << "ApertarCore capture scheduling: thread=" << tid << " SCHED_FIFO priority=" << rtPriority << "\n";
++                } else {
++                    std::cerr << "ApertarCore capture scheduling: SCHED_FIFO refused (" << std::strerror(errno)
++                              << "); is LimitRTPRIO set on the unit? falling back to nice\n";
++                }
++            }
++            // LimitNICE=-5 permits this bounded boost without CAP_SYS_NICE.
++            if (!realtime) {
++                if (::setpriority(PRIO_PROCESS, static_cast<id_t>(tid), -5) == 0)
++                    std::cerr << "ApertarCore capture scheduling: thread=" << tid << " nice=-5\n";
++                else
++                    std::cerr << "ApertarCore capture scheduling: normal priority retained ("
++                              << std::strerror(errno) << ")\n";
++            }
+         }
+ 
+         WhiteBalanceMeasurement whiteBalance;
+-- 
+2.43.0
+

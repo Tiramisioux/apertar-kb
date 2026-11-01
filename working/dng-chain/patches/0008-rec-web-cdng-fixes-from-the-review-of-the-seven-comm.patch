@@ -1,0 +1,157 @@
+From 766aba815a4abb153a9ecfe3a521cd8d8084fe51 Mon Sep 17 00:00:00 2001
+From: Patrik Eriksson <patrik.m.eriksson@gmail.com>
+Date: Sun, 1 Nov 2026 16:30:50 +0000
+Subject: [PATCH 8/9] rec, web, cdng: fixes from the review of the seven
+ commits above
+
+Why: the review of this series (kb working/dng-chain/V/PATCHES.md) found no logic bug but four
+things to fix, and the verification of the hypotheses behind the series changed two of its
+claims. Note on history: the commits "media: trim after a delete made outside Core, and after
+every pre-roll clip delete" and "media: noatime and umask on the re-insert mount" carry each
+other's hunks (the first holds the free-space trim and the mount options, the second the pre-roll
+trim); the messages are right, the split is not. The branch is not rewritten here; a clean
+eight-commit series exists in the kb's patch backup (working/dng-chain/patches/).
+
+What: the old standalone "dropped_copy_slot=" stats line is removed (the field is on the main
+line since the previous commit); APERTAR_WEB_PREVIEW_RECORDING_FPS rejects non-finite values and
+treats values below 0.5 as 0 (the interval cast was undefined for NaN); rawTakeActive() sits after
+frameBufferStatus(), under its own comment; the lossy DNG writer honours APERTAR_DNG_DONTNEED like
+the cDNG writer (no sync thread there, so "sync" behaves as "off"); the web-preview comment cites
+the kb's profile (about 0.2 to 0.5 ms per frame, V/H4) instead of calling the pass the first
+candidate. The raw-pool change of this series is hygiene with an expected effect on drops near
+zero (V/H5: libcamera's thread meets the held mutex only when the copy worker already lags by
+most of a frame period).
+
+Tested: tools/dng_payload_write_test.sh passes; CameraController.cpp syntax-checks with the
+libcamera block on (no new errors); ApertarCoreApp.cpp and LossyDngEncoder.cpp syntax-check.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1zNNwfkFFgzHEzb7wV
+---
+ README.md                        |  6 +++---
+ src/ApertarCoreApp.cpp           |  9 +++++----
+ src/camera/CameraController.cpp  | 14 ++++++--------
+ src/lossydng/LossyDngEncoder.cpp |  6 +++++-
+ 4 files changed, 19 insertions(+), 16 deletions(-)
+
+diff --git a/README.md b/README.md
+index 3d42416..8e5b248 100644
+--- a/README.md
++++ b/README.md
+@@ -287,11 +287,11 @@ Environment variables of the Core service (a systemd drop-in with `Environment=`
+ | `APERTAR_DNG_PAYLOAD_COPY=1` | off | Copies every frame's rows into the writer's scratch buffer before writing, even when the copy changes nothing (the behaviour before the direct write of 16-bit and 8-bit payloads). |
+ | `APERTAR_DNG_WRITE_ROWS=N` | 64 | Rows per `write()` when the payload goes through the scratch buffer (packed 10/12-bit, PiSP-compressed and CineMate Log frames). |
+ | `APERTAR_RAW_POOL_WARM=0` | on | Restores the old raw-copy pool: no copies allocated before a take starts, and at most workers + 2 kept while it runs. |
+-| `APERTAR_DNG_DONTNEED=sync` or `off` | writer | When a written DNG's pages leave the page cache: `writer` right after the write (as before; the pages are still dirty then, so the call frees nothing and costs a cross-CPU LRU drain per frame), `sync` on the once-a-second sync thread after the file's `fsync`, `off` never. |
++| `APERTAR_DNG_DONTNEED=sync` or `off` | writer | When a written DNG's pages leave the page cache: `writer` right after the write (as before; the pages are still dirty then, so the call frees nothing and costs a cross-CPU LRU drain per frame), `sync` on the once-a-second sync thread after the file's `fsync` (cDNG only; lossy DNG then behaves as `off`), `off` never. |
+ | `APERTAR_DNG_WRITEBACK=0` | on | No `sync_file_range` per written DNG (the kernel's own writeback only). |
+ | `APERTAR_MEDIA_SYNC_MS=0` | 1000 | No once-a-second `fsync` of the finished DNGs and the clip folder during a take; the stop-time `syncfs` stays. |
+-| `APERTAR_WEB_PREVIEW_RECORDING_FPS=N` | 30 | The WebUI live preview's frame rate while a raw take runs (`0` pauses it). Its downsample runs on libcamera's completion thread, inside the per-frame cycle, whenever a browser shows the preview. |
+-| `APERTAR_RT=1` | off | The start script runs Core under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in. |
++| `APERTAR_WEB_PREVIEW_RECORDING_FPS=N` | 30 | The WebUI live preview's frame rate while a raw take runs (`0` pauses it). Its downsample runs on libcamera's completion thread, inside the per-frame cycle, whenever a browser shows the preview (about 0.2 to 0.5 ms per frame). |
++| `APERTAR_RT=1` | off | The start script runs the whole Core process under `SCHED_FIFO` priority 70 on cores 1 to 3 with the best-effort I/O class (`APERTAR_RT_PRIORITY`, `APERTAR_RT_CPUS` adjust it), as cinemate runs cinepi-raw. An A/B instrument, not a recommendation: equal-priority FIFO threads never preempt each other, so the capture thread can wait behind FIFO writers. Needs `LimitRTPRIO` on the unit: install `config/apertar-core-capture-priority.conf` as a drop-in. |
+ | `APERTAR_MEDIA_TUNE=1` | off | Kernel-side knobs for the recording drive through the `apertar-media-tune` root helper (dirty-page cushion, scheduler, queue depth). |
+ 
+ ## For Developers
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 707454c..a28c734 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -81,8 +81,9 @@ constexpr double kWebPreviewMaxFps = 30.0;
+ constexpr int kWebPreviewJpegQuality = 75;
+ 
+ // The web preview's rate while a raw take runs (APERTAR_WEB_PREVIEW_RECORDING_FPS): default the normal 30,
+-// 0 = no web preview frames while recording. The downsample for it is the one per-frame image pass left on
+-// libcamera's completion thread, so this is the A/B knob for the WebUI-open drops (kb working/dng-chain).
++// 0 = no web preview frames while recording. The downsample for it runs on libcamera's completion thread
++// (about 0.2 to 0.5 ms per frame measured idle in the kb), so this is the A/B knob for its share of the
++// WebUI-open drops (kb working/dng-chain, V/H4).
+ double webPreviewRecordingFps()
+ {
+     static const double fps = []() {
+@@ -91,9 +92,9 @@ double webPreviewRecordingFps()
+             return kWebPreviewMaxFps;
+         char *end = nullptr;
+         const double parsed = std::strtod(text, &end);
+-        if (end == text || *end != '\0' || parsed < 0.0 || parsed > kWebPreviewMaxFps)
++        if (end == text || *end != '\0' || !std::isfinite(parsed) || parsed < 0.0 || parsed > kWebPreviewMaxFps)
+             return kWebPreviewMaxFps;
+-        return parsed;
++        return parsed < 0.5 ? 0.0 : parsed;
+     }();
+     return fps;
+ }
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 20f517e..98dedf9 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -4295,8 +4295,6 @@ public:
+         if (mediaDirFd_ >= 0 && joinAll)
+             ::close(mediaDirFd_);
+         mediaDirFd_ = -1;
+-        if (const uint64_t dropped = droppedNoRequestSlot_.load(std::memory_order_relaxed); dropped > 0)
+-            std::cerr << "ApertarCore recording stats: dropped_copy_slot=" << dropped << "\n";
+         if (recordingFormat_ == RecordingFormat::LossyDng) {
+             if (mediumGone_.load(std::memory_order_acquire))
+                 LossyDngEncoder::abandonWrites();
+@@ -8672,9 +8670,9 @@ private:
+         noteFrameForPreroll(request);
+         if (!capturePriorityAdjusted_) {
+             capturePriorityAdjusted_ = true;
+-            // LimitNICE=-5 permits this bounded boost without CAP_SYS_NICE.
+             // Only this callback thread changes priority, not encoder workers.
+             const int tid = static_cast<int>(::syscall(SYS_gettid));
++            // LimitNICE=-5 permits this bounded boost without CAP_SYS_NICE.
+             if (::setpriority(PRIO_PROCESS, static_cast<id_t>(tid), -5) == 0)
+                 std::cerr << "ApertarCore capture scheduling: thread=" << tid << " nice=-5\n";
+             else
+@@ -11978,11 +11976,6 @@ bool CameraController::cdngLogApplicable() const
+ // Called about 5 times a second from the HTTP and watcher threads. The numbers come from the write queue's
+ // lock-free gauge. Only the mode needs the controller's settings, so it is read under try_lock: while the
+ // command path holds the mutex (including the whole drain after a take stops) the last answer is reused.
+-bool CameraController::rawTakeActive() const
+-{
+-    return frameBufferGauge().active.load(std::memory_order_acquire);
+-}
+-
+ CameraController::FrameBufferStatus CameraController::frameBufferStatus() const
+ {
+     FrameBufferGauge &gauge = frameBufferGauge();
+@@ -12012,6 +12005,11 @@ CameraController::FrameBufferStatus CameraController::frameBufferStatus() const
+     return out;
+ }
+ 
++bool CameraController::rawTakeActive() const
++{
++    return frameBufferGauge().active.load(std::memory_order_acquire);
++}
++
+ CameraController::StillExposureStatus CameraController::stillExposureStatus() const
+ {
+     std::lock_guard lock(mutex_);
+diff --git a/src/lossydng/LossyDngEncoder.cpp b/src/lossydng/LossyDngEncoder.cpp
+index a51d5de..4fe7a36 100644
+--- a/src/lossydng/LossyDngEncoder.cpp
++++ b/src/lossydng/LossyDngEncoder.cpp
+@@ -1,5 +1,6 @@
+ #include <algorithm>
+ #include "lossydng/LossyDngEncoder.hpp"
++#include "cdng/CdngEncoder.hpp"   // dngPageCacheDrop
+ 
+ #include <array>
+ #include <atomic>
+@@ -98,7 +99,10 @@ bool writeFile(const std::string &path, const uint8_t *data, size_t size)
+     ::posix_fadvise(fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+     bool ok = writeAll(fd, data, size);
+     const int writeErrno = errno;
+-    ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
++    // The same knob as the cDNG writer (APERTAR_DNG_DONTNEED); lossy takes have no sync thread, so "sync" leaves
++    // the pages to the kernel like "off".
++    if (dngPageCacheDrop() == DngPageCacheDrop::Writer)
++        ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+     if (::close(fd) != 0 && ok)
+         ok = false;
+     if (!ok) {
+-- 
+2.43.0
+
