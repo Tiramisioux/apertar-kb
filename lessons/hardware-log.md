@@ -941,3 +941,35 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
 - Seen in passing: 18 in 20 s is 3.6 %, against about 7 % in the 60 s takes on `4b2eeac`; one short take, not a finding.
 - Confirmed by: Patrik ("numbers work").
 - Tutorial: none.
+
+## 2026-11-01: capture losses need the touch UI drawing AND a high data rate; not the disk, the HDR log, scheduling or the scan-out
+
+- Tested: Core `drop-frames` `64bbbaa`, UI `68e1a41`, drive trimmed, WebUI closed, no build on the Pi (checked before and
+  after each take), 60 s takes over the socket. HDMI 1920x1080@60 (XR24), preview stream 1280x720 YUV420.
+- Seen (lost = `dropped_gap_estimate`; all `dropped_queue_full=0`, queue peak 2/12 unless noted):
+
+  | Touch UI | Mode | Data rate | Lost |
+  | --- | --- | --- | --- |
+  | running | 4K Clear HDR 16, 25 fps | ~415 MB/s | 113 (7.5 %); with the HDMI cable out 77 (5.3 %, the UI kept drawing: CPU 11.5 % either way) |
+  | running, camera thread `SCHED_FIFO` 40 (`APERTAR_RT_CAPTURE_PRIORITY`, `LimitRTPRIO=80`) | 4K Clear HDR 16, 25 fps | ~415 MB/s | 92 (6.1 %): no effect |
+  | **frozen** (`SIGSTOP` 3 s into the take, 50 s) | 4K Clear HDR 16, 25 fps | ~415 MB/s | **1** in the 50 s |
+  | running | 4K Clear HDR 16, **12.5 fps** | ~210 MB/s | 0 |
+  | running | **1920x1080** Clear HDR 16, 25 fps | ~104 MB/s | 0 |
+  | running | 4K SDR 12 uncompressed, 50 fps | ~620 MB/s | 554 (18.5 %), disk kept up (peak 16 frames) |
+  | stopped | 4K SDR 12 uncompressed, 50 fps | ~620 MB/s | 7, but the RAM buffer grew ~67 MiB/s and the safety stop ended the take at ~22 s (1114 frames) |
+
+  `CameraManager` (libcamera's completion thread) is ~40 % of a core with the UI running or stopped. The libcamera "No
+  HDR algorithm" per-frame warning is silenced (`LIBCAMERA_LOG_LEVELS=IPARPI:ERROR`); the journal got 10 lines in a 60 s
+  take. The CFE logs "DPHY: Datarate 1782 Mbps out of range" at each stream start (891 MHz link above the RP1 PHY's range):
+  not the cause here (clean with the UI stopped and at 1080p).
+- Why: the losses need the UI's drawing/CPU work (frozen UI: clean; scan-out of the frozen frame continued) together with
+  a high raw data rate (half the rate or a quarter of the frame size: clean). Probable mechanism: memory-bandwidth or
+  interconnect contention between the UI's 60 Hz redraws and the capture path; not established. Not the disk, the log,
+  the UI's state poll (30 s), the camera thread's CPU or its scheduling, or the scan-out. The drive sustains about
+  550 MB/s here (derived from the buffer growth, probable), so 4K SDR 50 fps uncompressed is over the drive regardless.
+- Side finding (probable): freezing the UI BEFORE `record_start` hung the start at the audio open (the UI holds the shared
+  audio input for its meter): no `audio capture` line, a clip folder with 0 DNGs, Core idle and healthy after the UI resumed.
+- Not yet known: whether a 30 Hz UI (`QT_QPA_EGLFS_SWAPINTERVAL=2`) removes the losses; which part of a redraw costs.
+- Targets (Patrik, 2026-11-01): 4K Clear HDR 16-bit at 25 fps first; 4K SDR 12-bit at 33 fps.
+- Confirmed by: Patrik ("ok" to the readings).
+- Tutorial: none.
