@@ -4,6 +4,8 @@ For: a fresh Fable session on the Mac, in Claude Code with the `apertar-dev` ski
 2026-11-01 23:40 by the session that ran the tests. Paste the block below as the first message, or say "read
 `~/Documents/Apertar/apertar-kb/working/handoff-drop-frames-fable.md` and start".
 
+**Status 2026-11-02 (cloud session, desk only):** the analytical half is done: night report section 8 (verdict, answers to the five question groups, test plan B0-B8, code decisions). The Pi tests are for the VS Code session; start at B0 and M1 (copy the `pgscan_direct`/`allocstall_*` deltas of #70-#80 from the 2026-11-01 Mac transcript into section 2). `../tools/drop-frames-2026-11-01/take3v2.sh` prints the per-minute reclaim deltas (M2).
+
 ---
 
 /apertar-dev You are the independent test lead for the Apertar drop-frames campaign. The last session reached a
