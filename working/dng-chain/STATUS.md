@@ -17,7 +17,7 @@ The answer page will be `working/dng-chain-answer.md`.
 | R1 | cinepi-raw DNG write chain and history | done |
 | R2 | cinemate storage, mounting, kernel tuning, scheduling, pre-roll, docs, history | done |
 | R3 | Apertar-Core write chain on drop-frames and history | running |
-| R4 | Mounting: Apertar-UI automounter vs cinemate's, exFAT specifics | running |
+| R4 | Mounting: Apertar-UI automounter vs cinemate's, exFAT specifics | done |
 | R5 | Evidence pass over the kb and the handbook | done |
 | R6 | Domain: Linux exFAT internals, NVMe HMB, trim, bandwidth, writeback, libcamera | running |
 | R7 | Apertar-Core capture side: completion thread, requeue, capture gaps, previews, pre-roll | running |
@@ -53,3 +53,12 @@ The answer page will be `working/dng-chain-answer.md`.
 Read `BRIEF.md`, the finished reports, then run the missing readers from `assignments/`, three syntheses, a merge, verification
 and the critic as described above; write `working/dng-chain-answer.md` in the kb's answer-page format (see
 `working/storage-answer.md`, `working/research-30fps-answer.md`).
+
+### Added with R4 (mounting)
+9. The live `/media/RAW` mount comes from the Apertar-UI CFE automounter (`mount(2)` with `uid=1000,gid=1000,umask=0002` + `MS_NOATIME`);
+   `noatime` is on the mount. Three other Apertar mount paths (touch-UI Mount button, the Python re-insert watchers in Core and UI) lack
+   `noatime`. Mount options are not a plausible cause of the residual drops (R4).
+10. Touch-UI clip deletes bypass Core (`cliplistmodel.cpp` removes files directly), so Core's trim-after-delete never fires for them:
+    the 0.9 TB stall can come back in a record/delete session driven from the touch UI (R4, lead L1).
+11. A `discard` mount is not a substitute for the fstrim helper: the 6.12 exfat driver issues one synchronous discard per freed 128 KB
+    cluster under `bitmap_lock` (~1.9 million for a 15000-frame clip) (R4).
