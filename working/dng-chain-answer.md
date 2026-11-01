@@ -13,6 +13,10 @@ real-time knob; patch backup and a clean eight-commit series in `working/dng-cha
 working; all reviewed, none has run on the Pi. Section 5 lists them. Draft PR: <https://github.com/Tiramisioux/Apertar-Core/pull/3>
 (head `6ef0ddc`, base `drop-frames`).
 
+**Corrected 2026-11-01 (feasibility phase).** Twelve statements on this page were corrected or qualified by the feasibility study
+`working/dng-chain-feasibility.md` (§5 lists each with its source); the inline text below carries the corrections. That page answers the follow-up
+question: can Apertar record drop-free at 4K SDR 12-bit 50 fps and at 4K Clear HDR 16-bit 25 fps, and what decides it.
+
 ## 0. Short answer
 
 1. **Both of the operator's residual cases lose frames before Core's writers, not in storage.** The only 4K 50 fps SDR measurement (T34 M3,
@@ -20,9 +24,10 @@ working; all reviewed, none has run on the Pi. Section 5 lists them. Draft PR: <
    unchanged when the raw buffers went from 4 to 8. The 4K 25 fps Clear HDR 16-bit losses since the trim fix are all capture gaps too (A2; the
    four short takes of 2026-10-31), with the queue at 1 to 2 of 12. A capture gap is a sensor frame the CFE never delivered because no raw buffer
    was queued at its start, which happens when libcamera's serial per-frame cycle (IPA, PiSP back end, Core's completion callback) runs longer than
-   the frame period. No writer-side change in the drop-frames build (Log, the RAM buffer, trim, the sync policy, mount options) can touch that
-   class. Two cautions: the 50 fps measurement is from build `4d5fdd1` and has never been repeated, and on the drop-frames build the 2026-11-01
-   pre-roll ran 3840x2160 at 60 fps for two seconds with zero skips (115 frames at a measured 60.0 fps), so the cycle there was at most 17 ms in
+   the frame period. No writer-side change in the drop-frames build (Log, the RAM buffer, trim, the sync policy, mount options) touches that
+   class by mechanism; the writeback path is the exception (writer-side state produced capture gaps twice, T22's buffered `dd` and A2:
+   `working/dng-chain-feasibility.md` §5 item 7). Two cautions: the 50 fps measurement is from build `4d5fdd1` and has never been repeated, and on the drop-frames build the 2026-11-01
+   pre-roll ran 3840x2160 at 60 fps for two seconds with zero skips (115 frames at a measured 60.0 fps), so the mean cycle there was at most 17.5 ms (the unit probably carried 8 raw buffers) in
    that mode; the first 50 fps test is therefore a repeat, not a fix. **confirmed** for the counters; the cycle mechanism is **probable** (measured
    at 30 fps Clear HDR in October, inferred at 50 fps).
 2. **The one candidate difference that bears on the serial cycle is the tuning file, not the write chain.** cinemate's installer (since May 2026)
@@ -32,7 +37,7 @@ working; all reviewed, none has run on the Pi. Section 5 lists them. Draft PR: <
    rig ran the fork's full tuning with TDN on at its last documented state (handbook 2026-08-31), so TDN may not be what separated the stacks when
    he shot with cinemate; and "largest removable term" assumes the back-end time scales with its bytes, which was never measured (one data point at
    30 fps). Apertar's `imx585_clearHDR.json` is in no repository but almost certainly carries `tdn` (no PiSP tuning of that class lacks it). A
-   tuning copy without the `tdn` blocks, selected with `set_tuning_file` (the `APERTAR_TUNING_FILE` variable is dead: Core overrides it at start,
+   tuning copy without the `tdn` blocks, selected with `set_tuning_file` (`APERTAR_TUNING_FILE` is conditional, not dead: it is adopted only while no tuning selection is persisted, then persisted itself, see `working/dng-chain-feasibility.md` §5 item 5;
    kb upstream-issues #10), is a no-build test and the cheapest lever for both cases. **confirmed** for cinemate's installer and libcamera's rule;
    the effect is **probable**; the Apertar tuning content is **unconfirmed** (one grep on the Pi settles it).
 3. **cinemate's "no drops" in these cases has no counted record anywhere.** Its only quantified clean 4K 16-bit 25 fps record is eight 10-second
@@ -108,7 +113,7 @@ hole), so T34 M3's `missing=355` equals its gap estimate while A2's `missing=0` 
 
 | What is established | Status |
 | --- | --- |
-| Linear (16.6 MB per frame, 415 MB/s) is clean for 10 minutes on a trimmed drive with the WebUI closed: A0, A1 (one take each, `a40112a`), and six earlier long takes; none of them on the shipping build | measured |
+| Linear (16.6 MB per frame, 415 MB/s) is clean for 10 minutes on a trimmed drive with the WebUI closed: C0101 (`114bfb9`, untrimmed, 35 % full), A0 and A1 (`a40112a`): 3 of 4 ten-minute takes, plus six earlier long takes; none of them on the shipping build | measured |
 | Log brings the frame to 12.45 MB (311 MB/s), 42 % of the measured direct-write rate of the drive; storage is not the limit with or without Log | measured size; arithmetic |
 | Every residual loss is a capture gap with the queue at 1 to 2 of 12: A2 (1491 one-frame gaps in 10 min), the four short takes of 2026-10-31 (2 to 10 gaps in the first seconds, WebUI open), C0001 under the old 1 s `syncfs` | measured |
 | The recording cycle at 30 fps was 36.2 ms (measured in October), so the margin at 25 fps is a few milliseconds | measured once |
@@ -137,17 +142,17 @@ frame, which the direct write path takes back; whether that traffic matters is c
 
 | What is established | Status |
 | --- | --- |
-| T34 M3 (2026-10-28, `4d5fdd1`, 3840x2076, two 60 s takes, untrimmed drive at 78 to 82 %): 2632 and 2616 of about 2980 frames; every loss a steady single-frame capture gap (dt 40 ms); queue-full 0; peak queue 2 to 3 of 12; write failures 0; unchanged when the raw buffers went from 4 to 8 (CFE pools of 6 and 10 with libcamera's two internal buffers); 1080p50 clean; 525 MB/s written | measured |
+| T34 M3 (2026-10-28, `4d5fdd1`, 3840x2076, two 60 s takes, untrimmed drive at 78 to 82 %): 2632 and 2616 of about 2980 frames; every loss a steady single-frame capture gap (dt 40 ms); queue-full 0; peak queue 2 to 3 of 12; write failures 0; unchanged when the raw buffers went from 4 to 8 (the CFE pool is exactly Core's count, 4 then 8: libcamera's two internal raw buffers are never queued for an External stream; `working/dng-chain-feasibility.md` §5 item 1); 1080p50 clean; 525 MB/s written | measured |
 | On the drop-frames build the only faster datum is the 2026-11-01 pre-roll: 3840x2160 12-bit lossless at a pinned 60 fps for 2 s, 115 frames, measured 60.0 fps from the sensor timestamps, so zero skips and a mean cycle of at most 17 ms in that mode | measured once, 2 s |
 | cinemate has no counted 4K 50 fps take; its 43.98 and "up to 50 fps" figures are `--list-cameras` ceilings; version 3.3.1 switched 4K above 25 fps to HD on SSD | confirmed (absence) |
 | The link (70 %) and the Apertar fork's software pixel-rate cap at 333 MHz (the sensor line rate is 80 % of it) are inside their envelopes; the link is identical on both rigs, the two libcamera forks cap the pixel rate differently (646.7 vs 580 Mpix/s); the sensor ceiling at 891 MHz is 60 fps | arithmetic |
 
 Reading: in T34 M3 a serial cycle of about 22.7 ms against a 20 ms period (44 fps delivered), the same signature the kb measured for Clear HDR at
 30 fps. Scaled from the one measured back-end time, the SDR cycle with TDN on COMP1 input would be 19 to 23 ms, without TDN 8 to 11 ms
-(**probable**, and in tension with the pre-roll's 17 ms bound on the new build, so the estimate or the build differs). Nothing in the
+(**contested**: a second model gives 10 to 14 ms with TDN on; the record brackets the cycle between 22.7 ms (M3) and at most 17.5 ms (pre-roll); only `be_cycle.py` at 50 fps decides, `working/dng-chain-feasibility.md` §2). Nothing in the
 drop-frames build changes this case by design, but whether it still reproduces there is an open measurement: Log does not apply to the COMP1 stream, the RAM buffer never engages at 3 of 12, trim cannot create
 frames the CFE skipped. If the capture side is fixed, uncompressed 4K 50 fps (622 MB/s at 3840x2160) sits at 85 % of the drive's once-measured
-direct-write rate (733 MB/s) and above the 525 MB/s delivered so far (a floor set by the capture loss, not a drive ceiling); 10-bit (518 MB/s) or
+direct-write rate (733 MB/s: a 4.9 s in-cache `dd`; no measurement on this rig writes 600 MB/s or more for longer than 5 s) and above the 525 MB/s delivered so far (a floor set by the capture loss, not a drive ceiling); 10-bit (518 MB/s) or
 Lossless JPEG (300 to 455 MB/s, CPU-tight) are the storage-side ways to fit; 60 fps (746 MB/s) does not fit. No counted take backs this
 marginality yet.
 
@@ -205,13 +210,13 @@ that series was blocked by the session's permission policy, so the PR carries th
 
 | Item | Why | How |
 | --- | --- | --- |
-| Tuning copies without `tdn` (SDR and Clear HDR) | the largest candidate term of the serial cycle; a cinemate installed from `main` runs without it | copy `/home/pi/Tuning-Files/defaults-pisp/imx585*.json` without the three `tdn` objects; select with `set_tuning_file` (or the UI's tuning picker; `APERTAR_TUNING_FILE` is dead, Core overrides it at start); later a Core option deriving it like `makeProresIspTuning` |
+| Tuning copies without `tdn` (SDR and Clear HDR) | the largest candidate term of the serial cycle; a cinemate installed from `main` runs without it | copy `/home/pi/Tuning-Files/defaults-pisp/imx585*.json` without the three `tdn` objects; select with `set_tuning_file` (or the UI's tuning picker; `APERTAR_TUNING_FILE` is adopted only while no tuning selection is persisted, then persisted itself: feasibility page §5 item 5); later a Core option deriving it like `makeProresIspTuning` |
 | Confirm the capture-priority drop-in | no repository installs `config/apertar-core-capture-priority.conf`, but the kb's architecture notes record it present on the Pi (`systemctl cat`, 2026-10-25); the new `LimitRTPRIO=80` line needs a reinstall | `systemctl show apertar-core -p LimitNICE -p LimitRTPRIO` (expect 25 and 80 after the reinstall); `journalctl -u apertar-core -b | grep 'capture scheduling'` |
 | Class-aware defaults for USB SSDs | a Pi 5 USB 3 port carries about 300 to 400 MB/s; 415 MB/s linear does not fit; the writer table treats usb-uas like pi-nvme | measure first (section 6, E8); then `ram` mode with the safety stop and Log suggested for Clear HDR 16-bit on USB |
 | Exact gap telemetry | Core reads no sequence numbers, so a gap cannot be attributed (CFE skip vs link loss vs Core holding buffers) | read `FrameBuffer::metadata().sequence`; log the longest `requestComplete` and the held-request high-water per take |
 | Host memory buffer for the DRAM-less drive (second-order) | `nvme.max_host_mem_size_mb=0` is Raspberry Pi's own device-tree default (after the HMB exhausted the 64 MiB CMA); the drive's minimum is 64 MiB, so only 64 or more does anything (rpi-6.18's 32 MiB default would still give it none); an HMB caches the mapping table and speeds small random reads by a third to a half, not sequential writes; both rigs ran without it; bounded at about 10 ms per fully chained frame, so not a drop mechanism | append `nvme.max_host_mem_size_mb=64` to `cmdline.txt` (the last occurrence wins; the token cannot be removed from the device tree) plus `dtoverlay=vc4-kms-v3d,cma-256`; `dmesg | grep -i 'host memory'`; `CmaFree`; camera and display still start |
 | Swap off | cinemate's installer disables it; swap was in use during takes on 2026-10-26 | `dphys-swapfile swapoff`; `vmstat 1` during a take |
-| The kb's O_DIRECT patch (T24) rebased onto the copy worker | the only change that removes the page-cache copy and all page-cache work (the `DONTNEED` drain, reclaim); the kb saw a direct-I/O `dd` cost no capture frames where a buffered one did | after E2 and E6; exFAT needs the file extended first (`ftruncate` to the final size, block-aligned IFD-first layout) or direct I/O silently falls back to buffered |
+| The kb's O_DIRECT patch (T24) rebased onto the copy worker | the only change that removes the page-cache copy and all page-cache work (the `DONTNEED` drain, reclaim); the kb saw a direct-I/O `dd` cost no capture frames where a buffered one did | after E2 and E6; on rpi-6.12.y exFAT direct I/O has no buffered fallback; what remains is 512-byte alignment of offsets, lengths and buffers, and a direct write that starts past `valid_size` zero-fills the gap through the page cache, so an IFD-first layout must be written front to back; preallocation stays useful for contiguity (feasibility page §5 item 6) |
 
 ### 5.3 Not recommended
 

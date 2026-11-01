@@ -11,6 +11,9 @@ trim/mount hygiene. The clean eight-commit rebuild of the same tree is in `patch
 the operator decides). First tests: E0 baseline on the new build, E1 tuning without TDN, then the counted Clear HDR 16-bit
 25 fps and 4K 50 fps SDR takes.
 
+Feasibility phase, same day: `../dng-chain-feasibility.md` answers whether drop-free 4K50 SDR and 25 fps Clear HDR 16-bit are achievable;
+its six reports and six verifications are in `F/`, and its §5 lists the corrections it makes to this file and the answer page.
+
 The sections below are the working state as it accumulated during the study and are kept for provenance.
 
 
@@ -42,7 +45,8 @@ The answer page will be `working/dng-chain-answer.md`. Syntheses: S1 (storage), 
 
 1. The 4K 50 fps SDR take (T34 M3, 2026-10-28) wrote 525 MB/s with the write queue never above 3/12 and lost ~12 % of
    frames as steady single-frame capture gaps: the loss is upstream of Core's writers (libcamera's serial per-frame
-   cycle), so no writer-side change (Log, ram buffer, trim, sync policy, mount options) can touch it (R5, R8).
+   cycle), so no writer-side change (Log, ram buffer, trim, sync policy, mount options) touches it by mechanism (R5, R8); the writeback path is the
+   exception, see `../dng-chain-feasibility.md` §5 item 7.
 2. Clear HDR 16-bit + Log at 311 MB/s is well inside the drive envelope; Clear HDR 16-bit linear (415 MB/s) ran 10 min
    clean on a trimmed drive (A0, A1). The residual drops in this case are capture-side and short-take (R5, R8).
 3. The kb's A1-vs-A2 conclusion ("the per-frame writeback hint keeps the CFE from stalling") does not hold as a mechanism:
@@ -105,10 +109,10 @@ and the critic as described above; write `working/dng-chain-answer.md` in the kb
     PiSP back end runs without temporal denoise (TDN); Apertar's tuning (not in any repo) probably carries TDN. TDN reads and writes a
     full frame at the CFE format inside the serial per-frame cycle: back-end bytes per 4K SDR frame 29.0 MB (Apertar, COMP1, TDN on)
     against 19.8 MB (cinemate, 16-bit container, no TDN), and 57.6 against 20.0 MB in Clear HDR 16-bit. Bytes-scaled from the one
-    measured cycle, Apertar's SDR cycle at 50 fps is 19-23 ms (T34 M3 delivered 44 fps = 22.7 ms); with TDN off 8-11 ms (R9, probable).
+    measured cycle, Apertar's SDR cycle at 50 fps is 19-23 ms (T34 M3 delivered 44 fps = 22.7 ms); with TDN off 8-11 ms (R9; contested by the feasibility phase, which brackets the cycle at 22.7 ms to at most 17.5 ms and leaves it to measurement).
 21. Link and RP1 are identical on both rigs (891 MHz = 1782 Mbps/lane on the D-PHY's 1500 bin, RP1 overclock) and inside the envelope
     at 4K 50 fps 12-bit (70 % of the link, 80 % of the RP1 pixel rate); they do not separate the stacks (R9).
-22. Cheapest test for both residual cases: a tuning copy without the tdn blocks, selected with set_tuning_file (APERTAR_TUNING_FILE is dead: Core overrides it at start),
+22. Cheapest test for both residual cases: a tuning copy without the tdn blocks, selected with set_tuning_file (APERTAR_TUNING_FILE works only while no tuning selection is persisted, then persists itself; see ../dng-chain-feasibility.md §5 item 5),
     measured with working/tools/be_cycle.py and a counted 60 s take (R9).
 
 ### Added with R6 (kernel and drive domain)
