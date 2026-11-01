@@ -94,7 +94,7 @@ and the critic as described above; write `working/dng-chain-answer.md` in the kb
     measured cycle, Apertar's SDR cycle at 50 fps is 19-23 ms (T34 M3 delivered 44 fps = 22.7 ms); with TDN off 8-11 ms (R9, probable).
 21. Link and RP1 are identical on both rigs (891 MHz = 1782 Mbps/lane on the D-PHY's 1500 bin, RP1 overclock) and inside the envelope
     at 4K 50 fps 12-bit (70 % of the link, 80 % of the RP1 pixel rate); they do not separate the stacks (R9).
-22. Cheapest test for both residual cases: a tuning copy without the tdn blocks, selected with set_tuning_file / APERTAR_TUNING_FILE,
+22. Cheapest test for both residual cases: a tuning copy without the tdn blocks, selected with set_tuning_file (APERTAR_TUNING_FILE is dead: Core overrides it at start),
     measured with working/tools/be_cycle.py and a counted 60 s take (R9).
 
 ### Added with R6 (kernel and drive domain)
