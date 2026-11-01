@@ -1,0 +1,497 @@
+{
+ "summary": "cinepi-raw (63a08d5) writes CinemaDNG with a 3-stage chain: main loop queues a POINTER into the libcamera buffer (no copy on the completion or main thread); N encode workers (Cinemate: 4, pinned to CPUs 1-2) do the single pass that reads the camera buffer row by row into a 4096-aligned, 1 MiB-rounded pooled RAM buffer (16-bit = one memcpy; 12-bit = pack; COMP1 = LUT decode + pack; log = up to 4 row passes), then release the camera buffer BEFORE any disk I/O; M disk workers (Cinemate: 2 on exFAT/NTFS, 8 on ext4) do open(O_WRONLY|O_CREAT|O_TRUNC), one POSIX_FADV_SEQUENTIAL, ONE write() of the exact DNG size, close(). No fsync, no sync_file_range, no DONTNEED (removed 2026-03-06 in b71ec67), no flush at record stop. Back-pressure is a RAM permit of 0.90 x MemAvailable (measured 173 x 17 MiB = 2941 MiB on a 4 GB CM5 = 6.9 s at 25 fps 16-bit); encode workers BLOCK on it, holding camera buffers, until the camera starves; the main loop ends the take at cap-2 (\"RAM pool exhausted\"); Cinemate auto-stops at 90 % fill. A \"drop\" (droppedFrames) is ONLY a sensor-timestamp capture gap >= 2 periods counted on the encode worker; writeFailures counts open/short-write/close errors; pool exhaustion, alloc failure and dng_save throws are not counted as drops. File layout: 8-byte header, raw strip at offset 8, IFD0 (holds the raw; no SubIFD), optional thumbnail strip + IFD1 (Cinemate default: colour JPEG 640x360, ~16 KB, +4.0 ms/frame). Camera buffers: --buffer-count 10 on exFAT/NTFS, 8 on ext4/default, 6 bare. Whole process is launched under chrt -f 70 / ionice -c2 -n0 / taskset -c 1-3; the --disk-nice -5 fails with EPERM on the rig. Fairness: cinepi-raw DID drop frames at 4K 16-bit ClearHDR in Sept 2026 (208 events 2026-09-15; earlier 102 in 20 min) from the ccmpPreview post-process stage, fixed 2026-09-15 for 16-bit (12-bit still re-renders at ~35 ms/frame); there is no long exFAT 4K25 16-bit measurement in the handbook, only an NTFS soak that filled the pool in 15-22 s. Full report with every ref at /tmp/claude-0/-home-user/80b31005-3a15-5c7a-9048-3096078b0f85/scratchpad/research/R1.md.",
+ "report_path": "/tmp/claude-0/-home-user/80b31005-3a15-5c7a-9048-3096078b0f85/scratchpad/research/R1.md",
+ "findings": [
+  {
+   "topic": "thread topology",
+   "claim": "Encode workers default 2 (Cinemate passes 4), disk workers default 8 (Cinemate 2 on exFAT/NTFS/default, 8 on ext4); workers are process-lifetime threads named dng-enc-N / dng-dsk-N; affinity rule: if the safe CPU set has >= worker count each worker gets one CPU (i % n), else all share the whole set; the last online core (audio, SCHED_FIFO 80) is stripped from any requested set.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/raw_options.hpp:59-60@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:292-315@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:356-442@63a08d5",
+    "/home/user/cinemate/src/module/storage_profiles.py:50-94@4990afc"
+   ],
+   "notes": "On a 4-core Pi 5 with the exfat profile: 4 encode workers share {1,2}; 2 disk workers both on CPU 2; CPUs 0 and 3 never carry DNG workers."
+  },
+  {
+   "topic": "thread topology",
+   "claim": "Nice values do not apply on the rig: dng-dsk-N logs 'failed to set nice level -5: Permission denied' every take (service runs as pi, no RLIMIT_NICE/CAP_SYS_NICE); the encode workers' -10 fails the same way (same setpriority call).",
+   "status": "probable",
+   "refs": [
+    "/home/user/tiramisioux/cinemate-handbook/open-threads.md:340-356",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:432-435@63a08d5"
+   ],
+   "notes": "Disk-worker EPERM is confirmed by the handbook log; encode-worker EPERM is inferred (same syscall, same user)."
+  },
+  {
+   "topic": "thread topology",
+   "claim": "Cinemate wraps the whole cinepi-raw process in `chrt -f 70` (if permitted), `ionice -c2 -n0`, `taskset -c 1-3`; when chrt succeeds every thread (main, libcamera, encode, disk) is SCHED_FIFO 70 and nice is moot.",
+   "status": "probable",
+   "refs": [
+    "/home/user/cinemate/src/module/cinepi_multi.py:276-288@4990afc"
+   ],
+   "notes": "Unconfirmed whether chrt succeeded on the rig: look for 'RT scheduling not permitted' in the cinemate log."
+  },
+  {
+   "topic": "RAM permit",
+   "claim": "max_ram_buffers_ = max(1, 0.90 x MemAvailable / buffer_size), read from /proc/meminfo inside setup_encoder(), which re-runs at the first frame of every take; encode workers block without timeout on the permit; disk workers release it after close(); buffer_full() = ram_buffers_ + 2 >= max; the main loop stops recording ('RAM pool exhausted') when buffer_full() and the take is not just starting.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1064-1085@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2172-2176@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2394-2399@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.hpp:258-262@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_raw.cpp:442-454@63a08d5"
+   ],
+   "notes": "buffer_size = align_up(frame + 64 KiB + log LUT + thumbnail reservation, 1 MiB) at dng_encoder.cpp:1035-1039. Pool buffers are allocated lazily with posix_memalign(4096) and recycled via buffer_pool_."
+  },
+  {
+   "topic": "RAM permit",
+   "claim": "On the 4 GB CM5 the pool was 173 frames x 17 MiB = 2941 MiB (MemAvailable ~3.27 GiB), i.e. 6.9 s at 25 fps 16-bit; on 8 GB no measurement exists (computed ~390 frames if MemAvailable ~7.2 GiB).",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinemate-handbook/lessons/hardware-log.md:963-967",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1084-1085@63a08d5"
+   ],
+   "notes": "The 8 GB figure is unconfirmed: read the 'RAM pool: up to {} frames' log line once on that board."
+  },
+  {
+   "topic": "hand-off",
+   "claim": "The camera buffer is HELD during the encode (from EncodeBuffer on the main thread until the encode worker finishes dng_save) and NOT during the disk write; EncodeBuffer2 queues only a pointer; the CompletedRequestPtr deleter is queueRequest, and encodeBufferDone pops the FIFO front after dng_save, returning the buffer to libcamera.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_recorder.hpp:49-105@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_recorder.hpp:158-174@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:455-483@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2239-2250@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2293-2304@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/core/rpicam_app.cpp:1238@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/core/rpicam_app.cpp:975-1028@63a08d5"
+   ],
+   "notes": "DMA sync: START|READ at completion (rpicam_app.cpp:1225), START|RW + END|RW both on the main thread inside EncodeBuffer (buffer_sync.cpp:16-47), END|READ at requeue (rpicam_app.cpp:1008). encode_queue_ is unbounded; the only cap on held camera buffers is libcamera running out of them."
+  },
+  {
+   "topic": "hand-off",
+   "claim": "Requests in flight = --buffer-count: 10 on Cinemate's exfat/ntfs profiles, 8 on ext4/default, 6 for bare cinepi-raw; the raw stream copies stream 0's count; buffers are app-allocated from /dev/dma_heap/vidbuf_cached (cached system heap on Pi 5).",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/core/rpicam_app.cpp:630-632@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/core/rpicam_app.cpp:657@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/core/dma_heaps.cpp:22-28@63a08d5",
+    "/home/user/cinemate/src/module/storage_profiles.py:59,72,82,93@4990afc",
+    "/home/user/cinemate/src/module/cinepi_multi.py:725-746@4990afc"
+   ],
+   "notes": "settings.jsonc sensors.raw_buffer_count can override; the value actually used on the Pi is in the 'Camera raw-buffer headroom: --buffer-count' log line."
+  },
+  {
+   "topic": "hand-off",
+   "claim": "encodeBufferDone pops the FIFO front regardless of which of the 4 encode workers finished, so a camera buffer can be requeued while another worker still reads it (tearing hazard, not a drop mechanism).",
+   "status": "probable",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_recorder.hpp:158-174@63a08d5"
+   ],
+   "notes": "Source-only inference; window bounded by libcamera's queued-request depth (<= buffer_count-1 frame periods)."
+  },
+  {
+   "topic": "copies per frame",
+   "claim": "16-bit unpacked path: ONE user-space pass (per-row memcpy via write_pod into the pooled buffer) + one kernel copy in write(); 12-in-16 SDR: pack_row_16_to_12bit into a row scratch then memcpy; COMP1: LUT decode per 8-px block + pack; CineMate Log: normalise (unpack/shift), encode_row LUT in place, pack, memcpy = up to 4 row passes. All on the encode worker; none on the completion or main thread.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1208-1437@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/ifd_builder.hpp:173-181@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_pack.hpp:316-489@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/log_lut.hpp:297-301@63a08d5"
+   ],
+   "notes": "The first frame of each take also samples every 3rd row for the ClearHDR clamp detector inside the same loops (kRowStride = 3 at :1167)."
+  },
+  {
+   "topic": "syscalls per frame",
+   "claim": "Disk worker: open(O_WRONLY|O_CREAT|O_TRUNC, 0644), posix_fadvise(SEQUENTIAL) (the only fadvise in the file), ONE write() of buf.usedSize from a 4096-aligned buffer (no retry on short write), close() = 4 syscalls, plus one formatted 'DNG written:' stdout line per frame before the open. No fsync/fdatasync/sync_file_range/O_DIRECT/fallocate/DONTNEED anywhere; nothing at record stop.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2337-2379@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2007@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_raw.cpp:481@63a08d5"
+   ],
+   "notes": "Grep of dng_encoder.cpp for fsync|fdatasync|sync_file_range|O_DIRECT|O_SYNC|fallocate|ftruncate|FADV_DONTNEED|FADV_NOREUSE: only the comment at :2351 and the SEQUENTIAL hint at :2356."
+  },
+  {
+   "topic": "file layout",
+   "claim": "8-byte TIFF header; raw strip at offset 8 (StripOffsets=8, StripByteCounts=rawSize, Compression 1 only); IFD0 follows the raw data and holds it (no SubIFD); optional thumbnail strip then IFD1 chained from IFD0. Under Cinemate the thumbnail is ON by default: colour JPEG q85 at lores>>1 (640x360), reservation 691,200 B, actual ~16 KB, measured +4.0 ms/frame (+18 %) encode time.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1135-1140@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1208,1437,1579-1626,1745-1748@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1750-2007@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_thumbnail.hpp:85-163@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_controller.cpp:35-47,64@63a08d5",
+    "/home/user/cinemate/src/module/config_loader.py:398,439@4990afc"
+   ],
+   "notes": "cinepi-raw's own RawOptions default is thumbnail 0; the 3/1 defaults come from the controller (CP_DEF_THUMBNAIL 3, CP_DEF_THUMBNAIL_SIZE 1) and Cinemate. Snapshotted per take in setup_encoder (:1006-1007)."
+  },
+  {
+   "topic": "drop detection",
+   "claim": "droppedFrames counts ONLY capture gaps: on the encode worker, under encode_mutex_, the sensor-timestamp delta between consecutive encoded frames rounded to >= 2 frame periods adds raw_elapsed-1. writeFailures counts open/short-write/close errors. Pool exhaustion ends the take and is not counted; posix_memalign failure and dng_save throws drop a frame with NO counter. There is no 'disk slow' counter or per-frame deadline.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2126-2135@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2186-2196@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2252-2276@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:2365,2376,2382@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.hpp:141-151,220-240,281-291@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_controller.cpp:642-646@63a08d5",
+    "/home/user/cinemate/src/module/redis_listener.py:1003-1026@4990afc"
+   ],
+   "notes": "Published per frame on the cp_stats channel: droppedFrames, writeFailures, bufferSize, bufferSizeMax (peak disk_buffer_ depth), framesInFlight (encode_queue_ + mid-encode + disk_buffer_, not reset per take)."
+  },
+  {
+   "topic": "COMP1 / packing",
+   "claim": "COMP1 decode and 10/12-bit packing run inside dng_save on the encode worker; decoder uses 4 static 1024-entry dequant LUTs and 8-byte blocks -> 8 px, adapted from Apertar-Core's CdngEncoder; the depth rule (dng_output_depth.hpp) packs 12-in-16 SDR to 12, native 10 (incl. COMP1, rounded) to 10, keeps genuine 16-bit verbatim. Per-frame cost of COMP1->12 at 4K is not measured anywhere.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1264-1309@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_pack.hpp:304-489@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_output_depth.hpp:70-128@63a08d5"
+   ],
+   "notes": "The cost is unconfirmed: needs a take at redis log_level debug to see 'Time taken for the encode: {} ms' (dng_encoder.cpp:2300-2301); Cinemate never sets that key. Whether Cinemate launches the imx585 4K 12-bit mode as P (COMP1) or U was not checked."
+  },
+  {
+   "topic": "log encode",
+   "claim": "CineMate Log is resolved once per take in setup_encoder (source depth = sensor mode snapshot, target 10/12, refuses to linear on spec/depth/black-level mismatch; 12-bit ClearHDR only composed with the CCMP decompand to target 10) and applied per row on the encode worker as one forward-LUT lookup per sample before packing; a code comment says the LUT pass dominates dng_save on a log take.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:744-908@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.cpp:1210-1263@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_controller.cpp:40-41@63a08d5"
+   ],
+   "notes": "Output sizes from commit 04b7332: 16->10 log 10.51 MB vs 16.81 MB linear 16-bit at 4K."
+  },
+  {
+   "topic": "record stop / back-pressure",
+   "claim": "Record start resets per-take counters and forces setup_encoder; nothing is flushed or dropped (the previous take drains to its own folder; Cinemate blocks the rec trigger and mode-change relaunch while is_writing_buf). Record stop does nothing but close the folder and stop audio: no drain, no flush, no fsync; drain time = backlog x per-file write time, unbounded. When the disk is slower than capture: disk_buffer_ grows into the RAM pool (~7 s on 4 GB), Cinemate auto-stops at 90 % fill (4 Hz poll), otherwise encode workers block holding camera buffers, libcamera runs out of its 10 buffers, frames stop arriving (droppedFrames), main loop stops at cap-2.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_raw.cpp:413-434@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/cinepi_raw.cpp:442-454@63a08d5",
+    "/home/user/cinemate/src/module/cinepi_controller.py:2208-2215,2330-2339,2385-2390@4990afc",
+    "/home/user/cinemate/src/module/cinepi_controller.py:351,355,4064-4096@4990afc",
+    "/home/user/tiramisioux/cinemate-handbook/lessons/hardware-log.md:963-967"
+   ],
+   "notes": "Hardware evidence: 16-bit soaks on NTFS (fuseblk) at ~355 MB/s stalled after 15-22 s when the 173-frame pool filled, 'frames stop arriving — cleanly'. No equivalent exFAT soak exists in the handbook."
+  },
+  {
+   "topic": "history",
+   "claim": "POSIX_FADV_DONTNEED ('drop file pages ASAP') and malloc_trim(0) were added per frame in 0981681 (2025-06-23) and removed, with NOREUSE and a per-frame info line, in b71ec67 (2026-03-06, 'streamline disk worker overhead'); the commit message gives no reason for dropping DONTNEED beyond overhead; since then the kernel's own writeback is the only flusher.",
+   "status": "confirmed",
+   "refs": [
+    "git -C /home/user/tiramisioux/cinepi-raw show 0981681 -- cinepi/dng_encoder.cpp",
+    "git -C /home/user/tiramisioux/cinepi-raw show b71ec67 -- cinepi/dng_encoder.cpp"
+   ],
+   "notes": "The RAM permit itself dates from cdbb2fb (2025-06-12 'fix frame buffering'); the buffer pool from 8fe39cc (2025-10-17); worker tuning options from d71027b (2025-09-28)."
+  },
+  {
+   "topic": "fairness",
+   "claim": "cinepi-raw DID drop frames at 4K 16-bit ClearHDR in September 2026 (208 drop events on 2026-09-15; an earlier '102 drops in 20 minutes' report), caused by the ccmpPreview post-process stage re-rendering the lores frame on a detached per-frame thread (measured 35 ms/frame 12-bit 4K, 22 ms 16-bit 4K); fixed for 16-bit by ea53b2c/dca6748 (operator-confirmed 2026-09-15); 12-bit ClearHDR still renders twice.",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/tiramisioux/cinepi-raw/cinepi/ccmpPreviewStage.cpp:178-182,595-609@63a08d5",
+    "/home/user/tiramisioux/cinemate-handbook/lessons/hardware-log.md:3184-3203",
+    "/home/user/tiramisioux/cinemate-handbook/lessons/hardware-log.md:2240-2250",
+    "/home/user/tiramisioux/cinemate-handbook/lessons/hardware-log.md:2365-2372",
+    "/home/user/tiramisioux/cinepi-raw/core/post_processor.cpp:136@63a08d5"
+   ],
+   "notes": "The operator's belief that cinemate did not drop at 4K25 16-bit is therefore true only after 2026-09-15 and only for linear 16-bit; the handbook has no 10-minute exFAT 4K25 16-bit cinepi-raw measurement at all."
+  },
+  {
+   "topic": "kb re-check",
+   "claim": "kb a1/b1 claims re-opened in source all hold (open flags, permit formula, counters, Cinemate profiles, release-before-write, hazard); two handbook statements are wrong/stale: architecture/cinepi-raw.md says one atomic counter feeds both the RAM guard and the write indicator (the guard reads ram_buffers_ permits, not frames_in_flight_), and its output-depth section still says 10-bit is excluded from COMP1 (96f7a2a admitted it).",
+   "status": "confirmed",
+   "refs": [
+    "/home/user/apertar-kb/working/compare-raw/a1-cinepi-writer.md",
+    "/home/user/apertar-kb/working/compare-raw/b1-cinepi-buffers-completion.md",
+    "/home/user/tiramisioux/cinemate-handbook/architecture/cinepi-raw.md:46-49",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_encoder.hpp:238-262@63a08d5",
+    "/home/user/tiramisioux/cinepi-raw/cinepi/dng_output_depth.hpp:98-123@63a08d5"
+   ]
+  }
+ ],
+ "numbers": [
+  {
+   "what": "RAM pool on the 4 GB CM5 (mono rig, 3840x2200 16-bit)",
+   "value": "173 frames x 17 MiB = 2941 MiB (MemAvailable ~3.27 GiB); 6.9 s at 25 fps",
+   "source": "cinemate-handbook/lessons/hardware-log.md:966 (2026-08-27/28, measured)"
+  },
+  {
+   "what": "RAM_FRACTION",
+   "value": "0.90 of MemAvailable, re-read at each take start",
+   "source": "cinepi-raw/cinepi/dng_encoder.cpp:1079@63a08d5"
+  },
+  {
+   "what": "buffer_size per frame, 4K 16-bit with Cinemate's thumbnail reservation",
+   "value": "17 MiB (16,588,800 + 65,536 + 691,200 -> 17,825,792 B)",
+   "source": "dng_encoder.cpp:1035-1039 (computed)"
+  },
+  {
+   "what": "buffer_size per frame, 4K 12-bit packed with thumbnail",
+   "value": "13 MiB (13,631,488 B); pool ~226 frames = 4.5 s at 50 fps on 4 GB",
+   "source": "dng_encoder.cpp:1035-1039 (computed)"
+  },
+  {
+   "what": "Write bandwidth needed",
+   "value": "4K25 16-bit: 415 MB/s; 4K50 12-bit: 622 MB/s (+~0.8 MB/s thumbnails)",
+   "source": "computed from payload sizes"
+  },
+  {
+   "what": "JPEG thumbnail cost",
+   "value": "~16 KB/frame, +4.0 ms/frame encode (+18 %), zero drops, disk queue <= 2 at 4K 16-bit ClearHDR Log 12",
+   "source": "cinepi-raw/cinepi/cinepi_controller.cpp:35-39@63a08d5 citing handbook 2026-09-13"
+  },
+  {
+   "what": "Syscalls per frame (disk worker)",
+   "value": "4 (open, fadvise SEQUENTIAL, one write, close) + 1 stdout log write",
+   "source": "dng_encoder.cpp:2347-2379@63a08d5"
+  },
+  {
+   "what": "Camera buffers under Cinemate",
+   "value": "--buffer-count 10 on exFAT/NTFS, 8 on ext4/default, 6 bare; 16-bit raw 3840x2200 = 16.9 MB each (169 MB for 10)",
+   "source": "storage_profiles.py:59,72,82,93@4990afc; rpicam_app.cpp:630-657@63a08d5"
+  },
+  {
+   "what": "Workers under Cinemate exfat profile",
+   "value": "4 encode on CPUs {1,2}, 2 disk on CPU 2; process taskset 1-3, chrt -f 70 if permitted, ionice -c2 -n0",
+   "source": "storage_profiles.py:74-83; cinepi_multi.py:276-288@4990afc; dng_encoder.cpp:397-404@63a08d5"
+  },
+  {
+   "what": "NTFS 16-bit soak",
+   "value": "pool filled and frames stopped after 15-22 s at ~355 MB/s",
+   "source": "hardware-log.md:963-967"
+  },
+  {
+   "what": "ccmpPreview stage per frame (2026-09-14)",
+   "value": "12-bit 4K full re-render 35.2 ms median / 45.1 max; 16-bit 4K in-place 21.9 / 27.7 ms",
+   "source": "hardware-log.md:2240-2250"
+  },
+  {
+   "what": "cinepi-raw 4K 16-bit drop events before the ccmpPreview fix",
+   "value": "208 (2026-09-15); earlier '102 drops in 20 minutes'",
+   "source": "ccmpPreviewStage.cpp:178-182@63a08d5; hardware-log.md:2372, 3184-3199"
+  },
+  {
+   "what": "Camera-starve restart timeout",
+   "value": "3000 ms (WaitFor) -> StopCamera/StartCamera",
+   "source": "cinepi_raw.cpp:383-397@63a08d5"
+  },
+  {
+   "what": "Cinemate auto-stop thresholds",
+   "value": "RAM buffer 90 % fill, system RAM 80 %, polled at 4 Hz",
+   "source": "cinemate/src/module/cinepi_controller.py:351,355,4064-4096@4990afc"
+  },
+  {
+   "what": "Capture-gap rounding",
+   "value": "delta >= 1.5 frame periods -> rounds to 2 -> counts 1 dropped",
+   "source": "dng_encoder.cpp:2127-2135@63a08d5"
+  },
+  {
+   "what": "WhiteLevel wait bound for non-first frames of a take",
+   "value": "2 s",
+   "source": "dng_encoder.cpp:2222@63a08d5"
+  }
+ ],
+ "history": [
+  {
+   "commit": "9748cd0",
+   "date": "2025-06-04",
+   "what": "Initial commit (start fresh): buffered open, SEQUENTIAL+NOREUSE fadvise, one write",
+   "why_it_matters": "The compiled encoder was never O_DIRECT; only a dead __dng_encoder.cpp (f7bc43e..1475f78) had O_DIRECT."
+  },
+  {
+   "commit": "cdbb2fb",
+   "date": "2025-06-12",
+   "what": "'fix frame buffering': introduces the RAM permit (RAM_FRACTION 0.90 of MemAvailable, ram_cv_.wait) replacing a frame-count cap",
+   "why_it_matters": "The blocking back-pressure design, the core difference from Apertar's 12-frame drop queue, dates from here."
+  },
+  {
+   "commit": "e228ed2",
+   "date": "2025-06-13",
+   "what": "Forced packing of 16-bit container to 12-bit unless --keep16 (later unconditional, --keep16 removed)",
+   "why_it_matters": "Halves SDR write bandwidth; the padding bits are known zero."
+  },
+  {
+   "commit": "0981681",
+   "date": "2025-06-23",
+   "what": "'fix flushing of RAM after a take': permit taken after posix_memalign; buffer_full() becomes ram_buffers_+2 >= max; adds POSIX_FADV_DONTNEED ('drop file pages ASAP') and malloc_trim(0) per frame; 'RAM pool exhausted' warning",
+   "why_it_matters": "Starts the DONTNEED era (2025-06-23 to 2026-03-06)."
+  },
+  {
+   "commit": "d71027b",
+   "date": "2025-09-28",
+   "what": "Worker tuning: --encode/disk-workers/-affinity/-nice; fixed thread arrays -> counted vectors; 500us/1ms wait_for polling -> real CV waits; notify_all -> notify_one",
+   "why_it_matters": "The topology Cinemate tunes per filesystem; README examples frame it as thermal/CPU steering, not drop prevention."
+  },
+  {
+   "commit": "8fe39cc",
+   "date": "2025-10-17",
+   "what": "Reusable pooled encode buffers; permit taken before allocation",
+   "why_it_matters": "Removes per-frame 17 MiB malloc/free and page faults."
+  },
+  {
+   "commit": "b71ec67",
+   "date": "2026-03-06",
+   "what": "'streamline disk worker overhead': removes POSIX_FADV_NOREUSE and POSIX_FADV_DONTNEED, malloc_trim, per-frame Timecode log and BCD work; caches tag strings",
+   "why_it_matters": "Since then the writer gives the kernel NO writeback or page-drop hint; the message gives no reason beyond overhead (DONTNEED on a dirty range initiates writeback synchronously)."
+  },
+  {
+   "commit": "51537d5",
+   "date": "2026-05-19",
+   "what": "PiSP COMP1 decode (4 static 1024-entry dequant LUTs; adapted from Apertar's CdngEncoder)",
+   "why_it_matters": "Enables packing-P modes on Pi 5; decode runs on the encode worker."
+  },
+  {
+   "commit": "bf39c9b",
+   "date": "2026-05-23",
+   "what": "Main loop Wait() -> WaitFor(3000 ms); on timeout StopCamera/StartCamera",
+   "why_it_matters": "A 3 s camera starve (e.g. after pool exhaustion) restarts the camera."
+  },
+  {
+   "commit": "130b93e",
+   "date": "2026-05-31",
+   "what": "bufferSizeMax: peak disk_buffer_ depth noted by the encode thread",
+   "why_it_matters": "Transient backlog between frames becomes visible to the GUI."
+  },
+  {
+   "commit": "05eb4a0",
+   "date": "2026-06-01",
+   "what": "droppedFrames: unbiased capture-gap counter (raw_elapsed >= 2 -> += raw_elapsed-1)",
+   "why_it_matters": "Defines what cinepi-raw calls a drop: a sensor-timestamp gap, nothing else."
+  },
+  {
+   "commit": "cab91a9",
+   "date": "2026-06-07",
+   "what": "Strip the audio core from DNG worker affinity",
+   "why_it_matters": "Workers never share core N-1 with SCHED_FIFO 80 audio."
+  },
+  {
+   "commit": "5cb392d",
+   "date": "2026-06-08",
+   "what": "clearPool() on every rec start (drops the previous take's backlog)",
+   "why_it_matters": "Reverted two days later; shows the rec-start interlock problem."
+  },
+  {
+   "commit": "8b705c8",
+   "date": "2026-06-10",
+   "what": "writeFailures counter on open/short-write/close failure (NTFS motivation)",
+   "why_it_matters": "The only write-stage loss signal; nothing else counts a slow disk."
+  },
+  {
+   "commit": "b76e3e7",
+   "date": "2026-06-10",
+   "what": "Remove clearPool(); both queues finish to their own folder; rely on Cinemate blocking the rec trigger during the green flush",
+   "why_it_matters": "The cross-repo interlock documented only in a cinepi_raw.cpp comment."
+  },
+  {
+   "commit": "46083f1",
+   "date": "2026-06-10",
+   "what": "framesInFlight gauge (encode_queue_ + mid-encode + disk_buffer_), not reset per take",
+   "why_it_matters": "bufferSize alone hit 0 while encode_queue_ still drained in compression-bound configs; the still-flushing gate now reads this."
+  },
+  {
+   "commit": "7e27d8f / 04b7332 / 4b9c9f6",
+   "date": "2026-08-05 .. 2026-08-13",
+   "what": "CineMate Log: 16->12, then 10-bit target and 12-bit sources, then CCMP-composed 12-bit ClearHDR -> 10",
+   "why_it_matters": "Adds a per-sample LUT pass on the encode worker; 16->10 cuts the file 37.5 %."
+  },
+  {
+   "commit": "c9b2c5f / 81439b3 / 17453ce",
+   "date": "2026-09-05 .. 2026-09-13",
+   "what": "Thumbnail: forced full-lores colour (2.7 MB/frame), then shrunk to shift 1 with the toggle restored, then colour JPEG mode 3 (the shipped default)",
+   "why_it_matters": "Per-frame JPEG encode costs +4 ms on the encode worker; the 09-05..09-13 builds wrote +16-107 % per file."
+  },
+  {
+   "commit": "12657d1 / 96f7a2a",
+   "date": "2026-09-15",
+   "what": "Native 10-bit modes written as 10-bit, including COMP1 (rounded repack)",
+   "why_it_matters": "1.25 B/px on 10-bit modes; the handbook architecture page still says COMP1 is excluded."
+  },
+  {
+   "commit": "3c7913e",
+   "date": "2026-09-15",
+   "what": "Take generation stamped at enqueue for the ClearHDR WhiteLevel latch; stopThreads notifies clip_ceiling_cv_",
+   "why_it_matters": "Non-first frames of a take wait (<= 2 s) for frame 0's WhiteLevel while holding the camera buffer; normally microseconds."
+  },
+  {
+   "commit": "ea53b2c / dca6748 (ccmpPreview)",
+   "date": "2026-09-15",
+   "what": "16-bit ClearHDR stops re-rendering the lores frame in the post-process stage; stale ceiling dropped",
+   "why_it_matters": "Resolved cinepi-raw's own 4K 16-bit drops (208 events); 12-bit still renders twice at ~35 ms/frame."
+  }
+ ],
+ "leads": [
+  {
+   "lead": "Back-pressure location: cinepi-raw blocks encode workers on a RAM permit (0.9 x MemAvailable, ~173 frames / 6.9 s on 4 GB) and never drops at the writer; Apertar's 12-frame queue drops after ~0.5 s (drop[queue-full]).",
+   "mechanism": "A multi-second exFAT stall (cluster allocation, trim debt, writeback burst) is absorbed in RAM in cinepi-raw and only becomes a camera starve after the pool is gone; in Apertar the same stall exceeds 12 frames and drops.",
+   "evidence": "dng_encoder.cpp:1079-1082, 2172-2176@63a08d5; hardware-log.md:963-967 (NTFS soak absorbed 15-22 s cleanly). The kb drop-frames README says Core now has a buffer=ram mode (0.6 x MemAvailable - 512 MiB) — not verified in Core source by this worker.",
+   "how_to_test": "Same exFAT drive, 4K25 16-bit, 10 min: Core buffer=frames vs buffer=ram; compare drop[queue-full], peak_queue and capture-gap. Confirm buffer=ram was actually active in the failing takes.",
+   "kind": "improvement"
+  },
+  {
+   "lead": "Nothing heavy runs on libcamera's completion thread in cinepi-raw; the camera buffer is read on 4 encode workers (CPUs 1-2) and returned right after the pack, before any disk I/O. Apertar (per kb) copies on the completion thread and drops at copy-slot when the copy worker holds buffers-2 requests.",
+   "mechanism": "Writeback bursts and exFAT allocation stalls hit whichever thread touches dirty page cache or faults memory; cinepi-raw keeps that off the thread that must requeue requests, so a kernel stall costs RAM, not frames.",
+   "evidence": "rpicam_app.cpp:1212-1255, post_processor.cpp:136, cinepi_recorder.hpp:49-105, dng_encoder.cpp:2239-2304@63a08d5; Apertar A2 lost 10 % at capture with no per-frame sync (kb digest).",
+   "how_to_test": "perf sched / trace-cmd on Apertar's completion thread during a 4K25 take with and without APERTAR_DNG_WRITEBACK; look for the copy thread blocked in page-fault or writeback paths.",
+   "kind": "cause"
+  },
+  {
+   "lead": "Camera buffer headroom: cinepi-raw runs 10 raw buffers on exFAT (8 ext4, 6 bare) = 400 ms at 25 fps / 200 ms at 50 fps; Apertar runs 4 SDR / 8 ClearHDR (+2 only FAT/NTFS, 0 exFAT per kb) = 80 ms at 4K50 12-bit.",
+   "mechanism": "Any pipeline-thread or copy stall longer than (buffers-2) frame periods starves the CFE; at 50 fps SDR Apertar has 2 spare frames.",
+   "evidence": "storage_profiles.py:82,93@4990afc; rpicam_app.cpp:630-632,657@63a08d5; kb drop-frames README line 178.",
+   "how_to_test": "APERTAR_RAW_CAMERA_BUFFERS=10 at 4K50 12-bit on exFAT; count capture-gap and copy-slot vs the default.",
+   "kind": "improvement"
+  },
+  {
+   "lead": "cinepi-raw does NO sync during the take (no sync_file_range, no 1 s fsync, no DONTNEED since b71ec67) yet is believed clean; Apertar's A2 (no per-frame sync_file_range) lost 10 % at capture — so the hint is not the lever by itself; the kernel writeback knobs Cinemate sets at mount (vm.dirty_*, nr_requests) or the structural differences above must explain A2.",
+   "mechanism": "Without a per-frame hint the kernel flushes in dirty_expire/dirty_ratio bursts; whether that burst stalls capture depends on what runs on the completion thread and on dirty_bytes limits.",
+   "evidence": "dng_encoder.cpp:2351-2379@63a08d5; git show b71ec67; kb digest A2 result.",
+   "how_to_test": "Repeat Apertar A2 with cinemate's mount-time sysctl values applied to the same drive; if clean, the knobs are the lever and APERTAR_DNG_WRITEBACK can default off.",
+   "kind": "cause"
+  },
+  {
+   "lead": "One write() per frame of the whole 16.6 MB DNG from a 4 KiB-aligned buffer (4 syscalls/frame) vs Apertar's ~40 syscalls/frame (491,520-byte chunks per kb).",
+   "mechanism": "Fewer syscalls and one contiguous extent request per file; on exFAT with 128 KB clusters each small write may re-enter exfat_get_block/alloc_cluster.",
+   "evidence": "dng_encoder.cpp:2360@63a08d5; kb drop-frames README line 181.",
+   "how_to_test": "strace -c -f both recorders for 60 s at 4K25; compare write() counts and time; then try a single writev/one write per frame in Core behind a knob.",
+   "kind": "improvement"
+  },
+  {
+   "lead": "The operator's belief 'cinemate did not drop at 4K25 16-bit on this rig' is only partly supported: cinepi-raw dropped frames at 4K 16-bit ClearHDR until 2026-09-15 (208 events; earlier 102 in 20 min) because of the ccmpPreview stage, and the handbook holds no long exFAT 4K25 16-bit cinepi-raw take at all (the only soak is NTFS and it filled the pool in 15-22 s).",
+   "mechanism": "cinepi-raw cannot see a slow disk until the pool is gone (~7 s), so a take shorter than that shows zero droppedFrames regardless of disk speed; a 10-minute take is needed for a like-for-like comparison.",
+   "evidence": "ccmpPreviewStage.cpp:178-182@63a08d5; hardware-log.md:3184-3203, 963-967, 2372; cinepi_controller.cpp:35-39@63a08d5 (zero drops benchmark was 4K 16-bit Log 12 = 12.4 MB/frame).",
+   "how_to_test": "Record a 10-minute 4K25 16-bit linear take with cinepi-raw on the same exFAT NVMe and read droppedFrames, writeFailures, bufferSizeMax and the 'RAM pool' line.",
+   "kind": "assessment"
+  },
+  {
+   "lead": "Pre-roll effect, cinepi-raw side: a 2 s take at max fps runs setup_encoder and leaves its pooled 17 MiB buffers pre-faulted in buffer_pool_ for the real take if buffer_size is unchanged (same mode/bits; fps does not change it), and warms the exFAT allocation bitmap/FAT pages for the folder. Effect on the next take's drops is unmeasured.",
+   "mechanism": "First-touch page faults of fresh posix_memalign buffers (4352 pages each) and cold exFAT metadata are paid during the pre-roll instead of the first second of the take.",
+   "evidence": "dng_encoder.cpp:2178-2184, 2407-2488@63a08d5; kb digest (pre-roll effect never measured).",
+   "how_to_test": "A/B 10 short takes each with pre-roll on/off in Apertar; count drops in the first 2 s; also check whether Apertar's pre-roll leaves any buffers warm (its own pool semantics).",
+   "kind": "assessment"
+  },
+  {
+   "lead": "Things cinepi-raw does worse that Apertar should not copy: no flush/fsync at stop (pulled drive loses up to dirty_expire and leaves 0-byte exFAT entries); no counter for alloc-fail/dng_save-throw drops; synchronous Redis pipeline and a stdout log line per frame on the capture path; a detached pthread per frame; FIFO-front camera-buffer release with 4 workers (tearing hazard); nice EPERM and probably SCHED_FIFO 70 for disk workers.",
+   "mechanism": "Each is a latency or integrity cost that Apertar's design already avoids or counts.",
+   "evidence": "cinepi_raw.cpp:431-434; dng_encoder.cpp:2186-2196, 2252-2276; cinepi_controller.cpp:686-699; post_processor.cpp:136; cinepi_recorder.hpp:158-174@63a08d5; open-threads.md:340-356; cinepi_multi.py:276-288@4990afc.",
+   "how_to_test": "Not needed for the drop question; listed so the comparison is fair.",
+   "kind": "assessment"
+  }
+ ],
+ "open_questions": [
+  "MemAvailable and the resulting RAM pool on the 8 GB board: no 'RAM pool: up to {} frames' line exists in the handbook for 8 GB; read it once.",
+  "Does Cinemate launch the imx585 4K 12-bit SDR mode as packing P (COMP1 decode on the encode workers) or U (plain pack)? Decides what the 4K50 comparison is.",
+  "Did `chrt -f 70` succeed on the rig (journal line 'RT scheduling not permitted' present or absent)? Decides whether all cinepi-raw threads run SCHED_FIFO 70.",
+  "Per-frame dng_save milliseconds for COMP1->12 at 4K and for the 16-bit memcpy (needs redis log_level debug; Cinemate never sets it).",
+  "A long (10 min) exFAT 4K25 16-bit linear cinepi-raw take with droppedFrames/bufferSizeMax logged does not exist in the handbook; the operator's belief rests on short takes or on the Log-12 benchmark.",
+  "Whether --encode-nice -10 also fails with EPERM (only dng-dsk-N appears in the handbook log).",
+  "Whether Apertar-Core's buffer=ram mode (named in the kb drop-frames README) exists and was active in the failing takes — not verified in Core source by this worker.",
+  "What libpisp stride the 16-bit raw and YUV420 lores actually get (libpisp not vendored); the 16.9 MB per raw buffer assumes no padding."
+ ]
+}

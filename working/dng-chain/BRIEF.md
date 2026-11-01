@@ -1,0 +1,27 @@
+You are a research worker in a read-only investigation. Do not modify any file in any git repository. You may write only under /tmp/claude-0/-home-user/80b31005-3a15-5c7a-9048-3096078b0f85/scratchpad/research.
+Repositories (local clones):
+- Apertar-Core (C++ camera engine, Patrik's fork, branch drop-frames = claude/adoring-euler-n8zi0j; HEAD 92d0970): /home/user/Apertar-Core . History: `git -C /home/user/Apertar-Core log origin/drop-frames` (137 commits back to the upstream 1.6.0 release 35dbe67). The big squashed commit of the campaign is d44b177 (2026-10-31).
+- Apertar-UI (Qt touch UI; holds the automounter; branch drop-frames e061be8, shallow): /home/user/tiramisioux/apertar-ui
+- cinemate (Python; main 4990afc; full history, 2192 commits): /home/user/cinemate
+- cinepi-raw (C++ capture engine used by cinemate; main 63a08d5; 408 commits of history): /home/user/tiramisioux/cinepi-raw
+- cinemate-handbook (the LLM guide for cinemate + cinepi-raw): /home/user/tiramisioux/cinemate-handbook
+- apertar-kb (the Apertar knowledge base; LLM guide llm/README.md; evidence lessons/hardware-log.md; project page working/drop-frames/README.md; earlier comparison working/storage-answer.md, working/compare-raw/, working/port-raw/, working/research-30fps/): /home/user/apertar-kb
+Rules: find code with grep anchors and read about 150 lines around a hit; never cat a file over 2000 lines whole (CameraController.cpp is 12k lines, ApertarCoreApp.cpp 14k, WebControlPage.cpp large, dng_encoder.cpp 2.5k). Every claim carries a path:line ref against the named commit (or a URL for web sources). Label each claim confirmed (read in source / measured in a log), probable (inferred, say why) or unconfirmed (name the command or test that would settle it). Observations and conclusions stay separate. Short sentences, tables over prose. Do not trust the kb's own conclusions blindly: when a kb claim matters, re-check it in the source and say whether it holds.
+Your final output is data for a synthesizer, not prose for a human: exhaustive and precise, not polished.`
+
+The operator's problem statement: dropped frames persist in Apertar on the drop-frames build at 4K Clear HDR 16-bit 25 fps (even with Log on) and at 4K 50 fps SDR 12-bit; he believes cinemate did not drop frames in these cases on the same rig (Pi 5 / CM5 with 4 or 8 GB, IMX585, exFAT (128 KB clusters) on a Corsair MP600 Mini NVMe over PCIe Gen 3 x1 behind a CFexpress hat; USB SSDs are also in use). He wants: a comparison of the two DNG write chains; improvements to Apertar for exFAT and SSDs (writing and mounting); whether the latest changes made recording better; whether the storage pre-roll has any effect.
+Digest of what the kb already established (re-check anything you rely on):
+- Apertar counts a lost frame at four places: drop[queue-full] (write queue of 12 frames full, frame dropped), drop[copy-slot] (copy worker held buffers-2 requests), drop[capture-gap] (libcamera delivered no frame for a period), drop[requeue-failed].
+- 2026-10-30: the NVMe stalled for seconds after about 0.9 TB written without a trim (stack dumps in exfat_alloc_cluster > exfat_ent_set > __bread_gfp, exfat_write_inode > __wait_on_buffer, exfat_lookup / path_openat); fstrim restored it; Core now trims at mount and after big deletes. Once the drive hung (nvme Disabling device after reset failure).
+- A0 (defaults: per-frame sync_file_range + 1 s fsync) 10 min 4K25 16-bit on a trimmed drive: 15001 frames, 0 dropped, peak_queue 2/12. A1 (no 1 s fsync): clean. A2 (no per-frame sync_file_range either): 10 % of frames lost at capture (capture-gap, dt about 80 ms), queue never full.
+- 2026-10-31: short takes (a few seconds) lose 2 to 10 frames at capture in the first seconds with the WebUI open; the 3-minute and 10-minute takes lost none.
+- Boot argument nvme.max_host_mem_size_mb=0 is present; the drive asks for 64 MiB of host memory buffer and gets none.
+- Log (16 to 12 bit through a mu-law curve) works only in Clear HDR 16-bit (unpacked raw); SDR lossless uses the PiSP COMP1 raw stream (8.3 MB per 4K frame on the link).
+- Pre-roll: a 2 s take at the mode's maximum fps, deleted; measured to run at 60 fps; its effect on the next take's drops was never measured.
+- cinemate/cinepi-raw: RAM pool permit at 90 % of MemAvailable with blocking encoders; no sync in the take; kernel knobs per connection class applied at mount; cinepi-raw runs chrt -f 70, ionice -c2 -n0, taskset -c 1-3; --buffer-count 8 (ext4) or 10 (exFAT/NTFS); no trim and no discard mount; a thumbnail per frame.
+
+## Output contract for every reader
+1. Write your full detailed report (markdown, tables, every ref) to the scratch file named in your assignment. Be exhaustive there: it is the raw material for the final report.
+2. End your final message with a JSON object (and nothing after it) of this shape:
+{"summary": "...", "findings": [{"topic": "...", "claim": "...", "status": "confirmed|probable|unconfirmed", "refs": ["path:line@commit", ...], "notes": "..."}], "numbers": [{"what": "...", "value": "...", "source": "..."}], "history": [{"commit": "...", "date": "...", "what": "...", "why_it_matters": "..."}], "leads": [{"lead": "...", "mechanism": "...", "evidence": "...", "how_to_test": "...", "kind": "cause|improvement|assessment"}], "open_questions": ["..."], "report_path": "..."}
+Leads are candidate causes of the residual drops, candidate improvements for Apertar on exFAT/SSD, or assessments (did it get better; pre-roll).
