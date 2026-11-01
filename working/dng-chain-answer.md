@@ -10,7 +10,8 @@ log), **probable** (inferred, reason given), **unconfirmed** (the command that s
 
 Code changed in this session: nine commits on Apertar-Core `claude/adoring-euler-n8zi0j` (seven changes, a review-fix commit and a per-thread
 real-time knob; patch backup and a clean eight-commit series in `working/dng-chain/patches/`), each behind a knob so the A/B matrix keeps
-working; all reviewed, none has run on the Pi. Section 5 lists them.
+working; all reviewed, none has run on the Pi. Section 5 lists them. Draft PR: <https://github.com/Tiramisioux/Apertar-Core/pull/3>
+(head `6ef0ddc`, base `drop-frames`).
 
 ## 0. Short answer
 
@@ -197,7 +198,8 @@ until it runs, the honest default is off for the automatic triggers.
 
 Defaults changed by the build: the direct write path and the pool policy (both restorable), the trim coverage, the `noatime` strings, the stats
 field. Everything else is a knob at its old value. The branch's commits 3 and 4 have their hunks swapped relative to their messages (a split error;
-commit 8's message says so); `patches/clean-series/` holds the same tree as eight clean commits for a re-created branch.
+commit 8's message says so); `patches/clean-series/` holds the same tree as eight clean commits for a re-created branch. A force-push of
+that series was blocked by the session's permission policy, so the PR carries the additive nine-commit history.
 
 ### 5.2 Recommended, not done here
 

@@ -1,4 +1,18 @@
-# DNG chain comparison (cinemate/cinepi-raw vs Apertar drop-frames): research in progress
+# DNG chain comparison (cinemate/cinepi-raw vs Apertar drop-frames): done 2026-11-01
+## Outcome (2026-11-01)
+
+The study is complete. The answer page is `working/dng-chain-answer.md` (eight-point short answer, stage table, residual-drop
+candidates, test plan E0..E10, verdict summary). All sixteen hypotheses were verified adversarially (`V/VERDICTS.md`); the code
+patches were reviewed (`V/PATCHES.md`). Nine knob-gated Core commits are on Apertar-Core branch `claude/adoring-euler-n8zi0j`
+(head 6ef0ddc, base `drop-frames` 92d0970), opened as draft PR
+<https://github.com/Tiramisioux/Apertar-Core/pull/3>. Nothing has run on the Pi; every behavioural change defaults to today's
+behaviour except the direct 16-bit/8-bit payload write (byte-identical output, `tools/dng_payload_write_test.sh`) and the
+trim/mount hygiene. The clean eight-commit rebuild of the same tree is in `patches/clean-series/` (a force-push was blocked;
+the operator decides). First tests: E0 baseline on the new build, E1 tuning without TDN, then the counted Clear HDR 16-bit
+25 fps and 4K 50 fps SDR takes.
+
+The sections below are the working state as it accumulated during the study and are kept for provenance.
+
 
 Started 2026-11-01 in a cloud session (Claude Code) at the operator's request: compare the two DNG write chains, find
 improvements for Apertar on exFAT / SSD (writing and mounting), explain the residual drops at 4K Clear HDR 16-bit 25 fps
@@ -10,7 +24,7 @@ Method: nine reader reports (R1..R9), three syntheses (S1..S3), a merged hypothe
 different lenses, a merge, adversarial verification of every hypothesis (code, evidence, mechanism), a completeness critic.
 The answer page will be `working/dng-chain-answer.md`. Syntheses: S1 (storage), S2 (capture/CPU), S3 (evidence). Code changes made so far: `patches/README.md`.
 
-## State (updated as reports land)
+## State (final)
 
 | Report | Topic | State |
 | --- | --- | --- |
