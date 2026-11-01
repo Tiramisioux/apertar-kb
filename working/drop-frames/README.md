@@ -142,6 +142,36 @@ is still written down but is low priority now that drive state explains the big 
 13. The clip-name card: set Time of day compact, record, `ls` the clip folder (names and the `.wav` follow); set Original and check the names are identical to before; drag pills in a browser (mouse DnD, and long-press with touch); the same on the touch UI (not tried: no touch screen).
 14. The generated preview LUTs against Resolve exports of the same transforms (same test chart: grey ramp and a colour checker), per profile.
 
+### Where we stopped (2026-11-01 22:20; read first next session)
+
+Measured tonight after the CPU-mask entry (hardware-log), **not yet confirmed by Patrik as a reading**:
+
+| Setup (4K Clear HDR 16-bit 25 fps, peaking + zebra on unless noted) | Takes | Lost |
+| --- | --- | --- |
+| `APERTAR_PREVIEW_PLANE=1` (picture on the DRM primary plane, UI c13b846) | 60 s, 48 s, 110 s, 3 min, Patrik 17 s | 0, 1.8, 1.9, 3.4, 1.7 % |
+| plane + `APERTAR_PREVIEW_PEAKING=cpu` | 3 min | 3.1 % |
+| plane, peaking + zebra off | 3 min | 7.2 % (Qt timing: 37 redraws/s, render 0.7 ms, swap 18.6 ms: flips wait, GPU idle) |
+| touch UI stopped, 22:01 | 60 s | 0.13 % |
+| GPU preview, GPU IRQs moved to CPU2 (`/proc/irq/173,174`), WebUI open | 3 min | 14 % |
+| the same, WebUI closed | 3 min | 18 % |
+| fresh Core (22:14), IRQs back to 0-3 | 3 min | 11 % |
+| one more, compaction counters | 60 s | 17 % |
+| Patrik, after format, SDR 12-bit **uncompressed** 30 fps | 5 s | 24 %; SDR 12-bit lossless 30 fps: 0 |
+
+- **Drift**: the same GPU-preview setup went from ~7 % (19:09-20:30) to 11-18 % (22:00-22:20) although Core, the UI and the
+  card (formatted 21:50, trimmed) were fresh. Not heat (SoC 55-57 C, `throttled=0x0`). With the UI stopped it was still clean.
+  Memory is fragmented (`/proc/buddyinfo`: no free block >= order 8 in any node; `compact_isolated` 4.8 M pages since boot;
+  kcompactd woke 28x in a 60 s take vs 2x idle; CmaFree 0-0.8 MB of 64 MB). Probable contributor; not established.
+- All of CPU0 serves rp1-cfe (IRQ 154), v3d (173/174), hvs (175, cannot be moved), usb4 (~700/s) and i2c 1f00074000 (~600/s).
+  Moving v3d to CPU2 did not help.
+- **Next session, in order**: (1) reboot; (2) baseline 3 min, GPU preview, aids on, WebUI closed (is it back to ~7 % or below?);
+  (3) the same with `APERTAR_PREVIEW_PLANE=1`; (4) if (2) is low: repeat every ~30 min to see the drift return, with
+  `/proc/vmstat` compaction counters and `buddyinfo`; try `buffer=frames` (no 1.4 GB RAM pool per take) and
+  `vm.compaction_proactiveness=0`; (5) why i2c 1f00074000 fires ~600/s.
+- State left on the Pi: UI `drop-frames` c13b846 with no switch active (no `/run` drop-in), UI.conf peaking+zebra on,
+  audio meter OFF (Patrik turned it off for a test; turn back on), Core 64bbbaa restarted 22:14, IRQ affinity 0-3, card
+  formatted (exFAT). The A0-era UI build is in `~/ApertarUI-a0` (unused).
+
 ### How to run the new build
 
 On the Pi (`controls` is the old branch, kept as the rollback): `git switch drop-frames` in `~/ApertarCore` and `~/ApertarUI`, then
