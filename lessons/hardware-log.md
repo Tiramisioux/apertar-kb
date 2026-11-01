@@ -838,3 +838,32 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   this drive sustained in the tests, so the practical value is the operator's choice per rung (storage and build), not Core's.
 - Confirmed by: Patrik, saw "max 30 fps" on the ladder card, asked whether it was right and asked for the fps max to be read from the sensor.
 - Tutorial: none.
+
+## 2026-11-01: storage pre-roll at the sensor maximum: 4K 12-bit lossless measured 60.0 fps, 115 frames, 688 MB
+
+- Tested: Pi 5, Core and UI `drop-frames` (Core `d44b177` build), 4K 12-bit SDR cDNG lossless, `storage_preroll` (manual) after Core start.
+- Worked: `storage_preroll_last` = `ok: 2.0 s at 60 fps (measured 60.0), 115 frames, 0.7 GB written and deleted`. The fps is measured from the
+  sensor timestamps, not taken from the request: 60.0 fps, 115 frames, 688 MB, clip deleted afterwards.
+- Did not work: the first attempt set the frame rate with `applyControls` only. The log said 30 fps, the sensor stayed at about 24 actual fps.
+- Why: a controls-only fps change does not reach the sensor at once; libcamera keeps the old frame duration for a while. Fix in
+  `CameraSession::setPrerollFps` (pins `FrameDurationLimits {period, period}` on every request) and `waitForFramePeriod` (waits up to 1 s until a
+  frame arrives at the new period) before the take starts.
+- Lesson: **a controls-only fps change does not reach the sensor immediately: pin the duration and wait for the period, and measure fps from the
+  sensor timestamps, never from the request.**
+- Not yet known: whether a pre-roll warms the drive (the A/B in `working/drop-frames/README.md` step 0b); a 60 fps long take.
+- Confirmed by: the owner, a take on the camera and the state value above.
+- Tutorial: none.
+
+## 2026-11-01: Log cannot be applied in SDR lossless: the raw stream is PiSP COMP1
+
+- Tested: Pi 5, 4K SDR 12-bit and 10-bit, Lossless JPEG, Log on (`drop-frames` build); the journal and `cdng_log_applied`.
+- Seen: `CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear`; `cdng_log_applied` false; the files are linear.
+- Why: in SDR with Lossless JPEG the raw stream is PiSP COMP1 (compressed, lossy, steps of 16 codes or more; `working/research-30fps/q7-cinemate.md`).
+  `planCdngLog` maps only unpacked 2-byte streams, which only Clear HDR 16-bit gives. Read from the code, and the log line seen on the camera.
+- Decision (the owner): keep COMP1 for SDR (8.3 MB against 16.6 MB per 4K frame; it is what makes 60 fps possible); do not build Log into the SDR
+  lossless path (Log on an uncompressed SDR stream is about 10.4 MB per frame, more than Lossless JPEG's about 7.5 MB; estimates). The UI now says so.
+- Also changed: the ladder editor says "Exact, smaller files" for lossless only in Clear HDR (SDR: "Smaller files (SDR is sensor-compressed)"); with the ladder
+  off the global Compression setting rules. Open: an HDMI "· Log" that did not follow `cdng_log_applied` (root cause not found in the code; a re-emit of the
+  settings event on change is the safety net, untested).
+- Confirmed by: the owner, the log line and the decision.
+- Tutorial: none.

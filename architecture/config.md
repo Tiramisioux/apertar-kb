@@ -117,6 +117,15 @@ Core and UI open the chip independently and both rewrite its config/calibration 
 | `storage.buffer_ram_max_fraction` | `0.5` (0.1 to 0.75): ceiling as a share of `MemTotal` | Core | same |
 | `storage.buffer_stop_percent` | 0 = never, or 50 to 99; absent = 90 in ram mode, off in frames mode: the take ends by itself (clean stop) when the write buffer reaches this fill | Core | same; `buffer_safety_stop` in the state |
 
+#### `[media]` (Core, `drop-frames`)
+
+| Key | Default | Meaning | Ref |
+| --- | --- | --- | --- |
+| `media.preroll` | `on` | `on` runs the storage pre-roll automatically (Core start, card insert, once after a format); `off` leaves only the manual `storage_preroll`. Env `APERTAR_STORAGE_PREROLL=0` or `=1` beats the file. Read at each request; `set_storage_preroll` edits this key | `StoragePreroll.hpp` `parsePrerollConf` |
+| `media.preroll_seconds` | `2` | Length of the pre-roll take, whole seconds 1 to 10 (a bad value is an error with its line number in the Config pane, Core uses 2) | same; validator in `HardwareConfigText.hpp` |
+
+State keys: `storage_preroll_active`, `storage_preroll_last` (e.g. `ok: 2.0 s at 60 fps (measured 60.0), 115 frames, 0.7 GB written and deleted`), `storage_preroll_fps` (the fps while it runs, else 0), `storage_preroll_auto` (the effective automatic setting), `storage_preroll_auto_env` (true when the env variable decides it). Commands `storage_preroll`, `set_storage_preroll`. Other drop-frames state added 2026-11-01: `ladder_override`, `fps_speed_ramp_after` (also the settings-file key and the preset key `cameraFpsSpeedRampAfter`). Measured: 4K 12-bit lossless pre-roll, 60.0 fps (hardware-log 2026-11-01).
+
 The C++ Core never reads `[cfexpress_hat]` or `storage.mount_path` / `storage.pcie_controller`; it does read the `storage.buffer*` keys (drop-frames branch; a bad value is an error with its line number in the Config pane and Core uses the default). Bus choice per wiring: [the 2026-10-23 hardware note](../sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md) (`bus=1` on an HDMI rig with DPI overlays off).
 
 #### `[camera]` (Core, `cinemate-port` `8175273`, 2026-10-28)
@@ -384,6 +393,8 @@ How the services set them (Pi, 2026-10-25): `apertar-core.service` runs `/home/p
 | `APERTAR_PRORES_*` | `CAMERA_BUFFERS`, `CACHED_DMABUF`, `THREADS`, `CSC_THREADS`, `ISP_FORMAT`, `ODIRECT`, `QP_PRED`, `TRANSFER`, `WRITEBACK`, `WRITER_THREAD`, `WRITER_QUEUE`, `WRITER_QUEUE_MB`, `WRITER_SLOW_MS` | `CC:1133`, `:6387`; `Apertar-Core/src/prores/ProresEncoder.cpp:827-1375`; `ProresRecorder.cpp:61` |
 | `APERTAR_CDNG_*` | `QUEUE_FRAMES`, `WORKERS`, `WORKER_NICE`, `TILE_ROWS`, `PROFILE_DETAIL` | `CC:3330-3359`; `Apertar-Core/src/cdng/CdngEncoder.cpp:55`, `:72` |
 | `APERTAR_CDNG_BUFFER` | Drop-frames: `frames` (default, the original 12-frame queue) or `ram` (byte-budget queue); overrides `[storage] buffer` | `CC` `planQueueBuffer` |
+| `APERTAR_STORAGE_PREROLL` | Drop-frames: `0` or `1` decides the automatic storage pre-roll and beats `[media] preroll` (anything else counts as unset); state `storage_preroll_auto_env` says so | `StoragePreroll.hpp` |
+| `APERTAR_LOSSLESS_FPS_LIMIT` | Drop-frames: a number > 0 caps the IMX585 lossless-JPEG cDNG fps at `min(n, mode max)`; unset = the mode's own maximum (60 in 4K SDR 12-bit); `30` restores the old cap | `FpsCeiling.hpp` `losslessImx585Fps` |
 | `APERTAR_CDNG_QUEUE_RAM_FRACTION`, `_FLOOR_MB`, `_MAX_FRACTION` | Drop-frames: the ram budget (0.6, 512, 0.5); override the `[storage] buffer_ram_*` keys; ram refuses itself when the budget is smaller than the frames-mode queue | `BufferBudget.hpp` |
 | `APERTAR_CDNG_BUFFER_STOP_PERCENT` | Drop-frames: safety-stop limit (0 or 50 to 99); overrides `[storage] buffer_stop_percent` | `BufferBudget.hpp` |
 | `APERTAR_FPS_LIMIT` | Drop-frames: `table` makes Core use `min(hard-coded table, probed sensor fps)` as before; default: the startup probe's value is the sensor maximum (the table is only the fallback) | `CC` `fpsLimitTableOnly`, `FpsCeiling.hpp` |

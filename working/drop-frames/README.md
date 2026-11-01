@@ -15,8 +15,10 @@ The handoff for the Mac session that drives the work is `../handoff-drop-frames.
 **One sentence.** The dropped frames were the recording drive's state, not Apertar's buffer: after about 0.9 TB of writing
 without a trim the NVMe stalls for seconds (and can hang its controller); trimming it restores it. Core now trims by itself,
 and the campaign also added Log (smaller files), a switchable large RAM buffer with a safety stop, and an on-screen buffer
-indicator. Everything is on the `drop-frames` branches of Apertar-Core (`400dd1f`, squashed from 16 commits, base `a40112a`) and
-Apertar-UI (`74f39c6`, squashed from 6 commits, base `ea44bd7`): local on the Mac and the Pi, nothing on GitHub.
+indicator. Everything is on the `drop-frames` branches of Apertar-Core (`d44b177`, one squashed commit, base `a40112a`) and
+Apertar-UI (`841d0ed`, one squashed commit, base `ea44bd7`): on the Mac, the Pi and GitHub (branch `drop-frames` of
+`Tiramisioux/Apertar-Core` and `Tiramisioux/Apertar-UI`; `main` untouched, nothing merged). Updated 2026-11-01: see
+"Added 2026-11-01" below (the earlier hashes were `400dd1f` and `74f39c6`).
 
 ### What a trim is, and what we gain
 
@@ -55,6 +57,38 @@ the standard explanation, not measured here.)
 | Safety stop | In `ram` mode the take ends by itself, cleanly, when the buffer is 90 % full (CineMate's "RAM pool exhausted" idea): the queue sets a lock-free flag, a thread runs the same path as `record_stop`. The pill turns green with the READY text hidden and only the bar emptying; the READY text returns at zero; one message says why | `[storage] buffer_stop_percent` (0 = off, 50 to 99; default 90 in ram mode, off in frames mode), env `APERTAR_CDNG_BUFFER_STOP_PERCENT`; state `buffer_safety_stop`, `buffer_stop_percent` | Core, WebUI, touch UI |
 | Max fps | The maximum fps of a mode is read from the sensor probe at startup, so 4K SDR offers 60; the table is only the fallback | `APERTAR_FPS_LIMIT=table` restores `min(table, probe)`; the UIs cut their fps lists at `fps_max` | Core (`FpsCeiling.hpp`, `CameraController.cpp`) |
 
+### Added 2026-11-01 (read from the code on `d44b177` / `841d0ed` unless marked measured)
+
+| Feature | What it does | How it is controlled | Where |
+| --- | --- | --- | --- |
+| Storage pre-roll | A short take through the real write path at the sensor's maximum fps for the current resolution, its clip deleted afterwards (CineMate's warm-up). Target = `prerollMaximumFps` (probe, only the 16-bit Clear HDR back-end cap kept; not the lossless cap, the ladder or the speed-ramp limits). It pins `FrameDurationLimits {period, period}` on every request (`CameraSession::setPrerollFps`) and waits for the new period (`waitForFramePeriod`, 1 s), then measures fps from the sensor timestamps. Triggers: Core start, card insert, format (once), manual. Left out of: audio, gyro, tally/REC event, counters, the safety stop, the dropped-frames warning. Refused while it runs: record, photo, timelapse, format/eject/mount, speed test, standby. Blue PRE-ROLL pill (WebUI, touch UI, HDMI); italic fps readout shows the pre-roll fps while it runs | `[media] preroll=on` or `off` (default on) and `preroll_seconds` (1 to 10, default 2); env `APERTAR_STORAGE_PREROLL=0` or `=1` beats the file; `storage_preroll` (manual), `set_storage_preroll`; state `storage_preroll_active/last/fps/auto/auto_env`; manual button and On/Off in the WebUI media card, "Storage Pre-roll" in the touch UI Media Speed card | Core (`StoragePreroll.hpp`, `CameraController.cpp`, `ApertarCoreApp.cpp`), WebUI, touch UI, HDMI |
+| Clear HDR over the ladder | An explicit `set_clear_hdr` applies while the Mode Ladder is on (`ladderOverride_`). Ends on an fps, resolution, record format, bit depth, Ramp-ready or ladder change, and on restart; the 16-bit follow-up (`set_raw_bit_depth 16`) after turning HDR on does not end it | state `ladder_override` | Core |
+| Lossless JPEG fps | The IMX585 lossless cap of 30 is gone: the ceiling is the mode's own maximum (60 in 4K SDR 12-bit). ISO cap 1600 unchanged | `APERTAR_LOSSLESS_FPS_LIMIT=<n>` restores a lower cap (`=30` is the old one) | Core (`FpsCeiling.hpp` `losslessImx585Fps`) |
+| Minutes left | Core's estimate (`estimatedRawBytesPerSecond`) and the touch UI's (`CameraPage.qml` `estimatedFrameSizeMB`) count Log's stored bits only when `cdng_log_applied`; the touch UI updates on `cdngLogChanged` | none | Core, touch UI |
+| Speed ramp "After the take" | `stay` (default): the fps the ramp ended on stays if it is valid for the mode after the take (no rung change, the sanitiser leaves it), else it returns to the start fps. `return`: always back to the start fps | `set_fps_speed_ramp after=stay` or `after=return`; state `fps_speed_ramp_after`; settings-file key `fps_speed_ramp_after`; preset key `cameraFpsSpeedRampAfter`. WebUI only: the touch UI has no speed-ramp section | Core (`restoreFpsAfterRampLocked`), WebUI |
+| WebUI Settings | A search box over all panels (`data-search` keywords, a `MutationObserver` re-runs the filter after renders); Controls page "GPIO in" / "GPIO out"; Tally LED row = pin dropdown first, then function, Active, Test, no On field (a set pin is on); PCF8574 pins listed only when an expander is detected; every pin is a dark dropdown, existing rows too (a pin change moves the control); used pins are greyed with their function and selectable after a confirm that removes the old control; the value-list editor got line/ordering fixes, flicker-free greyed chips and an explanation; Frames/RAM text per selected option plus a short RAM note; ladder: the last rung defaults to its ceiling (the "max 50 must be above 50" bug) and the row range line says "sensor max N fps" | none | WebUI |
+| WebUI fixes | The List/Free button in the value-list editor did nothing while it had focus (`renderValueListsEditor` skipped the redraw when a button inside had focus); `/api/state` carries the `buffer_*` and `storage_preroll_*` fields under `system` and the page lifts them to the top level in `renderSnapshot` | none | WebUI |
+| Log in the UI | The ladder editor said "Exact, smaller files" for lossless: now only for Clear HDR (SDR: "Smaller files (SDR is sensor-compressed)"). With the ladder off the global Compression setting rules, not the ladder row's. A safety net re-sends the settings event when `cdng_log_applied` changes (`emitLogAppliedIfChangedLocked`) | none | Core, WebUI, touch UI |
+
+Host test for the pre-roll: `tools/storage_preroll_test.cpp` (on `src/util/StoragePreroll.hpp`).
+
+### Log works in Clear HDR 16-bit only (finding, 2026-11-01)
+
+In SDR (12/10-bit) with Lossless JPEG the raw stream is PiSP COMP1 (compressed, lossy, step of 16 codes or more; see `../research-30fps/q7-cinemate.md`). Log's copy worker maps only unpacked 2-byte streams (`planCdngLog`), so it cannot map it: the journal says
+`CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear`, `cdng_log_applied` is false and the UI says so.
+Log therefore applies in Clear HDR 16-bit (unpacked) only. The root cause of an HDMI "· Log" that did not follow was not found in the code
+(the settings event is built after the reconfigure); the re-emit safety net above covers it.
+
+**Decision (the owner, 2026-11-01):** keep COMP1 for SDR (half the bandwidth: 8.3 MB against 16.6 MB per 4K frame; it is what makes 60 fps
+possible) and do not build Log into the SDR lossless path (a Log plus uncompressed SDR stream would be bigger than Lossless JPEG: about
+10.4 MB against 7.5 MB; sizes are estimates).
+
+### Pre-roll measured, and the 30 to 24 lesson (2026-11-01)
+
+Measured on the camera: 4K 12-bit SDR cDNG lossless, `storage_preroll_last` = `ok: 2.0 s at 60 fps (measured 60.0), 115 frames, 0.7 GB
+written and deleted` (60.0 fps, 115 frames, 688 MB). The first attempt changed only the controls (`applyControls`): the sensor kept
+delivering about 24 fps while the log reported 30. Fix: pin the frame duration and wait for the new period. Lesson in `lessons/hardware-log.md`.
+
 ### Ruled out or dropped
 
 Sub-folders per clip, creating files ahead, `fallocate` preallocation, writer count, heat as the cause, a bigger queue or more camera buffers
@@ -66,12 +100,19 @@ is still written down but is low priority now that drive state explains the big 
 ### Open items (what to do next, in order)
 
 1. The two-take test: a 60 s take with every WebUI tab closed, then the same with the WebUI open and left alone (finding 6).
-2. Open one Log frame in Resolve (12-bit LinearizationTable); check Log on the SDR modes (packed or compressed raw record linear).
+2. Open one Log frame in Resolve (12-bit LinearizationTable). Log on the SDR modes is settled: it records linear (see "Log works in Clear HDR 16-bit only").
 3. Try `buffer=ram` in the Config pane and force a stall to see the safety stop; check the pill states on the HDMI screen and in the WebUI.
 4. The acceptance test for trim: a series of 10-minute takes with deletes in between and no manual trims, past one full pass of the drive
    (4 to 5 takes), against a control with `APERTAR_MEDIA_TRIM=0`.
 5. RTC power-off test; the `nvme.max_host_mem_size_mb=0` boot argument (remove it on a test boot).
-6. A repeat of A2 and the unfinished A3 / A4 on a trimmed drive; the pre-roll A/B (step 0b).
+6. A repeat of A2 and the unfinished A3 / A4 on a trimmed drive; the pre-roll A/B (step 0b): does a pre-roll warm the drive? It is one click now
+   (`storage_preroll`), so take it before and after.
+7. A 60 fps long take in 4K 12-bit lossless (and 40 / 50): the encoder estimate is about 69 fps (log `lossless timing`) and the data rate
+   about 450 MB/s at 60 fps, both unverified over a long take.
+8. The RAM queue plus the safety stop, and the safety-stop pill, on the Pi and the HDMI screen.
+9. Speed ramp "After the take": stay and return, with a ramp that ends on a valid and on an invalid fps (untested).
+10. Clear HDR override with the encoder: turn HDR on with the ladder on, check `ladder_override` and the 16-bit follow-up (untested).
+11. HDMI "· Log" following `cdng_log_applied` (the safety net is untested).
 
 ### How to run the new build
 

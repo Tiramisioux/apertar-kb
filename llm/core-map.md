@@ -285,6 +285,24 @@ Commands handled by Core but **never sent by the WebUI**: `ping`, `help`, `get_s
 
 ---
 
+### 1.4 drop-frames additions (branch `drop-frames` `d44b177`; the line numbers above are `upstream-1.6.0`, so these have none: `git grep -nF '<name>' drop-frames`)
+
+The table header says "Find by", not "Anchor", so `check-anchors.py` does not check these (it reads the checked-out branch, which is not `drop-frames`).
+
+| Find by | Where | What |
+| --- | --- | --- |
+| `StoragePreroll.hpp` | `src/util/StoragePreroll.hpp` | Host-testable part of the storage pre-roll: `[media]` parse and validation (`parsePrerollConf`, `prerollConfProblem`), `automaticEnabled` (env `APERTAR_STORAGE_PREROLL` beats the file), trigger names, the atomics and short strings behind `storage_preroll_*` state; test `tools/storage_preroll_test.cpp` |
+| `startStoragePreroll` / `finishStoragePreroll` | `CameraController` | Start: take a snapshot of the settings, set the pre-roll fps without commit (not saved, no settings event), start a take that ignores the safety stop and drop warnings; finish: stop, measure, restore settings from the copy, delete the clip, return `StoragePrerollResult` |
+| `runStoragePreroll` / `runStoragePrerollOnce` | `ApertarCoreApp` | The worker thread (`storagePrerollThread_`): waits for a trigger (Core start, card insert, format, manual), refuses while a take, photo, timelapse, format/eject/mount, speed test or standby is running, and publishes `storage_preroll_last` |
+| `prerollMaximumFps` | `CameraController.cpp` anonymous namespace | The target fps: probe (else table) for the running mode, with only the named back-end cap |
+| `setPrerollFps` / `waitForFramePeriod` | `CameraSession` (inside `CameraController.cpp`) | Pins `FrameDurationLimits {period, period}` on every request and waits (1 s) for the sensor's new period; fps measured from sensor timestamps. A controls-only change stayed at about 24 fps (hardware-log 2026-11-01) |
+| `ladderOverride_` | `CameraController` | An explicit `set_clear_hdr` applies while the Mode Ladder is on; cleared on fps / resolution / record format / bit depth / Ramp-ready / ladder changes; state `ladder_override` |
+| `restoreFpsAfterRampLocked` | `CameraController` | After a speed-ramp take: the `stay` branch keeps the end fps when `ladderRewriteLocked` reports no rung change and `sanitizeSettingsForSensor` leaves it; else (or `return`) restores `rampTakeBaseFps_` |
+| `losslessImx585Fps` | `src/camera/FpsCeiling.hpp` | Lossless JPEG ceiling = the mode's maximum, or `min(APERTAR_LOSSLESS_FPS_LIMIT, mode max)` |
+| `emitLogAppliedIfChangedLocked` | `CameraController` | Re-sends the settings event when only `cdng_log_applied` moved |
+| `planCdngLog` | `CameraController.cpp` | Maps the raw stream for Log: unpacked 2-byte only; `pisp_comp1` prints "cannot be mapped on the copy worker, recording linear" |
+| `estimatedRawBytesPerSecond` | `ApertarCoreApp.cpp` | Minutes-left estimate; counts Log's stored bits only when `cdng_log_applied` (the touch UI's twin is `estimatedFrameSizeMB` in `CameraPage.qml`) |
+
 ## 2. Dispatch tables
 
 ### 2.1 Socket / `/api/command` commands (`App` `handleCommand`, 110 names)
@@ -315,6 +333,9 @@ Dispatch idiom: `    if (command.name == "<name>") {` at 4-space indent, plus `h
 | `set_cdng_compression` | 9340 | camera_.setCdngCompression | camera (SB) | y | y |
 | `set_cdng_log` | (drop-frames, grep it) | camera_.setCdngLog | camera (SB) | y | y |
 | `set_buffer_mode` | (drop-frames) | `hardware::configStore().edit` of `[storage] buffer=` | conf store (revision, history, backup) | y | y |
+| `storage_preroll` | (drop-frames) | `ApertarCoreApp::runStoragePreroll` (manual trigger) | worker thread, no setting | y | y |
+| `set_storage_preroll` | (drop-frames) | `hardware::configStore().edit` of `[media] preroll=` | conf store | y | y |
+| `set_fps_speed_ramp` (`after=stay\|return`) | (drop-frames adds `after`) | camera_.setFpsSpeedRamp | camera (SB), settings key `fps_speed_ramp_after` | WebUI only | y |
 | `set_frame_buffer_bar_enabled` | (drop-frames) | `handleUiToggle` (UI.conf `frameBufferBarEnabled`) | UI toggle | y | y |
 | `set_lossy_dng_ratio` | 9351 | camera_.setLossyDngRatio | camera (SB) | y | y |
 | `set_cdng_preview_color_profile` | 9360 | camera_.setCdngPreviewColorProfile | camera (SB) | y | y |

@@ -133,7 +133,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `0d93f11` | Clear HDR helpers moved above `setFps` (d084ed4 did not build); WebUI frame rates 25/33/50 for the IMX585 and others; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `0bac3db` | 25/33/50 fps for hardware inputs too; IMX585 4K SDR up to 60 (probe), lossless cap 50; rotary resolution press toggles 16-bit Clear HDR ↔ 12-bit SDR; back to ≤25 fps restores 16-bit Clear HDR after an automatic switch; WebUI shows 25/33/50 in Clear HDR; branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
 | `0296ed1` | Clear HDR on = uncompressed cDNG, off = lossless, also by toggle (rotary, touch UI, WebUI); branch `cinemate-port-temp` (Pi, since 2026-10-28) | **temp** (to review), on GitHub `cinemate-port-temp` since 2026-10-28 (was `cinemate-port`); works on the Pi (Patrik, 2026-10-27 23:08) |
-| `400dd1f` | **drop-frames**, squashed from 16 commits: trim helper (`scripts/apertar-media-trim`) and Core's trim worker; Log On/Off in the files (cDNG, lossless JPEG, Lossy DNG); write-buffer level (state, `GET /api/buffer`, `buffer` event) and a red buffer bar; the `frames`/`ram` write-queue switch with `[storage]` keys and `set_buffer_mode`; the 90 % safety stop; fps max read from the sensor probe (4K SDR 60, was capped at 30; `APERTAR_FPS_LIMIT=table` restores the table); WebUI: white GPIO/hardware dropdowns, a Tally LED card on Controls. Branch `drop-frames` (local: Mac and Pi, not on GitHub). Findings and how to use it: `working/drop-frames/README.md` section 0 | offer (in pieces, after the Pi tests: Log and the RAM queue are the upstream candidates) |
+| `d44b177` | **drop-frames** (was `400dd1f`; re-squashed to one commit on 2026-11-01, 19 commits in all): trim helper (`scripts/apertar-media-trim`) and Core's trim worker; Log On/Off in the files (cDNG, lossless JPEG, Lossy DNG); write-buffer level (state, `GET /api/buffer`, `buffer` event) and a red buffer bar; the `frames`/`ram` write-queue switch with `[storage]` keys and `set_buffer_mode`; the 90 % safety stop; fps max read from the sensor probe (4K SDR 60, was capped at 30; `APERTAR_FPS_LIMIT=table` restores the table); WebUI: white GPIO/hardware dropdowns, a Tally LED card on Controls. Also (2026-11-01): storage pre-roll (`[media]`, `StoragePreroll.hpp`), Clear HDR over the Mode Ladder, the IMX585 lossless fps cap lifted (`APERTAR_LOSSLESS_FPS_LIMIT`), minutes-left counts Log only when applied, speed-ramp "After the take", WebUI Settings search and the Controls GPIO in/out cards. Branch `drop-frames` (on GitHub `Tiramisioux/Apertar-Core`, plus the Mac and the Pi; `main` untouched, nothing merged). After it (Pi only, not on GitHub): `fb5801c` the pill is READY green while the buffer empties after a safety stop (also with the bar option off). Findings and how to use it: `working/drop-frames/README.md` section 0 | offer (in pieces, after the Pi tests: Log and the RAM queue are the upstream candidates) |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
@@ -169,7 +169,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `66d6d19` | Stop tracking the committed `build/` tree (551 files, 18 MB, #5) | offer |
 | `29ed99b` | Executable bits and `mesa-minimal` symlinks restored (#6) | offer |
 | `4415a55` | Touch UI: "4K Clear HDR" resolution (quick menu + settings) and 16-bit bit depth, greyed where unavailable; bridge `clearHdr` / `applyClearHdr` | offer (needs Core `631721d`+) |
-| `74f39c6` | **drop-frames**, squashed from 6 commits: buffer bar in the REC pill, the safety-stop pill, Frames / RAM and Log buttons in Settings > Record, "· Log" in the format display. Branch `drop-frames` (local: Mac and Pi). Not compiled on the Mac; compiles on the Pi | offer (with the Core commit) |
+| `841d0ed` | **drop-frames** (was `74f39c6`; one commit, 7 commits squashed, 2026-11-01): buffer bar in the REC pill, the safety-stop pill, Frames / RAM and Log buttons in Settings > Record, "· Log" in the format display, the blue PRE-ROLL pill and the Storage Pre-roll button, minutes-left counting Log only when applied. Branch `drop-frames` (on GitHub `Tiramisioux/Apertar-UI`, plus the Mac and the Pi). After it (Pi only, not on GitHub): `4959513` the touch and HDMI pills are READY green while the buffer empties after a safety stop. Not compiled on the Mac; compiles on the Pi | offer (with the Core commit) |
 
 ## libcamera · `Tiramisioux/libcamera` branch `apertar` · base will127534 `qbc-pisp-handler` (`7e9fef0`)
 
@@ -202,6 +202,11 @@ Not taken: Apertar-Studio `main` is 4 commits past the base (`3680bf4`, `c0f5404
 | --- | --- | --- |
 | `imx585_clearHDR.json` (`imx585.json` minus the `rpi.hdr` entry): needed by `631721d`, lives outside the repo | Pi `~/Tuning-Files/defaults-pisp/`, must go into every image | fork-only (stock `rpi.hdr` pins exposure/gain in Clear HDR; worth an upstream issue) |
 | `src/prores/README.md`, `src/prores/ffmpeg/` ship on the 1.6.0 image but are missing from upstream git (#7) | Pi `~/ApertarCore`, untracked | offer (issue) |
+
+## The Pi follows `drop-frames`
+
+Squashes rewrite history, so the Pi's branch cannot fast-forward. Move it by force-pushing the Mac branch to a staging branch (`drop-frames-mac`) on
+the Pi's remote and then `git reset --hard` to it on the Pi (never while it has uncommitted edits you want).
 
 ## Pull requests
 
