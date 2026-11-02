@@ -97,6 +97,7 @@ At campaign end:
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1 | 1 | writer | 357 / 4,148 | 50 / 4,457 | 622 MB | 346 MB | 3,713,840 | 3,442,560 | yes (G1 missing: tid gone after the mode change; fixed for unit 2) |
 | 1 | 2 | writer | 280 / 4,224 | 40 / 4,467 | 621 MB | 370 MB | 3,755,840 | 3,333,312 | yes; deviation: NVMe 40.85 C at the unit start (the cool-down wait timed out at 12 min); G1 IPC 1.41 / 1.40 |
+| 1 | 3 | sync | 1 / 4,512 | 47 / 4,459 | 609 MB | 925 MB | 54,720 | 37,760 | yes; NVMe 38.85 C at the start; G1 IPC 1.50 / 1.44. Before it: an extra `writer` arm at 19:48 and a second `sync` arm at 19:49:31 (no take in between) |
 
 Block 1 warm-up (unscored, `sync`, 19:03): 17 / 4,489 lost, `pgsteal_kswapd` 0, `pageoutrun` 0, G1 IPC 1.45; VC0 OVLF 22 between the arm and 19:07 (the window includes the pre-roll and mode switches).
 Unit 1 CSI-2 VC0 OVLF per take (1 Hz log): P1 58 in 14 s (all 14 s also lost frames; frames were lost in 173 s), P2 54 in 12 s (1 of them lost frames).
