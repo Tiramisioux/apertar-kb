@@ -8,6 +8,7 @@ for every thread of Core and of the UI. It reads only /proc and /sys, and asks C
 (the same request core.py sends), so the logger costs one process and no spawns per second. Read-only, no sudo.
 Stops on SIGTERM or when Core's process is gone.
 """
+import glob
 import json
 import os
 import signal
@@ -56,6 +57,22 @@ def nvme():
 def psi():
     text = read('/proc/pressure/memory')
     return ' '.join(text.split()) if text else 'off'
+
+
+CSI2 = next(iter(sorted(glob.glob('/sys/kernel/debug/rp1-cfe*/csi2_errors'))), '')
+
+
+def csi2():
+    # rp1-cfe CSI-2 receiver discards since the previous read (the file is cleared on read: the logger must be its only
+    # reader during a take): Overflows, then OVLF/LEN/UNMATCHED/INACTIVE per virtual channel with any non-zero
+    parts = []
+    for line in read(CSI2).splitlines():
+        w = line.split()
+        if w[:1] == ['Overflows'] and len(w) == 2:
+            parts.append(f'ovf={w[1]}')
+        elif len(w) == 5 and w[0].isdigit() and any(x != '0' for x in w[1:]):
+            parts.append(f'vc{w[0]}=' + '/'.join(w[1:]))
+    return ' '.join(parts) if CSI2 else 'n/a'
 
 
 def boost():
@@ -119,7 +136,7 @@ def dropped():
 with open(out, 'w', buffering=1) as f:
     nxt = time.monotonic()
     while not stop and os.path.exists(f'/proc/{core}'):
-        f.write(f't={time.time():.2f} vm {vmstat()} | mem {meminfo()} | nvme {nvme()} | boost {boost()} | psi {psi()} | '
+        f.write(f't={time.time():.2f} vm {vmstat()} | mem {meminfo()} | nvme {nvme()} | boost {boost()} | csi2 {csi2()} | psi {psi()} | '
                 f'dropped={dropped()} | thr {" ".join(threads(core) + threads(ui))}\n')
         nxt += 1.0
         time.sleep(max(0.0, nxt - time.monotonic()))

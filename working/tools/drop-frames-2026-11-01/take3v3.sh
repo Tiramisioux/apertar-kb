@@ -48,7 +48,10 @@ b=$(ps -eo cmd | grep -cE '^[^ ]*(cc1plus|gmake|cmake) ')
 echo "start $(date +%T) clients=$c builds=$b"
 [ "$c" -gt 0 ] && { echo "WebUI connected, not starting"; exit 0; }
 [ "$b" -gt 0 ] && { echo "a build is running, not starting"; exit 0; }
-echo "  mem before: $(M)"; echo "  psi before: $(P)"
+CSI(){ f=$(ls /sys/kernel/debug/rp1-cfe*/csi2_errors 2>/dev/null | head -1); [ -n "$f" ] && awk 'NR==1 || /^[0-9] /{printf "%s | ", $0}' "$f" | tr -s ' ' || echo "csi2 n/a"; }
+# csi2_errors is cleared on every read (measured 2026-11-02): this read clears it just before the take; during the take
+# the 1 Hz logger is its only reader, so each log line holds that second's discards
+echo "  mem before: $(M)"; echo "  psi before: $(P)"; echo "  csi2 since the last read (cleared now): $(CSI)"
 # 1 Hz logger (M5 + counters) in one process (take_logger.py), stopped after the take
 python3 -I "$KB/drop-frames-2026-11-01/take_logger.py" "$CORE" "${UP:-0}" "$LOG" $KEYS &
 LOGGER=$!
