@@ -4,3 +4,4 @@ block,unit,arm,P1_lost,P2_lost,P1_memfree,P2_memfree,P1_pgsteal_kswapd,P2_pgstea
 1,3,sync,1,47,609,925,54720,37760
 1,4,sync,0,108,553,764,58816,44672
 2,1,sync,1,72,619,1060,55971,32319
+2,2,writer,2,250,605,355,4052408,3383360

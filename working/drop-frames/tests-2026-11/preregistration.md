@@ -102,6 +102,7 @@ At campaign end:
 | 1 | 3 | sync | 1 / 4,512 | 47 / 4,459 | 609 MB | 925 MB | 54,720 | 37,760 | yes; NVMe 38.85 C at the start; G1 IPC 1.50 / 1.44. Before it: an extra `writer` arm at 19:48 and a second `sync` arm at 19:49:31 (no take in between) |
 | 1 | 4 | sync | 0 / 4,512 | 108 / 4,397 | 553 MB | 764 MB | 58,816 | 44,672 | yes; NVMe 39.85 C at the check (40.85 C a second later, the sensor's 1 C step); G1 IPC 1.49 / 1.43 |
 | 2 | 1 | sync | 1 / 4,510 | 72 / 4,435 | 619 MB | 1060 MB | 55,971 | 32,319 | yes; NVMe 38.85 C at the start; G1 IPC 1.53 / 1.44; arm run twice (20:54:05, 20:56:39), the second is the unit's restart |
+| 2 | 2 | writer | 2 / 4,510 | 250 / 4,257 | 605 MB | 355 MB | 4,052,408 | 3,383,360 | yes; NVMe 39.85 C at the check (40.85 C at the print); G1 IPC 1.46 / 1.41 |
 
 Block 2 warm-up (unscored, `sync`, 20:50): 9 / 4,497 lost, `pgsteal_kswapd` 0, G1 IPC 1.44; raw-node trace: 9 completions with `owned_by_drv = 0` (minutes 1/6/2, as the losses 1/6/2).
 
