@@ -7,7 +7,9 @@ Analysis script: [b1_test.py](../../tools/drop-frames-2026-11-01/b1_test.py).
 ## Changes from the plan agreed before B1
 
 - Take durations as in the plan (User, 2026-11-02): 3 min in B1, B2, B4, U1; 10 min in B3, T1, B-lossy, B6, B7.
-- B0.7: `rp1_cfe.track_csi2_errors=1` was already in `cmdline.txt` before 11-01; only `psi=1` was added (backup `cmdline.txt.bak-20261102`). The running `rp1_cfe` exports no such parameter, so the flag is probably inert (**probable**); `csi2_errors` is read from debugfs.
+- B0.7: `rp1_cfe.track_csi2_errors=1` was already in `cmdline.txt` before 11-01; only `psi=1` was added (backup `cmdline.txt.bak-20261102`). The running `rp1_cfe` lists no such parameter in sysfs, but its debugfs `csi2_errors` counters count (17,460 VC0 `UNMATCHED` before a Core restart, 0 after), so the flag is in effect; `csi2_errors` is read from debugfs.
+- Installing `nvme-cli` (B0.10) upgraded util-linux 2.41 -> 2.41.5 (`fstrim` among it) and enabled `nvmf-autoconnect.service`, `nvmefc-boot-connections.service` and `uuidd.socket`: fixed for the whole campaign.
+- A0 ran at 34,994 s of uptime (B0.2), so T1's uptime is fixed at ~35,000 s.
 - The drive was emptied 2026-11-02 (take #80's clip deleted on User's instruction); nothing on `/media/RAW` must be kept.
 
 ## B1
