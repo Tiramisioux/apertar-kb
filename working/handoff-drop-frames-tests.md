@@ -179,5 +179,6 @@ util-linux 2.41.5: a fixed difference from 11-01; its two nvmf boot units disabl
    buffers), the raw-node trace on.
 4. B3 as planned (its `pageoutrun > 0` validity rule decides whether the knobs can speak under sync).
 5. T1 needs ~35,000 s of uptime (A0's position): boot the Pi ~9.7 h before.
-6. `takes.md` has rows up to block 1 unit 2: a W7 for block 1 units 3-4 and block 2 (logs and traces are in the
-   lead session's scratchpad `takes/`; copy what is needed into the KB before that session ends).
+6. `takes.md` has rows up to block 1 unit 2: a W7 for block 1 units 3-4 and block 2, from
+   `drop-frames/tests-2026-11/raw-2026-11-02.tgz` (every 1 Hz log, console output, G1 file and block 2's filtered
+   traces; block 1's unfiltered traces, 90 MB and partial, are not kept).
