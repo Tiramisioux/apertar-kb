@@ -1,6 +1,6 @@
 # The media tuning file `~/apertar-media-tune.conf` (design, 2026-11-02)
 
-Status: **being built** (Core `drop-frames`, after `48f8b8c`; CLI `scripts/apertar-tune`). Asked for by Patrik on
+Status: **built** (Core `drop-frames` `e60178f`, CLI `b9e0c2e`; Pi build 2026-11-02 23:1x without errors; `~/apertar-media-tune.conf` created on the Pi with `apertar-tune init`). Not running until Core is restarted. Keys and read sites: `architecture/config.md` §7.1. Asked for by Patrik on
 2026-11-02 after B1: the campaign's findings go into a settings file per storage medium, next to the hardware
 conf, and test nights must be able to override it from the command line. Fork-only: media profiles
 (`src/util/MediaProfile.hpp`, `26da30e`) are not in upstream Apertar or in the fork's `main`.

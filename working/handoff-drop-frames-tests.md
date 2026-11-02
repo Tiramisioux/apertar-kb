@@ -125,3 +125,59 @@ START: report the status check, then B0 step 1 (M0) as one read-only ssh block, 
 runs (neither touches the Pi). Then ask Patrik the three B0 questions he has to answer: the UI reverts (yes/no), what on
 /media/RAW must be kept, and when he can do the reboot.
 ```
+
+---
+
+## State after evening 1 (2026-11-02, written by the lead session at 23:2x)
+
+Read first: `drop-frames/tests-2026-11/preregistration.md` (B1 rule, orders, every unit's row, the result),
+`drop-frames/tests-2026-11/findings-2026-11-02.md` (the starvation finding, method notes, re-plan),
+`drop-frames/media-tune-file.md` (the new tuning file), night report §2.1 (B0's facts and record checks).
+
+**Done:** B0 (all 11 steps) and B1 (both blocks, the plan's evenings 0 and 1 in one night).
+- **B1 result:** writer units 407, 320 | 252, 232 lost vs sync 48, 108 | 73, 80; p = 1/36, manipulation check PASS:
+  the mode is the lever (Q1 settled). Position not reproduced; G probable (CameraManager IPC lower under writer);
+  A and H not supported.
+- **Mechanism (measured, 8 of 8 takes):** every lost frame is a moment when the CFE raw node had no buffer
+  (`vb2_buf_done` `owned_by_drv = 0` count = lost count). A take is clean (driver holds ~5-6.5 of 8 raw buffers on
+  average) or losing (~2). writer lowers it by ~1. Under sync one take per unit fell into the losing state
+  (47-108 lost) without reclaim, and both warm-ups lost (17, 9). What flips a take is open. "The second take of a
+  Core process loses" was said and is **refuted** (block 2 unit 3: 225 then 7).
+
+**State of the Pi at the end:** restore list read back (findings §6). Core `drop-frames` `b9e0c2e` **built, not yet
+running** (the running Core is `48f8b8c` until Patrik restarts it). UI `c153c33`. `~/apertar-media-tune.conf`
+created (`apertar-tune init`): the B1 values (sync, writeback on, sync_ms 1000, raw_buffers 8, kernel_tune off;
+exfat/ext4 workers 4, queue 12, extra 0). `/etc` drop-ins unchanged: `zz-ladder-buffers.conf`
+(`APERTAR_RAW_CAMERA_BUFFERS=8`) still wins over the file's `raw_buffers` until Patrik removes it. `warm.bin` on the
+drive (2.5 GB, keep for B3). Installed in B0: `apertar-media-tune` helper + sudoers (TUNE unset), nvme-cli (pulled
+util-linux 2.41.5: a fixed difference from 11-01; its two nvmf boot units disabled). cmdline `psi=1` (backup
+`cmdline.txt.bak-20261102`).
+
+**Tools as they are now** (`working/tools/drop-frames-2026-11-01/`):
+- `b1-arm.sh <writer|sync|restore|save> [--trace-buffer]`: per arm it saves the previous trace to
+  `/dev/shm/b1-trace-<HHMMSS>.txt` (owned by the sudo user: copy it to the Mac and delete it, or the unit loop waits),
+  writes the `/run` dontneed drop-in, restarts Core, filters `vb2_buf_done` to the raw node
+  (`type == 1 && bytesused > 10000000`). `--trace-buffer` once per boot. Patrik runs it once per unit; twice is
+  harmless (the second restart is the unit's), the wrong arm before any take is harmless.
+- `take3v3.sh`: picks the CameraManager thread with the most run time over 2 s right before `record_start` (a mode
+  change replaces those threads); clears `csi2_errors` before the take (the file is cleared on every read; the 1 Hz
+  logger is its only reader during a take); NVMe temperature from `/sys/class/nvme/nvme0/hwmon*/temp1_input`.
+- The unit loop the lead ran: wait for Core's pre-roll delete, then for no `/dev/shm/b1-trace-*` file and the NVMe
+  <= 40 C (up to 30 min, else NOT STARTED), `cat warm.bin`, P1, P2. Cool-down from ~60 C takes 15-20 min.
+- `scripts/apertar-tune` (Core repo): `set raw_buffers=16` etc. into `/dev/shm/apertar-media-tune.override.conf`;
+  `clear` at the end of every evening (restore list).
+
+**Next (agreed with Patrik 2026-11-02):**
+1. Patrik: `sudo rm /etc/systemd/system/apertar-core.service.d/zz-ladder-buffers.conf`, `sudo systemctl
+   daemon-reload`, `sudo systemctl restart apertar-core`; check the journal for `ApertarCore media tune: file=...`
+   and `RAW buffers: ... count=8`.
+2. The 16-raw-buffer try (Patrik's request, outside the plan, unscored): `apertar-tune set raw_buffers=16`, arm
+   sync with `--trace-buffer` after a reboot, one unit (P1 + P2) with the raw-node trace; compare with B1's four sync
+   units (48-108 lost, one losing take each). If both takes are clean with no `owned_by_drv = 0`, repeat before
+   writing 16 into the base file. Precedent: 12 buffers under writer on 11-01 (#41) had no effect.
+3. B2's first rows under sync on losing takes: G2 (libcamera stage timing) and M6 (stacks of the thread holding the
+   buffers), the raw-node trace on.
+4. B3 as planned (its `pageoutrun > 0` validity rule decides whether the knobs can speak under sync).
+5. T1 needs ~35,000 s of uptime (A0's position): boot the Pi ~9.7 h before.
+6. `takes.md` has rows up to block 1 unit 2: a W7 for block 1 units 3-4 and block 2 (logs and traces are in the
+   lead session's scratchpad `takes/`; copy what is needed into the KB before that session ends).

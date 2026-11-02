@@ -14,6 +14,7 @@ Every file and environment variable the Apertar stack reads, who parses it, and 
 | `~/.config/Apertar/StandbyBacklights.conf` | QSettings | UI | UI | standby |
 | `~/.local/share/Apertar-UI/presets/*.apertar-preset.json` | JSON | UI, Core | UI, Core WebUI | on demand |
 | `/boot/firmware/config.txt` | Pi config | Core, UI (fan block only) | Core (Boot Config card and fan mode, via `writeBootConfigText` / `apertar-boot-config`; `drop-frames`); UI fan mode via `set_fan_mode` since UI `41ff827` | on demand, boot |
+| `~/apertar-media-tune.conf` (+ `/dev/shm/apertar-media-tune.override.conf`) | INI, sections per medium | Core only (`drop-frames` `e60178f`) | `scripts/apertar-tune init` (from `config/apertar-media-tune.conf`), by hand; the override by `apertar-tune set/unset/clear` | per read site: media change, camera configure, take start; `dontneed`/`writeback` once per process (§7.1) |
 | `/home/pi/.apertar-tuning` | `NAME=VALUE` | Core (ProRes) | nobody | every ProRes clip open |
 | `$HOME/.cache/apertar-prores/<profile>.json` | libcamera tuning | libcamera | Core | camera open with a log profile |
 
@@ -389,6 +390,35 @@ Before this, Apertar edited config.txt only for the fan block. Branch `drop-fram
 All refs `drop-frames 4581a69`, `Apertar-Core-drop/src/ApertarCoreApp.cpp`.
 
 Runtime markers (`/run/apertar-ui/{core-start-ready,main-ui-ready}`, `/run/apertar-cfe/ready`, `/run/apertar-standby-*`, `/run/apertar-network/*`) are covered in [core.md](core.md#24-the-startup-gate).
+
+### 7.1 `~/apertar-media-tune.conf` (Core, `drop-frames` `e60178f`, 2026-11-02)
+
+The write-path knobs per recording medium, as a file (design and reasons: `working/drop-frames/media-tune-file.md`).
+Parser: `src/util/MediaTune.hpp` (INI; `#`/`;` comment lines; a trailing comment makes a value invalid). Above it,
+`/dev/shm/apertar-media-tune.override.conf` (same format, tmpfs, gone at reboot) for test nights, edited with
+`scripts/apertar-tune` (`show`, `set KEY=VALUE [--section S]`, `unset`, `clear`, `init`; user pi, never root).
+Precedence per key: the key's environment variable > override file > this file > Core's default; within a file
+`[<class>.<fs>]` > `[<fs>]` > `[<class>]` > `[default]` (classes `pi-nvme usb-uas usb-storage sd-card other`,
+filesystems `exfat ext4 vfat ntfs ntfs-fuse other`, as `mediaClassName`/`mediaFilesystemName` print them). Unknown
+keys, values and sections are ignored and named in the journal (`ApertarCore media tune: warning: ...`). Core logs
+`ApertarCore media tune: file=... override=... <keys> source: ...` once per process; every `recording clip:` line ends
+`tune_override=<yes|no>`.
+
+| Key | Range | Env that wins | Read | Value written 2026-11-02 |
+| --- | --- | --- | --- | --- |
+| `dontneed` | sync, writer, off | `APERTAR_DNG_DONTNEED` | once per process (`dngPageCacheDrop`, `CdngEncoder.cpp`) | `[default]` sync (B1: p = 1/36) |
+| `writeback` | on, off | `APERTAR_DNG_WRITEBACK` | once per process (`startWritebackPerFrame`) | `[default]` on |
+| `sync_ms` | 0-60000 | `APERTAR_MEDIA_SYNC_MS` | each take (`startAtFolder`) | `[default]` 1000 |
+| `raw_buffers` | 3-16, absolute | `APERTAR_RAW_CAMERA_BUFFERS` | each camera configure (`rawCameraBufferCount`) | `[default]` 8 (replaces 4 SDR / 8 Clear HDR + extra) |
+| `extra_raw_buffers` | 0-8 | (none) | media change (`deriveMediaProfile`) | `[exfat]`, `[ext4]` 0 |
+| `workers` | 1-8 | `APERTAR_CDNG_UNCOMPRESSED_WORKERS` | media change | `[exfat]`, `[ext4]` 4 (uncompressed cDNG) |
+| `queue` | 4-64 | `APERTAR_CDNG_QUEUE_FRAMES` | media change | `[exfat]`, `[ext4]` 12 |
+| `kernel_tune` | on, off | `APERTAR_MEDIA_TUNE` (1 = on) | media mount (`applyMediaTuning`) | `[default]` off |
+
+Not to be confused with `[media]` in `apertar-hardware.conf` (pre-roll), the root helper
+`/usr/local/libexec/apertar-media-tune` (kernel-side tuning, which `kernel_tune` switches on) or `~/.apertar-tuning`
+(ProRes). As long as the `/etc` drop-in `zz-ladder-buffers.conf` sets `APERTAR_RAW_CAMERA_BUFFERS=8`, it wins over
+`raw_buffers` in both files.
 
 ## 8. Environment variables
 
