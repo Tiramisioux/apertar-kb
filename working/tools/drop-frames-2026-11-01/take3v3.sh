@@ -29,8 +29,11 @@ CORE=$(systemctl show -p MainPID --value apertar-core)
 UP=$(systemctl show -p MainPID --value apertar-ui-direct)
 [ "${CORE:-0}" -gt 0 ] || { echo "apertar-core is not running"; exit 1; }
 VM(){ grep -E "^(VmRSS|VmSwap):" /proc/$1/status 2>/dev/null | awk '{printf "%s%dM ", $1, $2/1024}'; }
-# Core has several threads named CameraManager; libcamera's is the one with by far the most run time (schedstat field 1)
-CAM=$(for t in $(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{print $1}'); do echo "$t $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo 0)"; done | sort -k2,2nr | awk 'NR==1{print $1}')
+# Core has several threads named CameraManager, and a mode change replaces them (G1 found its tid gone, 2026-11-02):
+# pick libcamera's, the one with the most run time over 2 s, right before record_start
+CAMPICK(){ for t in $(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{print $1}'); do echo "$t $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo 0)"; done > /dev/shm/campick.$$; sleep 2
+  while read -r t r0; do echo "$t $(( $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo $r0) - r0 ))"; done < /dev/shm/campick.$$ | sort -k2,2nr | awk 'NR==1{print $1}'; rm -f /dev/shm/campick.$$; }
+CAM=$(CAMPICK)
 echo "label=$LABEL core=$CORE ui=$UP camtid=${CAM:-none} pagesize=$(getconf PAGESIZE) uptime_s=$(cut -d. -f1 /proc/uptime)"
 echo "core knobs: $(tr '\0' '\n' < /proc/$CORE/environ 2>/dev/null | grep -E '^APERTAR_(DNG_DONTNEED|MEDIA_SYNC_MS|DNG_WRITEBACK|RAW_CAMERA_BUFFERS|MEDIA_TUNE|RT_CAPTURE_PRIORITY|CDNG_BUFFER)=' | tr '\n' ' ')"
 echo "sysctl: dirty_bytes=$(cat /proc/sys/vm/dirty_bytes) dirty_background_bytes=$(cat /proc/sys/vm/dirty_background_bytes) dirty_ratio=$(cat /proc/sys/vm/dirty_ratio) min_free_kbytes=$(cat /proc/sys/vm/min_free_kbytes) watermark_boost_factor=$(cat /proc/sys/vm/watermark_boost_factor)"
@@ -51,6 +54,7 @@ echo "start $(date +%T) clients=$c builds=$b"
 CSI(){ f=$(ls /sys/kernel/debug/rp1-cfe*/csi2_errors 2>/dev/null | head -1); [ -n "$f" ] && awk 'NR==1 || /^[0-9] /{printf "%s | ", $0}' "$f" | tr -s ' ' || echo "csi2 n/a"; }
 # csi2_errors is cleared on every read (measured 2026-11-02): this read clears it just before the take; during the take
 # the 1 Hz logger is its only reader, so each log line holds that second's discards
+CAM=$(CAMPICK); echo "  camtid at start: ${CAM:-none}"
 echo "  mem before: $(M)"; echo "  psi before: $(P)"; echo "  csi2 since the last read (cleared now): $(CSI)"
 # 1 Hz logger (M5 + counters) in one process (take_logger.py), stopped after the take
 python3 -I "$KB/drop-frames-2026-11-01/take_logger.py" "$CORE" "${UP:-0}" "$LOG" $KEYS &

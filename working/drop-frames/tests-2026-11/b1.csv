@@ -1,0 +1,2 @@
+block,unit,arm,P1_lost,P2_lost,P1_memfree,P2_memfree,P1_pgsteal_kswapd,P2_pgsteal_kswapd
+1,1,writer,357,50,622,346,3713840,3442560
