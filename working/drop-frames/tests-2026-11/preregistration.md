@@ -104,6 +104,19 @@ At campaign end:
 | 2 | 1 | sync | 1 / 4,510 | 72 / 4,435 | 619 MB | 1060 MB | 55,971 | 32,319 | yes; NVMe 38.85 C at the start; G1 IPC 1.53 / 1.44; arm run twice (20:54:05, 20:56:39), the second is the unit's restart |
 | 2 | 2 | writer | 2 / 4,510 | 250 / 4,257 | 605 MB | 355 MB | 4,052,408 | 3,383,360 | yes; NVMe 39.85 C at the check (40.85 C at the print); G1 IPC 1.46 / 1.41 |
 | 2 | 3 | writer | 225 / 4,281 | 7 / 4,503 | 592 MB | 360 MB | 3,842,368 | 3,763,648 | yes; NVMe 39.85 C at the start; G1 IPC 1.43 / 1.40 |
+| 2 | 4 | sync | 0 / 4,514 | 80 / 4,424 | 604 MB | 837 MB | 56,640 | 46,464 | yes; NVMe 37.85 C at the start; G1 IPC 1.50 / 1.44; a `writer` arm ran by mistake at 22:27 before the unit's `sync` arm (no take in between) |
+
+**B1 result (b1_test.py on both blocks, 2026-11-02 22:50):** per-unit lost writer 407, 320 | 252, 232; sync 48, 108 | 73, 80.
+Exact one-sided permutation test stratified by block: T = 1,211, 1 of 36 relabelings >= T, **p = 1/36 = 0.028**.
+Manipulation check PASS (min writer `pgsteal_kswapd` 3,333,312 >= 10 x max sync 58,816). P1 / P2 per arm: writer
+216 / 87 mean, sync 0.5 / 77 mean. MemFree before P1: writer 592-622 MB, sync 553-619 MB.
+
+Against the decision rule: p <= 0.05 with the manipulation check holding: **the mode is the lever at the take level
+(Q1 settled)**. Position (writer P1 clean, P2 losing in both blocks): not reproduced (writer P1 lost in 3 of 4 units).
+G: CameraManager IPC lower under writer (P1 1.41-1.46) than under sync (P1 1.49-1.53): G present (**probable**:
+instructions per frame not compared). Stall: `allocstall` 0-5 per take, `pgmajfault` ~0: A and H not supported.
+The sync residual (one take per unit losing 47-108, warm-ups 9-17) is CFE raw-buffer starvation without reclaim:
+[findings-2026-11-02.md](findings-2026-11-02.md).
 
 Block 2 warm-up (unscored, `sync`, 20:50): 9 / 4,497 lost, `pgsteal_kswapd` 0, G1 IPC 1.44; raw-node trace: 9 completions with `owned_by_drv = 0` (minutes 1/6/2, as the losses 1/6/2).
 
