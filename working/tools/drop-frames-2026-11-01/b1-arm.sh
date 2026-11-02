@@ -1,5 +1,5 @@
 #!/bin/sh
-# b1-arm.sh <writer|sync|restore> [--dry-run] [--trace-buffer]
+# b1-arm.sh <writer|sync|restore|save> [--dry-run] [--trace-buffer]
 #
 # Root script for one B1 unit of the drop-frames campaign (inspection-2026-11-02.md section 8.3, steps B0.6 and B1).
 # Run as:  sudo sh b1-arm.sh writer     (or sync)      after every reboot add --trace-buffer once.
@@ -19,6 +19,10 @@
 #   4. Reads the rp1-cfe csi2_errors file once and prints it as the discarded baseline.
 #   Every value it changes is printed as `name: old -> new`, and again in a summary block at the end.
 #
+# Before it clears or disables anything, every mode saves the trace buffer of the takes since the last arm to
+#   /dev/shm/b1-trace-<HHMMSS>.txt (mode 0644, for the unprivileged copy to the Mac; tmpfs, so it costs RAM until it is
+#   copied and deleted). save: only that, plus the per-CPU overrun counts (after the last unit of a block).
+#
 # restore
 #   Disables the seven events, sets tracing_on and buffer_size_kb back from /run/b1-arm.orig (if that file is absent: events
 #   set to 0, buffer size reported unknown and left, tracing_on left), removes the drop-in dontneed.conf if present,
@@ -26,6 +30,7 @@
 #   the build default is sync). /run/b1-arm.orig is NOT deleted (tmpfs, gone at the next reboot).
 #
 # What it writes (nothing else): /run/systemd/system/apertar-core.service.d/ (directory), .../dontneed.conf, /run/b1-arm.orig,
+#   /dev/shm/b1-trace-<HHMMSS>.txt,
 #   /sys/kernel/tracing/{buffer_size_kb,tracing_on,trace,events/<event>/enable}; and it restarts apertar-core via systemctl.
 #   No /proc/irq, no sysctl, nothing in /etc or /boot. The only deletion is `rm -f` of dontneed.conf, in restore.
 #
@@ -52,11 +57,11 @@ NOTES=""
 FAIL=0
 
 say() { printf '%s\n' "$*"; }
-usage() { say "usage: sh b1-arm.sh <writer|sync|restore> [--dry-run] [--trace-buffer]"; }
+usage() { say "usage: sh b1-arm.sh <writer|sync|restore|save> [--dry-run] [--trace-buffer]"; }
 
 for a in "$@"; do
   case "$a" in
-    writer|sync|restore) [ -z "$MODE" ] || { usage; exit 2; }; MODE=$a ;;
+    writer|sync|restore|save) [ -z "$MODE" ] || { usage; exit 2; }; MODE=$a ;;
     --dry-run) DRY=1 ;;
     --trace-buffer) TRACEBUF=1 ;;
     *) usage; exit 2 ;;
@@ -259,6 +264,19 @@ check_environ_arm() {
 }
 
 # ---- tracefs ---------------------------------------------------------------------------------------------------------
+save_trace() { # copy the buffer of the takes since the last arm before anything clears it
+  st_out=/dev/shm/b1-trace-$(date +%H%M%S).txt
+  if [ ! -r "$TR/trace" ]; then say "  trace: not readable, not saved"; return 0; fi
+  if [ "$DRY" -eq 1 ]; then say "  would save $TR/trace to $st_out"; return 0; fi
+  if cat "$TR/trace" > "$st_out" && chmod 0644 "$st_out"; then
+    say "  trace saved: $st_out ($(wc -l < "$st_out") lines)"
+    note "trace saved: $st_out"
+  else
+    say "  FAILED to save the trace to $st_out"
+    FAIL=1
+  fi
+}
+
 arm_tracefs() {
   say "tracefs ($TR):"
   if [ ! -d "$TR" ]; then
@@ -278,6 +296,7 @@ arm_tracefs() {
     fi
   done
   print_overruns
+  save_trace
   if [ "$DRY" -eq 1 ]; then
     say "  would clear the buffer ($TR/trace)"
     note "trace: cleared"
@@ -297,6 +316,8 @@ restore_tracefs() {
     say "  tracefs not found at $TR; nothing to restore there"
     return 0
   fi
+  print_overruns
+  save_trace
   for rt_e in $EVENTS; do
     if [ -d "$TR/events/$rt_e" ]; then
       set_val "$TR/events/$rt_e/enable" "event $rt_e enable" 0
@@ -372,6 +393,12 @@ case "$MODE" in
       fi
     fi
     say "  $ORIG is kept (tmpfs: it is gone at the next reboot)"
+    ;;
+  save)
+    say "tracefs ($TR):"
+    [ -d "$TR" ] || die "$TR does not exist"
+    print_overruns
+    save_trace
     ;;
 esac
 
