@@ -101,6 +101,9 @@ At campaign end:
 | 1 | 2 | writer | 280 / 4,224 | 40 / 4,467 | 621 MB | 370 MB | 3,755,840 | 3,333,312 | yes; deviation: NVMe 40.85 C at the unit start (the cool-down wait timed out at 12 min); G1 IPC 1.41 / 1.40 |
 | 1 | 3 | sync | 1 / 4,512 | 47 / 4,459 | 609 MB | 925 MB | 54,720 | 37,760 | yes; NVMe 38.85 C at the start; G1 IPC 1.50 / 1.44. Before it: an extra `writer` arm at 19:48 and a second `sync` arm at 19:49:31 (no take in between) |
 | 1 | 4 | sync | 0 / 4,512 | 108 / 4,397 | 553 MB | 764 MB | 58,816 | 44,672 | yes; NVMe 39.85 C at the check (40.85 C a second later, the sensor's 1 C step); G1 IPC 1.49 / 1.43 |
+| 2 | 1 | sync | 1 / 4,510 | 72 / 4,435 | 619 MB | 1060 MB | 55,971 | 32,319 | yes; NVMe 38.85 C at the start; G1 IPC 1.53 / 1.44; arm run twice (20:54:05, 20:56:39), the second is the unit's restart |
+
+Block 2 warm-up (unscored, `sync`, 20:50): 9 / 4,497 lost, `pgsteal_kswapd` 0, G1 IPC 1.44; raw-node trace: 9 completions with `owned_by_drv = 0` (minutes 1/6/2, as the losses 1/6/2).
 
 Block 1 (b1_test.py, 2026-11-02 20:40): per-unit lost writer 407, 320; sync 48, 108; complete separation within the block, p = 1/6 (the minimum one block can reach; the pre-registered decision needs block 2). Manipulation check PASS (min writer `pgsteal_kswapd` 3,333,312 >= 10 x max sync 58,816). P1 / P2 per arm: writer 357, 280 / 50, 40; sync 1, 0 / 47, 108.
 
