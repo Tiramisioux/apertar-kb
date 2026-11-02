@@ -140,6 +140,7 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `e60178f` | Media tuning file `~/apertar-media-tune.conf` + `/dev/shm` override (dontneed, writeback, sync_ms, raw_buffers, extra_raw_buffers, workers, queue, kernel_tune per medium; env still wins); template `config/apertar-media-tune.conf`; branch `drop-frames` | fork-only; built on the Pi 2026-11-02 23:1x, Core not restarted yet |
 | `b9e0c2e` | `scripts/apertar-tune`: show/set/unset/clear/init for the media tuning files; branch `drop-frames` | fork-only; on the Pi |
 | `07e83b4` | WebUI: the Value Lists card (T33) moves from the Record pane to the Controls pane; branch `drop-frames` | fork-only; on the Pi |
+| `f8ef677` | WebUI: a Modes pane (after Record) with Activated sensor modes and the Mode Ladder, moved from Record; branch `drop-frames` | fork-only; on the Pi |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
