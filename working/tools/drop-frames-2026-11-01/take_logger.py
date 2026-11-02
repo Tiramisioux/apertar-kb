@@ -58,6 +58,20 @@ def psi():
     return ' '.join(text.split()) if text else 'off'
 
 
+def boost():
+    # watermark boost per node and zone, in pages: the sum, then only the non-zero ones (n<node>z<zone>=<pages>)
+    parts, total, node, zone = [], 0, '?', '?'
+    for line in read('/proc/zoneinfo').splitlines():
+        w = line.split()
+        if line.startswith('Node') and len(w) >= 4:
+            node, zone = w[1].rstrip(','), w[3]
+        elif len(w) == 2 and w[0] == 'boost' and w[1].isdigit():
+            total += int(w[1])
+            if w[1] != '0':
+                parts.append(f'n{node}z{zone}={w[1]}')
+    return ' '.join([f'sum={total}'] + parts)
+
+
 def threads(pid):
     parts = []
     base = f'/proc/{pid}/task'
@@ -105,7 +119,7 @@ def dropped():
 with open(out, 'w', buffering=1) as f:
     nxt = time.monotonic()
     while not stop and os.path.exists(f'/proc/{core}'):
-        f.write(f't={time.time():.2f} vm {vmstat()} | mem {meminfo()} | nvme {nvme()} | psi {psi()} | '
+        f.write(f't={time.time():.2f} vm {vmstat()} | mem {meminfo()} | nvme {nvme()} | boost {boost()} | psi {psi()} | '
                 f'dropped={dropped()} | thr {" ".join(threads(core) + threads(ui))}\n')
         nxt += 1.0
         time.sleep(max(0.0, nxt - time.monotonic()))

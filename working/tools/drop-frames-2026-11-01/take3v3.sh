@@ -29,7 +29,8 @@ CORE=$(systemctl show -p MainPID --value apertar-core)
 UP=$(systemctl show -p MainPID --value apertar-ui-direct)
 [ "${CORE:-0}" -gt 0 ] || { echo "apertar-core is not running"; exit 1; }
 VM(){ grep -E "^(VmRSS|VmSwap):" /proc/$1/status 2>/dev/null | awk '{printf "%s%dM ", $1, $2/1024}'; }
-CAM=$(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{print $1; exit}')
+# Core has several threads named CameraManager; libcamera's is the one with by far the most run time (schedstat field 1)
+CAM=$(for t in $(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{print $1}'); do echo "$t $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo 0)"; done | sort -k2,2nr | awk 'NR==1{print $1}')
 echo "label=$LABEL core=$CORE ui=$UP camtid=${CAM:-none} pagesize=$(getconf PAGESIZE) uptime_s=$(cut -d. -f1 /proc/uptime)"
 echo "core knobs: $(tr '\0' '\n' < /proc/$CORE/environ 2>/dev/null | grep -E '^APERTAR_(DNG_DONTNEED|MEDIA_SYNC_MS|DNG_WRITEBACK|RAW_CAMERA_BUFFERS|MEDIA_TUNE|RT_CAPTURE_PRIORITY|CDNG_BUFFER)=' | tr '\n' ' ')"
 echo "sysctl: dirty_bytes=$(cat /proc/sys/vm/dirty_bytes) dirty_background_bytes=$(cat /proc/sys/vm/dirty_background_bytes) dirty_ratio=$(cat /proc/sys/vm/dirty_ratio) min_free_kbytes=$(cat /proc/sys/vm/min_free_kbytes) watermark_boost_factor=$(cat /proc/sys/vm/watermark_boost_factor)"
@@ -64,6 +65,7 @@ $C record_stop >/dev/null; sleep 8; kill "$LOGGER" 2>/dev/null; b2=$(S)
 echo "  mem after: $(M)"; echo "  psi after: $(P)"
 journalctl -u apertar-core --since "$T1" --no-pager | grep -oE "recording clip: [^ ]+|dropped_gap_estimate=[0-9]+|enqueued=[0-9]+|dropped_queue_full=[0-9]+|dropped_copy_slot=[0-9]+|peak_queue=[0-9/]+|queue_budget=[0-9]+|synced to the medium in [0-9]+ ms" | tr '\n' ' '; echo
 echo "  whole take: $(DELTA "$a" "$b2")"
+echo "  drive after: $(df -h /media/RAW | awk 'NR==2{printf "%s used of %s (%s)", $3, $2, $5}') $(cat /sys/class/nvme/nvme0/device/hwmon*/temp1_input 2>/dev/null | awk '{printf "%d C", $1/1000}')"
 echo "  builds after: $(ps -eo cmd | grep -cE '^[^ ]*(cc1plus|gmake|cmake) ')  1 Hz log: $LOG ($(wc -l < "$LOG") lines)"
 if [ -n "$G1PID" ]; then wait "$G1PID" 2>/dev/null; echo "  G1 (CameraManager PMU, 60-120 s): $(cat "$G1OUT")"; fi
 $C set_mode_ladder enabled=true >/dev/null; sleep 4; $C set_fps value=30 >/dev/null; sleep 4; echo restored
