@@ -31,7 +31,8 @@
 #
 # What it writes (nothing else): /run/systemd/system/apertar-core.service.d/ (directory), .../dontneed.conf, /run/b1-arm.orig,
 #   /dev/shm/b1-trace-<HHMMSS>.txt,
-#   /sys/kernel/tracing/{buffer_size_kb,tracing_on,trace,events/<event>/enable}; and it restarts apertar-core via systemctl.
+#   /sys/kernel/tracing/{buffer_size_kb,tracing_on,trace,events/<event>/enable,events/vb2/vb2_buf_done/filter}; and it
+#   restarts apertar-core via systemctl. restore clears the filter (writes 0).
 #   No /proc/irq, no sysctl, nothing in /etc or /boot. The only deletion is `rm -f` of dontneed.conf, in restore.
 #
 # How to undo it by hand (same as `sudo sh b1-arm.sh restore`):
@@ -48,6 +49,9 @@ DIR=/run/systemd/system/apertar-core.service.d
 ORIG=/run/b1-arm.orig
 TR=/sys/kernel/tracing
 BUF_KB=8192
+# vb2_buf_done fires ~45 times per frame for the ISP nodes and overran CPU0's 8 MiB in one unit (2026-11-02): keep only
+# the CFE raw node (type 1, 4K raw frames of ~16.9 MB), whose owned_by_drv/queued show the 8 raw buffers draining
+VB2_FILTER='type == 1 && bytesused > 10000000'
 EVENTS="vmscan/mm_vmscan_direct_reclaim_begin vmscan/mm_vmscan_direct_reclaim_end vmscan/mm_vmscan_kswapd_wake vmscan/mm_vmscan_kswapd_sleep vmscan/mm_vmscan_throttled v4l2/vb2_v4l2_buf_done vb2/vb2_buf_done"
 
 MODE=""
@@ -269,6 +273,8 @@ save_trace() { # copy the buffer of the takes since the last arm before anything
   if [ ! -r "$TR/trace" ]; then say "  trace: not readable, not saved"; return 0; fi
   if [ "$DRY" -eq 1 ]; then say "  would save $TR/trace to $st_out"; return 0; fi
   if cat "$TR/trace" > "$st_out" && chmod 0644 "$st_out"; then
+    # hand it to the user who ran sudo, so the copy to the Mac can delete it without root
+    if [ -n "${SUDO_UID:-}" ] && [ -n "${SUDO_GID:-}" ]; then chown "$SUDO_UID:$SUDO_GID" "$st_out" || true; fi
     say "  trace saved: $st_out ($(wc -l < "$st_out") lines)"
     note "trace saved: $st_out"
   else
@@ -287,6 +293,9 @@ arm_tracefs() {
     set_val "$TR/buffer_size_kb" "buffer_size_kb (per CPU)" "$BUF_KB"
   else
     say "  buffer_size_kb (per CPU): $(read_buf_kb), not touched (use --trace-buffer once after each reboot)"
+  fi
+  if [ -e "$TR/events/vb2/vb2_buf_done/filter" ]; then
+    set_val "$TR/events/vb2/vb2_buf_done/filter" "event vb2/vb2_buf_done filter" "$VB2_FILTER"
   fi
   for at_e in $EVENTS; do
     if [ -d "$TR/events/$at_e" ]; then
@@ -325,6 +334,9 @@ restore_tracefs() {
       say "  missing: $rt_e"
     fi
   done
+  if [ -e "$TR/events/vb2/vb2_buf_done/filter" ]; then
+    set_val "$TR/events/vb2/vb2_buf_done/filter" "event vb2/vb2_buf_done filter" 0
+  fi
   if [ -r "$ORIG" ]; then
     say "  originals from $ORIG:"
     rt_on=$(orig_get tracing_on)
