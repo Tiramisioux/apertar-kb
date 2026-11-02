@@ -51,12 +51,14 @@ Analysis script: [b1_test.py](../../tools/drop-frames-2026-11-01/b1_test.py).
 
 ## B1 block orders (drawn before each block)
 
+Block 2 measurement changes (not the takes): `vb2/vb2_buf_done` filtered to the CFE raw node (`type == 1 && bytesused > 10000000`), the saved trace chowned to the sudo user (b1-arm.sh `df56ba0`).
+
 The 6 balanced orders (2 writer W, 2 sync S): WWSS, WSWS, WSSW, SWWS, SWSW, SSWW; die 1-6 in that order.
 
 | Block | Drawn (date, time, method) | Order of the 4 units |
 | --- | --- | --- |
 | 1 | 2026-11-02 ~19:10 CET, die rolled by User (result 1), after the block's reboot and before any take of the block | WWSS: unit 1 writer, unit 2 writer, unit 3 sync, unit 4 sync |
-| 2 | | |
+| 2 | 2026-11-02 ~20:50 CET, die rolled by User (result 4), before the block's reboot | SWWS: unit 1 sync, unit 2 writer, unit 3 writer, unit 4 sync |
 | 3 (extension) | | |
 
 ## Restore list (end of every evening)
