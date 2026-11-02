@@ -55,7 +55,7 @@ The 6 balanced orders (2 writer W, 2 sync S): WWSS, WSWS, WSSW, SWWS, SWSW, SSWW
 
 | Block | Drawn (date, time, method) | Order of the 4 units |
 | --- | --- | --- |
-| 1 | | |
+| 1 | 2026-11-02 ~19:10 CET, die rolled by User (result 1), after the block's reboot and before any take of the block | WWSS: unit 1 writer, unit 2 writer, unit 3 sync, unit 4 sync |
 | 2 | | |
 | 3 (extension) | | |
 
