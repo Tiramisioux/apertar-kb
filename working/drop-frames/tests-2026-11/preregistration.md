@@ -215,3 +215,22 @@ cure it (**measured**, n = 1 unit); no mini-block. User space takes up the extra
 losses at 16 come **without** CFE starvation (one `owned_by_drv = 0` per take against 26 and 123 lost), while at 8 the
 two counts matched in 8 of 8 takes: a second loss path behind the CFE (libcamera's pipeline or Core), **unconfirmed**
 where. The override was cleared at 20:28 (`apertar-tune clear`); the base file keeps `raw_buffers = 8`.
+
+## G2 under sync, evening 2 (2026-11-03; adapted from 8.3 B2 G2, unscored)
+
+Written before the takes. B1 left the sync residual open (one take per unit losing, CFE raw-buffer starvation at 8
+buffers), so G2 runs as one sync unit (P1 + P2, 3 min each, 8 raw buffers, `warm.bin` before P1) with
+`LIBCAMERA_LOG_LEVELS=IPARPI:ERROR,RPI:0,RPiStream:0` (a `/run` drop-in that sorts after the `/etc` `libcamera-log.conf`,
+so the merged value wins), parsed per take with `working/tools/libcam_stages.py` from `journalctl -o cat`. The plan's
+writer-vs-sync comparison is replaced by losing-vs-clean within the arm; if both takes lose or both stay clean, the
+comparison is with B1's numbers only and says less.
+
+Rule: a stage (CFE dequeue -> IPA signalled -> ISP input queued -> ISP input complete) whose median or p90 is clearly
+longer in the losing take than in the clean one, while the CFE arrival interval stays at 40 ms, holds the buffers
+(libcamera; G in its narrow sense). All stages equal and only the CFE arrival interval or Core's own handling differing:
+the holding is outside these stages (Core's completion path, the copy, or the preview), next M6. A journald
+"Suppressed" line in the window makes that take's stage numbers void (rate limit).
+
+| Take | Lost | cfe -> signal median / p90 (ms) | signal -> be_start | be_start -> be_done | CFE interval median / p90 | Note |
+| --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | |
