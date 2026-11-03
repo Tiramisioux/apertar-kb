@@ -305,4 +305,17 @@ with the back end at ~40 ms = the queue's footprint is not what slows the back e
 
 | Take | Lost | wait median (ms) | BE median (ms) | max 20-s BE | `pgsteal_kswapd` | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+| P1 (21:40) | **590 / 3,915** | 239.9 | 40.9 | 44 | **849,185** | saturated from 20 s on, BE 43-44 ms; G1 IPC 1.31; frames mode confirmed (no `queue_budget` on the clip line) |
+| P2 (21:44) | 181 / 4,325 | 216.0 | 39.1 | 41 | 42,988 | saturated from 20 s on; G1 IPC 1.33 |
+
+**Reading against the rule:** losing takes with the back end at ~40-44 ms: the RAM queue's footprint is not what slows
+the back end (frames mode is not better, n = 1). `[storage] buffer` goes back to `ram` with the restore list.
+
+## Memory load without a take, evening 2 (no recording; unscored)
+
+Written before the run. Core idle with the live preview and libcamera's debug log on; 30 s baseline, then 60 s with
+two `dd if=/dev/zero of=/dev/null bs=64M` processes as user pi (memory write load, no file, no recording), then 30 s
+after. Rule: the back end's per-frame time (`Input re-queue to ISP` -> `ISP Input buffer complete`, median per 10 s)
+rising from its idle level to >= ~30 ms under the load and falling back after = memory contention alone slows the
+back end (the mechanism of the losing takes, without the recording path); no change = the slowdown needs something of
+the recording path itself (its DMA, its buffers), not bandwidth in general.
