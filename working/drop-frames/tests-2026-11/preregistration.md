@@ -184,3 +184,21 @@ Unit 1 CSI-2 VC0 OVLF per take (1 Hz log): P1 58 in 14 s (all 14 s also lost fra
 | Take | Test / arm / cell | Lost | Valid | Note |
 | --- | --- | --- | --- | --- |
 | | | | | |
+
+## Exploratory, evening 2 (2026-11-03): 16 raw camera buffers (User's request; outside the plan, unscored)
+
+Written before the take. Question: does doubling the raw buffers (8 -> 16, `apertar-tune set raw_buffers=16`, the
+override file; Core restarted by `b1-arm.sh sync --trace-buffer` after a reboot) remove the CFE raw-buffer starvation
+that every B1 sync unit showed (48-108 lost per unit, one losing take each; 11-01 #41: 12 buffers under writer, no
+effect)? Setup as a B1 sync unit: Core `f391314`, UI `c153c33`, drive emptied (User's 25 clips deleted), `warm.bin`
+read before P1, P1 + P2 3 min each, NVMe <= 40 C at the start, raw-node trace filtered as in block 2. Verified before
+P1: journal `RAW buffers: ... count=16` and `media tune: ... override=/dev/shm/... raw_buffers=16`.
+
+Rule: both takes <= 2 lost **and** no `owned_by_drv = 0` completion in the trace during the takes -> run a confirming
+mini-block (2 units at 16, 2 at 8, order by die) before 16 goes into the base file. Otherwise: 16 does not cure it at
+n = 1 (report mean `owned_by_drv` per take: if it rises by ~8 while losses stay, user space holds the extra buffers too,
+a throughput deficit; if it rises and losses fall but not to 0, a partial cure) and the evening goes on to G2/M6.
+
+| Take | Lost | `owned_by_drv = 0` | Mean `owned_by_drv` | `pgsteal_kswapd` | G1 IPC | Note |
+| --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | |
