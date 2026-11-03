@@ -1,0 +1,135 @@
+<!-- Dual sensor, reader report 2 (2026-11-03): Apertar Core as one of two instances: what collides between two Cores, camera identity, record start and its alignment, the settings and state protocol, the phase lock, hardware inputs, one process versus two. Written by a read-only research agent on the Mac from git refs (Core 31d5418 and UI c153c33, both drop-frames = what the Pi runs; libcamera apertar 6b0b49f3). Frozen: do not edit; corrections go in design-dual-sensor.md and its verification table. -->
+
+# Dual-sensor Core research (read-only), Apertar-Core @ 31d5418
+
+**Conventions.** Refs are `path:line@31d5418` (drop-frames). `App`=src/ApertarCoreApp.cpp, `CC`=src/camera/CameraController.cpp, all @31d5418. Tags: [C] confirmed (code, or a Pi read recorded in KB `working/dual-sensor/r5-pi-hardware.md`, "r5"), [P] probable, [U] unconfirmed. libcamera refs = local fork `~/Documents/Apertar/libcamera` (branch apertar 6b0b49f3; the Pi runs 7e9fef0b, same source [P]). Cinemate refs = `~/Documents/cinemate/cinemate`.
+
+**Corrections to the brief and KB**
+- No `apertar-core.service` is in any repo. Apertar-Beta holds only README, LICENSE, FUNDING (12 commits, one branch) [C]. Core ships only the drop-in text `config/apertar-core-capture-priority.conf` (LimitNICE=-5, LimitRTPRIO=80) plus tmpfiles/sudoers; Apertar-UI (drop-frames) ships `wait_for_ui_core_start.sh` and `systemd/apertar-network*`. Live unit per r5 (`systemctl cat`) [C]: `ExecStart=/home/pi/start-apertar-core.sh`, `Restart=on-failure`, ExecStartPre gate `apertar-wait-ui-core-start /run/apertar-ui/core-start-ready 8` (exits 0 when the file exists, no screen, or after 8 s: wait_for_ui_core_start.sh:30-56), LimitNICE/LimitRTPRIO, `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR`. A second unit must copy these; anything beyond r5 is [U].
+- `scripts/start-apertar-core.sh:44` forwards only `--socket` and `--media`: no `--web-port`, no camera or role option.
+- KB "hardware conf is read once" is outdated: `runControlsWorker` polls it every 2 s and live-restarts changed driver groups (App:11884-11990) [C].
+
+## Q1 Process/machine-global resources
+
+| Resource | Where | Collides? | Minimal fix |
+|---|---|---|---|
+| Control socket | ControlServer.cpp:124 unlink-then-bind, :170 unlink in stop(); default App.hpp:39 | YES. Second process steals the path; its stop() after a failed start unlinks it again: first Core orphaned [C] | `--socket` per instance |
+| Web port | main.cpp:68-82; WebServer.cpp:216; App:8067-8077 | YES. Bind failure aborts start() (exit 1) after camera open (App:8034) and socket bind (App:8056): systemd restart loop [C] | `--web-port 8001` or 0; unit bypasses the script |
+| Camera pick | CC:7262-7265 first non-`/usb`, else `front()`; probe CC:7063-7066 | YES. Both take camera 0; libcamera `lockf(F_TLOCK)` on the media nodes (media_device.cpp:149; pipeline_handler.cpp:171-179) fails the second `acquire()` -> CC:7346 [C]. Cinemate hit it: cinepi_multi.py:672-682 | select by id at both sites; no `front()` fallback |
+| IMX585 subdev, probe | `openImx585Subdev` = first subdev named imx585 CC:6875; `setSensorWideDynamicRange` CC:6925; `writeImx585ExtControl` CC:6960; `probeSensorModes` CC:7039 (own manager, configures every mode, once per process CC:7151) | YES with two IMX585: writes land on cam0's sensor: start fails if the control is grabbed while streaming [P], else cam0's WDR flips silently | match subdev `of_node` to the chosen camera (pattern: CC:8118-8130) |
+| camera_settings.conf, mode_ladder.conf | CC:414-425, 984-992; CC:401-412, 10388, 10820 | YES. Whole-file writes, last writer wins [C] | per-instance `XDG_CONFIG_HOME` |
+| UI.conf | App:517-524; read App:1967, 2182, per command and 1 s tick (App:8253-8285); write App:2217-2300 (QtIniLock + atomic) | File-safe, semantically shared: photoModeEnabled, recordAudioEnabled, soundRecorderEnabled, timecodeMode, standbyTimeoutSeconds [C] | own XDG dir for the secondary |
+| hardware conf readers | env `APERTAR_HARDWARE_CONFIG` first. PCF, GPIO, NeoRotary4, Grove fall through to the next candidate when their section is absent (Pcf8574Input.cpp:225-310; GpioInput.cpp:258-460; NeoRotary4Input.cpp:267-358; GroveAnalogInput.cpp:235-338); trigger and tally stop at the first existing file (TriggerOutput.cpp:250-353; RecordingIndicatorOutput.cpp:245-390) | YES if the secondary reaches /home/pi/apertar-hardware.conf [C] | own file with explicit `enabled=false` in pcf8574, gpio_buttons, neorotary4, grove_analog, ina219, imu; or role flag |
+| HardwareConfigStore | HardwareConfigStore.cpp:118-131, 357-410: .bak, hardware-history/, hardware-state.conf under `$XDG_CONFIG_HOME/apertar-core`; live re-apply App:11884 | MAYBE. Shared notes mislead "replaced" detection; one save restarts drivers in both [C] | own file + XDG |
+| /tmp, /run, /dev/shm | `/run/apertar-media/eject` flags (MediaIntent.hpp:21-58); `/tmp/apertar-stretch-<clip>.map` CC:9832; `/tmp/apertar-boot-config-<pid>.txt` App:3556; media-tune files fixed, read-only (MediaTune.hpp:27-28). No /dev/shm use, no take-log or trace files (logs go to stderr) | no [C] | own SyslogIdentifier |
+| Tuning env | setenv only CC:1424-1430, 7328 (process-local); `preselectDefault` scans all subdevs, returns "" for two models (DefaultTuningSelection.hpp:203-222) | no; one extra manager restart (CC:7287-7312). ProRes cache `$HOME/.cache/apertar-prores/<profile>.json` (ProresIspProfile.cpp:228-233) has no sensor in its name: MAYBE for mixed sensors | restrict to the matching subdev; key the cache by camera |
+| Clip name | next number = lowest free by `exists()` (ClipName.hpp:285-294; CC:1182-1195, 5128-5137); `create_directories` is not exclusive (CC:7543-7544); `{cam}` hard-wired "cam0" (CC:1148) | YES. Default template gives both the same name; same-instant starts can share one folder and overwrite frames [C] | per-instance template with a literal: `{format}_{date}_cam1_{clip}` is valid now (ClipName.hpp:211-283); later source `{cam}`; exclusive mkdir |
+| Stills, timelapse, sound folders | CC:1224-1296 (in-process counters), App:1711 | MAYBE (rare race) | primary only |
+| Storage pre-roll | App:11143-11270; automatic at start, mount, format (default on; `APERTAR_STORAGE_PREROLL`, `[media] preroll`); thread always starts App:8008-8011; writes a real clip, then `remove_all` (CC:11883-12011, 12003) | YES. Two runs halve each other's measured throughput and can pick and delete the same folder; `record_start` is refused meanwhile (App:12198-12203) [C] | `APERTAR_STORAGE_PREROLL=0` on the secondary |
+| Media watcher, trim | watcher App:10814-10960 is read-only; requests `fstrim` on mount and +1 GiB free (App:10862, 10904), waits only on its own process's state (App:11430-11441; switch App:6377) | YES. Secondary trims while primary records [C] | `APERTAR_MEDIA_TRIM=0` |
+| eject, format, mount, speed test | gates use own state only (App:12196-12231); App:4361, 4420 | YES, data loss [C] | primary only |
+| MediaFault latch, MediaProbe | per-process classifier and snapshot | no | none |
+| CFE hat | CfeHat.hpp:36-69 read-only SMBus byte | no [C] | keep off |
+| GPIO lines | GPIO_V2_GET_LINE_IOCTL: GpioInput.cpp:514-532; TriggerOutput.cpp:595-604; RecordingIndicatorOutput.cpp:635-644 | YES. Exclusive: EBUSY, stderr only [C] | disabled in secondary |
+| I2C polling | PCF 40 ms Pcf8574Input.cpp:327; NeoRotary4 30 ms :374; Grove 80 ms :354; I2cProbe.cpp:16-23; `I2C_SLAVE` | No bus exclusion: both emit the same press (double toggle); PCF output shadow bytes clobber [P] | disabled in secondary |
+| Power button, standby | StandbyPowerButtonInput.cpp:45 (evdev, no grab), started App:8092-8093; idle standby from shared UI.conf App:8253-8285; machine-wide helpers App:12256-12290; start-up restore App:7985-8000 | YES; no config switch [C] | role flag |
+| IMU | chip reset Mpu6050RecordingSession.cpp:1584; `/api/state` -> `imuStatusBody(true)` App:9663 -> Mpu6050RecordingSession.cpp:975-1087: first poll per process resets it | YES [C] | `[imu] enabled=false`; `gyro_enabled=false` |
+| INA219 | default on, bus 4 App:4896-4899; only in `/api/state` App:9302 | MAYBE | `[ina219] enabled=false` |
+| Audio | `snd_pcm_open("hw:..")` TimestampedAudioCapture.cpp:126,192, exclusive; options from shared UI.conf (App:14216-14262) | YES unless off [C] | `audio_enabled=false` |
+| Time, TC, RTC | RecordingClock.hpp:34-48, offset sampled per take (CC:7520); RTC only via `apply_date_time` App:3392, 3862 | no [C] | date/time primary only |
+| Priority, affinity, mlock | callback thread nice -5 or SCHED_FIFO env CC:8984-9014; workers CC:5160-5168; PlaybackFrames.cpp:147; script `APERTAR_RT=1` chrt 70 + taskset 1-3 (:20-41). No mlockall, no C++ affinity | CPU contention on 4 cores; the unit needs its own LimitNICE/RTPRIO [C] | disjoint `APERTAR_RT_CPUS`, worker env |
+| Memory | BufferBudget.hpp:301-345: 0.6*MemAvailable - 512 MiB, cap 0.5*MemTotal, per process at take start; frames mode default; CM5 has 4 GB (r5) | MAYBE in ram mode | frames mode |
+| Playback cache | App:6332 in-memory; hold logic App:11300 sees only own takes | MAYBE | no media browsing on secondary |
+| PID, lock files | none; only `<conf>.lock` (SettingsFile.hpp:58-118) | no single-instance guard [C] | none |
+| HardwareScriptRunner | HardwareScriptRunner.cpp:38-96, 232-238; on action only | no with inputs off | none |
+
+## Q2 Camera identity
+
+- **Id string** [C]: `/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a` (Core journal and Cinemate `--list-cameras` captures). libcamera builds it from the sensor subdev's `of_node` realpath minus `/sys/firmware/devicetree` (sysfs.cpp:70-91; camera_sensor_legacy.cpp:301-309).
+- **What names the port**: the RP1 I2C controller node. Apertar CM5: cam0 = `i2c@88000` (adapter i2c-10, csi0, `i2c_csi_dsi0`) [C, r5]; cam1 = `i2c@70000` (i2c-0, csi1) [C for the DT; the id string itself [U]: nothing attached yet]. Cinemate's rule: `i2c@88000` is cam0, `i2c@80000` or `i2c@70000` is cam1, sorted by port, primary first (cinepi_multi.py:179-189, 1007, 1053). `imx585@1a` is model@I2C-address, identical for two IMX585: useless as key. Enumeration order is media-device order, not port order (pisp.cpp:1153-1236) [P].
+- **Code that depends on the id**: `detectSensorFamily` CC:2547-2566 (called with the id CC:7343, with subdev names CC:6916): substring imx577/477/294/283/585 of the DT node name. `resetStoppedSensorTiming` CC:8114-8150 matches the subdev by `of_node` path == `/sys/firmware/devicetree`+id (the only id-correct lookup). `openImx585Subdev` CC:6875 and `otherSensorSubdevPresent` CC:6905 match subdev names only. `/usb` filter CC:7262, 7063. Tuning uses `properties::Model` (CC:7290).
+- **get_state today**: `sensor` = family name such as "IMX585" (CC:12428-12435; App:12524), `sensor_mono`, binning; `list_sensor_modes` App:12333. No id, port or index. Core itself prints an id only when acquire fails (CC:7347); libcamera's "Registered camera <id> to CFE device ... ISP device ..." line is in the journal (r5). DNG model and serial tags are identical for both cameras (CC:3805-3841): only the clip name tells them apart.
+- **Proposal**: `--camera cam0|cam1|<substring>` matched against `camera->id()` (CC:7262, 7063), subdev `of_node` (CC:6875; DefaultTuningSelection.hpp:203) and feeding `{cam}` (CC:1148). Fail when absent, log all ids once, add `camera_id` and `camera_port` to `get_state`.
+
+## Q3 Record path and start alignment
+
+- **Commands**: `record_start` App:14216, `record_stop` App:14377 (socket, `POST /api/command`, hardware). No socket toggle: hardware `capture` and `record_toggle` choose start or stop from `camera_.isRecording()` (App:10531, 10554); the UIs decide themselves. All converge in `handleCommand` App:12173 (commandMutex_, gates 12196-12231) -> `CameraController::startRecording` CC:11815 -> `CameraSession::startRecording` CC:7507; stop CC:12264 -> CC:7664.
+- **Sequence** [C]: audio-prep broadcast plus a 220 ms sleep when audio is on (App:14298-14299); clip folder reserved at command time, so the name, including `{time}`/`{tc}` from `system_clock::now()`, is decided there (CC:7543; CC:1125-1195); gyro; audio open (CC:7578); writers (CC:7642); then `recordingStartBootUs_ = CLOCK_BOOTTIME now`, `recordingFramesEnabled_ = true` (CC:7631/7649).
+- **First recorded frame**: the first completed request with `SensorTimestamp/1000 >= recordingStartBootUs_` whose FrameDuration is within max(500 us, 2 %) of nominal; earlier requests are requeued (CC:9064-9084 in `requestComplete` CC:8972). Frame 0 is that frame (`firstFrameTimestampUs_` CC:4641-4643). The pre-roll is a separate thread and plays no part.
+- **Start timestamp**: none on the wire. The reply has `recording` and drop counters (App:14302-14307); the `recording` event fires at call time (CC:11867, 12713). Internal only: `recordingStartBootUs_`, `firstFrameTimestampUs_`, `recordingStartedAt_` (elapsed counter, App:9949), audio `videoFirstBootUs_` (AudioRecordingSession.cpp:367-376), log line "audio sync: video_boot_us=" (:636).
+- **Audio**: ALSA `snd_pcm_htimestamp` (MONOTONIC) plus `bootOffset` gives CLOCK_BOOTTIME (TimestampedAudioCapture.cpp:222-223, 245-255); SensorTimestamp is CLOCK_BOOTTIME by definition (libcamera control_ids_core.yaml:778-787) [C]. The WAV is trimmed or zero-padded so sample 0 is the first video frame (AudioRecordingSession.cpp:612-640); BWF start time via `RecordingClock` (:653). BOOTTIME and MONOTONIC differ only after a kernel suspend.
+- **Timecode**: FreeRun (default) = time of day of the frame's wall time `RecordingClock.wallTime(SensorTimestamp)` (CC:9261-9265), frame = floor(us%1e6 x fps/1e6) (CdngEncoder.cpp:376-410); RecRun counts from `frameIndex` (:382-397); speed ramp counts from the first frame's wall time (CC:9346-9352). H.264 and ProRes use `RecordingClock` too. Both processes read the same kernel clocks, so simultaneous frames get the same FreeRun TC to the frame [P].
+- **"Start at T" hook** (BOOTTIME us, sent as string `start_us`): (1) parse in `record_start` (App:14216), no 220 ms sleep on the secondary; (2) add `std::optional<int64_t>` to `CameraController::startRecording` (CC:11815, hpp:140) and `CameraSession::startRecording` (CC:7507); (3) use it instead of `clockMicroseconds(CLOCK_BOOTTIME)` at CC:7631 and CC:7649: the test `>= recordingStartBootUs_` at CC:9072 already is "SensorTimestamp >= T"; (4) T must lead the command-time work (folder scan, workers, ALSA open, the primary's 220 ms) [U: measure]; REC and tally show at call time; (5) audio needs nothing, it trims to the first frame; (6) a stop time would be the mirror test beside CC:9066. First frames then differ by the sensors' phase offset (under one frame) unless Q5 is done. About 30 lines.
+
+## Q4 Settings and state
+
+- **Setter pattern** [C]: `set_*` branch in `handleCommand` -> `camera_.setX` (e.g. `setIso` CC:11009) -> under `mutex_` copy `settings_`, edit, `applySettingsLocked` (CC:12555). Control-only changes (fps, ISO, shutter, WB, EV, AF) go `CameraSession::applyControls` (CC:7466) -> `controlsForSettings` (CC:2389) -> `pendingControls_`, merged at the next requeue (CC:8863). Resolution, bit depth, format class, photo mode, Clear HDR, colour profile, tuning and H.264 size call `reconfigure` = `stop(); start()` with a full CameraManager restart (CC:7452-7457). Then `persistSettingsLocked` (CC:12627) and `emitSettingsEventLocked` (CC:12689); the reply is `settingsBody(camera_.settings())`.
+- **Persistence**: `camera_settings.conf` holds the active keys plus `profile.<cdng|mlv|h264|prores|still>.` copies (`profile.cdng.iso=`; CC:762, 984-992), written by a 25 ms debounced thread via `atomicWrite`.
+- **Serialisation, four copies**: `settingsBody` App:298 (replies, `get_state`), `settingsEvent` CC:161 (always broadcast, App:14422+), `buildWebStateJson` App:9264, and presets `buildCurrentPresetPayload` App:7674 with apply App:13721. A new per-camera field must be added to all four.
+- **Flat protocol**: ControlProtocol.cpp:120-135, 164-247: `fields` is `map<string,string>`; a bare value ends at `,` or `}`; no nested objects or arrays; `number()` is `stod`. A reply is one `{"ok":..}` line plus the events raised meanwhile as extra lines (App:8287-8315). Send big integers as strings. A relay can check `"ok":true`, nothing richer.
+- **Outbound client**: none [C]. No `connect()` anywhere in src; AF_INET is only server bind (WebServer.cpp:197-209) and `getifaddrs` (App:5726-5733). Needed: about 100 lines (AF_UNIX connect, send line, read first reply line, timeout) on a relay thread so `commandMutex_` is not held across IO. Prototype shortcut: `POST http://127.0.0.1:<port>/api/command` through `runShellCommandCapture` (popen, App:1774). Events from the secondary also reach any client, per-frame `preview_frame` included; the client must drain.
+
+## Q5 Phase lock
+
+- `FramePhaseLock.hpp` is a pure PI servo. Reference = SensorTimestamp = CLOCK_BOOTTIME ns (header :9-24); datum `originNs` = the first frame after (re)arm (:143-153); error = (ref - origin) - k x period; output pins `FrameDurationLimits {d,d}` within +-150 us (kp 0.06, ki 0.0015, deadband 6 us, :35-40). Driven once per frame by `stepFramePhaseLock` CC:8773-8861 when `fpsPhaseLock` is on (default off, Types.hpp:138; `set_fps_phase_lock` App:12759), outside photo mode and ramp grace [C].
+- It locks each sensor's frequency to the Pi clock; the phase between cameras is whatever the arming frames gave (0 to 1 frame, constant). Both processes locked: no drift, fixed skew.
+- **Locking the secondary to the primary's phase**: feasible. Both timestamps share one kernel clock, so the primary only publishes `(originNs, fps)`; a new command would arm the secondary on the period grid nearest its own first frame. Slew is at most 150 us per frame (half a period at 24 fps in about 130 frames) and needs fps headroom (saturation is detected inside CC:8773-8861). Preview re-arms above half a frame (:112-117).
+- **Alternatives**: libcamera `rpi::SyncMode` server/client works between cameras on one device (control_ids_rpi.yaml:74-101) and Cinemate uses it (cinepi_multi.py:795-797), but neither Apertar tuning (`imx585.json`, `imx585_clearHDR.json`) contains `rpi.sync` (r5, `grep -c` = 0) [C] and Core never touches SyncMode or FrameWallClock [C]. Hardware genlock exists in the driver (`sony,sync-mode` leader/follower/external, imx585.c:2585-2593) and needs wiring; Patrik chose software (r5).
+
+## Q6 Hardware inputs and actions
+
+- **Catalog**: ActionCatalog.hpp `kSpecs` :32-87 (id, group, label, aliases, Button/Rotation, `ui`, Arg family), `canonicalAction` :123 (used by Pcf8574Input.cpp:144, GpioInput.cpp:114, NeoRotary4Input.cpp:125, HardwareConfigText.hpp:902-952, ControlsModel.hpp:81), `classify` :180, `catalogJson` :336 served by `list_actions` App:12148. Max 6 actions per mapping (ButtonActionList.hpp:14).
+- **Path to handleCommand** [C]: poll thread -> `handleHardwareInputAction` App:10261 (split, standby wake, sequence mutex) -> `handleSingleHardwareInputAction` App:10291 -> `dispatchHardwareInputCommand` App:10078 (`id=-1`) -> `handleCommand` App:12173. Analog: App:10101. UI-only actions (`settings`, `clip_browser`, `quick_menu`, `zoom_toggle`) just publish a `hardware_action` event (App:10640).
+- **`preview_source_cycle`**: add a `kSpecs` row with `ui=true` and a branch beside App:10640. The UI must then switch socket: `connectToCore(path)` accepts a path (ApertarPreviewSocketClient.hpp:31) but QML calls it bare (Main.qml:207, main.cpp:228), while the other bridges honour `APERTAR_CONTROL_SOCKET` (ApertarControlBridge.cpp:1168, 1805; AudioDeviceBridge.cpp:347; MediaStatusBridge.cpp:23; SystemActionBridge.cpp:71) [C, Apertar-UI drop-frames]. If Core owns the state: a command plus a state field and event.
+- **`record_cams_*`**: `kSpecs` rows (group Record) and branches after App:10554 that call a coordinator (local start plus relay). Unknown names are only logged at dispatch (App:10645) and flagged by the Config validator.
+- **Disabling inputs in a secondary**: by config yes for PCF8574, GPIO, NeoRotary4, Grove (explicit `enabled=false`), trigger, tally, CFE hat, INA219, IMU, scripts, pre-roll. Not by config: power button, idle standby, trim thread, pre-roll thread start, controls worker, machine-global commands. A role flag is needed.
+
+## Q7 Existing multi-camera hints
+
+- `{cam}` and `{sensor}` clip-name tokens (ClipName.hpp:33, 71, 130, 180; sample "cam0" WCP:14385) but CC:1148 hard-codes "cam0" ("one camera per Apertar"). Otherwise grep finds no camera index, option or per-camera state. Multi-sensor awareness is limited to tuning: DefaultTuningSelection.hpp:200-222, restart path CC:7233-7312, `otherSensorSubdevPresent` CC:6905.
+- **BootConfigText.hpp** (pure text editor for /boot/firmware/config.txt; header :1-30): per connector `dtoverlay=<sensor>[,cam0][,mono][,link-frequency=<Hz>]` in the board section. `boardPorts` :124-128 gives cam0+cam1 on Pi 5 and compute modules, cam1 only on Pi 4; `portOf` :381 reads the `cam0` parameter, cam1 is the overlay default and carries no port word. Compose (:880-930) comments out only the same port's lines, reuses a commented candidate, adds `cam0` only for cam0 and keeps `camera_auto_detect=0`. The Config page is the WebUI Settings -> System Boot config card, "Camera 0/1 sensor" and "link frequency" (WCP:5783-5798, 19484-19753), backed by `get_boot_config`/`set_boot_config` (`cam0_sensor`, `cam1_sensor`, `cam{0,1}_link_frequency`, `dry_run`, `confirm_display`; App:3704-3830, 14131-14134) and `/api/boot-config`; it writes through the root helper and answers `reboot_required:true` [C]. Two IMX585: `dtoverlay=imx585,cam0,link-frequency=891000000` plus `dtoverlay=imx585,link-frequency=891000000` [P].
+- Cinemate reference: docs/dual-sensors.md (one cinepi-raw per sensor, cam0 sync server, cam1 client, per-sensor `_cam0/_cam1` clip folders, `rec cam0|cam1|both`); KB r5 and working/port-raw/p1-phaselock-cinemate.md.
+
+## Q8 One process, two cameras: cost
+
+- `camera_` appears 310 times in App (72 `settings()`, 48 `lastError()`, about 90 recording/timelapse/state/drop/media queries, 13 `sensorName()`, about 50 distinct setter or apply call sites). One member (App.hpp:145) with one preview callback pair, one `previewThread_` (App.hpp:211), `registeredPreviewFrames_` keyed by slot (App.hpp:209) with no camera id in `preview_buffer`/`preview_frame`, and state, events, presets and UI.conf with no camera dimension. CC has 120 `session_` references; one `CameraSession` owns one manager, camera, recorders, audio and gyro (CC:10190-10300); statics: `probedSensorModes` CC:3298, `captureSettingsPersister()` CC:1087, `frameBufferGauge()` CC:4173.
+- **Sharing the CameraManager**: libcamera forbids a second one (camera_manager.cpp:309-311), so it would move out of `CameraSession` into a refcounted host. But `reconfigure()` stops the manager (CC:7445-7457), tuning is a process env read at IPA load for every registered camera (CC:1424-1430; pipeline_base.cpp:875), and the probe needs the only manager (CC:7035-7038). Any resolution, format or Log change on one camera would restart the other, and both sensors would share one tuning file unless libcamera changes.
+- **Two processes**: about ten targeted changes (Q2 selection, role flag, `{cam}`, start-at-T, relay, UI sockets), single-camera path untouched, and Cinemate made the same choice. One process is a multi-week refactor plus libcamera work; two processes is days of Core work plus the relay.
+
+## Must be per-instance
+
+1. Control socket path (leave `/tmp/apertar-core.sock` to the primary: the UI and its bridges default to it).
+2. Web port and bind, or off. The script cannot pass `--web-port`, so the secondary unit runs the binary directly. The secondary's web port is optional: it is the only non-socket route to cam1's `/preview.mjpeg`, and its `/api/state` poll touches the IMU and INA219 unless those are disabled.
+3. Camera selection key, the `{cam}` value, and `camera_id`/`camera_port` in state (Q2: four code sites).
+4. Config directory: `camera_settings.conf`, `mode_ladder.conf`, HardwareConfigStore notes and UI.conf all follow `XDG_CONFIG_HOME`; decide which UI.conf keys are per camera.
+5. Hardware conf file (`APERTAR_HARDWARE_CONFIG`) with explicit disables, or a role flag that skips the drivers.
+6. Clip name template with a camera literal (persisted per instance, refused while recording).
+7. Unit: own drop-ins (LimitNICE, LimitRTPRIO, LIBCAMERA_LOG_LEVELS), SyslogIdentifier, `APERTAR_RT_CPUS`, worker and buffer env, ordering after the primary's camera open (avoids two simultaneous probes), restart backoff.
+
+```
+APERTAR_SOCKET_PATH=/tmp/apertar-core-cam1.sock
+XDG_CONFIG_HOME=/home/pi/.config-cam1
+APERTAR_HARDWARE_CONFIG=/home/pi/apertar-hardware-cam1.conf   # explicit enabled=false sections
+APERTAR_STORAGE_PREROLL=0   APERTAR_MEDIA_TRIM=0
+ExecStart=/home/pi/ApertarCore-build/apertar-core --socket /tmp/apertar-core-cam1.sock --media /media/RAW --web-port 8001
+```
+
+## Must be primary-only
+
+- Media and system mutation: eject, format, mount, speed test, trim, delete, boot config, fan, date/time/zone, restart, poweroff, `/api/config` writes, IMU commands and calibration; standby and the power button (machine-wide helpers).
+- Hardware: PCF8574, GPIO, NeoRotary4, Grove, trigger, tally (must show REC of either camera: today it only sees its own process's `recording` event, App:14457+), scripts, INA219, CFE hat; audio capture, Sound Recorder, gyro recording.
+- Storage pre-roll and trim (one coordinated run at boot).
+- Coordination: choosing T, relaying and mirroring `set_*` and record commands, preview-source state, clip-number pairing, phase origin, aggregating both cameras' state for the UI.
+
+## Open questions
+
+1. cam1 id string: `i2c@70000` is [P] (nothing attached); confirm after the overlay line and a reboot with `rpicam-hello --list-cameras` and the "Registered camera" journal line. Cinemate also maps `i2c@80000`.
+2. Does a second CameraManager, which registers both cameras and loads the IPA for both with one tuning env (CC:1424-1430; pipeline_base.cpp:875), disturb the stream of the first? [U]
+3. Is `wide_dynamic_range` refused while the other sensor streams, and does cam1 start cleanly beside a streaming cam0? [P]
+4. RAM and CMA for two cameras on 4 GB (8 raw buffers each plus preview and queues) [U].
+5. One Gen 3 x1 exFAT NVMe for two 4K 12-bit takes, plus two 1 s fsync cycles [U].
+6. Start lead for T: measure the command-time work (folder scan, workers, ALSA, 220 ms) [U].
+7. Phase: origin injection into `FramePhaseLock` versus adding `rpi.sync` to the tunings.
+8. One-sided refusals (writes pending App:12204, media gate, pre-roll) leave the cameras with different clip numbers: all-or-nothing start, or numbers passed from the primary?
+9. Relay home: new outbound client in the primary, the UI talking to two sockets, or a small supervisor.
+10. Full text of the live unit (only the r5 summary is known), per-camera UI.conf keys, standby semantics with two cameras.
