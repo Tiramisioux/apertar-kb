@@ -144,7 +144,7 @@ Read first: `drop-frames/tests-2026-11/preregistration.md` (B1 rule, orders, eve
   (47-108 lost) without reclaim, and both warm-ups lost (17, 9). What flips a take is open. "The second take of a
   Core process loses" was said and is **refuted** (block 2 unit 3: 225 then 7).
 
-**State of the Pi at the end:** restore list read back (findings §6). Core `drop-frames` `b9e0c2e` **built, not yet
+**State of the Pi at the end:** restore list read back (findings §6). Core `drop-frames` `46d0e8c` **built, not yet
 running** (the running Core is `48f8b8c` until Patrik restarts it). UI `c153c33`. `~/apertar-media-tune.conf`
 created (`apertar-tune init`): the B1 values (sync, writeback on, sync_ms 1000, raw_buffers 8, kernel_tune off;
 exfat/ext4 workers 4, queue 12, extra 0). `/etc` drop-ins unchanged: `zz-ladder-buffers.conf`
@@ -164,7 +164,7 @@ util-linux 2.41.5: a fixed difference from 11-01; its two nvmf boot units disabl
   logger is its only reader during a take); NVMe temperature from `/sys/class/nvme/nvme0/hwmon*/temp1_input`.
 - The unit loop the lead ran: wait for Core's pre-roll delete, then for no `/dev/shm/b1-trace-*` file and the NVMe
   <= 40 C (up to 30 min, else NOT STARTED), `cat warm.bin`, P1, P2. Cool-down from ~60 C takes 15-20 min.
-- `scripts/apertar-tune` (Core repo): `set raw_buffers=16` etc. into `/dev/shm/apertar-media-tune.override.conf`;
+- `scripts/apertar-tune` (Core repo): `set raw_buffers=16` etc. into `/run/apertar-media/media-tune.override.conf`;
   `clear` at the end of every evening (restore list).
 
 **Next (agreed with Patrik 2026-11-02):**

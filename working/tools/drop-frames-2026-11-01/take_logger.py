@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """take_logger.py CORE_PID UI_PID OUT [KEY ...]: the 1 Hz log of a take (M5 of inspection-2026-11-02.md), in one process.
 
-Every second, one line to OUT (put it in /dev/shm, never on /media/RAW):
+Every second, one line to OUT (put it in /run/apertar-media, never on /media/RAW):
   t=<epoch> vm k=v ... | mem MemFree= Dirty= Writeback= (kB) | nvme writes= ticks_ms= | psi <memory some/full> |
   dropped=<recording_dropped_frames> | thr tid:comm:run_ns:wait_ns:majflt ...
 for every thread of Core and of the UI. It reads only /proc and /sys, and asks Core for get_state over its socket

@@ -14,7 +14,7 @@ Every file and environment variable the Apertar stack reads, who parses it, and 
 | `~/.config/Apertar/StandbyBacklights.conf` | QSettings | UI | UI | standby |
 | `~/.local/share/Apertar-UI/presets/*.apertar-preset.json` | JSON | UI, Core | UI, Core WebUI | on demand |
 | `/boot/firmware/config.txt` | Pi config | Core, UI (fan block only) | Core (Boot Config card and fan mode, via `writeBootConfigText` / `apertar-boot-config`; `drop-frames`); UI fan mode via `set_fan_mode` since UI `41ff827` | on demand, boot |
-| `~/apertar-media-tune.conf` (+ `/dev/shm/apertar-media-tune.override.conf`) | INI, sections per medium | Core only (`drop-frames` `e60178f`) | `scripts/apertar-tune init` (from `config/apertar-media-tune.conf`), by hand; the override by `apertar-tune set/unset/clear` | per read site: media change, camera configure, take start; `dontneed`/`writeback` once per process (§7.1) |
+| `~/apertar-media-tune.conf` (+ `/run/apertar-media/media-tune.override.conf`) | INI, sections per medium | Core only (`drop-frames` `2edc6d0`) | `scripts/apertar-tune init` (from `config/apertar-media-tune.conf`), by hand; the override by `apertar-tune set/unset/clear` | per read site: media change, camera configure, take start; `dontneed`/`writeback` once per process (§7.1) |
 | `/home/pi/.apertar-tuning` | `NAME=VALUE` | Core (ProRes) | nobody | every ProRes clip open |
 | `$HOME/.cache/apertar-prores/<profile>.json` | libcamera tuning | libcamera | Core | camera open with a log profile |
 
@@ -391,11 +391,11 @@ All refs `drop-frames 4581a69`, `Apertar-Core-drop/src/ApertarCoreApp.cpp`.
 
 Runtime markers (`/run/apertar-ui/{core-start-ready,main-ui-ready}`, `/run/apertar-cfe/ready`, `/run/apertar-standby-*`, `/run/apertar-network/*`) are covered in [core.md](core.md#24-the-startup-gate).
 
-### 7.1 `~/apertar-media-tune.conf` (Core, `drop-frames` `e60178f`, 2026-11-02)
+### 7.1 `~/apertar-media-tune.conf` (Core, `drop-frames` `2edc6d0`, 2026-11-02)
 
 The write-path knobs per recording medium, as a file (design and reasons: `working/drop-frames/media-tune-file.md`).
 Parser: `src/util/MediaTune.hpp` (INI; `#`/`;` comment lines; a trailing comment makes a value invalid). Above it,
-`/dev/shm/apertar-media-tune.override.conf` (same format, tmpfs, gone at reboot) for test nights, edited with
+`/run/apertar-media/media-tune.override.conf` (same format, tmpfs, gone at reboot) for test nights (the directory comes from `config/apertar-media.tmpfiles.conf`, installed 2026-11-03; first placed in `/dev/shm`, where logind's `RemoveIPC=yes` deletes pi's files when pi's last login session ends: the override vanished between two ssh sessions), edited with
 `scripts/apertar-tune` (`show`, `set KEY=VALUE [--section S]`, `unset`, `clear`, `init`; user pi, never root).
 Precedence per key: the key's environment variable > override file > this file > Core's default; within a file
 `[<class>.<fs>]` > `[<fs>]` > `[<class>]` > `[default]` (classes `pi-nvme usb-uas usb-storage sd-card other`,

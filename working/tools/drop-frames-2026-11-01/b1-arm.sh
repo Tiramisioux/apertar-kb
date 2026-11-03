@@ -20,7 +20,7 @@
 #   Every value it changes is printed as `name: old -> new`, and again in a summary block at the end.
 #
 # Before it clears or disables anything, every mode saves the trace buffer of the takes since the last arm to
-#   /dev/shm/b1-trace-<HHMMSS>.txt (mode 0644, for the unprivileged copy to the Mac; tmpfs, so it costs RAM until it is
+#   /run/apertar-media/b1-trace-<HHMMSS>.txt (mode 0644, for the unprivileged copy to the Mac; tmpfs, so it costs RAM until it is
 #   copied and deleted). save: only that, plus the per-CPU overrun counts (after the last unit of a block).
 #
 # restore
@@ -30,7 +30,7 @@
 #   the build default is sync). /run/b1-arm.orig is NOT deleted (tmpfs, gone at the next reboot).
 #
 # What it writes (nothing else): /run/systemd/system/apertar-core.service.d/ (directory), .../dontneed.conf, /run/b1-arm.orig,
-#   /dev/shm/b1-trace-<HHMMSS>.txt,
+#   /run/apertar-media/b1-trace-<HHMMSS>.txt,
 #   /sys/kernel/tracing/{buffer_size_kb,tracing_on,trace,events/<event>/enable,events/vb2/vb2_buf_done/filter}; and it
 #   restarts apertar-core via systemctl. restore clears the filter (writes 0).
 #   No /proc/irq, no sysctl, nothing in /etc or /boot. The only deletion is `rm -f` of dontneed.conf, in restore.
@@ -269,7 +269,8 @@ check_environ_arm() {
 
 # ---- tracefs ---------------------------------------------------------------------------------------------------------
 save_trace() { # copy the buffer of the takes since the last arm before anything clears it
-  st_out=/dev/shm/b1-trace-$(date +%H%M%S).txt
+  st_out=/run/apertar-media/b1-trace-$(date +%H%M%S).txt   # not /dev/shm: logind RemoveIPC deletes pi's files there
+  [ -d /run/apertar-media ] || { say "  /run/apertar-media missing (config/apertar-media.tmpfiles.conf): trace not saved"; return 0; }
   if [ ! -r "$TR/trace" ]; then say "  trace: not readable, not saved"; return 0; fi
   if [ "$DRY" -eq 1 ]; then say "  would save $TR/trace to $st_out"; return 0; fi
   if cat "$TR/trace" > "$st_out" && chmod 0644 "$st_out"; then

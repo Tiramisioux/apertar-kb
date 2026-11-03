@@ -137,11 +137,11 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `64bbbaa` | Dropped-frames count: `RecordingDropWarning` totals every drop; `recording_dropped_frames` in state, record replies, recording events and the `buffer` event; branch `drop-frames` (on `dd00206`) | fork-only; on GitHub `drop-frames` (via `d08b88f`) and the Pi |
 | `adac040` | (was `a65b4e1` before a rebase onto `d08b88f`) `APERTAR_DNG_DONTNEED` default `writer` -> `sync`: a DNG's pages leave the page cache after the fsync, not on dirty pages per frame (fixes the capture losses under page-cache pressure); branch `drop-frames` | fork-only, offer upstream; on GitHub `drop-frames` and the Pi (2026-11-01 23:3x), not built on the Pi yet |
 | `48f8b8c` | `recording clip:` line adds ` dontneed=<mode> writeback=<on\|off> sync_ms=<N>` after `media_fs=` (test plan B0 step 4); branch `drop-frames` | fork-only; Mac, not built on the Pi yet |
-| `e60178f` | Media tuning file `~/apertar-media-tune.conf` + `/dev/shm` override (dontneed, writeback, sync_ms, raw_buffers, extra_raw_buffers, workers, queue, kernel_tune per medium; env still wins); template `config/apertar-media-tune.conf`; branch `drop-frames` | fork-only; built on the Pi 2026-11-02 23:1x, Core not restarted yet |
-| `b9e0c2e` | `scripts/apertar-tune`: show/set/unset/clear/init for the media tuning files; branch `drop-frames` | fork-only; on the Pi |
-| `07e83b4` | WebUI: the Value Lists card (T33) moves from the Record pane to the Controls pane; branch `drop-frames` | fork-only; on the Pi |
-| `f8ef677` | WebUI: a Modes pane (after Record) with Activated sensor modes and the Mode Ladder, moved from Record; branch `drop-frames` | fork-only; on the Pi |
-| `f391314` | WebUI: the aspect filter of Activated sensor modes takes several ratios at once (All clears); branch `drop-frames` | fork-only; on the Pi |
+| `2edc6d0` | (was `e60178f`; fix folded in: override in `/run/apertar-media`) Media tuning file `~/apertar-media-tune.conf` + `/dev/shm` override (dontneed, writeback, sync_ms, raw_buffers, extra_raw_buffers, workers, queue, kernel_tune per medium; env still wins); template `config/apertar-media-tune.conf`; branch `drop-frames` | fork-only; built on the Pi 2026-11-02 23:1x, Core not restarted yet |
+| `46d0e8c` | `scripts/apertar-tune`: show/set/unset/clear/init for the media tuning files; branch `drop-frames` | fork-only; on the Pi |
+| `6777ebe` | WebUI: the Value Lists card (T33) moves from the Record pane to the Controls pane; branch `drop-frames` | fork-only; on the Pi |
+| `854fe43` | WebUI: a Modes pane (after Record) with Activated sensor modes and the Mode Ladder, moved from Record; branch `drop-frames` | fork-only; on the Pi |
+| `4b14a79` | WebUI: the aspect filter of Activated sensor modes takes several ratios at once (All clears); branch `drop-frames` | fork-only; on the Pi |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

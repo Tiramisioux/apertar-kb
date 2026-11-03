@@ -6,7 +6,7 @@
 #   - Before the take: MemFree Cached MemAvailable Slab SReclaimable SUnreclaim Buffers, VmRSS/VmSwap of Core and UI,
 #     df, uptime in seconds, SoC and NVMe temperature, get_throttled, the arm (APERTAR_DNG_DONTNEED etc.) read from
 #     Core's MainPID environment, per-zone boost, the Orphanded count in the kernel log.
-#   - A 1 Hz logger in one process (take_logger.py, next to this script) to /dev/shm/take-<label>.log (never /media/RAW):
+#   - A 1 Hz logger in one process (take_logger.py, next to this script) to /run/apertar-media/take-<label>.log (never /media/RAW):
 #     KEYS, MemFree/Dirty/Writeback, NVMe write count and ticks (fields 5 and 8 of /sys/block/nvme0n1/stat), PSI if on,
 #     recording_dropped_frames, and M5: schedstat run/wait ns and majflt for every Core thread and the UI's threads.
 #   - G1: hwcount.py on libcamera's CameraManager thread for 60 s, starting 60 s into the take (user-space PMU, no sudo).
@@ -16,7 +16,10 @@
 # WebUI must be closed (the script refuses otherwise). Patrik's ladder is restored at the end.
 SECS=${1:-180}
 LABEL=${2:-$(date +%H%M%S)}
-LOG=/dev/shm/take-$LABEL.log
+# Not /dev/shm: logind's RemoveIPC deletes pi's files there when pi's last session ends (2026-11-03).
+# /run/apertar-media comes from Core's config/apertar-media.tmpfiles.conf (owner pi, recreated at boot).
+[ -d /run/apertar-media ] && [ -w /run/apertar-media ] || { echo "/run/apertar-media is missing or not writable (install config/apertar-media.tmpfiles.conf)"; exit 1; }
+LOG=/run/apertar-media/take-$LABEL.log
 KB=$HOME/apertar-kb/working/tools
 C="python3 -I $KB/core.py"
 D(){ $C get_state | python3 -c "import sys,json; print(json.load(sys.stdin).get('recording_dropped_frames'))"; }
@@ -31,8 +34,8 @@ UP=$(systemctl show -p MainPID --value apertar-ui-direct)
 VM(){ grep -E "^(VmRSS|VmSwap):" /proc/$1/status 2>/dev/null | awk '{printf "%s%dM ", $1, $2/1024}'; }
 # Core has several threads named CameraManager, and a mode change replaces them (G1 found its tid gone, 2026-11-02):
 # pick libcamera's, the one with the most run time over 2 s, right before record_start
-CAMPICK(){ for t in $(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{print $1}'); do echo "$t $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo 0)"; done > /dev/shm/campick.$$; sleep 2
-  while read -r t r0; do echo "$t $(( $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo $r0) - r0 ))"; done < /dev/shm/campick.$$ | sort -k2,2nr | awk 'NR==1{print $1}'; rm -f /dev/shm/campick.$$; }
+CAMPICK(){ for t in $(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{print $1}'); do echo "$t $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo 0)"; done > /run/apertar-media/campick.$$; sleep 2
+  while read -r t r0; do echo "$t $(( $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo $r0) - r0 ))"; done < /run/apertar-media/campick.$$ | sort -k2,2nr | awk 'NR==1{print $1}'; rm -f /run/apertar-media/campick.$$; }
 CAM=$(CAMPICK)
 echo "label=$LABEL core=$CORE ui=$UP camtid=${CAM:-none} pagesize=$(getconf PAGESIZE) uptime_s=$(cut -d. -f1 /proc/uptime)"
 echo "core knobs: $(tr '\0' '\n' < /proc/$CORE/environ 2>/dev/null | grep -E '^APERTAR_(DNG_DONTNEED|MEDIA_SYNC_MS|DNG_WRITEBACK|RAW_CAMERA_BUFFERS|MEDIA_TUNE|RT_CAPTURE_PRIORITY|CDNG_BUFFER)=' | tr '\n' ' ')"
@@ -60,7 +63,7 @@ echo "  mem before: $(M)"; echo "  psi before: $(P)"; echo "  csi2 since the las
 python3 -I "$KB/drop-frames-2026-11-01/take_logger.py" "$CORE" "${UP:-0}" "$LOG" $KEYS &
 LOGGER=$!
 a=$(S); prev=$a; T1=$(date '+%F %T'); $C record_start >/dev/null
-G1OUT=/dev/shm/take-$LABEL.g1; G1PID=""
+G1OUT=/run/apertar-media/take-$LABEL.g1; G1PID=""
 t=0; while [ $t -lt $SECS ]; do s=$(( SECS - t < 60 ? SECS - t : 60 )); sleep $s; t=$((t+s)); cur=$(S)
   if [ $t -eq 60 ] && [ -n "$CAM" ] && [ $SECS -gt 120 ]; then
     python3 -I "$KB/hwcount.py" "$CORE" "$CAM" 60 > "$G1OUT" 2>&1 &

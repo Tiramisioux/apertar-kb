@@ -1,6 +1,6 @@
 # The media tuning file `~/apertar-media-tune.conf` (design, 2026-11-02)
 
-Status: **built** (Core `drop-frames` `e60178f`, CLI `b9e0c2e`; Pi build 2026-11-02 23:1x without errors; `~/apertar-media-tune.conf` created on the Pi with `apertar-tune init`). Not running until Core is restarted. Keys and read sites: `architecture/config.md` §7.1. Asked for by Patrik on
+Status: **built** (Core `drop-frames` `2edc6d0`, CLI `46d0e8c`; Pi build 2026-11-02 23:1x without errors; `~/apertar-media-tune.conf` created on the Pi with `apertar-tune init`). Not running until Core is restarted. Keys and read sites: `architecture/config.md` §7.1. Asked for by Patrik on
 2026-11-02 after B1: the campaign's findings go into a settings file per storage medium, next to the hardware
 conf, and test nights must be able to override it from the command line. Fork-only: media profiles
 (`src/util/MediaProfile.hpp`, `26da30e`) are not in upstream Apertar or in the fork's `main`.
@@ -24,7 +24,7 @@ environment variables stay as the A/B instruments (they win).
 - **Keys**: `dontneed` (sync|writer|off), `writeback` (on|off), `sync_ms` (0-60000), `raw_buffers` (3-16),
   `extra_raw_buffers` (0-8), `workers` (1-8), `queue` (4-64), `kernel_tune` (on|off). Bad values are ignored with
   a journal warning.
-- **Override for test nights**: `/dev/shm/apertar-media-tune.override.conf`, same format, on top of the file. tmpfs:
+- **Override for test nights**: `/run/apertar-media/media-tune.override.conf`, same format, on top of the file. tmpfs:
   a reboot removes it, so a shoot never inherits a test setting by accident. Edited with `scripts/apertar-tune`
   (`show`, `set key=value [--section S]`, `unset`, `clear`, `init`), unprivileged.
 - **Precedence**: environment variable > override file > base file > code default.
