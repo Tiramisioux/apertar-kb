@@ -171,7 +171,7 @@ def read_out(take):
             info[cur]['start'] = line.split()[1]
         elif cur and (m := re.match(r'\s+clocks at record_start: epoch=([\d.]+) mono=([\d.]+)', line)):
             info[cur]['clock_off'] = float(m.group(1)) - float(m.group(2))
-        elif cur and (m := re.match(r'mode: .*\bfps=([\d.]+)', line)):
+        elif cur and (m := re.match(r'mode: .*?\bfps=([\d.]+)', line)):
             info[cur]['fps_set'] = float(m.group(1))
         elif cur and (m := re.match(r'\s+(\d+)s \d\d:\d\d:\d\d: dropped=', line)):
             info[cur]['secs'] = max(info[cur]['secs'], int(m.group(1)))
