@@ -209,3 +209,20 @@ Crucial P310 card (pulled while mounted): delete only those, after a read-only `
 
 **Next:** plan the memory-traffic step with User (findings-2026-11-03 section 4): first measure which part of a take's
 write path carries the traffic, then the candidates (O_DIRECT writes, the raw copy, the back end's preview output).
+
+---
+
+## Desk analysis after evening 2 (2026-11-03, Tier 0, cloud session)
+
+Read next, before planning the memory-traffic step: `drop-frames/tests-2026-11/tier0-2026-11-03.md` (reproduce with
+`working/tools/be_overlap.py` on the unpacked `raw-2026-11-03.tgz`).
+
+**Result (measured):** the BE time is all S2 (S3 0.03-0.06 ms); each HDR16 frame's swap (8-10 ms, absent in SDR12) and
+RawStats (6-7 ms) run on libcamera's CameraManager thread when the frame arrives, in parallel with the running BE job, and
+a job that overlaps them is 2-3 times longer (13 against 33-40 ms); no 1 Hz system counter tracks S2 inside a take.
+**Probable:** the two states are a feedback loop with a threshold near 23 ms per BE job (16 ms at 30 fps), where the next
+frame's swap begins; the clean take had 11 % of its jobs past it, the saturated ones 95-97 %.
+
+**Changes for the next evening:** the TDN grep first (User, no sudo); then the TDN-off unit with the reading and refutation
+in section 5 of the page; a libcamera-fork candidate (RawStats inside the swap pass, or the swap and RawStats held while
+the BE runs) goes to Tier 2, design first. `take3v3.sh` now logs the UI binary's threads (MainPID was the wrapper).

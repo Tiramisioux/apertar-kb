@@ -29,7 +29,10 @@ M(){ grep -E "^(MemFree|MemAvailable|Cached|Buffers|Dirty|Writeback|Slab|SReclai
 P(){ [ -r /proc/pressure/memory ] && tr '\n' ' ' < /proc/pressure/memory || echo "psi off"; }
 DELTA(){ python3 -c "import sys; p=lambda s: dict(x.split('=') for x in s.split()); a,b=p(sys.argv[1]),p(sys.argv[2]); print(' '.join(f'{k}=+{int(b[k])-int(a[k])}' for k in a if k in b))" "$1" "$2"; }
 CORE=$(systemctl show -p MainPID --value apertar-core)
-UP=$(systemctl show -p MainPID --value apertar-ui-direct)
+UPW=$(systemctl show -p MainPID --value apertar-ui-direct)
+# MainPID is the run_pi_direct.sh wrapper: on 11-02 and 11-03 only its one thread reached the 1 Hz logs (M5's UI half was
+# empty). Take the wrapper's child with the most threads (the UI binary); the label line prints its comm to check
+UP=$(ps -o pid=,nlwp= --ppid "${UPW:-0}" 2>/dev/null | sort -k2,2nr | awk 'NR==1{print $1}'); UP=${UP:-$UPW}
 [ "${CORE:-0}" -gt 0 ] || { echo "apertar-core is not running"; exit 1; }
 VM(){ grep -E "^(VmRSS|VmSwap):" /proc/$1/status 2>/dev/null | awk '{printf "%s%dM ", $1, $2/1024}'; }
 # Core has several threads named CameraManager, and a mode change replaces them (G1 found its tid gone, 2026-11-02):
@@ -38,6 +41,7 @@ CAMPICK(){ for t in $(ps -L -o tid=,comm= -p "$CORE" | awk '$2=="CameraManager"{
   while read -r t r0; do echo "$t $(( $(cut -d' ' -f1 /proc/$CORE/task/$t/schedstat 2>/dev/null || echo $r0) - r0 ))"; done < /run/apertar-media/campick.$$ | sort -k2,2nr | awk 'NR==1{print $1}'; rm -f /run/apertar-media/campick.$$; }
 CAM=$(CAMPICK)
 echo "label=$LABEL core=$CORE ui=$UP camtid=${CAM:-none} pagesize=$(getconf PAGESIZE) uptime_s=$(cut -d. -f1 /proc/uptime)"
+echo "ui process: $(cat /proc/$UP/comm 2>/dev/null) threads=$(ls /proc/$UP/task 2>/dev/null | wc -l) (wrapper $UPW)"
 echo "core knobs: $(tr '\0' '\n' < /proc/$CORE/environ 2>/dev/null | grep -E '^APERTAR_(DNG_DONTNEED|MEDIA_SYNC_MS|DNG_WRITEBACK|RAW_CAMERA_BUFFERS|MEDIA_TUNE|RT_CAPTURE_PRIORITY|CDNG_BUFFER)=' | tr '\n' ' ')"
 echo "sysctl: dirty_bytes=$(cat /proc/sys/vm/dirty_bytes) dirty_background_bytes=$(cat /proc/sys/vm/dirty_background_bytes) dirty_ratio=$(cat /proc/sys/vm/dirty_ratio) min_free_kbytes=$(cat /proc/sys/vm/min_free_kbytes) watermark_boost_factor=$(cat /proc/sys/vm/watermark_boost_factor)"
 echo "ui switches: $(tr '\0' '\n' < /proc/$UP/environ 2>/dev/null | grep -E '^APERTAR_PREVIEW|^APERTAR_UI_PREVIEW|^QSG_RENDER_TIMING' | tr '\n' ' ')"
