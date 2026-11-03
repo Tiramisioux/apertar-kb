@@ -258,4 +258,7 @@ preview consumer is not the gate, next M6 on the back end's wait.
 
 | Take | Lost | wait median (ms) | BE median (ms) | max 20-s wait | Note |
 | --- | --- | --- | --- | --- | --- |
-| | | | | | |
+| P1 (20:53) | 4 / 3,030 | - | - | - | **void**: the CFexpress test card was pulled while mounted at 20:52:26 and a 67 %-full card with User's 10-28 clips mounted at 20:52:59 (cold, 25 C, so the cool-down check passed at once; no `warm.bin` on it, MemFree 2.8 GB at the start; queue peak 78/12) |
+| P2 (20:57) | - | - | - | - | **void**: stopped by the lead at ~20:58 (wrong card); that card was pulled while mounted at 20:58:49 |
+
+The unit is to be repeated on the test card. The two test clips (`cDNG_26_11_03_20533423_C0001`, `cDNG_26_11_03_20571717_C0001`) are on User's card until it is back: delete only those, after a read-only `fsck.exfat -n`. Method note: the unit loop's cool-down check cannot tell a swapped card; it should also check the medium (serial, `warm.bin` present) before P1.
