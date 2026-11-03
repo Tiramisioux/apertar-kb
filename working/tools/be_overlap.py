@@ -17,9 +17,13 @@ Per frame (keyed by CFE buffer id, CFE SOF timestamp for the swap):
 Sections: 1 stage medians per take; 2 S2 by overlap with another frame's swap x slack; 3 the same with the exposure fixed
 at the job's start; 4 the idle-regime phase (when the next frame's swap lands in a job); 5 per-second Spearman of S2
 with the 1 Hz counters; 6 CPU time per delivered frame.
-The 1 Hz log is in epoch seconds and libcamera in CLOCK_MONOTONIC: the offset is fitted once per boot by matching
-per-second losses (CFE SOF gaps) with Core's recording_dropped_frames increments over the takes that lost frames.
-Usage: python3 -I be_overlap.py RAWDIR
+The 1 Hz log is in epoch seconds and libcamera in CLOCK_MONOTONIC: each take is aligned on the "clocks at
+record_start: epoch= mono=" line take3v3.sh prints (from 2026-11-04); without it (evening 2), the offset is fitted once
+per boot by matching per-second losses (CFE SOF gaps) with Core's recording_dropped_frames increments over the takes
+that lost frames, else seeded from the label line's uptime (a few seconds off).
+Usage: python3 -I be_overlap.py RAWDIR [--prefix e2] [--take NAME[:LIB] ...] [--utc-offset 1]
+  RAWDIR holds <prefix>-<NAME>.out, take-<prefix>-<NAME>-P<n>.log and <LIB>-P<n>.log (LIB defaults to NAME).
+  Without --take: every <prefix>-<NAME>.out in RAWDIR (for --prefix e2, evening 2's four units with their LIB names).
 """
 import math
 import os
@@ -28,8 +32,37 @@ import statistics
 import sys
 from bisect import bisect_left
 
-RAW = sys.argv[1]
-TAKES = [('g2', 'g2'), ('pv0b', 'pv0'), ('pv12', 'pv12'), ('frm', 'frm')]  # (take label, libcamera log prefix)
+EVENING2 = [('g2', 'g2'), ('pv0b', 'pv0'), ('pv12', 'pv12'), ('frm', 'frm')]  # (take label, libcamera log prefix)
+
+
+def parse_args(argv):
+    if len(argv) < 2 or argv[1].startswith('-'):
+        sys.exit(__doc__)
+    raw, prefix, takes, utc = argv[1], 'e2', [], 1.0
+    i = 2
+    while i < len(argv):
+        if argv[i] == '--prefix':
+            prefix = argv[i + 1]
+        elif argv[i] == '--take':
+            name, _, lib = argv[i + 1].partition(':')
+            takes.append((name, lib or name))
+        elif argv[i] == '--utc-offset':
+            utc = float(argv[i + 1])
+        else:
+            sys.exit(f'unknown argument {argv[i]}\n' + __doc__)
+        i += 2
+    if not takes:
+        if prefix == 'e2':
+            takes = EVENING2
+        else:
+            takes = sorted((f[len(prefix) + 1:-4], f[len(prefix) + 1:-4]) for f in os.listdir(raw)
+                           if f.startswith(prefix + '-') and f.endswith('.out'))
+    if not takes:
+        sys.exit(f'no {prefix}-*.out in {raw}')
+    return raw, prefix, takes, utc
+
+
+RAW, PREFIX, TAKES, UTC_OFFSET = parse_args(sys.argv)
 TIME = re.compile(r'^\[(\d+):(\d+):(\d+)\.(\d+)\]')
 IMG = re.compile(r'Stream CFE Image buffer dequeue, buffer id (\d+), timestamp: (\d+)')
 CFG = re.compile(r'Stream CFE Config buffer dequeue, buffer id \d+, timestamp: (\d+)')
@@ -81,8 +114,10 @@ def parse_lib(path):
         elif e := RST.search(line):
             rawstats.append((t, float(e.group(1))))
     frames.sort(key=lambda f: f['ts'])
+    # the frame period from the take itself (40 ms at 25 fps, 33.3 at 30, 30.3 at 33): the median SOF interval
+    period = statistics.median([b['ts'] - a['ts'] for a, b in zip(frames, frames[1:])]) if len(frames) > 2 else 0.040
     for a, b in zip(frames, frames[1:]):
-        b['lost'] = max(0, round((b['ts'] - a['ts']) / 0.040) - 1)
+        b['lost'] = max(0, round((b['ts'] - a['ts']) / period) - 1)
     if frames:
         frames[0]['lost'] = 0
     return frames, rawstats
@@ -126,17 +161,25 @@ def parse_take(path):
 
 def read_out(take):
     info, cur = {}, None
-    for line in open(os.path.join(RAW, f'e2-{take}.out')):
-        if m := re.match(r'label=e2-\S+-(P\d) core=(\d+) ui=(\d+) camtid=\S+ pagesize=\d+ uptime_s=(\d+)', line):
+    for line in open(os.path.join(RAW, f'{PREFIX}-{take}.out')):
+        if m := re.match(r'label=\S+-(P\d+) core=(\d+) ui=(\d+) camtid=\S+ pagesize=\d+ uptime_s=(\d+)', line):
             cur = m.group(1)
-            info[cur] = {'uptime': int(m.group(4))}
+            info[cur] = {'uptime': int(m.group(4)), 'secs': 0, 'enqueued': None, 'lost': 0}
         elif cur and line.startswith('  camtid at start:'):
             info[cur]['camtid'] = line.split(':')[1].strip()
         elif cur and line.startswith('start '):
             info[cur]['start'] = line.split()[1]
+        elif cur and (m := re.match(r'\s+clocks at record_start: epoch=([\d.]+) mono=([\d.]+)', line)):
+            info[cur]['clock_off'] = float(m.group(1)) - float(m.group(2))
+        elif cur and (m := re.match(r'mode: .*\bfps=([\d.]+)', line)):
+            info[cur]['fps_set'] = float(m.group(1))
+        elif cur and (m := re.match(r'\s+(\d+)s \d\d:\d\d:\d\d: dropped=', line)):
+            info[cur]['secs'] = max(info[cur]['secs'], int(m.group(1)))
         elif cur and line.startswith('recording clip:'):
             m3 = re.search(r'dropped_gap_estimate=(\d+)', line)
             info[cur]['lost'] = int(m3.group(1)) if m3 else 0
+            m4 = re.search(r'enqueued=(\d+)', line)
+            info[cur]['enqueued'] = int(m4.group(1)) if m4 else None
     return info
 
 
@@ -170,7 +213,7 @@ def fit_offset(takes):
         tk, inf = t['tk'], t['info']
         hh, mm, ss = map(int, inf['start'].split(':'))
         t0 = tk[0]['t']
-        sod = (t0 + 3600) % 86400  # CET
+        sod = (t0 + 3600 * UTC_OFFSET) % 86400  # local time of day (CET by default)
         seed = t0 - (sod - (hh * 3600 + mm * 60 + ss)) - (inf['uptime'] + 23.5)  # label line ~23 s before start
         seeds.append(seed)
         inc = [(tk[i]['t'], tk[i]['dropped'] - tk[i - 1]['dropped']) for i in range(1, len(tk))
@@ -188,20 +231,36 @@ def main():
     takes = []
     for take, lib in TAKES:
         info = read_out(take)
-        for p in ('P1', 'P2'):
-            frames, rawstats = parse_lib(os.path.join(RAW, f'{lib}-{p}.log'))
-            takes.append({'name': f'{take}-{p}', 'frames': frames, 'rawstats': rawstats,
-                          'tk': parse_take(os.path.join(RAW, f'take-e2-{take}-{p}.log')), 'info': info[p]})
-    off, fits = fit_offset(takes)
-    print(f'clock offset epoch - monotonic: {off:.1f} s (fits {", ".join(f"{x - off:+.1f}" for x in fits)})')
+        for p in sorted(info, key=lambda x: int(x[1:])):
+            lpath, tpath = os.path.join(RAW, f'{lib}-{p}.log'), os.path.join(RAW, f'take-{PREFIX}-{take}-{p}.log')
+            if not (os.path.exists(lpath) and os.path.exists(tpath)):
+                print(f'skipping {take}-{p}: missing {lpath if not os.path.exists(lpath) else tpath}')
+                continue
+            frames, rawstats = parse_lib(lpath)
+            inf = info[p]
+            inf['secs'] = inf['secs'] or 180
+            nominal = inf.get('fps_set', 25.0)
+            inf['delivered'] = inf['enqueued'] if inf['enqueued'] is not None else nominal * inf['secs'] - inf['lost']
+            takes.append({'name': f'{take}-{p}', 'frames': frames, 'rawstats': rawstats, 'tk': parse_take(tpath), 'info': inf})
+    if not takes:
+        sys.exit('no take with both logs')
+    fitted, fits = fit_offset([t for t in takes if 'clock_off' not in t['info']]) if any('clock_off' not in t['info'] for t in takes) else (None, [])
     for t in takes:
-        t0 = t['tk'][0]['t'] - off
-        t['lo'], t['hi'] = t0 + 5, t0 + 178  # recording seconds 5-178
+        if 'clock_off' in t['info']:
+            t['off'], how = t['info']['clock_off'], 'clock pair at record_start'
+        else:
+            t['off'], how = fitted, ('fitted on losses' if fits else 'seeded from uptime (a few s off)')
+        print(f'clock offset {t["name"]}: epoch - monotonic = {t["off"]:.2f} s ({how})')
+    if fits:
+        print(f'  loss fits around the common value: {", ".join(f"{x - fitted:+.1f}" for x in fits)} s')
+    for t in takes:
+        t0 = t['tk'][0]['t'] - t['off']
+        t['lo'], t['hi'] = t0 + 5, t0 + t['info']['secs'] - 2  # recording seconds 5 .. end - 2
         t['jobs'] = sorted([f for f in t['frames'] if 'done_ts' in f and 'sig' in f and t['lo'] <= f['start'] < t['hi']],
                            key=lambda f: f['start'])
         t['swaps'] = sorted((f['img'], f['cfg']) for f in t['frames'] if 'cfg' in f)
 
-    print('\n1. stage medians, recording seconds 5-178 (ms)')
+    print('\n1. stage medians, recording seconds 5 .. end - 2 (ms)')
     print(f'  {"take":9s} {"lost":>4s} {"swap":>5s} {"stats":>5s} {"queue":>6s} {"S1":>4s} {"S2":>5s} {"S2p90":>5s} {"S3":>5s} {"S4":>4s} {"cycle":>5s}')
     for t in takes:
         J = t['jobs']
@@ -283,7 +342,7 @@ def main():
         print(f'  {t["name"]:9s} idle jobs {len(a2s):5d}  dequeue->start {med(a2s):6.1f}  start->next dequeue {thr:5.1f}  '
               f'jobs >= that {sum(x >= thr for x in s2) / len(s2):4.2f}  queued {queued / len(s2):4.2f}  lost {t["info"]["lost"]}')
 
-    print('\n5. Spearman rho, per-second median S2 against the 1 Hz counters (recording seconds 3-178)')
+    print('\n5. Spearman rho, per-second median S2 against the 1 Hz counters (recording seconds 3 .. end - 1)')
     keys = ['pgsteal_kswapd', 'pgmigrate_success', 'compact_isolated', 'kswapd_low_wmark_hit_quickly', 'nvme_writes',
             'psi_some', 'mem_MemFree', 'mem_Dirty', 'mem_Writeback', 'boost', 'cam_run', 'rec_run', 'lost']
     rate = {'pgsteal_kswapd', 'pgmigrate_success', 'compact_isolated', 'kswapd_low_wmark_hit_quickly', 'nvme_writes', 'psi_some'}
@@ -294,9 +353,9 @@ def main():
         last = tk[-1].get('thr', {})
         cam = t['info'].get('camtid')
         xs, ys = [], {k: [] for k in keys}
-        for i in range(3, min(len(tk), 179)):
+        for i in range(3, min(len(tk), t['info']['secs'] - 1)):
             a, b = tk[i - 1], tk[i]
-            fr = J[bisect_left(starts, a['t'] - off):bisect_left(starts, b['t'] - off)]
+            fr = J[bisect_left(starts, a['t'] - t['off']):bisect_left(starts, b['t'] - t['off'])]
             if not fr:
                 continue
             dt = b['t'] - a['t']
@@ -326,9 +385,10 @@ def main():
     for t in takes:
         tk = t['tk']
         cam, last = t['info'].get('camtid'), tk[-1].get('thr', {})
-        a, b = tk[4]['thr'], tk[min(180, len(tk) - 1)]['thr']
-        dt = tk[min(180, len(tk) - 1)]['t'] - tk[4]['t']
-        fps = (4500 - t['info']['lost']) / 180
+        end = min(t['info']['secs'], len(tk) - 1)
+        a, b = tk[4]['thr'], tk[end]['thr']
+        dt = tk[end]['t'] - tk[4]['t']
+        fps = t['info']['delivered'] / t['info']['secs']
         camr = (b[cam][1] - a[cam][1]) / dt / 1e6
         rec = sorted(((b[x][1] - a[x][1]) / dt / 1e6 for x in b if x in a and x not in last and b[x][0] == 'apertar-core'), reverse=True)
         print(f'  {t["name"]:9s} lost {t["info"]["lost"]:4d}  fps {fps:4.1f}  CameraManager {camr / fps:5.1f}  recording threads '

@@ -1,4 +1,6 @@
 # take3v3.sh [seconds] [label]: one take at 4K Clear HDR 16-bit 25 fps uncompressed, unprivileged, with the readings
+# Other modes through the environment (defaults = the B1 rig): TAKE_CLEAR_HDR=true|false TAKE_BITS=16|12 TAKE_FPS=25
+# TAKE_COMPRESSION=none|lossless_jpeg; e.g. target 2: TAKE_CLEAR_HDR=false TAKE_BITS=12 TAKE_FPS=33 TAKE_COMPRESSION=lossless_jpeg
 # section 8.3 B0 step 5 of night-2026-11-01.md asks for (inspection-2026-11-02.md has the full plan).
 #
 # What it adds to take3v2.sh:
@@ -16,6 +18,7 @@
 # WebUI must be closed (the script refuses otherwise). Patrik's ladder is restored at the end.
 SECS=${1:-180}
 LABEL=${2:-$(date +%H%M%S)}
+HDR=${TAKE_CLEAR_HDR:-true}; BITS=${TAKE_BITS:-16}; FPS=${TAKE_FPS:-25}; COMP=${TAKE_COMPRESSION:-none}
 # Not /dev/shm: logind's RemoveIPC deletes pi's files there when pi's last session ends (2026-11-03).
 # /run/apertar-media comes from Core's config/apertar-media.tmpfiles.conf (owner pi, recreated at boot).
 [ -d /run/apertar-media ] && [ -w /run/apertar-media ] || { echo "/run/apertar-media is missing or not writable (install config/apertar-media.tmpfiles.conf)"; exit 1; }
@@ -50,9 +53,12 @@ echo "rss/swap: core $(VM "$CORE") ui $(VM "$UP")"
 echo "drive: $(df -h /media/RAW | awk 'NR==2{printf "%s used of %s (%s)", $3, $2, $5}') nvme=$(cat /sys/class/nvme/nvme0/state 2>/dev/null) $(cat /sys/class/nvme/nvme0/hwmon*/temp1_input 2>/dev/null | awk '{printf "%d C", $1/1000}') soc=$(vcgencmd measure_temp) $(vcgencmd get_throttled)"
 echo "zone boost: $(awk '/^Node/{n=$2; z=$4} /^ +boost/{printf "n%sz%s=%s ", n, z, $2}' /proc/zoneinfo)"
 echo "kernel log Orphanded lines this boot: $(journalctl -k -b --no-pager 2>/dev/null | grep -c Orphanded)"
-$C set_mode_ladder enabled=false >/dev/null; sleep 3; $C set_fps value=25 >/dev/null; sleep 4
-$C set_clear_hdr enabled=true >/dev/null; sleep 5; $C set_raw_bit_depth value=16 >/dev/null; sleep 4
-$C set_cdng_compression value=none >/dev/null; sleep 5
+$C set_mode_ladder enabled=false >/dev/null; sleep 3; $C set_fps value=$FPS >/dev/null; sleep 4
+$C set_clear_hdr enabled=$HDR >/dev/null; sleep 5; $C set_raw_bit_depth value=$BITS >/dev/null; sleep 4
+$C set_cdng_compression value=$COMP >/dev/null; sleep 5
+# a mode change can clamp the frame rate: set it again (the same value is a no-op), then print what Core reports
+$C set_fps value=$FPS >/dev/null; sleep 4
+echo "mode: $($C get_state | python3 -c "import sys,json; d=json.load(sys.stdin); print(' '.join(f'{k}={d.get(k)!r}' for k in ('width','height','fps','clear_hdr','raw_bit_depth','recording_format','cdng_compression','tuning_file')))") (asked: hdr=$HDR bits=$BITS fps=$FPS compression=$COMP)"
 c=$(ss -tnH state established "( sport = :8000 )" | wc -l)
 b=$(ps -eo cmd | grep -cE '^[^ ]*(cc1plus|gmake|cmake) ')
 echo "start $(date +%T) clients=$c builds=$b"
@@ -66,6 +72,8 @@ echo "  mem before: $(M)"; echo "  psi before: $(P)"; echo "  csi2 since the las
 # 1 Hz logger (M5 + counters) in one process (take_logger.py), stopped after the take
 python3 -I "$KB/drop-frames-2026-11-01/take_logger.py" "$CORE" "${UP:-0}" "$LOG" $KEYS &
 LOGGER=$!
+# both clocks in one read, for aligning libcamera's log (CLOCK_MONOTONIC) with the 1 Hz log (epoch): be_overlap.py uses it
+echo "  clocks at record_start: $(python3 -I -c 'import time; print(f"epoch={time.time():.3f} mono={time.monotonic():.3f}")')"
 a=$(S); prev=$a; T1=$(date '+%F %T'); $C record_start >/dev/null
 G1OUT=/run/apertar-media/take-$LABEL.g1; G1PID=""
 t=0; while [ $t -lt $SECS ]; do s=$(( SECS - t < 60 ? SECS - t : 60 )); sleep $s; t=$((t+s)); cur=$(S)
