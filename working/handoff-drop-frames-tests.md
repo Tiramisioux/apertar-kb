@@ -182,3 +182,30 @@ util-linux 2.41.5: a fixed difference from 11-01; its two nvmf boot units disabl
 6. `takes.md` has rows up to block 1 unit 2: a W7 for block 1 units 3-4 and block 2, from
    `drop-frames/tests-2026-11/raw-2026-11-02.tgz` (every 1 Hz log, console output, G1 file and block 2's filtered
    traces; block 1's unfiltered traces, 90 MB and partial, are not kept).
+
+---
+
+## State after evening 2 (2026-11-03, written by the lead session at 22:0x)
+
+Read first: `drop-frames/tests-2026-11/findings-2026-11-03.md` (the mechanism, what did not cure it, next), then the
+evening's sections of `preregistration.md`.
+
+**Result:** a losing take is libcamera's ISP back end slowing to >= ~40 ms per frame under memory contention (measured
+with libcamera's debug log, and reproduced without any recording by two `dd` memory loads: back end 11 -> 95 ms). Not
+cured by 16 raw buffers, a 12-fps UI preview or `buffer=frames`; the preview-off unit was clean (0 + 0) but the
+dose-response is not monotone. B3's knobs are unlikely to help (reclaim is a co-factor, not the cause).
+
+**State of the Pi at the end (22:0x):** restore list done and read back: no `/run` drop-in for Core, no override
+(`/run/apertar-media` empty but the tmpfiles dirs), `buffer=ram`, trace events off, buffer 1408 KB, Core on its
+defaults (`IPARPI:ERROR` from `/etc`). **On User's request:** the UI runs with `APERTAR_UI_PREVIEW_RECORDING_FPS=12` from
+`/run/systemd/system/apertar-ui-direct.service.d/zz-preview-fps.conf` until the next reboot (the evening's data does not
+support it as a fix: 12 fps lost 330 in a P2). New since evening 1: `/etc/tmpfiles.d/apertar-media.conf` installed.
+smart-log: `critical_warning` 0, 41 C, Data Units Written 53,634,400 (0.84 TB tonight), unsafe shutdowns 1,538.
+Drive: `warm.bin` and three clips of User's (21:57-22:00, not test takes).
+
+**Open for User:** the ladder (rung 2 SDR12 <= 50 uncompressed vs 11-02's <= 30 lossless; rung 1 HDR16 lossless at ~17 fps
+encoder capacity); the two test clips `cDNG_26_11_03_20533423_C0001` and `cDNG_26_11_03_20571717_C0001` on User's
+Crucial P310 card (pulled while mounted): delete only those, after a read-only `fsck.exfat -n`.
+
+**Next:** plan the memory-traffic step with User (findings-2026-11-03 section 4): first measure which part of a take's
+write path carries the traffic, then the candidates (O_DIRECT writes, the raw copy, the back end's preview output).
