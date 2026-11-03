@@ -319,3 +319,15 @@ after. Rule: the back end's per-frame time (`Input re-queue to ISP` -> `ISP Inpu
 rising from its idle level to >= ~30 ms under the load and falling back after = memory contention alone slows the
 back end (the mechanism of the losing takes, without the recording path); no change = the slowdown needs something of
 the recording path itself (its DMA, its buffers), not bandwidth in general.
+
+| Run | Mode | ISP back end median / p90, no load | under 2 x `dd` (60 s) | after | Camera delivery under load |
+| --- | --- | --- | --- | --- | --- |
+| 21:50 | idle ladder rung, 4K SDR12 30 fps (8.3 MB frames) | 10.9 / 13.3 ms | 23.6-23.8 / 26-27 ms | 10.9 ms | 33.3 ms (no loss) |
+| 21:55 | take mode, 4K Clear HDR 16-bit 25 fps uncompressed, not recording | 10.9 / 12.3 ms | **95 / 148 ms**, wait **605 ms** | 10.9 ms | **92 ms (~11 fps: more than half the frames lost)** |
+
+**Reading against the rule:** in the take mode the back end rises from its idle level far past ~30 ms under memory load
+alone and falls straight back after it: memory contention alone slows the ISP back end and, through the serial
+pipeline, starves the CFE (**measured**; the dd load is heavier than a take's traffic, so it shows the chain, not the
+size of a take's share). In SDR12 the back end doubles (23.7 ms) and stays under its frame interval. This is the
+mechanism of the losing takes (G of the inspection, located in the ISP back end): what loads memory during a take,
+and why it tips one take and not the next, is the open question.
