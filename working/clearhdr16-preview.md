@@ -54,7 +54,9 @@ completeness critic; 3 more causes with verifiers: 28 agents), then a read-only 
 
 - Rebooted 22:28 (journal boot 0). The `/run` test drop-in `zz-preview-fps.conf` (`APERTAR_UI_PREVIEW_RECORDING_FPS=12`)
   is gone; UI drop-ins: `cursor.conf` only. Core: `/etc` drop-ins `apertar-ui-start-gate`, `capture-priority`,
-  `libcamera-log`; env `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR`. **Every take before the reboot ran with the 12 fps HDMI cap.**
+  `libcamera-log`; env `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR`. **The 12 fps HDMI cap was on for the 21:22 take
+  (`cDNG_26_11_03_21220324_C0001`) and from 21:59 until the reboot; it was off at 21:32.** Judge tonight's earlier takes
+  with that in mind.
 - `/api/state`: SDR 1920x1080, 25 fps (Patrik switched modes 23:17-23:29); phase lock off, 0 pushes; `fps_speed_ramp`
   true (acts only on an fps change during a take); ladder off; `tuning_file ""`; HDR 4095/0/5/1; peaking on 0.12 Green;
   zebra on 0.95; external monitor "Assist Feed", info overlay on.
