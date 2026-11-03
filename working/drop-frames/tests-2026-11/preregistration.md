@@ -281,4 +281,14 @@ the saturated wait = 12 fps still tips it: next a preview change that does not g
 
 | Take | Lost | wait median (ms) | BE median (ms) | max 20-s wait | Note |
 | --- | --- | --- | --- | --- | --- |
-| | | | | | |
+| P1 (21:22) | 4 / 4,503 | 19.7 | 34.9 | 152 | per 20 s BE 35-38 ms, the wait tipping at 160-200 s; `pgsteal_kswapd` 95 k; G1 IPC 1.41 |
+| P2 (21:25) | **330 / 4,175** | 221.6 | 39.3 | 240 | saturated from 20 s on, BE 41-43 ms (above the 40-ms frame interval); `pgsteal_kswapd` **723 k**; G1 IPC **1.29** |
+
+**Reading against the rule:** a losing take with the saturated wait: 12 fps still tips it. With the other units the
+preview dose-response under sync is **not monotone** (off: 0 + 0; 12 fps: 4 + 330; full: 2 + 108 here, 48-108 per unit
+in B1): the UI's preview handling is **not supported** as the main lever under sync, and the preview-off unit's
+"probable" is withdrawn (chance ~1 in 4 at n = 1). What all ten logged takes share (**measured**): the ISP back end
+takes ~10 ms per frame with the preview alone and 20-43 ms while recording, and a take loses frames when it reaches
+~40 ms; the worst take also had the most reclaim (723 k) and the lowest CameraManager IPC (1.29). The common suspect is
+memory contention slowing the back end (a DMA engine) while recording: G in the inspection's broad sense, located in
+the ISP back end (**probable**).
