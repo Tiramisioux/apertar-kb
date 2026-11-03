@@ -205,4 +205,13 @@ session that wrote it ended; Core started with `raw_buffers=8`. The override mov
 
 | Take | Lost | `owned_by_drv = 0` | Mean `owned_by_drv` | `pgsteal_kswapd` | G1 IPC | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+| warm-up (unscored, 20:14) | 0 / 4,510 | 1 | 14.46 (of 16) | 0 | 1.52 | first take after the boot's arms; B1 warm-ups at 8 buffers lost 17 and 9 |
+| P1 (20:19) | 26 / 4,475 | 1 | 6.52 (30 s bins 11.8 4.9 4.5 4.6 4.4 6.1 9.9) | 69,848 | 1.44 | NVMe 39.85 C at the start |
+| P2 (20:23) | 123 / 4,377 | 1 | 5.69 (10.1 4.2 4.1 4.1 4.0 4.1 9.8) | 67,840 | 1.44 | |
+
+**Reading against the rule:** not clean (26 + 123 = 149 lost; B1 sync units at 8 buffers 48-108): 16 buffers do not
+cure it (**measured**, n = 1 unit); no mini-block. User space takes up the extra buffers: after ~30 s it holds ~11.5 of
+16 at a steady level (at 8: ~6 in a losing take, ~1.5 in a clean one), as the rule's first branch predicted. New: the
+losses at 16 come **without** CFE starvation (one `owned_by_drv = 0` per take against 26 and 123 lost), while at 8 the
+two counts matched in 8 of 8 takes: a second loss path behind the CFE (libcamera's pipeline or Core), **unconfirmed**
+where. The override was cleared at 20:28 (`apertar-tune clear`); the base file keeps `raw_buffers = 8`.
