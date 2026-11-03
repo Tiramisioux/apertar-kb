@@ -261,4 +261,24 @@ preview consumer is not the gate, next M6 on the back end's wait.
 | P1 (20:53) | 4 / 3,030 | - | - | - | **void**: the CFexpress test card was pulled while mounted at 20:52:26 and a 67 %-full card with User's 10-28 clips mounted at 20:52:59 (cold, 25 C, so the cool-down check passed at once; no `warm.bin` on it, MemFree 2.8 GB at the start; queue peak 78/12) |
 | P2 (20:57) | - | - | - | - | **void**: stopped by the lead at ~20:58 (wrong card); that card was pulled while mounted at 20:58:49 |
 
-The unit is to be repeated on the test card. The two test clips (`cDNG_26_11_03_20533423_C0001`, `cDNG_26_11_03_20571717_C0001`) are on User's card until it is back: delete only those, after a read-only `fsck.exfat -n`. Method note: the unit loop's cool-down check cannot tell a swapped card; it should also check the medium (serial, `warm.bin` present) before P1.
+| P1 repeat (21:00) | **0 / 4,512** | 15.2 | 10.3 | 16 | test card (Corsair MP600 MINI, serial A936B442006AC2) checked before P1 and P2; per 20 s wait 14-16, BE 9-13 ms (preview-only level) |
+| P2 repeat (21:04) | **0 / 4,508** | 16.4 | 21.8 | 18 | per 20 s wait 16-18, BE rising 21 -> 30-35 ms; G1 IPC 1.57 / 1.48 |
+
+**Reading against the rule:** both takes <= 2 lost and the wait < 20 ms in every 20-s bin: the UI's preview handling
+paces the per-frame cycle (**probable**: n = 1 unit; with B1's rate of one losing take per sync unit, two clean takes
+by chance are ~1 in 4). The back end still slows in P2 without the UI drawing (21 -> 35 ms), as in G2's clean P1: the
+UI is the load that tips the system, not the only one. Next by the rule: the 12-fps point.
+
+Repeated 21:00 on the test card (rows above). The two test clips (`cDNG_26_11_03_20533423_C0001`, `cDNG_26_11_03_20571717_C0001`) are on User's card until it is back: delete only those, after a read-only `fsck.exfat -n`. Method note: the unit loop's cool-down check cannot tell a swapped card; it should also check the medium (serial, `warm.bin` present) before P1.
+
+
+## UI preview at 12 fps during the take, evening 2 (the dose-response's middle point, under sync; unscored)
+
+Written before the takes. As the preview-off unit, with `APERTAR_UI_PREVIEW_RECORDING_FPS=12` (the UI shows at most 12
+of the 25 frames per second while recording). Rule: both takes <= 2 lost with the wait < 20 ms in every 20-s bin = a
+12-fps preview during takes is enough margin (a candidate default while recording, User decides); a losing take with
+the saturated wait = 12 fps still tips it: next a preview change that does not gate the cycle.
+
+| Take | Lost | wait median (ms) | BE median (ms) | max 20-s wait | Note |
+| --- | --- | --- | --- | --- | --- |
+| | | | | | |
