@@ -292,3 +292,17 @@ takes ~10 ms per frame with the preview alone and 20-43 ms while recording, and 
 ~40 ms; the worst take also had the most reclaim (723 k) and the lowest CameraManager IPC (1.29). The common suspect is
 memory contention slowing the back end (a DMA engine) while recording: G in the inspection's broad sense, located in
 the ISP back end (**probable**).
+
+## `[storage] buffer=frames` instead of `ram`, evening 2 (A0's mode; unscored)
+
+Written before the takes. As the G2 unit (sync, 8 raw buffers, full preview: the UI cap drop-in removed, `warm.bin`
+before P1, libcamera log to the file), with `set_buffer_mode value=frames` (Patrik's `[storage] buffer`; back to
+`ram` afterwards). Both modes copy each frame into Core's raw pool; `frames` caps the write queue at 12 frames
+(~200 MB) instead of a RAM budget of up to ~1.3 GB, so the test is about the memory the queue and its pool tie up,
+not about a copy fewer. Rule: both takes <= 2 lost and the back end below ~30 ms in every 20-s bin = the RAM queue's
+footprint is a lever (next: a smaller `buffer_ram_fraction` as the shipping candidate, User decides); a losing take
+with the back end at ~40 ms = the queue's footprint is not what slows the back end.
+
+| Take | Lost | wait median (ms) | BE median (ms) | max 20-s BE | `pgsteal_kswapd` | Note |
+| --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | |
