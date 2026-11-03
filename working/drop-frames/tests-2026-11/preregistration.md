@@ -233,4 +233,29 @@ the holding is outside these stages (Core's completion path, the copy, or the pr
 
 | Take | Lost | cfe -> signal median / p90 (ms) | signal -> be_start | be_start -> be_done | CFE interval median / p90 | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| | | | | | | |
+| P1 (20:37) | 2 / 4,510 | 16.5 / 27.5 | 0.5 / 1.2 | 20.8 / 40.5 | 40.0 / 40.1 | raw stats 6.5 ms; per 20 s: BE 21-37 ms, wait flat ~17 ms |
+| P2 (20:41) | 108 / 4,398 | **199.9 / 230.6** | 0.5 / 1.4 | **37.7 / 46.9** | 40.0 / 40.1 | raw stats 6.7 ms; per 20 s: BE pinned at 39 ms and the wait at ~215 ms from 20-40 s on |
+
+libcamera's log went to `LIBCAMERA_LOG_FILE=/run/apertar-media/libcamera-g2.log` (journald suppressed ~half the lines at
+~425/s; no take ran with the journal route), every frame logged (5,554 and 5,425 traced), no drop lines. Preview only
+(before the take): BE ~10 ms, wait 0.1 ms.
+
+**Reading against the rule:** in the losing take the ISP back-end stage (`Input re-queue to ISP` -> `ISP Input buffer
+complete`) is clearly longer (median 37.7 vs 20.8 ms) while the CFE delivers every 40 ms, and frames wait ~200 ms (~5
+frames) before the IPA step: the raw buffers are held in front of the back end (**measured**, n = 1 pair). The take is
+in one of two states: near capacity but stable (P1) or saturated from its first 20-40 s on (P2). Whether the 39 ms is
+ISP work or the back end waiting for something periodic (an output buffer, a request returned by Core after the
+preview) is **unconfirmed**: libcamera starts a frame in the back end only with a free request.
+
+## UI preview off during the take, evening 2 (B2 "UI dose-response" row, its 0 point, under sync; unscored)
+
+Written before the takes. One sync unit as above (G2 log on, 8 raw buffers) with `APERTAR_UI_PREVIEW_RECORDING_FPS=0`
+in a `/run` drop-in for `apertar-ui-direct` (UI restart): while recording, the UI hands every preview frame back
+unimported and undrawn (`ApertarPreviewSocketClient.cpp:488-494`). Rule: both takes <= 2 lost and the back end at its
+preview-only level (wait < 20 ms in every 20-s bin) = the UI's preview handling paces the per-frame cycle (the 11-01
+dose-response under writer, now under sync), next the 12-fps point; losses and a saturated back end as before = the
+preview consumer is not the gate, next M6 on the back end's wait.
+
+| Take | Lost | wait median (ms) | BE median (ms) | max 20-s wait | Note |
+| --- | --- | --- | --- | --- | --- |
+| | | | | | |
