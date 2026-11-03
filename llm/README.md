@@ -123,13 +123,16 @@ Five facts that explain most behaviour:
 | 8 | Every socket client receives every event, including per-frame `preview_frame` | Filter them when you script against the socket |
 | 9 | The driver's `v4l2_find_nearest_size` never fails: a missing mode silently becomes the nearest one | Always read `stream=` in Core's `camera configured:` log line |
 | 10 | Hardware-input errors go only to stderr (journal), never to the WebUI | `sudo journalctl -u apertar-core` |
-| 11 | `pi` can't read the journal without sudo (not in `systemd-journal`) | Ask Patrik to paste, or to add the group once |
+| 11 | On this Pi `pi` is now in `systemd-journal` (`id`, confirmed 2026-11-03), so `journalctl` works without sudo. An older image may lack the group | Check `id` first; if the group is missing, ask Patrik to paste |
 | 12 | `CameraPage.qml` drops to column 0 for ~1300 lines; indentation does not show block ends | Use the `// =====` banners |
 | 13 | The UI sends `set_fps` / `set_resolution` by itself (`ensureValid*Selection`) when the sensor or format changes | Check those first when Core "changes on its own" |
 | 14 | Settings are stored per record format (`profile.cdng.iso=` …) | A format switch can show different values |
 | 15 | `SystemActionBridge::restartCamera()` reboots the Pi | Don't offer it as a "camera restart" |
 | 16 | Unknown hardware action names only log `Hardware input action ignored: unknown action` | grep the journal |
 | 17 | The Mac cannot build this stack (aarch64, Qt 6, libcamera 0.7) | Build on the Pi only |
+| 18 | `set_tuning_file <path>` is used as given in **every** mode (SDR too) and is saved; the same path again returns without a reload | Undo with `set_tuning_file ""`; reload an edited file with any mode switch (`working/clearhdr16-preview.md` §2) |
+| 19 | The WebUI preview is not "clean": the browser draws zebra/peaking/false colour on the MJPEG itself, from the UI's settings | Turn the aids off before comparing HDMI with the WebUI |
+| 20 | A test drop-in under `/run/systemd/system/*.d/` vanishes at reboot, and one left in place changes what a take looks like (e.g. `APERTAR_UI_PREVIEW_RECORDING_FPS=12`) | `systemctl show <unit> -p DropInPaths -p Environment` before judging a take |
 
 ## 6. Grep cookbook (cross-repo)
 
