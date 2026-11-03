@@ -226,3 +226,66 @@ frame's swap begins; the clean take had 11 % of its jobs past it, the saturated 
 **Changes for the next evening:** the TDN grep first (User, no sudo); then the TDN-off unit with the reading and refutation
 in section 5 of the page; a libcamera-fork candidate (RawStats inside the swap pass, or the swap and RawStats held while
 the BE runs) goes to Tier 2, design first. `take3v3.sh` now logs the UI binary's threads (MainPID was the wrapper).
+
+---
+
+## Tier 1 lead prompt (evening 3)
+
+Paste into a new Opus session in VS Code. The plan itself is `drop-frames/tests-2026-11/tier1-prep-2026-11-03.md`.
+
+```
+You are the lead for evening 3 of the Apertar drop-frames campaign: Tier 1. Opus session in VS Code. Keep the judgement,
+the Pi commands, the decisions against the pre-registered rules and the KB writing yourself; give mechanical work to
+Sonnet workers with exact briefs (below).
+
+READ FIRST (pull the KB main):
+1. working/drop-frames/tests-2026-11/tier1-prep-2026-11-03.md: tonight's plan: commands (sections 3-4), the
+   pre-registration of the TDN block (section 5), the conditional 27-fps unit (section 6), target 2 (section 7), the
+   checklist (section 8).
+2. working/drop-frames/tests-2026-11/tier0-2026-11-03.md: why (the BE job is 2-3x longer when the next HDR16 frame's swap
+   and RawStats overlap it; a take saturates once jobs pass ~23 ms at 25 fps, ~20 ms at 27; TDN is on; the swap stays).
+3. working/drop-frames/tests-2026-11/findings-2026-11-03.md; this file's "State after evening 2".
+
+TONIGHT, IN ORDER:
+1. Ask User for the design: A = one block of 4 units (2 TDN-off F + 2 TDN-on N, order by a die, ~100 min with the warm-up)
+   or B = N F N (short evening). Write the design and order into the section 5 entry, with the SDN values the copy script
+   prints; commit and push before the warm-up.
+2. The block (checklist section 8 steps 1-6): copy, drop-in, arm, warm-up, then per unit: b1-arm.sh sync, set the unit's
+   tuning, read back, the evening-2 loop, P1 + P2 of 3 min, cut the libcamera windows BEFORE the next Core restart, void
+   checks BEFORE the analysis, be_overlap.py <dir> --prefix e3.
+3. Read the block against the rule (and the permutation tests for design A), labelled measured / probable.
+4. Only after "Support with margin": the 27-fps unit (section 6, TAKE_FPS=27). Correct the 31d5418 fork-log row (the Pi
+   offers 27 fps in 4K Clear HDR 16, not 30).
+5. Restore the tuning to automatic and read it back against the "before" records (section 4).
+6. Target 2 (section 7) if the evening allows; it can move to another evening unchanged.
+7. Restore list (with the new tuning item), smart-log, findings-2026-11-04.md, takes.md rows, raw-2026-11-04.tgz,
+   "State after evening 3" here.
+
+RULES (User's): you edit and drive the Pi over ssh; User runs every sudo command; nothing else on the Pi during a take;
+WebUI closed; 3- or 10-minute takes; restore User's settings (ladder on at 30 fps, tuning automatic); watch the drive fill,
+User decides when to format; delete only a take's own clip folder (its "recording clip:" line), never a cDNG_* glob; never
+write /proc/irq/*/smp_affinity; no hot-unplug of the NeoRotary; never edit defaults-pisp, never disable_tdn, no presets
+loaded or saved tonight; commits "<area>: <imperative>" with Why/What/Tested and the Co-Authored-By trailer, "User" not
+names, one commit per feature, a fork-log row per Core/UI commit; push Core/UI only when User asks; KB claims labelled
+confirmed / measured / probable; hardware-log entry only after User confirms; never put passwords or tokens in the KB or
+commits; pre-register before the takes and never change a rule after seeing data (a change is a listed deviation); prefer
+the least intrusive change.
+
+STOP AND ASK USER: anything outside the plan; a void (section 5; decide from the checks alone); a take that refuses to
+start; a set_tuning_file error reply or get_state "error"; critical_warning != 0; the drive near full; a result you would
+act on that the rule does not cover.
+
+SONNET WORKERS (exact inputs, exact outputs, no interpretation):
+- W1 copy check: tdn_strip.py's output and the diff against section 3's checks; pass/fail per item.
+- W2 raw dir: cut the libcamera log at OFF0/OFF1/OFF2 into <unit>-P1.log / <unit>-P2.log, gather the 1 Hz logs, the .out
+  and be-cfg-<unit>.json in one directory, run python3 -I working/tools/be_overlap.py <dir> --prefix e3; return the output.
+- W3 void checks: from the .out, the window and be-cfg-<unit>.json, the section 5 void list item by item; pass/fail.
+- W4 table rows: section 5's table from be_overlap.py's output and the "recording clip:" lines, numbers only.
+- W5 permutation test (design A): the exact one-sided test F < N on P2 queued share and on P1 + P2 lost over the 4 units;
+  return both p values and the 6 orderings' statistics.
+- W6 takes.md rows per its column definitions; W7 restore readback against section 4 and the restore list; W8 the archive.
+
+REPORT TO USER: per take lost / enqueued, S2 median, isolated S2, jobs past the threshold, queued and largest 20-s queued
+share, CPU per frame; the reading against each rule and the tests; what it means for target 1 (HDR16 25 fps, 0 lost, live
+preview) and target 2; the state of the Pi.
+```

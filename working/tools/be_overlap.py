@@ -339,8 +339,18 @@ def main():
                     s2n.append((imgs[k] - f['start']) * 1e3)
         thr = med(s2n)
         s2 = [(f['done_ts'] - f['start']) * 1e3 for f in t['jobs']]
+        # 20-s bins of the recording window: a take that tips late keeps a low whole-take share but shows here
+        bins = {}
+        for prev, f in zip(t['jobs'], t['jobs'][1:]):
+            b = bins.setdefault(int((f['start'] - t['lo']) // 20), [0, 0])
+            b[0] += (f['start'] - prev['done']) * 1e3 < 2
+            b[1] += 1
+        shares = [(k, q / n) for k, (q, n) in sorted(bins.items()) if n >= 100]
+        kmax, smax = max(shares, key=lambda x: x[1]) if shares else (0, float('nan'))
         print(f'  {t["name"]:9s} idle jobs {len(a2s):5d}  dequeue->start {med(a2s):6.1f}  start->next dequeue {thr:5.1f}  '
-              f'jobs >= that {sum(x >= thr for x in s2) / len(s2):4.2f}  queued {queued / len(s2):4.2f}  lost {t["info"]["lost"]}')
+              f'jobs >= that {sum(x >= thr for x in s2) / len(s2):4.2f}  queued {queued / len(s2):4.2f}  '
+              f'max 20-s queued {smax:4.2f} (s {5 + 20 * kmax}-{25 + 20 * kmax})  jobs {len(t["jobs"])}  lost {t["info"]["lost"]}')
+        t['bins20'] = shares
 
     print('\n5. Spearman rho, per-second median S2 against the 1 Hz counters (recording seconds 3 .. end - 1)')
     keys = ['pgsteal_kswapd', 'pgmigrate_success', 'compact_isolated', 'kswapd_low_wmark_hit_quickly', 'nvme_writes',
@@ -380,7 +390,7 @@ def main():
     for k in keys:
         print(f'  {k:30s}' + ''.join(f'{r:9.2f}' if not math.isnan(r) else f'{"-":>9s}' for r in table[k]) + f'{spearman(*pooled[k]):9.2f}')
 
-    print('\n6. CPU time per delivered frame (ms): CameraManager (libcamera\'s thread) and Core\'s recording-time threads')
+    print('\n6. CPU time per delivered frame (ms): CameraManager (libcamera\'s thread), Core\'s recording-time threads, the UI')
     print('   (the threads that exit at record stop: probably 1 copy thread, 4 writers, the sync thread and two small ones)')
     for t in takes:
         tk = t['tk']
@@ -391,8 +401,13 @@ def main():
         fps = t['info']['delivered'] / t['info']['secs']
         camr = (b[cam][1] - a[cam][1]) / dt / 1e6
         rec = sorted(((b[x][1] - a[x][1]) / dt / 1e6 for x in b if x in a and x not in last and b[x][0] == 'apertar-core'), reverse=True)
+        # UI: every logged thread whose name is not one of Core's (take3v3.sh logs the UI binary's threads from 2026-11-04;
+        # evening 2's logs hold only the run_pi_direct.sh wrapper, so this reads ~0 there)
+        core_names = {'apertar-core', 'CameraManager', 'IPAProxyRPi', 'run_pi_direct.s'}
+        ui = sum((b[x][1] - a[x][1]) / dt / 1e6 for x in b if x in a and b[x][0] not in core_names)
         print(f'  {t["name"]:9s} lost {t["info"]["lost"]:4d}  fps {fps:4.1f}  CameraManager {camr / fps:5.1f}  recording threads '
-              f'{sum(rec) / fps:5.1f} (largest {rec[0] / fps:4.1f}, next four {sum(rec[1:5]) / fps:5.1f})  cores used {(camr + sum(rec)) / 1000:4.2f}')
+              f'{sum(rec) / fps:5.1f} (largest {rec[0] / fps:4.1f}, next four {sum(rec[1:5]) / fps:5.1f})  UI {ui / fps:5.1f}  '
+              f'cores used {(camr + sum(rec)) / 1000:4.2f}')
 
 
 if __name__ == '__main__':
