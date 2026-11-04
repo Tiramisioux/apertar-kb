@@ -164,9 +164,28 @@ def parse_take(path):
     return rows
 
 
+def record_end(tk):
+    """Last 1 Hz row (= seconds since the log start) at which a recording-time thread is still alive. The recording-time
+    threads are those in row 4 that are gone from the last row; a take stopped early is cut here instead of at the
+    planned/.out length. No such threads (logger killed before they exited): the last row."""
+    last = len(tk) - 1
+    if last < 5:
+        return last
+    ends = []
+    for x in tk[4].get('thr', {}):
+        if x in tk[-1].get('thr', {}):
+            continue
+        rows = [i for i in range(1, last + 1) if x in tk[i].get('thr', {})]
+        if len(rows) >= 0.8 * (rows[-1]):  # a steady thread, not one that comes and goes between rows
+            ends.append(rows[-1])
+    return max(ends, default=last)
+
+
 def read_out(take):
-    info, cur = {}, None
+    info, cur, planned = {}, None, 180
     for line in open(os.path.join(RAW, f'{PREFIX}-{take}.out')):
+        if m := re.match(r'\S+ unit=\S+ takes=.*?\bsecs=(\d+)', line):  # the planned length
+            planned = int(m.group(1))
         if m := re.match(r'label=\S+-(P\d+) core=(\d+) ui=(\d+) camtid=\S+ pagesize=\d+ uptime_s=(\d+)', line):
             cur = m.group(1)
             info[cur] = {'uptime': int(m.group(4)), 'secs': 0, 'enqueued': None, 'lost': 0}
@@ -185,6 +204,8 @@ def read_out(take):
             info[cur]['lost'] = int(m3.group(1)) if m3 else 0
             m4 = re.search(r'enqueued=(\d+)', line)
             info[cur]['enqueued'] = int(m4.group(1)) if m4 else None
+    for v in info.values():
+        v['planned'] = planned
     return info
 
 
@@ -245,8 +266,11 @@ def main():
             inf = info[p]
             inf['secs'] = inf['secs'] or 180
             nominal = inf.get('fps_set', 25.0)
+            tk = parse_take(tpath)
+            if tk and record_end(tk) < inf['planned'] - 1:
+                inf['secs'] = record_end(tk)  # a take stopped early: the data's end, not the planned length
             inf['delivered'] = inf['enqueued'] if inf['enqueued'] is not None else nominal * inf['secs'] - inf['lost']
-            takes.append({'name': f'{take}-{p}', 'frames': frames, 'rawstats': rawstats, 'tk': parse_take(tpath), 'info': inf})
+            takes.append({'name': f'{take}-{p}', 'frames': frames, 'rawstats': rawstats, 'tk': tk, 'info': inf})
     if not takes:
         sys.exit('no take with both logs')
     fitted, fits = fit_offset([t for t in takes if 'clock_off' not in t['info']]) if any('clock_off' not in t['info'] for t in takes) else (None, [])
@@ -405,15 +429,20 @@ def main():
         end = min(t['info']['secs'], len(tk) - 1)
         a, b = tk[4]['thr'], tk[end]['thr']
         dt = tk[end]['t'] - tk[4]['t']
-        fps = t['info']['delivered'] / t['info']['secs']
+        fps = t['info']['delivered'] / t['info']['secs'] if t['info']['secs'] else 0
         camr = (b[cam][1] - a[cam][1]) / dt / 1e6
         rec = sorted(((b[x][1] - a[x][1]) / dt / 1e6 for x in b if x in a and x not in last and b[x][0] == 'apertar-core'), reverse=True)
         # UI: every logged thread whose name is not one of Core's (take3v3.sh logs the UI binary's threads from 2026-11-04;
         # evening 2's logs hold only the run_pi_direct.sh wrapper, so this reads ~0 there)
         core_names = {'apertar-core', 'CameraManager', 'IPAProxyRPi', 'run_pi_direct.s'}
         ui = sum((b[x][1] - a[x][1]) / dt / 1e6 for x in b if x in a and b[x][0] not in core_names)
-        print(f'  {t["name"]:9s} lost {t["info"]["lost"]:4d}  fps {fps:4.1f}  CameraManager {camr / fps:5.1f}  recording threads '
-              f'{sum(rec) / fps:5.1f} (largest {rec[0] / fps:4.1f}, next four {sum(rec[1:5]) / fps:5.1f})  UI {ui / fps:5.1f}  '
+        if rec and fps:
+            recs = f'{sum(rec) / fps:5.1f} (largest {rec[0] / fps:4.1f}, next four {sum(rec[1:5]) / fps:5.1f})'
+        else:
+            recs = f'{"n/a":>5s} (largest {"n/a":>4s}, next four {"n/a":>5s})'
+        pf = lambda v: f'{v / fps:5.1f}' if fps else f'{"n/a":>5s}'
+        print(f'  {t["name"]:9s} lost {t["info"]["lost"]:4d}  fps {fps:4.1f}  CameraManager {pf(camr)}  recording threads '
+              f'{recs}  UI {pf(ui)}  '
               f'cores used {(camr + sum(rec)) / 1000:4.2f}')
 
     print('\n7. FE Config deadline (tier2-plan-2026-11-04.md): libcamera keeps K Config buffers in flight (num_cfe_config_queue,')
