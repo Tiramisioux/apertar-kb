@@ -92,10 +92,10 @@ Read first: `drop-frames/recipe.md` (the whole campaign in one table), then
 - **The Pi**: restored and read back (list in `preregistration.md`, "Evening 4 ends"); left on. The helpers
   (`/etc/sudoers.d/apertar-e4`, `apertar-e4-helper`, `apertar-b1-arm`) are still installed: User removes them.
 - **Done after (User's request)**: Core's old `drop-frames` is renamed `drop-frames-campaign` on the Pi (kept); a clean
-  `drop-frames` = `cinemate-port` + 4 commits (trim with a switch, default on; `DONTNEED=sync` default; Preview temporal
+  `drop-frames` = `controls` (`cinemate-port` + the Controls/GPIO work) + 4 commits (trim with a switch, default on; `DONTNEED=sync` default; Preview temporal
   denoise switch, default off; the phase lock on the WebUI's System > Performance card, default off); Pi `cinemate-port`
-  fast-forwarded to it (`532224b`). Built clean; at 21:29 the Pi's Core checkout was switched to `drop-frames` and built into
+  moved to it (`a344376`; first cut `532224b` on `4fa0432` lacked the Controls work). Built clean; at 21:29 the Pi's Core checkout was switched to `drop-frames` (later `cinemate-port`, same commit) and built into
   `~/ApertarCore-build` (no errors). **Not yet run**: the running Core is still the `9b5ea14` binary until User restarts it. GitHub and the Mac unchanged
-  (the Mac holds it as `drop-frames-clean`). Rows in `fork-log.md`.
+  (the Mac holds it as `drop-frames-on-controls`). Rows in `fork-log.md`.
 - **If the campaign resumes**: a second clean D4 take at 28 fps settles the A/B; then B6 at 28 fps with D4 and TDN off.
   For 30 fps, the untried levers are Log (16 -> 12 bit), direct I/O for the DNG writes, a smaller ISP preview output.
