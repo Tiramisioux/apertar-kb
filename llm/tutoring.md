@@ -108,6 +108,10 @@ Locations come from [flows.md](flows.md) section C research (2026-10-25, desk): 
 | T32 | Intermediate | Speed ramping from every control (`speed-ramp-every-control`): WebUI Speed Ramp block, ramp-safe touch UI picker, 25 fps Clear HDR 16-bit ceiling | M1, M3, M5 | `CC:2778-2785`, `App:1163-1166`, `WebControlPage.cpp:2919-2950`, `:5011-5013`, `:5058-5155`, `:10149`; UI `qml/CameraPage.qml:780-782`, `src/ApertarControlBridge.cpp:273-278`, `:1229-1232`, `:1372-1376`, `src/ApertarControlBridge.hpp:318-319` (with the patches) | Core and UI rebuild + restart; `git revert` to undo | 2 h | done (ported 2026-10-28; C0022 ramp from the controls) |
 | T55 | Intermediate | A steady 4K 16-bit Clear HDR preview: find the stage that flickers, then calm it (`clearhdr16-steady-preview`) | M6, M7, M5 | Core `CC:7222-7224`, `:7247`, `:11374`, `DefaultTuningSelection.hpp:65`, `:186`, `WebControlPage.cpp:13044`, `:13220`; UI `PreviewWindowRenderer.cpp:858`, `:896`, `:904`, `qml/ExternalMonitorWindow.qml:49`; tuning `~/Tuning-Files/defaults-pisp/imx585_clearHDR.json` (not in git) | settings, then `set_tuning_file` (undo `""`); 4.5 edits a file outside git (backup in 4.1) | 1-1.5 h | written |
 
+Numbers held by projects that keep their own step lists: T36-T45 controls (`../working/controls/`), T46-T54 playback
+(`../working/playback/`), T56-T70 dual sensor (`../working/dual-sensor/`). A new tutorial takes the next free number
+above them.
+
 Good follow-ups from known bugs (each is a real fix, see `../lessons/upstream-issues.md`): #18 GUI
 freeze on slow commands (advanced, Qt threading), the `discarded_on_stop` stat that is always 0
 (#40), `DroppedFrameWarning.qml` missing from `qml.qrc` (#26), the drifted WebUI preset allow-list
