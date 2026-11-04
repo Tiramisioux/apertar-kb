@@ -766,3 +766,21 @@ User then: "keep doing the tests at this frame rate". Fixed now, before any d1r 
   Config depth is not what fails at 30 fps, and B6 runs at **28 fps** with D4 (the last rate with a clean D4 take).
   Either way the night continues within the registered stop conditions.
 - Void checks, manipulation checks, restore and stop conditions are unchanged; the mode check now expects 30 fps.
+
+### Evening 4 ends (User, ~21:00): the campaign stops here; the unsupervised part does not run
+
+User: "I think we can stop the campaign here for now". Run: d1 (void), d2 (void), d3, d4, d1r (void), t1, t2. Not run:
+B6, the N F Z units, the unlogged N take, the lossless pre-roll reading, compact0 (never triggered). Readings, by the
+rules above: the 28 fps A/B **Inconclusive** (one clean D4 take of two); "D4 holds at 30 fps" **not met** (t1 lost 3 at
+119 s with `L>4T` 0); "depth decides it at 30 fps" **not met** (t1 not clean). Summary:
+`findings-evening4-supervised-2026-11-04.md`; the campaign's recipe: `../recipe.md`. Raw data: `raw-2026-11-04-e4.tgz`.
+
+Restore done 20:58-21:00, read back: `apertar-e4-helper disarm` (no `/run` drop-in for Core or the UI), the `/run` YAML
+removed, `apertar-b1-arm restore` (trace events off, filter cleared, `buffer_size_kb` 8199 -> 1408, the `/run`
+`dontneed.conf` gone: Core on its build default `sync`), Core's environ only `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR`, tuning
+automatic (`tuning_file ''`, `defaults-pisp/imx585_clearHDR.json (sensor default, pisp)`), mode 3840x2160 Clear HDR 16-bit
+25 fps uncompressed cDNG, **ladder off**, `buffer=ram`, `compaction_proactiveness` 20, `latencytop` 0, swap (zram 2 GB)
+on, link frequency 891 MHz, driver `cd548ef`, the evening's files cleared from `/run/apertar-media`. smart-log:
+`critical_warning` 0, 43 C, 3 % used. Drive: `warm.bin` and User's `cDNG_26_11_04_20322419_C0001` (kept, User: "perhaps"
+he pressed record). The Pi left on. The WebUI stand-in on the Mac stopped. **For User:** remove the helpers before any
+image is made: `sudo rm /etc/sudoers.d/apertar-e4 /usr/local/libexec/apertar-e4-helper /usr/local/libexec/apertar-b1-arm`.

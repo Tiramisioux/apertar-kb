@@ -80,3 +80,18 @@ STOP AND ASK PATRIK (while he is there): the knob missing, a set_tuning_file err
 
 START: the status check, then the 0:00 message to Patrik.
 ```
+
+## State after evening 4 (2026-11-04, written by the lead at ~21:05; the campaign is paused)
+
+Read first: `drop-frames/recipe.md` (the whole campaign in one table), then
+`drop-frames/tests-2026-11/findings-evening4-supervised-2026-11-04.md` and the end of `preregistration.md`.
+
+- **Result**: at 28 fps the remaining single-frame losses are the FE Config queue running dry, and depth 4 removes them
+  (probable, n = 1 + 1; Inconclusive by the rule). 30 fps loses ~3 frames in 2 min even at depth 4, from a second limit
+  (the back end slows, its queue grows; memory bandwidth suspected, unconfirmed). User stopped the campaign at ~21:00.
+- **The Pi**: restored and read back (list in `preregistration.md`, "Evening 4 ends"); left on. The helpers
+  (`/etc/sudoers.d/apertar-e4`, `apertar-e4-helper`, `apertar-b1-arm`) are still installed: User removes them.
+- **Next (User's request at the end)**: a clean Core branch with only the proven measures, merged into the local
+  `cinemate-port`. Not started at this writing.
+- **If the campaign resumes**: a second clean D4 take at 28 fps settles the A/B; then B6 at 28 fps with D4 and TDN off.
+  For 30 fps, the untried levers are Log (16 -> 12 bit), direct I/O for the DNG writes, a smaller ISP preview output.
