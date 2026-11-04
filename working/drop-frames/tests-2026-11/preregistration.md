@@ -554,3 +554,24 @@ frames, and where do the losses come from?
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 26 | s26-P1 (03:44) | 0 / 4,693 | 6.4 / 10.6 | 21.4; 0.00 | 0.01; 0.03 | 38.1 | 17.0 / 33.5 / 3.7 | 0; 2/12 | valid: mode fps 26.0, the copy, dump TDN off; NVMe 39.85 C, 0x0, fill 1 %, MemFree 701 MB; 4,498 jobs (4,498) |
 | 27 | u27-P1 (03:23) | 1 / 4,874 | 7.1 / 12.2 | 19.6; 0.01 | 0.02; 0.06 | 36.8 | 17.4 / 35.4 / 3.9 | 0; 2/12 | the 27-fps unit's P1 (not repeated) |
+| 28 | s28-P1 (03:57) | **5 / 5,054** | 7.9 / 14.4 | 17.7; 0.05 | 0.08; 0.25 (s 165-185) | 35.5 | 18.1 / 39.7 / 4.2 | 0; 2/12 | valid: mode fps 28.0, the copy, dump TDN off; NVMe 39.85 C, 0x0, fill 1 %, MemFree 388 MB; 4,841 jobs (4,839). **The onset: > 2 lost, the sweep ends here** (29 and 30 not run) |
+
+**Reading, the onset (measured unless labelled):** with TDN off, 4K Clear HDR 16-bit uncompressed records clean at 25, 26
+and 27 fps (0-2 lost per 3-min take) and loses at 28 (5 lost). The 28-fps losses are **not** the block's mechanism:
+- The 5 losses are single frames spread over the take (1 Hz log seconds 4, 38, 137, 168, 170), each a missing CFE frame
+  (SOF gap 71.4 ms = two periods), not a saturated stretch: queued share 0.08 over the take.
+- The CFE never ran out of raw buffers: the kernel trace's `vb2_buf_done` for the raw node reads `owned_by_drv` 3-7 during
+  the take (never 0; 3-5 in the 0.3 s before each gap). Write queue never full (`dropped_queue_full` 0, peak 2/12), no CSI-2
+  OVLF in any second, NVMe latency at the losing seconds 9-18 ms per write (the take's peak, 35 ms, was elsewhere), nothing
+  in the kernel log during the take.
+- By the fixed reading: **unexplained** (none of back end saturated, drive, receiver overflow).
+- What each loss does go with: one back-end job of 79-105 ms (normally 6-10) in the 0.4 s before every gap. Jobs > 70 ms per
+  take: 0 at 25 fps (TDN off, units 2 and 3r), 2 at 26 (0 lost), 1 and 1 at 27 (1 and 1 lost), 5 at 28 (5 lost); p99.9 of the
+  BE job 28-29 ms at 25, 38 at 26, 41-44 at 27, 64 at 28. **Probable**: a stall of about two frame periods, rarer at lower
+  frame rates, that delays the back end and makes the CFE miss one frame although it holds buffers; this is the "second
+  loss path" seen at 16 raw buffers on evening 2 (losses without CFE starvation). What stalls (memory, an interrupt delay
+  on CPU0 that holds the CFE's per-frame buffer programming, or the 1782 Mbps link the kernel reports as `DPHY: Datarate
+  out of range` at every configure) is **unconfirmed**.
+- Next (not run tonight): log the rp1-cfe `csi2_errors` LEN / UNMATCHED fields and CFE frame-start / frame-end per second
+  (the 1 Hz logger keeps only OVLF), and time the CFE interrupt against the long BE jobs; a 10-min take at 27 fps TDN off
+  bounds how often the stall costs a frame there.
