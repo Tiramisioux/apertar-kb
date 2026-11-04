@@ -91,7 +91,11 @@ Read first: `drop-frames/recipe.md` (the whole campaign in one table), then
   (the back end slows, its queue grows; memory bandwidth suspected, unconfirmed). User stopped the campaign at ~21:00.
 - **The Pi**: restored and read back (list in `preregistration.md`, "Evening 4 ends"); left on. The helpers
   (`/etc/sudoers.d/apertar-e4`, `apertar-e4-helper`, `apertar-b1-arm`) are still installed: User removes them.
-- **Next (User's request at the end)**: a clean Core branch with only the proven measures, merged into the local
-  `cinemate-port`. Not started at this writing.
+- **Done after (User's request)**: Core's old `drop-frames` is renamed `drop-frames-campaign` on the Pi (kept); a clean
+  `drop-frames` = `cinemate-port` + 4 commits (trim with a switch, default on; `DONTNEED=sync` default; Preview temporal
+  denoise switch, default off; the phase lock on the WebUI's System > Performance card, default off); Pi `cinemate-port`
+  fast-forwarded to it (`532224b`). Built clean in a separate build directory; **not yet built into
+  `~/ApertarCore-build` or run** (the camera still runs `drop-frames-campaign` `9b5ea14`). GitHub and the Mac unchanged
+  (the Mac holds it as `drop-frames-clean`). Rows in `fork-log.md`.
 - **If the campaign resumes**: a second clean D4 take at 28 fps settles the A/B; then B6 at 28 fps with D4 and TDN off.
   For 30 fps, the untried levers are Log (16 -> 12 bit), direct I/O for the DNG writes, a smaller ISP preview output.

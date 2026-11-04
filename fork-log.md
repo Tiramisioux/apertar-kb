@@ -147,6 +147,15 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `b64e6f6` | (was `c747f09`) WebUI: the GPIO out row gets a Remove, like the input rows; branch `drop-frames` | fork-only; on the Pi only (another session, 2026-11-04 01:22) |
 | `9b5ea14` | WebUI: a GPIO button can be remote only (`remote<N>` in `[gpio_buttons]`, no pin); pins a DPI display holds are greyed; branch `drop-frames` | fork-only; on the Pi only (another session, 2026-11-04 01:22); built clean 01:26 and the Core of evening 3's drop-frames tests |
 
+2026-11-04 (User): the branch above (`d44b177`..`9b5ea14`) is renamed **`drop-frames-campaign`** on the Pi (kept for a possible return to the campaign; GitHub and the Mac still call it `drop-frames`). A new clean **`drop-frames`** = `cinemate-port` `4fa0432` + the four commits below; Pi `cinemate-port` fast-forwarded to it (`532224b`). Built on the Pi in a separate build directory, no errors; not run on the camera yet. The Mac holds it as `drop-frames-clean`.
+
+| Commit | Change | Status |
+| --- | --- | --- |
+| `da9a20c` | Trim of the recording drive at mount, after big deletes and after a delete made outside Core (from `d44b177` + `04bac89`, pre-roll parts left out); switch `set_media_trim`, default on, `APERTAR_MEDIA_TRIM=0` forces off; WebUI System pane Performance card; branches `drop-frames`, `cinemate-port` | fork-only; Pi only, built 2026-11-04 |
+| `577a521` | `APERTAR_DNG_DONTNEED` (default `sync`; from `0ed07ea`, `adac040`, `766aba8`, `dontneed=` of `48f8b8c`); branches `drop-frames`, `cinemate-port` | fork-only; Pi only, built 2026-11-04 |
+| `20776ac` | Preview temporal denoise switch, default off: Core loads a copy of the resolved tuning without `rpi.denoise` `tdn` (`TuningTdnStrip.hpp`, `~/.cache/apertar-core/tuning`), `set_preview_tdn`, state `preview_tdn`, `tuning_file_active`; WebUI Performance card; branches `drop-frames`, `cinemate-port` | fork-only; Pi only, built 2026-11-04; strip test byte-identical to the evening-3 copy |
+| `532224b` | WebUI: the frame-rate phase lock (existing `set_fps_phase_lock`, default off) on the Performance card; branches `drop-frames`, `cinemate-port` | fork-only; Pi only, built 2026-11-04 |
+
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
