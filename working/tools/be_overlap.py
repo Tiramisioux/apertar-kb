@@ -143,6 +143,11 @@ def parse_take(path):
                     k, _, v = kv.partition('=')
                     if v.isdigit():
                         r[f'{w[0]}_{k}'] = int(v)
+            elif w[0] == 'temp':
+                for kv in w[1:]:
+                    k, _, v = kv.partition('=')
+                    if v.lstrip('-').isdigit():
+                        r[{'nvme_mC': 'temp_nvme', 'soc_mC': 'temp_soc'}.get(k, 'temp_' + k)] = int(v)
             elif w[0] == 'boost':
                 r['boost'] = int(w[1].split('=')[1])
             elif w[0] == 'psi':
@@ -355,6 +360,8 @@ def main():
     print('\n5. Spearman rho, per-second median S2 against the 1 Hz counters (recording seconds 3 .. end - 1)')
     keys = ['pgsteal_kswapd', 'pgmigrate_success', 'compact_isolated', 'kswapd_low_wmark_hit_quickly', 'nvme_writes',
             'psi_some', 'mem_MemFree', 'mem_Dirty', 'mem_Writeback', 'boost', 'cam_run', 'rec_run', 'lost']
+    # temperatures are gauges (levels, like mem_MemFree); rows only when some take's log has the fields
+    keys += [k for k in ('temp_nvme', 'temp_soc') if any(k in r for t in takes for r in t['tk'])]
     rate = {'pgsteal_kswapd', 'pgmigrate_success', 'compact_isolated', 'kswapd_low_wmark_hit_quickly', 'nvme_writes', 'psi_some'}
     table, pooled = {k: [] for k in keys}, {k: ([], []) for k in keys}
     for t in takes:
@@ -445,6 +452,16 @@ def main():
         worst = sorted(((f['cfg'] - f['ts']) * 1e3, f['ts'] - t0) for f in fr)[-3:][::-1]
         ws = ', '.join(f'{x:.0f} ({y:.0f})' for x, y in worst)
         print(f'  {t["name"]:9s} {T * 1e3:5.1f} {Lm * 1e3:6.1f} {max(L):6.1f} {near:14d} {sim[2]:4d} {sim[3]:4d} {sim[4]:4d} {lost:5d} {over2:5d} {over4:5d}  {ws}')
+        for tk_key, label in (('temp_nvme', 'NVMe'), ('temp_soc', 'SoC')):
+            tv = [r[tk_key] for r in t['tk'] if tk_key in r]
+            if not tv:
+                continue
+            at_loss = []
+            for f in sorted((f for f in t['frames'] if f.get('lost', 0) and t['lo'] <= f['ts'] < t['hi']), key=lambda f: f['ts']):
+                i = min(max(int(f['ts'] - t0), 0), len(t['tk']) - 1)
+                at_loss.append(f'{t["tk"][i][tk_key] / 1000:.1f} ({i})' if tk_key in t['tk'][i] else 'n/a')
+            print(f'  {"":9s} {label} C: start {tv[0] / 1000:.1f}  end {tv[-1] / 1000:.1f}  max {max(tv) / 1000:.1f}'
+                  f'  at each loss (s in take): {", ".join(at_loss) if at_loss else "no loss"}')
 
 if __name__ == '__main__':
     main()
