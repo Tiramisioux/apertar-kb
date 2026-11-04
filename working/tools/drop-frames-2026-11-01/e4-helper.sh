@@ -89,7 +89,9 @@ run_cmd() {
 # First line of a file, or "?" if unreadable.
 first_line() {
   l=""
-  if [ -r "$1" ]; then IFS= read -r l < "$1" || true; fi
+  # head, not `read`: sh's read takes one byte per read(2), and a procfs sysctl file gives EOF to any read past offset 0
+  # (2026-11-04: compaction_proactiveness 20 read as "2")
+  if [ -r "$1" ]; then l=$(head -n 1 "$1" 2>/dev/null) || true; fi
   [ -n "$l" ] || l="?"
   printf '%s\n' "$l"
 }
