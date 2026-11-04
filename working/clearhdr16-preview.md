@@ -36,7 +36,7 @@ completeness critic; 3 more causes with verifiers: 28 agents), then a read-only 
 - **The WebUI draws its own aids** in the browser (WebGL) from the same UI settings (`WebControlPage.cpp:12962-12973@31d5418`).
   An "HDMI against WebUI" comparison needs the aids off.
 - **The two zebra rules differ**, both upstream 1.6.0 code: the WebUI tests `max(r,g,b)` when the level is ≥ 0.95
-  (`WebControlPage.cpp:13136-13140@31d5418`, `:13218-13222@f4e97e5`), the UI shader tests Rec.601 luma only (`PreviewWindowRenderer.cpp:896@c153c33`).
+  (`WebControlPage.cpp:13136-13140@31d5418`, `:13176-13180@9b5ea14`), the UI shader tests Rec.601 luma only (`PreviewWindowRenderer.cpp:896@c153c33`).
   `lessons/upstream-issues.md` #45.
 - **`set_tuning_file`** (`CameraController.cpp:11374-11442`): refused while recording; stop + start; saved. A picked file
   is used as given in **every** mode (`:7222`), so SDR keeps it until `set_tuning_file ""`. An unchanged path returns
