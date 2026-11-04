@@ -731,3 +731,11 @@ ends the take the normal way (`record_stop`, logs, ladder restore, `restored`) a
 - The back-end-readout void's job count uses the take's own recorded seconds (`recorded_s`), not the planned length.
 - B6, the N F Z units, x30, 27 fps: a take that drops stops; that arm or rate is out, and B6 is not met. A unit whose P1
   stops does not run P2 (the unit loop treats the stopped take as finished; the lead ends the unit there).
+
+### d4 ran its stop-on-drop through a watcher (deviation, logged before d4's analysis)
+
+d4 (D4, 20:39:03-20:43) started before `take3v3.sh` with `TAKE_STOP_ON_DROP` was on the Pi. A one-off Pi watcher
+(`/run/apertar-media/e4-watch.sh e4-d4-P1 215`, not in the KB) read the 1 Hz log's `dropped=` each second and would have
+sent `record_stop` at the first value > 0. It never fired ("no drop seen in 215 s"), so d4 ran the full 3 min as an
+ordinary take. From d1r on the take script does it itself. The void checks for d4 are read from its own `.out` and log
+cut as registered.
