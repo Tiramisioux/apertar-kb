@@ -510,6 +510,17 @@ Units 2 and 3r against the rule (measured, n = 2 F units): **Support with margin
   does less work per frame with TDN off (reported; User did not look at the preview tonight).
 - Gate for the 27-fps unit (every F unit Support with margin): **met**; it runs next (section 6 of tier1-prep).
 
+### Results, the conditional 27-fps unit (tier1-prep section 6; F)
+
+| Unit | Arm | Take | Lost | S2 median / p90 | S2 isolated [n] | threshold; jobs >= it | queued; largest 20-s | cycle | swap / stats | CPU cam / rec / UI | Note |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 27 | F | P1 (03:23) | 1 / 4,874 | 7.1 / 12.2 | 6.9 [4,499] | 19.6; 0.01 | 0.02; 0.06 | 36.8 | 8.7 / 6.6 | 17.4 / 35.4 / 3.9 | valid: mode fps 27.0, the copy, dump TDN off (0x47060d, after the switch 03:12:10); NVMe 39.85 C at the start and before OFF0, SoC 56.5 C, 0x0, fill 1 %, uptime_s 8778, MemFree 443 MB; 4,670 jobs (4,670) |
+| 27 | F | P2 (03:27) | 1 / 4,876 | 8.4 / 14.9 | 7.7 [3,925] | 18.6; 0.04 | 0.08; 0.13 | 36.9 | 9.1 / 6.7 | 18.2 / 46.4 / 4.2 | valid; NVMe 59.85 / SoC 55.4 C, 0x0, fill 9 %, MemFree 664 MB; 4,670 jobs (4,671) |
+
+**Reading (section 6 rule):** both takes meet the Support criteria: 27 fps with TDN off becomes a candidate for B6-style
+10-min takes (probable, n = 1). The margin is smaller than at 25 (queued 0.02-0.08 against 0.00, S2 p90 12-15 against 8 ms),
+and P2 (drive hot) costs 46.4 ms of recording-thread CPU per frame against 35.4 in P1 (measured).
+
 ## Frame-rate sweep above 25 fps, 4K Clear HDR 16-bit uncompressed, evening 3 (User's request 01:40; exploratory, unscored)
 
 Written before any take of the sweep (Tier 1's block was running; the arm rule below does not depend on its numbers beyond
