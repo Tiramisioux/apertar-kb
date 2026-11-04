@@ -474,6 +474,18 @@ N take); the 27-fps gate needs every F unit; the positive check counts only a du
   or Core's start (N) and its input is 3840 wide at stride 7680.
 - Unscored warm-up (N, 01:28): 54 lost / 4,453 enqueued (reported, not scored).
 
+### Results, TDN block (filled per unit; numbers from `be_overlap.py --prefix e3` on each unit's copy, consoles `e3-<unit>.out`)
+
+| Unit | Arm | Take | Lost | S2 median | S2 isolated [n] | threshold; jobs >= it | queued; largest 20-s | swap / stats | CPU cam / rec / UI | Note |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | N | P1 (01:42) | 58 / 4,448 | 37.0 | 18.3 [30] (n < 500, not read) | 20.6; 0.93 | 0.91; 0.93 | 9.2 / 6.7 | 18.2 / 34.4 / 4.5 | valid: mode 4K/25/HDR/16/none, `tuning_file ''`, last load before the window `defaults-pisp/imx585_clearHDR.json`, none inside; dump `bayer_enables` 0x47074d (TDN set); serial ok, uptime_s 2714, NVMe 39.85 / SoC 58.2 C, 0x0, fill 1 %, MemFree 460 MB; 4,268 jobs (4,267 expected) |
+| 1 | N | P2 (01:46) | 39 / 4,468 | 36.8 | 18.0 [39] (not read) | 21.0; 0.94 | 0.92; 0.95 | 9.1 / 6.7 | 18.2 / 34.8 / 4.4 | valid; uptime_s 2942, NVMe 49.85 / SoC 55.4 C, 0x0, fill 8 %, MemFree 640 MB; 4,284 jobs (4,286) |
+| 2 | F | P1 (02:02) | 1 / 4,512 | 5.9 | 5.9 [4,301] | 23.8; 0.00 | 0.00; 0.01 | 8.1 / 6.0 | 16.0 / 30.1 / 3.4 | valid: `tuning_file` the copy, `ST` ready, `J` `(custom, pisp)`, last load before the window the copy, none inside; dump written after the switch (01:50:53 > 01:50:51), `bayer_enables` 0x47060d (`& 0x140` = 0: TDN off), input 3840x2200 stride 7680; uptime_s 3919, NVMe 39.85 / SoC 57.6 C, 0x0, fill 1 %, MemFree 534 MB; 4,325 jobs (4,324) |
+| 2 | F | P2 (02:06) | 0 / 4,511 | 5.9 | 5.9 [4,314] | 23.8; 0.00 | 0.00; 0.00 | 8.1 / 5.9 | 16.0 / 30.2 / 3.4 | valid; uptime_s 4146, NVMe 55.85 / SoC 54.3 C, 0x0, fill 8 %, MemFree 705 MB; 4,325 jobs (4,325) |
+
+Unit 2 against the rule (measured, n = 1 F unit): **Support with margin** in both takes. UI CPU per frame 3.4 against
+4.4-4.5 ms in unit 1 (-24 %): the preview-noise confounder is live by the pre-registered 20 % line (reported, not decided).
+
 ## Frame-rate sweep above 25 fps, 4K Clear HDR 16-bit uncompressed, evening 3 (User's request 01:40; exploratory, unscored)
 
 Written before any take of the sweep (Tier 1's block was running; the arm rule below does not depend on its numbers beyond
