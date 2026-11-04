@@ -739,3 +739,30 @@ d4 (D4, 20:39:03-20:43) started before `take3v3.sh` with `TAKE_STOP_ON_DROP` was
 sent `record_stop` at the first value > 0. It never fired ("no drop seen in 215 s"), so d4 ran the full 3 min as an
 ordinary take. From d1r on the take script does it itself. The void checks for d4 are read from its own `.out` and log
 cut as registered.
+
+### All further takes at 30 fps (User, 20:49, during d1r, before any d1r reading)
+
+At 20:48:19 User raised the frame rate during d1r (Core ramped 28 -> 29 -> 30 fps by 20:48:23, `policy=angle`, ~60 s into the
+take). **d1r is void as a scored A/B take** (the mode check fails: the take is not 28 fps throughout). It runs on to its
+end with stop-on-drop and is read as description only (D4, F, 28 fps for ~60 s then 30 fps).
+User then: "keep doing the tests at this frame rate". Fixed now, before any d1r reading:
+
+- **The 28 fps A/B stops here, incomplete.** Standing: D2 condition met (d3; d2 void but agreeing), D4 one clean take
+  (d4, `L>2T` 6). The rule needs two clean D4 takes, so by the rule it is **Inconclusive** at 28 fps. It is reported that
+  way, with d4 and d3 as description of the mechanism.
+- **30 fps block**, every take `TAKE_FPS=30`, `TAKE_STOP_ON_DROP=1`, WebUI on, TDN off (F) unless the unit says otherwise:
+  1. **t1** D4, F, 3 min (replaces x30; now scored).
+  2. **t2** D2, F, 3 min or to the first drop (the control: does depth still decide it at 30 fps).
+  3. **B6 at 30 fps**: five 10-min D4 takes with the preview User picks (default F), on two boots (reboot after the
+     third), unsupervised.
+  4. **N F Z units at 30 fps**, D4.
+  5. The unlogged N take at 30 fps (disarmed: depth 2, no debug log) as registered.
+  6. The 27 fps item is **dropped** (it was the step down from 28; superseded by the move to 30).
+  7. The lossless pre-roll reading as registered.
+- **Readings.** "D4 holds at 30 fps" = t1 clean for 3 min. "Depth decides it at 30 fps" = t1 clean and t2 stops on a loss
+  that the K2 replay predicts (at or before the stop). **B6 met at 30 fps** = all five 10-min D4 takes clean.
+- **If a D4 take at 30 fps drops** (t1 or any B6 take): 30 fps with D4 is ruled out (User's stop rule). Section 7 of the
+  stopping take decides the next step: `L>4T` >= 1 -> the registered compact0 fallback, once, at 30 fps; `L>4T` = 0 ->
+  Config depth is not what fails at 30 fps, and B6 runs at **28 fps** with D4 (the last rate with a clean D4 take).
+  Either way the night continues within the registered stop conditions.
+- Void checks, manipulation checks, restore and stop conditions are unchanged; the mode check now expects 30 fps.
