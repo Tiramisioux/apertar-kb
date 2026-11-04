@@ -3,7 +3,7 @@
 
 Every second, one line to OUT (put it in /run/apertar-media, never on /media/RAW):
   t=<epoch> vm k=v ... | mem MemFree= Dirty= Writeback= (kB) | nvme writes= ticks_ms= | psi <memory some/full> |
-  dropped=<recording_dropped_frames> | thr tid:comm:run_ns:wait_ns:majflt ...
+  dropped=<recording_dropped_frames> | thr tid:comm:run_ns:wait_ns:majflt ... | temp nvme_mC= soc_mC= (milli-degrees C, n/a if unreadable)
 for every thread of Core and of the UI. It reads only /proc and /sys, and asks Core for get_state over its socket
 (the same request core.py sends), so the logger costs one process and no spawns per second. Read-only, no sudo.
 Stops on SIGTERM or when Core's process is gone.
@@ -89,6 +89,19 @@ def boost():
     return ' '.join([f'sum={total}'] + parts)
 
 
+NVME_TEMP = next(iter(sorted(glob.glob('/sys/class/nvme/nvme0/hwmon*/temp1_input'))), '')
+SOC_TEMP = '/sys/class/thermal/thermal_zone0/temp'
+
+
+def temps():
+    # NVMe (first hwmon, path resolved once) and SoC temperature, milli-degrees C, re-read each second
+    parts = []
+    for name, path in (('nvme_mC', NVME_TEMP), ('soc_mC', SOC_TEMP)):
+        v = read(path).strip() if path else ''
+        parts.append(f'{name}={v if v.lstrip("-").isdigit() else "n/a"}')
+    return ' '.join(parts)
+
+
 def threads(pid):
     parts = []
     base = f'/proc/{pid}/task'
@@ -137,6 +150,6 @@ with open(out, 'w', buffering=1) as f:
     nxt = time.monotonic()
     while not stop and os.path.exists(f'/proc/{core}'):
         f.write(f't={time.time():.2f} vm {vmstat()} | mem {meminfo()} | nvme {nvme()} | boost {boost()} | csi2 {csi2()} | psi {psi()} | '
-                f'dropped={dropped()} | thr {" ".join(threads(core) + threads(ui))}\n')
+                f'dropped={dropped()} | thr {" ".join(threads(core) + threads(ui))} | temp {temps()}\n')
         nxt += 1.0
         time.sleep(max(0.0, nxt - time.monotonic()))
