@@ -29,6 +29,7 @@
 
 | File | What |
 | --- | --- |
+| `HANDOFF.md` | the build handoff: an Opus lead in VS Code with Sonnet workers, T56-T70, adapted to the Pi the drop-frames campaign shares |
 | `plan-summary.md` | one page: the recommendation, steps T56-T70, the questions to answer first |
 | `design-dual-sensor.md` | the design (v2.1): two Cores, the relay, display, recording, the grid phase lock, platform rules, API delta, steps file by file with checks, Pi tests with predictions, risks, questions with defaults, verification table |
 | `changes-from-critique.md` | each point of the two critiques: taken, changed or not taken, and why; the stale KB pages the claim check found; what the verification pass changed (§5), and what the two re-checks of the v2.1 draft changed (§6, §7) |
