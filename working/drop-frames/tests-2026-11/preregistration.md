@@ -716,3 +716,18 @@ C0 ran, `apertar-b1-arm restore`, the restore list read back, `smartlog`, Core's
 
 One 3-min take at 30 fps, F, D4, unit x30, the same routine. Read as description: lost, section 7 (`L>2T`, `L>4T`, K2-K4),
 section 4 queued share and threshold, section 1 S2 and swap, temperatures. HDR16 4K's `fps_max` reads 30 on this build.
+
+### Stop at the first dropped frame (User, ~20:37, during d3, before any A/B reading)
+
+User: "stop a test once we get dropped frames, as this option is then ruled out as a solution". From **d4 on** every take
+runs with `TAKE_STOP_ON_DROP=1`: `take3v3.sh` reads the 1 Hz log's `dropped=` each second and, at the first value > 0,
+ends the take the normal way (`record_stop`, logs, ladder restore, `restored`) and prints `STOP ON DROP at <t>s` and
+`recorded_s`. d3 (running) finishes as registered when it started. Consequences, fixed now:
+- Per take, lost is 0 (clean for the full length) or >= 1 at second t (the arm is **ruled out**: depth, preview arm or frame
+  rate). The time to the first loss is reported. Section 7 reads the window up to the stop.
+- Depth A/B: unchanged in substance. Support still needs both scored D4 takes clean for 3 min with `L>2T` >= 1 in at least
+  one; Refute / "Config late at depth 4" read the stopping loss's `L>4T`. The D2 condition becomes: the K2 replay predicts a
+  loss at or before the stop (the first loss is a replayed one), instead of "equal within 1" over 3 min.
+- The back-end-readout void's job count uses the take's own recorded seconds (`recorded_s`), not the planned length.
+- B6, the N F Z units, x30, 27 fps: a take that drops stops; that arm or rate is out, and B6 is not met. A unit whose P1
+  stops does not run P2 (the unit loop treats the stopped take as finished; the lead ends the unit there).
