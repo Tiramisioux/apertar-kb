@@ -142,7 +142,9 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `6777ebe` | WebUI: the Value Lists card (T33) moves from the Record pane to the Controls pane; branch `drop-frames` | fork-only; on the Pi |
 | `854fe43` | WebUI: a Modes pane (after Record) with Activated sensor modes and the Mode Ladder, moved from Record; branch `drop-frames` | fork-only; on the Pi |
 | `4b14a79` | WebUI: the aspect filter of Activated sensor modes takes several ratios at once (All clears); branch `drop-frames` | fork-only; on the Pi |
-| `31d5418` | IMX585 Clear HDR 16-bit: no 25-fps cap in `backendMaximumFps()`; the driver maximum applies (4K 30, height crops 31.9-42.4); at 30 in 4K the ISP back end drops frames under load; branch `drop-frames` | fork-only; built on the Pi 2026-11-03 |
+| `31d5418` | IMX585 Clear HDR 16-bit: no 25-fps cap in `backendMaximumFps()`; the driver maximum applies (height crops 31.9-42.4); 4K: Core's state reads `fps_max` 30 (measured 2026-11-04), but 4K Clear HDR 16-bit tops out at 27 fps on the Pi (User, 2026-11-03; this row said "4K 30"); at 30 in 4K the ISP back end drops frames under load; branch `drop-frames` | fork-only; built on the Pi 2026-11-03 |
+| `fe5d592` | WebUI: a Remote controls card and Try buttons run a control's saved action (`test_input section= key=` socket command, through the hardware-input path); branch `drop-frames` | fork-only; on the Pi only (another session, 2026-11-03 23:55), built and running |
+| `c747f09` | WebUI: the GPIO out row gets a Remove, like the input rows; branch `drop-frames` | fork-only; on the Pi only (another session, 2026-11-03 23:55), built and running |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
