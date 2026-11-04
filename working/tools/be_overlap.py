@@ -377,7 +377,7 @@ def main():
         shares = [(k, q / n) for k, (q, n) in sorted(bins.items()) if n >= 100]
         kmax, smax = max(shares, key=lambda x: x[1]) if shares else (0, float('nan'))
         print(f'  {t["name"]:9s} idle jobs {len(a2s):5d}  dequeue->start {med(a2s):6.1f}  start->next dequeue {thr:5.1f}  '
-              f'jobs >= that {sum(x >= thr for x in s2) / len(s2):4.2f}  queued {queued / len(s2):4.2f}  '
+              f'jobs >= that {sum(x >= thr for x in s2) / (len(s2) or float('nan')):4.2f}  queued {queued / (len(s2) or float('nan')):4.2f}  '
               f'max 20-s queued {smax:4.2f} (s {5 + 20 * kmax}-{25 + 20 * kmax})  jobs {len(t["jobs"])}  lost {t["info"]["lost"]}')
         t['bins20'] = shares
 
@@ -429,6 +429,9 @@ def main():
         end = min(t['info']['secs'], len(tk) - 1)
         a, b = tk[4]['thr'], tk[end]['thr']
         dt = tk[end]['t'] - tk[4]['t']
+        if dt <= 0:
+            print(f'  {t["name"]:9s} n/a (take shorter than the 5-s window)')
+            continue
         fps = t['info']['delivered'] / t['info']['secs'] if t['info']['secs'] else 0
         camr = (b[cam][1] - a[cam][1]) / dt / 1e6
         rec = sorted(((b[x][1] - a[x][1]) / dt / 1e6 for x in b if x in a and x not in last and b[x][0] == 'apertar-core'), reverse=True)
