@@ -93,3 +93,26 @@ critic pass; not compiled; the pure header is host-simulated by `working/tools/p
 ## Verification status
 
 An adversarial verifier pass (2026-10-26) is appended to `working/port-raw/p1-phaselock-cinemate.md` and `p2-phaselock-core.md`: p1 20 claims, p2 20 claims, 0 refuted, 7+9 corrected for line numbers or wording only. One p2 caveat is already met by the patch: the pin in `requeueRequest` reads `settings_.photoModeEnabled` under `controlsMutex_` (`CC:7262-7265`), the lock `applyControls` writes settings under; `requeueRequest` is also reached from the ProRes and H.264 release paths without the settings lock.
+
+## 6. 2026-11-04: why Cinemate's lock is calm and Apertar's flickers (code comparison)
+
+Patrik: the lock makes the image flicker (WebUI toggle `a344376`), Cinemate's does not. Read from `libcamera(cinemate)@bfe0b76`,
+`libcamera(qbc)@7e9fef0`, driver `apertar@e5b74d3`, driver `cinemate-7modes@bd57617`. Measurement: hardware-log 2026-10-26 (C0102/C0103).
+
+| Layer | Cinemate | Apertar | Status |
+|---|---|---|---|
+| Servo (gains, deadband, clamp, µs rounding) | kp 0.06, ki 0.0015, 6 µs, ±150 µs | identical | CONFIRMED (§1) |
+| Reference clock | FrameWallClock | BOOTTIME (chases NTP slews → more pushes) | CONFIRMED (§1, hardware-log) |
+| What a 1 µs request becomes | no imx585 `getBlanking` override: HMAX fixed at the mode minimum, only VMAX moves (2 lines ≈ 14.8 µs at HMAX 550) | lattice `getBlanking` (`cam_helper_imx585.cpp:119-226@7e9fef0`): 40000 → HMAX 550 × 5400, 40001 → 581 × 5112, so each push re-picks the line length and SHR moves ~150-300 lines | CONFIRMED (source + T27 3.3 readback) |
+| How VMAX / SHR / HMAX reach the sensor | three separate `cci_write`s, no register hold | same (`imx585.c:1612-1676@apertar`; neither driver uses REGHOLD) | CONFIRMED (source) |
+| Cost of a frame that latches half the writes | 1-2 lines of ~2700 (≈0.07 %); Cinemate measured 0.03 % exposure variation | ~5-9 % (e.g. new VMAX 5112 − old SHR 2700 = 2412 lines × the new line length vs 2700 × 7.41 µs) | PROBABLE (arithmetic; matches C0103 max band step 8.9 %, p99 2.85 %) |
+
+So the servo is the same; the flicker comes from the qbc libcamera's lattice turning the lock's µs dither into line-length changes,
+which the non-atomic register writes make visible as one-frame exposure steps. The same race exists on Cinemate but costs only a line or two.
+
+Fix directions (not built):
+1. **Core only (least intrusive):** push only durations on the 2-line grid at the mode's minimum line length
+   (40000, 40015, 39985 µs … at 25 fps 4K Clear HDR). The lattice then keeps HMAX 550: 40015 µs → 5402 × 550, error 14 ticks ≤ `halfUs` 37,
+   so `lowH` = minHmax wins (`:197-207`). That is Cinemate's behaviour, reached from Core. Core needs the mode's min line length (550 here).
+2. Leave the lock off: the rig's sensor is ~1.5 ppm off the Pi crystal (hardware-log 2026-10-26), one slipped frame per ~3.7 h at 25 fps.
+   Referencing MONOTONIC_RAW instead of BOOTTIME is a separate improvement (fewer pushes), not a flicker fix.
