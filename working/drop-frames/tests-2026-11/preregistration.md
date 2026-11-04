@@ -86,6 +86,7 @@ Checklist (end of every evening):
 - [ ] Patrik's ladder
 - [ ] Core `tuning_file` back to automatic, read back (`ST`, `J`, the libcamera line, the settings file against the 'before' record; `tier1-prep-2026-11-03.md` section 4)
 - [ ] `sudo nvme smart-log /dev/nvme0` after each evening
+- [ ] after an unsupervised run: `sudo rm /etc/sudoers.d/apertar-b1-arm /usr/local/libexec/apertar-b1-arm` (User)
 
 At campaign end:
 
@@ -441,3 +442,22 @@ criterion added; the > 6 ms bin no longer a criterion; Refute requires saturatio
 same-evening N units; same-evening TDN-on units added. Before any data (2026-11-03 review of the handoff): the
 manipulation check reads the take's own lines and the ladder restore's line separately (as first written it voided every
 N take); the 27-fps gate needs every F unit; the positive check counts only a dump of the take's mode.
+
+### Deviations before any data, evening 3 (2026-11-04 ~01:30, decided with User; no take had run)
+
+- **Core `9b5ea14`, not `c747f09`.** Another session rewrote `fe5d592`/`c747f09` as `1319967`/`b64e6f6` and added `9b5ea14`
+  (a remote-only GPIO button; DPI-held pins greyed), committed at 01:22 after building an uncommitted tree at 01:19. The lead
+  rebuilt `~/ApertarCore-build` from the clean `9b5ea14` tree (User's OK); every unit runs on that binary. Diff `31d5418..9b5ea14`:
+  `WebControlPage.cpp`, `ControlsModel.hpp`, `HardwareConfigText.hpp`, the `test_input` command in `ApertarCoreApp.cpp/.hpp`;
+  nothing in the capture or record path (code read). The warm-up attempt at 01:09 never recorded (a WebUI client).
+- **Unsupervised run.** User is away from ~01:35. The root steps (`b1-arm.sh sync|save|restore`, removing the libcamera-log
+  drop-in, `nvme smart-log`, `systemctl poweroff`) run through a root-owned byte copy of `b1-arm.sh`
+  (`/usr/local/libexec/apertar-b1-arm`, md5 `4e2fecc6896609c27cb0783a89c56315` = the KB file) and `/etc/sudoers.d/apertar-b1-arm`,
+  exact commands only; both are removed by User after the run (restore list). Consequences, fixed now:
+  - No preview-noise look by User (the F arm's noise is not assessed tonight).
+  - Every "stop and ask User" of the plan becomes: `record_stop` if recording, end the evening, the full restore read back,
+    the reason written into the findings. Voids follow the rule as written (repeat once after the cool-down; a second void
+    ends the unit as void).
+  - The optional preview-only `dd` run (tier1-prep section 8 step 11) is skipped.
+  - At the end, after the restore, the copy of `/run/apertar-media` to the Mac and the KB push: `systemctl poweroff` (User's
+    request).
