@@ -618,6 +618,24 @@ entry): depth A/B die **4 = D4 D2 D2 D4**; denoise units die **1 = N F Z**.
   Section 5 reports Spearman rho of S2 against both temperatures and section 7 the temperature at each loss: description,
   not a criterion. The "NVMe > 40 C at P1" void of `tier1-prep-2026-11-03.md` section 5 is removed.
 - **Dice rolled by the lead** at User's request (method above).
+- **The WebUI is a stand-in on the Mac** (20:26, User agreed): `working/tools/webui_client.py` (`78662e0`), run
+  under `caffeinate` on the lead's Mac all night, does what an idle page does: `GET /api/state` every 1 s and the
+  `/preview.mjpeg` stream read and discarded, reconnecting 1.5 s after a close. Reason: the page's MJPEG `<img>` does not
+  reconnect after a Core restart (20:19-20:21 only the 1 s polls reached Core; `WebControlPage.cpp` retries on an `error`
+  event only), and every unit restarts Core. User's browser tab is closed, so Core sees exactly this one WebUI. Its log
+  (`webui-e4.log`, a status line every 10 s) goes into the raw archive; a take whose window has `mjpeg connected=no` in a
+  status line is reported with it (description, not a void).
+- **Helpers re-installed before any take** (User, 20:22): `apertar-b1-arm` md5 `2f1c1edd27c476eabba6b22b9d2b9e8e` (KB `756c3f2`:
+  the environ check retries up to 15 s; the first sync at 20:19 died at that check before arming tracefs, no take ran) and
+  `apertar-e4-helper` md5 `3111996534d6569eaad1e27edec0edca` (KB `d34fba7`: procfs read with `head`; the first install read
+  compaction_proactiveness 20 as "2").
+- **Preview look done before the A/B** (20:19-20:26, unscored, F at 20:23:58, Z at 20:24:56): positive checks from the dumps
+  on 3840-wide 16-bit configures: N `0x47074d` (TDN, SDN, CDN on), F `0x47060d` (TDN off), Z `0x45040d` (TDN, SDN and CDN
+  off). Z is this route. If User has not picked F or Z when B6 starts, B6 runs F (evening 3 measured it).
+- **Added, unscored (User, 20:22):** after the N F Z units, one 10-min N take at 25 fps D4 with the log drop-in disarmed
+  (`apertar-e4-helper disarm`, so no RPi debug log and no `LIBCAMERA_RPI_CONFIG_FILE`: depth 2 then; the YAML cannot be
+  loaded without the drop-in, noted) and tracefs events off (`apertar-b1-arm restore`), the WebUI stand-in on. It tests the
+  unconfirmed idea that the instrumentation costs the TDN-on margin (O1, `observations-2026-11-04.md`). Read on lost only.
 
 ### Depth A/B (plan item 1): 28 fps, F, one 3-min take per unit, units d1-d4 = D4 D2 D2 D4
 
