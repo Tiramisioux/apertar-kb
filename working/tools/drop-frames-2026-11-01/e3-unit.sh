@@ -14,7 +14,7 @@ C="python3 -I $HOME/apertar-kb/working/tools/core.py"
 nvt(){ cat /sys/class/nvme/nvme0/hwmon*/temp1_input 2>/dev/null | head -1; }
 ser(){ tr -d ' ' < /sys/class/nvme/nvme0/serial 2>/dev/null; }
 off(){ stat -c %s "$LC" 2>/dev/null || echo 0; }
-echo "$EVENING-unit.sh unit=$U takes=$* secs=$SECS env: TAKE_CLEAR_HDR=${TAKE_CLEAR_HDR:-} TAKE_BITS=${TAKE_BITS:-} TAKE_FPS=${TAKE_FPS:-} TAKE_COMPRESSION=${TAKE_COMPRESSION:-} TAKE_WEBUI=${TAKE_WEBUI:-} NVME_GATE=$NVME_GATE EVENING=$EVENING COOL_EACH=${COOL_EACH:-0} ($(date '+%F %T'))"
+echo "$EVENING-unit.sh unit=$U takes=$* secs=$SECS env: TAKE_CLEAR_HDR=${TAKE_CLEAR_HDR:-} TAKE_BITS=${TAKE_BITS:-} TAKE_FPS=${TAKE_FPS:-} TAKE_COMPRESSION=${TAKE_COMPRESSION:-} TAKE_WEBUI=${TAKE_WEBUI:-} TAKE_STOP_ON_DROP=${TAKE_STOP_ON_DROP:-} NVME_GATE=$NVME_GATE EVENING=$EVENING COOL_EACH=${COOL_EACH:-0} ($(date '+%F %T'))"
 CORE=$(systemctl show -p MainPID --value apertar-core)
 n=0; until journalctl -b _PID="$CORE" --no-pager 2>/dev/null | grep -q 'storage preroll: reason=start.*result='; do
   n=$((n+1)); [ $n -gt 120 ] && { echo "NOT STARTED: no storage preroll line for Core $CORE after 10 min"; exit 2; }; sleep 5; done

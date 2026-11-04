@@ -18,6 +18,8 @@
 # WebUI must be closed (the script refuses otherwise). Patrik's ladder is restored at the end.
 # TAKE_WEBUI=refuse|require (default refuse = as above). require turns it round: the take refuses to start when NO WebUI
 # client is connected ("no WebUI client, not starting"), and starts with >= 1; the build check applies in both modes.
+# TAKE_STOP_ON_DROP=0|1 (default 0 = as above). 1 ends the take at its first dropped frame: the loop sleeps in 1-s steps, reads
+# dropped=N from the last line of the 1 Hz log, prints "STOP ON DROP at <t>s", then stops and restores as usual; adds "recorded_s: <t>".
 SECS=${1:-180}
 LABEL=${2:-$(date +%H%M%S)}
 HDR=${TAKE_CLEAR_HDR:-true}; BITS=${TAKE_BITS:-16}; FPS=${TAKE_FPS:-25}; COMP=${TAKE_COMPRESSION:-none}
@@ -63,8 +65,8 @@ $C set_fps value=$FPS >/dev/null; sleep 4
 echo "mode: $($C get_state | python3 -c "import sys,json; d=json.load(sys.stdin); print(' '.join(f'{k}={d.get(k)!r}' for k in ('width','height','fps','clear_hdr','raw_bit_depth','recording_format','cdng_compression','tuning_file')))") (asked: hdr=$HDR bits=$BITS fps=$FPS compression=$COMP)"
 c=$(ss -tnH state established "( sport = :8000 )" | wc -l)
 b=$(ps -eo cmd | grep -cE '^[^ ]*(cc1plus|gmake|cmake) ')
-WEBUI=${TAKE_WEBUI:-refuse}
-echo "start $(date +%T) clients=$c builds=$b$([ "$WEBUI" = require ] && echo " webui=require")"
+WEBUI=${TAKE_WEBUI:-refuse}; STOPDROP=${TAKE_STOP_ON_DROP:-0}
+echo "start $(date +%T) clients=$c builds=$b$([ "$WEBUI" = require ] && echo " webui=require")$([ "$STOPDROP" = 1 ] && echo " stop_on_drop=1")"
 if [ "$WEBUI" = require ]; then [ "$c" -gt 0 ] || { echo "no WebUI client, not starting"; exit 0; }
 else [ "$c" -gt 0 ] && { echo "WebUI connected, not starting"; exit 0; }; fi
 [ "$b" -gt 0 ] && { echo "a build is running, not starting"; exit 0; }
@@ -80,7 +82,15 @@ LOGGER=$!
 echo "  clocks at record_start: $(python3 -I -c 'import time; print(f"epoch={time.time():.3f} mono={time.monotonic():.3f}")')"
 a=$(S); prev=$a; T1=$(date '+%F %T'); $C record_start >/dev/null
 G1OUT=/run/apertar-media/take-$LABEL.g1; G1PID=""
-t=0; while [ $t -lt $SECS ]; do s=$(( SECS - t < 60 ? SECS - t : 60 )); sleep $s; t=$((t+s)); cur=$(S)
+t=0; STOPPED=0; while [ $t -lt $SECS ]; do s=$(( SECS - t < 60 ? SECS - t : 60 ))
+  if [ "$STOPDROP" = 1 ]; then
+    k=0; while [ $k -lt $s ]; do sleep 1; k=$((k+1)); t=$((t+1))
+      dn=$(tail -n 1 "$LOG" 2>/dev/null | grep -oE 'dropped=[0-9]+' | head -n 1 | cut -d= -f2); dn=${dn:-0}
+      if [ "$dn" -gt 0 ]; then echo "  STOP ON DROP at ${t}s $(date +%T): dropped=$dn"; STOPPED=1; break; fi
+    done
+    [ $STOPPED = 1 ] && break
+  else sleep $s; t=$((t+s)); fi
+  cur=$(S)
   if [ $t -eq 60 ] && [ -n "$CAM" ] && [ $SECS -gt 120 ]; then
     python3 -I "$KB/hwcount.py" "$CORE" "$CAM" 60 > "$G1OUT" 2>&1 &
     G1PID=$!
@@ -95,4 +105,5 @@ echo "  whole take: $(DELTA "$a" "$b2")"
 echo "  drive after: $(df -h /media/RAW | awk 'NR==2{printf "%s used of %s (%s)", $3, $2, $5}') $(cat /sys/class/nvme/nvme0/hwmon*/temp1_input 2>/dev/null | awk '{printf "%d C", $1/1000}')"
 echo "  builds after: $(ps -eo cmd | grep -cE '^[^ ]*(cc1plus|gmake|cmake) ')  1 Hz log: $LOG ($(wc -l < "$LOG") lines)"
 if [ -n "$G1PID" ]; then wait "$G1PID" 2>/dev/null; echo "  G1 (CameraManager PMU, 60-120 s): $(cat "$G1OUT")"; fi
+[ "$STOPDROP" = 1 ] && echo "  recorded_s: $t"
 $C set_mode_ladder enabled=true >/dev/null; sleep 4; $C set_fps value=30 >/dev/null; sleep 4; echo restored
