@@ -67,7 +67,7 @@ The 6 balanced orders (2 writer W, 2 sync S): WWSS, WSWS, WSSW, SWWS, SWSW, SSWW
 reset, read back); the helper's `restore` if B3 applied it; the fill files and `warm.bin` if Patrik wants the space;
 `APERTAR_MEDIA_TRIM` drop-in gone; every `/run` drop-in gone (`dontneed.conf`, `LIBCAMERA_LOG_LEVELS`, UI `ExecStart`);
 tracefs events off and `buffer_size_kb` back (or reboot); `link-frequency` 891 MHz; `kernel.latencytop=0`; swap on; the
-imx585 driver `cd548ef`; Patrik's ladder. At campaign end: `cmdline.txt` from the backup; the baseline-UI worktree removed
+imx585 driver `cd548ef`; Patrik's ladder; Core's `tuning_file` back to automatic, read back. At campaign end: `cmdline.txt` from the backup; the baseline-UI worktree removed
 when Patrik agrees. `sudo nvme smart-log /dev/nvme0` after each evening.
 
 Checklist (end of every evening):
@@ -84,6 +84,7 @@ Checklist (end of every evening):
 - [ ] swap on
 - [ ] the imx585 driver `cd548ef`
 - [ ] Patrik's ladder
+- [ ] Core `tuning_file` back to automatic, read back (`ST`, `J`, the libcamera line, the settings file against the 'before' record; `tier1-prep-2026-11-03.md` section 4)
 - [ ] `sudo nvme smart-log /dev/nvme0` after each evening
 
 At campaign end:
@@ -331,3 +332,112 @@ pipeline, starves the CFE (**measured**; the dd load is heavier than a take's tr
 size of a take's share). In SDR12 the back end doubles (23.7 ms) and stays under its frame interval. This is the
 mechanism of the losing takes (G of the inspection, located in the ISP back end): what loads memory during a take,
 and why it tips one take and not the next, is the open question.
+
+## TDN off by a tuning copy, evening 3 (Tier 1 (1), `tier0-2026-11-03.md` section 5; unscored)
+
+Pre-registered in this commit (its hash goes into the findings), pushed before the warm-up with User's OK. Analysis =
+`be_overlap.py` and `take3v3.sh` as in this commit's parent (re-run on `raw-2026-11-03.tgz` they reproduce the TDN-on
+columns below); any later change to a metric is a listed deviation.
+Core `c747f09` (fixed in advance; listed deviation, decided with User before any data: the plan fixed `31d5418`, the Pi's build carries two later WebUI commits, `fe5d592` and `c747f09`, from another session, which add the `test_input` socket command and WebUI code only, nothing in the capture or record path, code read 2026-11-04), UI `c153c33`. Each unit as G2: sync (`b1-arm.sh sync`, Core restarted per unit), 8 raw
+buffers, 4K Clear HDR 16-bit uncompressed 25 fps, full preview (`ui switches:` empty), `warm.bin` before P1, libcamera's log
+to `/run/apertar-media/libcamera-e3.log`, test card serial A936B442006AC2, P1 + P2 of 3 min by `take3v3.sh`, the same
+chart and light in every unit. Arms: **F** = `set_tuning_file path=/home/pi/Tuning-Files/imx585_clearHDR_notdn.json`
+(`defaults-pisp/imx585_clearHDR.json` minus its 3 `tdn` blocks, `tools/tdn_strip.py`); **N** = `set_tuning_file path=`
+(automatic, TDN on). SDN with TDN off (printed by `tdn_strip.py`, the same in `normal`, `hdr`, `night`): `deviation_no_tdn` 3.2, `strength_no_tdn` 0.75 (with TDN: `deviation` 1.6, `strength` 0.5); the copy is 134,482 B, the source 134,888 B, md5 `f53de0fe87cd8a44a8f8e203ddb6839d` before and after.
+
+Design (User picks before the block; the order is drawn before this entry is committed and written here with the date,
+time and method): **A** = one block of 4 units, 2 F + 2 N, in one of the 6 balanced orders FFNN, FNFN, FNNF, NFFN, NFNF,
+NNFF (die 1-6); **B** (a short evening) = N F N. Never the N unit only at the end. The unscored warm-up runs on the first
+unit's arm. The 27-fps unit (section 6) runs only if every F unit of the block reads Support with margin (fixed now; User
+may decide otherwise before the block). The tuning is switched while not recording, after the unit's `b1-arm.sh sync`, and read back
+(`ST`, `J` on the new PID, the take's `mode:` line). Per-unit statistics, fixed now: P2 queued share (back end) and P1 + P2
+lost (losses). Test (A): exact one-sided permutation test F < N on each; minimum p = 1/6, so one block gives at most
+"probable"; a second block on another evening (stratified, minimum p 1/36) before TDN-off becomes a default.
+
+**Drawn: design A, 2026-11-04 01:05 CET, die rolled by User (result 4), after the copy and before any take of the block: NFFN = unit 1 N (`u1`), unit 2 F (`u2`), unit 3 F (`u3`), unit 4 N (`u4`); the warm-up runs on N.** Target 2 (`tier1-prep-2026-11-03.md` section 7) runs after the block with the tuning back on automatic (User, 2026-11-04).
+
+Question: does removing the 16-bit TDN reference (~37.6 of ~57.6 MB per frame) keep the BE jobs under the ~23 ms point
+where the next frame's swap and RawStats join them, at full preview?
+
+Readout per take (`be_overlap.py <dir> --prefix e3`): section 1 S2 median, swap and stats medians; section 2 isolated S2
+(overlap 0-0.5 ms, slack > 16 ms; read at n >= 500 only) and the > 6 ms bin with its n (reported, not a criterion: it is
+selected by job length, 36.9-44.5 ms in all 8 TDN-on takes while their S2 medians span 11.1-42.9); section 4 threshold,
+jobs at or past it (r = 0.998 with the queued share over 8 takes, so not an independent criterion), queued share, largest
+20-s queued share, job count; section 6 CPU per frame (CameraManager, recording threads, UI); losses (`dropped_gap_estimate`
+/ `enqueued`). Each take is one observation: frames are not replicates (the inspection struck a frame-level Fisher test,
+`inspection-2026-11-02.md:64`).
+
+| Readout | TDN on, g2 P1 / P2 (measured) | TDN on, 8 logged takes, 4 treatments | Model A (bound: all of S2 x 0.347) | Model B (expected: idle job 10-13 ms, only the overlap stretch scales) |
+| --- | --- | --- | --- | --- |
+| Lost | 2 / 108 | 0-590 | 0 | 0 |
+| S2 median (ms) | 27.3 / 37.7 | 11.1-42.9 | 4-8 | 10-15 |
+| S2 isolated [n] (ms) | 15.8 [1,543] / 19.8 [32] | 10.4-16.3 (n >= 500) | 4-8 | 10-13 |
+| Jobs with > 6 ms swap overlap | 0.49 / 0.84 | 0.10-0.91 | < 0.02 | <= 0.05 |
+| Threshold (ms) | 22.4 / 20.8 | 20.3-23.6 | 21-25 | 21-25 |
+| Jobs >= threshold | 0.56 / 0.95 | 0.11-0.97 | < 0.02 | <= 0.10 |
+| Queued share | 0.52 / 0.90 | 0.12-0.91 | < 0.05 | <= 0.10 |
+| Largest 20-s queued share | 0.63 / 0.93 | 0.26-0.94 | < 0.1 | <= 0.2 |
+
+Model A is only a bound: an idle job takes ~10.9 ms in SDR12 and HDR16 alike (`preregistration.md:325-326`), so it does not
+scale with its input bytes when uncontended; Model B is expected.
+
+Rule, per F unit (against the same evening's N units; without them, against g2):
+- **Support**: in both takes queued share <= 0.2, jobs >= threshold <= 0.2, no 20-s bin with queued share >= 0.5, and <= 2
+  lost. Reading: with TDN removed the back end stays below the threshold at full preview (measured, n = the F units); that
+  this is the back end's own bytes rather than less contention for the swap, RawStats and the copy is probable (secondary,
+  fixed now: section 1 swap and stats medians and section 6 CPU per frame against the N units; if they get faster too, part
+  of the relief is system-wide). **Support with margin** (the gate for unit 2) = Support plus S2 median <= 15 ms in both.
+- **BE relieved, losses elsewhere**: the BE criteria of Support met in both takes, > 2 lost: something other than the BE
+  holds the raw buffers. Next: section 1's queue, S1, S3, S4, cycle and the trace; no unit 2.
+- **Refute**: either take with queued share >= 0.5 and section 1 S2 median >= 0.85 x the same-evening N value at that
+  position (without N units: 0.85 x g2's 27.3 / 37.7 = 23.2 / 32.0 ms). Reading: removing TDN does not keep the back end
+  out of saturation at full preview, or TDN was not off per frame (positive check below). Next: the Tier 2 swap/RawStats
+  change.
+- **Partial**: no Refute, P2 queued share < 0.5 (below every TDN-on P2: 0.54-0.91) and Support missed: TDN is a lever but
+  not enough (probable). Next: the Tier 2 change with TDN-off as its companion; no unit 2.
+- **Inconclusive**: anything else (e.g. a clean unit with P2 queued >= 0.5): no TDN effect shown, no next step decided here.
+
+Base rate: with TDN on, full preview and 8 buffers, P1 lost <= 2 in 5 of 6 units and P2 in 0 of 6 (47-181 lost); a clean
+unit has occurred 0 times in 6 (one-sided 95 % upper bound 0.39), and once in all 9 sync units (pv0b, preview off). The
+"~1 in 4" of `preregistration.md:268-269` (also used at `:289-290`) assumed the losing take was equally likely P1 or P2; it
+was P2 in all 4 B1 units, so it is not a valid base rate. A clean F unit would be the first clean P2 at full preview: a
+real but weak signal on its own (pv0b-P2 lost 0 at a queued share of 0.54). Saturation began within 20-40 s in 4 of 8 takes;
+pv12-P1 tipped at 160-200 s: 3 minutes shows only an early onset, hence the 20-s criterion.
+
+**Void** (the whole unit: restart, `warm.bin`, P1, P2, repeated once after the cool-down; a second void ends it as void;
+void units stay in the table). Decided from the checks alone, before `be_overlap.py` runs:
+- manipulation check: the `mode:` line's Core values (the first `fps=`, before "(asked: ...)") read 3840x2160 / 25 / Clear
+  HDR True / 16 / none, and its `tuning_file` is the copy (F) or `''` (N); the `Using tuning file` lines from the take's own
+  mode set (the two near the window's start) name the copy (F) or `.../defaults-pisp/imx585_clearHDR.json` (N), and the
+  window's last one, from `take3v3.sh`'s ladder restore (SDR12), names the copy (F) or `.../defaults-pisp/imx585.json` (N)
+  (measured: every evening-2 window ends with such an `imx585.json` line, e.g. `g2-P1.log:98561`); with an `ApertarCore cDNG
+  preview colour:` line in the window, the take's lines name `/home/pi/.cache/apertar-prores/<profile>.json` instead, with
+  `grep -c '"tdn"'` on that one file 0 (F) / 3 (N); `ST` not `error` after the switch; `grep -c '"tdn"'` on the copy 0;
+- positive check, if libcamera writes it: `LIBCAMERA_RPI_PISP_CONFIG_DUMP=/run/apertar-media/be-cfg.json` in the log
+  drop-in dumps the first frame's BE configuration at each configure (upstream `pisp.cpp:2782-2797@6b0b49f` per
+  `research-30fps-answer.md:231-232`; unread in the qbc fork). Copy it after each unit's P2 as `be-cfg-<unit>.json`, with its mtime.
+  Before reading it, check which mode it describes: written at each configure it shows the ladder restore's SDR12 mode,
+  written once it shows the mode at Core's start (unread in the qbc fork); only a dump of the take's 4K 16-bit input counts.
+  Pass: `bayer_enables & 0x140 == 0` for F and set for N (TDN on gives 0x47075d). No dump of the take's mode = no positive
+  check: a Refute then reads "not shown". User also looks at the preview noise (the lead asks him once per arm);
+- card serial or `warm.bin` check failed; NVMe > 40 C at P1's start (P2 starts hot by design: 47-55 C on evening 2);
+  `throttled` not 0x0 on any take's `drive:` line; drive fill > 2 % at P1 (every reference P1 started at 1 %); a non-empty
+  `ui switches:` line, a WebUI client or a build.
+
+The back-end readouts alone are void (the unit is then read on losses against the base rate, not against the rule) if the
+`.out` has no `clocks at record_start` line, `be_overlap.py` prints `seeded from uptime`, or the window's job count is not
+within 1 % of 173 s x 25 - lost (all 8 TDN-on takes are).
+
+| Unit | Arm | Take | Lost | S2 median | S2 isolated [n] | threshold; jobs >= it | queued; largest 20-s | swap / stats | CPU cam / rec / UI | Note |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | | P1 (hh:mm) | | | | | | | | tuning and mode lines, serial, uptime_s, NVMe / SoC C, throttled, fill, MemFree |
+| 1 | | P2 (hh:mm) | | | | | | | | |
+
+UI CPU per frame differing by > 20 % between the arms means the preview-noise confounder is live: report it with the
+reading (20 % is a judgement, not derived). **Reading against the rule:** (after the block, measured / probable).
+
+Changes from the Tier 0 rule (`tier0-2026-11-03.md` section 5): <= 2 lost instead of 0 + 0; jobs >= threshold and the 20-s
+criterion added; the > 6 ms bin no longer a criterion; Refute requires saturation and compares the S2 median with the
+same-evening N units; same-evening TDN-on units added. Before any data (2026-11-03 review of the handoff): the
+manipulation check reads the take's own lines and the ladder restore's line separately (as first written it voided every
+N take); the 27-fps gate needs every F unit; the positive check counts only a dump of the take's mode.
