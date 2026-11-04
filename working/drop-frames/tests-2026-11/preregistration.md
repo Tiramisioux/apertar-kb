@@ -486,7 +486,10 @@ N take); the 27-fps gate needs every F unit; the positive check counts only a du
 | 3 | F | P1 (02:22) | 1 / 4,512 | 5.9 | 5.9 [4,293] | 23.7; 0.00 | 0.00; 0.01 | 8.2 / 6.0 | 16.1 / 30.5 / 3.6 | **void (whole unit): NVMe 40.85 C at the unit start** (`nvme at unit start: 40850`; the loop's check had passed on a 39.85 reading and printed a second read; loop fixed to print and check one reading, twice). Otherwise as unit 2: copy loaded, dump TDN off (0x47060d, at Core's start 02:11:51), uptime_s 5130, SoC 57.6 C, 0x0, fill 1 %, MemFree 456 MB; 4,324 jobs (4,324) |
 | 3 | F | P2 (02:26) | 0 / 4,512 | 5.9 | 5.9 [4,304] | 23.6; 0.00 | 0.00; 0.01 | 8.2 / 6.1 | 16.1 / 30.2 / 3.5 | void with the unit; uptime_s 5356, NVMe 51.85 / SoC 56.5 C, 0x0, fill 8 %; 4,325 jobs |
 
-Unit 2 against the rule (measured, n = 1 F unit): **Support with margin** in both takes. UI CPU per frame 3.4 against
+| 3r | F | P1 (02:43) | 2 / 4,509 | 5.9 | 5.9 [4,299] | 23.6; 0.00 | 0.00; 0.01 | 8.3 / 6.0 | 16.1 / 30.5 / 3.6 | valid (the repeat of unit 3): copy loaded before the window, none inside; dump TDN off (0x47060d, Core's start 02:31:32); NVMe 39.85 C at the unit start and 39.85 before OFF0, SoC 57.1 C, 0x0, fill 1 %, uptime_s 6381, MemFree 470 MB; 4,322 jobs (4,323) |
+| 3r | F | P2 (02:47) | 0 / 4,513 | 5.9 | 5.9 [4,306] | 23.8; 0.00 | 0.00; 0.01 | 8.2 / 6.0 | 16.0 / 30.3 / 3.4 | valid; uptime_s 6608, NVMe 59.85 / SoC 56.0 C, 0x0, fill 8 %, MemFree 739 MB; 4,325 jobs (4,325) |
+
+Units 2 and 3r against the rule (measured, n = 2 F units): **Support with margin** in both takes of each (3r-P1 at the <= 2 lost limit). UI CPU per frame 3.4 against
 4.4-4.5 ms in unit 1 (-24 %): the preview-noise confounder is live by the pre-registered 20 % line (reported, not decided).
 
 ## Frame-rate sweep above 25 fps, 4K Clear HDR 16-bit uncompressed, evening 3 (User's request 01:40; exploratory, unscored)
