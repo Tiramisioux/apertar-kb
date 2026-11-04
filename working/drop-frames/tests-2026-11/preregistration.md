@@ -694,3 +694,25 @@ evening 3: no `clocks at record_start` line, `seeded from uptime`, or the job co
 this entry. Restore: `apertar-e4-helper disarm`, the `/run` YAML removed, `set_tuning_file path=`, `compact-restore` if
 C0 ran, `apertar-b1-arm restore`, the restore list read back, `smartlog`, Core's mode back to User's (4K Clear HDR 16-bit,
 25 fps, uncompressed, **ladder off**, as at 20:13), `poweroff`.
+
+### During the evening-4 depth A/B (written as it happened; nothing below changes a rule)
+
+- **d1 (D4, 20:27-20:31): void, repeated as d1r after d4.** The manipulation check "the last `Using tuning file` line
+  before OFF0 names the F copy" could not be read: libcamera's log file restarts at each Core start, and only the take's
+  window was cut before d2's restart (from d2 on, that line is saved as `<unit>-pre-tuning.txt` before every restart). The
+  tuning is shown by the other readings (Core's `ApertarCore tuning file: .../imx585_clearHDR_notdn.json (custom, pisp)` at
+  20:27:10 for PID 16438, `ST`, the take's `mode:` line, the dump `0x47060d`), but the registered check is missing, so the
+  unit is void by the rule (decided before reading its section 7). Reported: 0 / 5,056 lost, `L>2T` 0 (not exercised).
+- **d2 (D2, 20:33:07-20:33:53): void, repeated as d2r after d1r.** User asked to stop the take at ~44 s (he saw dropped
+  frames on the camera); the lead sent `record_stop` at 20:33:53 and ended the scripts. Reported: Core `dropped_gap_estimate=2`,
+  1,235 enqueued; `be_overlap.py` section 1 counts 0 in its window (seconds 5 .. end - 2), so both losses fell outside it
+  (probable); section 6 fails on a killed take (no recording-thread exit), section 7 not reached.
+- **An unexplained clip, 20:32:24:** `cDNG_26_11_04_20322419_C0001` (155 frames) was recorded by the Core of d1 (PID 16438)
+  six seconds before d2's sync restart, by no command of the lead's; asked User. Not a take's folder: kept.
+- Order from here: d3 (D2), d4 (D4), d1r (D4), d2r (D2). The rule reads d3, d4, d1r, d2r as the block's two D2 and two D4
+  takes (the drawn order D4 D2 D2 D4 shifted by the two repeats; fixed now, before d3's data).
+
+### 30 fps, exploratory (User's request 20:31; after the A/B; unscored)
+
+One 3-min take at 30 fps, F, D4, unit x30, the same routine. Read as description: lost, section 7 (`L>2T`, `L>4T`, K2-K4),
+section 4 queued share and threshold, section 1 S2 and swap, temperatures. HDR16 4K's `fps_max` reads 30 on this build.
