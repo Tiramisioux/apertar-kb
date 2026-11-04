@@ -12,7 +12,8 @@
 #        [Service]
 #        Environment=APERTAR_DNG_DONTNEED=<arm>
 #      then `systemctl daemon-reload` and `systemctl restart apertar-core`, waits up to 30 s for the unit to be active with a
-#      non-zero MainPID, reads /proc/<MainPID>/environ and exits 1 loudly if APERTAR_DNG_DONTNEED differs from <arm>.
+#      non-zero MainPID, reads /proc/<MainPID>/environ (retried every 1 s for up to 15 s, MainPID re-read each time, because
+#      systemd reports it before the child's exec) and exits 1 loudly if APERTAR_DNG_DONTNEED still differs from <arm>.
 #   3. tracefs (/sys/kernel/tracing): with --trace-buffer only, buffer_size_kb = 8192 (per CPU; never larger). Always: sets
 #      `enable` to 1 for the seven vmscan/v4l2/vb2 events (or prints "missing: <event>"), prints the per-CPU overrun counts,
 #      clears the trace buffer, sets tracing_on to 1.
@@ -26,7 +27,8 @@
 # restore
 #   Disables the seven events, sets tracing_on and buffer_size_kb back from /run/b1-arm.orig (if that file is absent: events
 #   set to 0, buffer size reported unknown and left, tracing_on left), removes the drop-in dontneed.conf if present,
-#   daemon-reload, restarts apertar-core, waits as above and prints the Core environ line (expect no APERTAR_DNG_DONTNEED:
+#   daemon-reload, restarts apertar-core, waits as above and prints the Core environ line (retried up to 15 s until it is the
+#   exec'd process's environment without the variable; expect no APERTAR_DNG_DONTNEED:
 #   the build default is sync). /run/b1-arm.orig is NOT deleted (tmpfs, gone at the next reboot).
 #
 # What it writes (nothing else): /run/systemd/system/apertar-core.service.d/ (directory), .../dontneed.conf, /run/b1-arm.orig,
@@ -159,6 +161,15 @@ core_environ_value() { # prints the APERTAR_DNG_DONTNEED line of MainPID's envir
   { tr '\0' '\n' < "/proc/$PID/environ" | grep '^APERTAR_DNG_DONTNEED=' | head -n1; } 2>/dev/null || true
 }
 
+environ_is_exec() { # true if MainPID's environ is readable and has a LIBCAMERA_ or HOME= line (the exec'd process, not the fork)
+  { tr '\0' '\n' < "/proc/$PID/environ" | grep -Eq '^(LIBCAMERA_|HOME=)'; } 2>/dev/null
+}
+
+refresh_pid() { # re-read MainPID (it may change if the unit restarted); keep the old one if the read gives nothing usable
+  rp_new=$(systemctl show -p MainPID --value "$UNIT" 2>/dev/null || true)
+  case "$rp_new" in ""|0|*[!0-9]*) ;; *) PID=$rp_new ;; esac
+}
+
 restart_and_wait() {
   OLDPID=$(systemctl show -p MainPID --value "$UNIT" 2>/dev/null || true)
   run_cmd systemctl daemon-reload
@@ -259,7 +270,15 @@ Environment=APERTAR_DNG_DONTNEED=$MODE"
 
 check_environ_arm() {
   if [ "$DRY" -eq 1 ]; then return 0; fi
-  ce_line=$(core_environ_value)
+  ce_i=0
+  while :; do
+    ce_line=$(core_environ_value)
+    if [ "$ce_line" = "APERTAR_DNG_DONTNEED=$MODE" ] || [ "$ce_i" -ge 15 ]; then break; fi
+    sleep 1
+    ce_i=$((ce_i + 1))
+    refresh_pid
+  done
+  if [ "$ce_line" = "APERTAR_DNG_DONTNEED=$MODE" ]; then say "  environ matched after $ce_i s"; fi
   say "  Core environ (MainPID $PID): ${ce_line:-APERTAR_DNG_DONTNEED not set}"
   if [ "$ce_line" != "APERTAR_DNG_DONTNEED=$MODE" ]; then
     die "THE ARM DID NOT TAKE: wanted APERTAR_DNG_DONTNEED=$MODE in Core's environment, found '${ce_line:-nothing}'. Do not score a take on this unit."
@@ -399,7 +418,16 @@ case "$MODE" in
     remove_dropin
     restart_and_wait
     if [ "$DRY" -eq 0 ]; then
-      rs_line=$(core_environ_value)
+      rs_i=0
+      while :; do
+        rs_line=$(core_environ_value)
+        if [ -z "$rs_line" ] && environ_is_exec; then break; fi
+        if [ "$rs_i" -ge 15 ]; then break; fi
+        sleep 1
+        rs_i=$((rs_i + 1))
+        refresh_pid
+      done
+      say "  environ read after $rs_i s"
       say "  Core environ (MainPID $PID): ${rs_line:-APERTAR_DNG_DONTNEED not set (build default: sync)}"
       if [ -n "$rs_line" ]; then
         die "RESTORE INCOMPLETE: Core still has $rs_line (another drop-in or unit file sets it; look in /etc/systemd/system/apertar-core.service.d/)"
