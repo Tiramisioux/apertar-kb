@@ -16,7 +16,7 @@ Per frame (keyed by CFE buffer id, CFE SOF timestamp for the swap):
   slack  = Input re-queue(N) - ISP Input complete(N-1): Core's and the UI's work on frame N-1 starts at complete(N-1)
 Sections: 1 stage medians per take; 2 S2 by overlap with another frame's swap x slack; 3 the same with the exposure fixed
 at the job's start; 4 the idle-regime phase (when the next frame's swap lands in a job); 5 per-second Spearman of S2
-with the 1 Hz counters; 6 CPU time per delivered frame.
+with the 1 Hz counters; 6 CPU time per delivered frame; 7 the FE Config deadline (predicted losses per Config queue depth).
 The 1 Hz log is in epoch seconds and libcamera in CLOCK_MONOTONIC: each take is aligned on the "clocks at
 record_start: epoch= mono=" line take3v3.sh prints (from 2026-11-04); without it (evening 2), the offset is fitted once
 per boot by matching per-second losses (CFE SOF gaps) with Core's recording_dropped_frames increments over the takes
@@ -409,6 +409,40 @@ def main():
               f'{sum(rec) / fps:5.1f} (largest {rec[0] / fps:4.1f}, next four {sum(rec[1:5]) / fps:5.1f})  UI {ui / fps:5.1f}  '
               f'cores used {(camr + sum(rec)) / 1000:4.2f}')
 
+    print('\n7. FE Config deadline (tier2-plan-2026-11-04.md): libcamera keeps K Config buffers in flight (num_cfe_config_queue,')
+    print('   default 2); a frame starts at its SOF only if one is queued; a started frame takes one at its SOF and hands it back at')
+    print('   its Config dequeue (L = that time - its SOF). Replayed per depth K on the take\'s own L (a slot lost in reality gets the')
+    print('   median L). "lost" = SOF gaps actually seen; K = 2 should reproduce them. Recording window only.')
+    print(f'  {"take":9s} {"T ms":>5s} {"L med":>6s} {"L max":>6s} {"margin<10 (K2)":>14s} {"K2":>4s} {"K3":>4s} {"K4":>4s} {"lost":>5s}  worst L (s in take)')
+    for t in takes:
+        fr = sorted([f for f in t['frames'] if 'cfg' in f and t['lo'] <= f['ts'] < t['hi']], key=lambda f: f['ts'])
+        if len(fr) < 10:
+            print(f'  {t["name"]:9s} no Config dequeue lines in the window')
+            continue
+        T = statistics.median([b['ts'] - a['ts'] for a, b in zip(fr, fr[1:])])
+        Lm = statistics.median([f['cfg'] - f['ts'] for f in fr])
+        slots = []  # (sof, cfg or None)
+        for a, b in zip(fr, fr[1:] + [None]):
+            slots.append((a['ts'], a['cfg']))
+            if b is not None:
+                for k in range(1, max(1, round((b['ts'] - a['ts']) / T))):
+                    slots.append((a['ts'] + k * T, None))
+        sim = {}
+        for K in (2, 3, 4):
+            started, lost_k = [], 0
+            for sof, cfg in slots:
+                if sum(1 for s0, c0 in started[-8:] if s0 < sof < c0) < K:
+                    started.append((sof, cfg if cfg is not None else sof + Lm))
+                else:
+                    lost_k += 1
+            sim[K] = lost_k
+        L = [(f['cfg'] - f['ts']) * 1e3 for f in fr]
+        near = sum(1 for x in L if 0 <= 2 * T * 1e3 - x < 10)
+        lost = sum(f.get('lost', 0) for f in t['frames'] if t['lo'] <= f['ts'] < t['hi'])
+        t0 = t['tk'][0]['t'] - t['off']
+        worst = sorted(((f['cfg'] - f['ts']) * 1e3, f['ts'] - t0) for f in fr)[-3:][::-1]
+        ws = ', '.join(f'{x:.0f} ({y:.0f})' for x, y in worst)
+        print(f'  {t["name"]:9s} {T * 1e3:5.1f} {Lm * 1e3:6.1f} {max(L):6.1f} {near:14d} {sim[2]:4d} {sim[3]:4d} {sim[4]:4d} {lost:5d}  {ws}')
 
 if __name__ == '__main__':
     main()
