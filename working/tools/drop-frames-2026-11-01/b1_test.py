@@ -19,6 +19,21 @@ C(4,2)=6 writer assignments of each block independently. Ties count as >= (conse
 
   python3 -I b1_test.py data.csv [--json]
   python3 -I b1_test.py --self-test
+
+Mode --tdn: evening-3 TDN test (pre-registered, design A). Blocks of 4 units, exactly 2 with arm F (TDN off) and 2
+with arm N (TDN on). Two per-unit statistics, each tested separately: "P2 queued share" = P2_queued (float 0..1) and
+"losses" = P1_lost + P2_lost (integers). Hypothesis one-sided F < N. T = sum of the statistic over the F units.
+Exact p = #(relabelings with T <= observed) / 6^blocks (C(4,2)=6 F assignments per block, enumerated independently;
+1 or more blocks), computed with Fraction; ties count as <= (conservative; float ties for P2_queued within 1e-12).
+Minimum attainable p with one block = 1/6. Output per statistic: observed T, p (fraction and decimal), and every
+relabeling (which units are F) with its T, the observed one marked.
+CSV header, exactly:
+  block,unit,arm,P1_lost,P2_lost,P2_queued
+arm is F or N; P1_lost and P2_lost are integers; P2_queued is within 0..1. Invalid input exits non-zero (2) without
+computing anything.
+
+  python3 -I b1_test.py --tdn data.csv [--json]
+  python3 -I b1_test.py --tdn --self-test
 """
 import argparse
 import csv
@@ -181,6 +196,196 @@ def to_json(r):
     return json.dumps(out, indent=2)
 
 
+# ---- TDN mode (evening 3) ----
+
+TDN_HEADER = ['block', 'unit', 'arm', 'P1_lost', 'P2_lost', 'P2_queued']
+TDN_TOL = 1e-12
+TDN_STATS = (('P2_queued', 'P2 queued share', lambda u: u['P2_queued']),
+             ('losses', 'losses (P1_lost + P2_lost)', lambda u: u['P1_lost'] + u['P2_lost']))
+
+
+def tdn_parse_row(row, line):
+    arm = row['arm'].strip()
+    if arm not in ('F', 'N'):
+        raise InputError(f'line {line}: arm must be F or N, got {row["arm"]!r}')
+    u = {'block': row['block'].strip(), 'unit': row['unit'].strip(), 'arm': arm}
+    for k in ('P1_lost', 'P2_lost'):
+        v = num(row, k, line)
+        if v != v or v in (float('inf'), float('-inf')) or v != int(v):
+            raise InputError(f'line {line}: {k} must be an integer, got {row[k]!r}')
+        u[k] = int(v)
+    q = num(row, 'P2_queued', line)
+    if not (0.0 <= q <= 1.0):  # also rejects nan
+        raise InputError(f'line {line}: P2_queued must be within 0..1, got {row["P2_queued"]!r}')
+    u['P2_queued'] = q
+    return u
+
+
+def tdn_load(path):
+    with open(path, newline='') as f:
+        rd = csv.DictReader(f)
+        if rd.fieldnames != TDN_HEADER:
+            raise InputError(f'header must be exactly: {",".join(TDN_HEADER)}\n  got: {",".join(rd.fieldnames or [])}')
+        units = []
+        for i, row in enumerate(rd, start=2):
+            if None in row or any(v is None for v in row.values()):
+                raise InputError(f'line {i}: wrong number of columns')
+            units.append(tdn_parse_row(row, i))
+    return units
+
+
+def tdn_validate(units):
+    if not units:
+        raise InputError('no data rows')
+    blocks = {}
+    for u in units:
+        blocks.setdefault(u['block'], []).append(u)
+    for b, us in blocks.items():
+        f = sum(1 for u in us if u['arm'] == 'F')
+        n = sum(1 for u in us if u['arm'] == 'N')
+        if len(us) != 4 or f != 2 or n != 2:
+            raise InputError(f'block {b!r}: needs exactly 2 F and 2 N units, found {f} F and {n} N ({len(us)} units)')
+        if len({u['unit'] for u in us}) != 4:
+            raise InputError(f'block {b!r}: unit labels must be distinct within a block')
+    return blocks
+
+
+def tdn_permutation(blocks, stat):
+    """Exact stratified one-sided test, F < N: p = #(T <= observed) / 6^blocks. Returns dict (Fraction p)."""
+    names = list(blocks)
+    per_block = []  # per block: list of (F-unit labels, sum of stat over them) for the 6 assignments
+    obs = 0
+    for b in names:
+        us = blocks[b]
+        opts = [([f'{b}/{us[i]["unit"]}' for i in c], sum(stat(us[i]) for i in c))
+                for c in itertools.combinations(range(4), 2)]
+        per_block.append(opts)
+        obs += sum(stat(u) for u in us if u['arm'] == 'F')
+    obs_f = sorted(f'{b}/{u["unit"]}' for b in names for u in blocks[b] if u['arm'] == 'F')
+    rel = []
+    for combo in itertools.product(*per_block):
+        t = sum(c[1] for c in combo)
+        fl = sorted(x for c in combo for x in c[0])
+        rel.append({'F_units': fl, 'T': t, 'observed': fl == obs_f})
+    total = 6 ** len(names)
+    count = sum(1 for r in rel if r['T'] <= obs + TDN_TOL)
+    return {'T': obs, 'count': count, 'total': total, 'p': Fraction(count, total),
+            'min_p': Fraction(1, total), 'relabelings': rel}
+
+
+def tdn_analyse(units):
+    blocks = tdn_validate(units)
+    return {'units': units, 'n_blocks': len(blocks),
+            'stats': {key: tdn_permutation(blocks, fn) for key, _, fn in TDN_STATS}}
+
+
+def tdn_report(r):
+    L = ['TDN test (one-sided, F < N, stratified by block; T = sum over F units; p = #(T <= observed) / 6^blocks)',
+         f'blocks: {r["n_blocks"]}', '', 'per-unit',
+         f'{"block":<8}{"unit":<8}{"arm":<5}{"P1_lost":>9}{"P2_lost":>9}{"losses":>8}{"P2_queued":>11}']
+    for u in r['units']:
+        L.append(f'{u["block"]:<8}{u["unit"]:<8}{u["arm"]:<5}{u["P1_lost"]:>9}{u["P2_lost"]:>9}'
+                 f'{u["P1_lost"] + u["P2_lost"]:>8}{g(u["P2_queued"]):>11}')
+    for key, label, _ in TDN_STATS:
+        p = r['stats'][key]
+        L += ['', f'statistic: {label}', f'observed T: {g(p["T"])}',
+              f'relabelings with T <= observed: {p["count"]} of {p["total"]}',
+              f'p: {p["p"]} = {float(p["p"]):.4f}',
+              f'minimum attainable p: {p["min_p"]} = {float(p["min_p"]):.4f}',
+              'all relabelings (F units, T):']
+        for i, rl in enumerate(p['relabelings'], start=1):
+            L.append(f'  {i:>3}  F = {", ".join(rl["F_units"])}  T = {g(rl["T"])}' + ('  <- observed' if rl['observed'] else ''))
+    return '\n'.join(L)
+
+
+def tdn_to_json(r):
+    out = {'units': r['units'], 'n_blocks': r['n_blocks'], 'stats': {}}
+    for key, p in r['stats'].items():
+        out['stats'][key] = {'T': p['T'], 'count': p['count'], 'total': p['total'], 'p': float(p['p']),
+                             'p_fraction': str(p['p']), 'min_p': float(p['min_p']),
+                             'min_p_fraction': str(p['min_p']), 'relabelings': p['relabelings']}
+    return json.dumps(out, indent=2)
+
+
+def tdn_mk(block, unit, arm, p1, p2, q):
+    return {'block': block, 'unit': unit, 'arm': arm, 'P1_lost': p1, 'P2_lost': p2, 'P2_queued': q}
+
+
+def tdn_block(b, vals, arms=('F', 'F', 'N', 'N')):
+    """vals: 4 (losses-as-P1, queued) pairs; losses placed in P1_lost with P2_lost 0."""
+    return [tdn_mk(b, f'u{i + 1}', arms[i], v[0], 0, v[1]) for i, v in enumerate(vals)]
+
+
+def tdn_self_test():
+    import os
+    import tempfile
+    fails = 0
+
+    def case(name, ok):
+        nonlocal fails
+        print(f'{name}: {"PASS" if ok else "FAIL"}')
+        fails += (not ok)
+
+    def P(units, key):
+        return tdn_analyse(units)['stats'][key]['p']
+
+    lo = [(1, 0.1), (2, 0.2), (10, 0.8), (11, 0.9)]  # F units first (low), N units last (high)
+    sep = tdn_block('B1', lo)
+    case('(1) one block, F below N: p == 1/6 for both statistics',
+         P(sep, 'losses') == Fraction(1, 6) and P(sep, 'P2_queued') == Fraction(1, 6))
+    rev = tdn_block('B1', lo, arms=('N', 'N', 'F', 'F'))
+    case('(2) one block, F above N: p == 1 for both statistics',
+         P(rev, 'losses') == 1 and P(rev, 'P2_queued') == 1)
+    tie = tdn_block('B1', [(5, 0.5), (5, 0.5), (5, 0.5), (5, 0.5)])
+    r = tdn_analyse(tie)['stats']
+    case('(3a) all tied: every relabeling counts as <=, p == 1',
+         r['losses']['p'] == 1 and r['P2_queued']['p'] == 1 and r['losses']['count'] == 6)
+    # losses F=(1,5) N=(5,9): sums over pairs: 6,6,10,10,14,14 -> observed 6; T<=6 is 2 of 6 (ties at 6 count)
+    tie2 = tdn_block('B1', [(1, 0.1), (5, 0.5), (5, 0.5), (9, 0.9)], arms=('F', 'N', 'F', 'N'))
+    tie2[0]['arm'], tie2[1]['arm'], tie2[2]['arm'], tie2[3]['arm'] = 'F', 'F', 'N', 'N'
+    case('(3b) partial tie: F=(1,5) vs N=(5,9): T=6 ties with another relabeling, p == 2/6 (not 1/6)',
+         P(tie2, 'losses') == Fraction(2, 6))
+    # F = (0.1, 0.3), N = (0.2+0.1, 0.9): observed T = 0.4; the relabeling F = (0.1, 0.2+0.1) sums to 0.4000000000000001,
+    # above T in floats, so it counts only through the tolerance: p = 2/6 with it, 1/6 without
+    fl = tdn_block('B1', [(0, 0.1), (0, 0.3), (0, 0.2 + 0.1), (0, 0.9)])
+    case('(3c) float ties within 1e-12 count as <= (0.1+0.2 vs 0.3)',
+         P(fl, 'P2_queued') == Fraction(2, 6))
+    two = tdn_block('B1', lo) + tdn_block('B2', lo)
+    case('(4) two blocks, complete separation: p == 1/36 for both statistics',
+         P(two, 'losses') == Fraction(1, 36) and P(two, 'P2_queued') == Fraction(1, 36)
+         and tdn_analyse(two)['stats']['losses']['total'] == 36 and len(tdn_analyse(two)['stats']['losses']['relabelings']) == 36)
+    bad = tdn_block('B1', lo, arms=('F', 'F', 'F', 'N'))
+    try:
+        tdn_validate(bad)
+        case('(5a) block with 3 F units refused', False)
+    except InputError as e:
+        print(f'    message: {e}')
+        case('(5a) block with 3 F units refused', True)
+    d = tempfile.mkdtemp()
+    path = os.path.join(d, 'bad.csv')
+    with open(path, 'w') as f:
+        f.write(','.join(TDN_HEADER) + '\n' + ''.join(
+            f'B1,u{i + 1},{a},1,1,0.5\n' for i, a in enumerate(('F', 'F', 'F', 'N'))))
+    try:
+        tdn_analyse(tdn_load(path))
+        case('(5b) invalid CSV (3 F units) refused end to end', False)
+    except InputError:
+        case('(5b) invalid CSV (3 F units) refused end to end', True)
+    for name, line in (('P2_queued 1.5', 'B1,u1,F,1,1,1.5'), ('non-integer P1_lost', 'B1,u1,F,1.5,1,0.5'),
+                       ('arm x', 'B1,u1,x,1,1,0.5')):
+        with open(path, 'w') as f:
+            f.write(','.join(TDN_HEADER) + '\n' + line + '\n')
+        try:
+            tdn_load(path)
+            case(f'(5c) {name} refused', False)
+        except InputError:
+            case(f'(5c) {name} refused', True)
+    os.remove(path)
+    os.rmdir(d)
+    print('SELF-TEST ' + ('PASS' if not fails else 'FAIL'))
+    return 1 if fails else 0
+
+
 # ---- self-test ----
 
 def mk(block, unit, arm, p1, p2, kswapd):
@@ -245,17 +450,24 @@ def main():
     ap.add_argument('csv', nargs='?')
     ap.add_argument('--json', action='store_true', help='print JSON instead of text')
     ap.add_argument('--self-test', action='store_true')
+    ap.add_argument('--tdn', action='store_true', help='evening-3 TDN test (header block,unit,arm,P1_lost,P2_lost,P2_queued)')
     a = ap.parse_args()
     if a.self_test:
-        sys.exit(self_test())
+        sys.exit(tdn_self_test() if a.tdn else self_test())
     if not a.csv:
         ap.error('CSV path required (or --self-test)')
     try:
-        r = analyse(load(a.csv))
+        if a.tdn:
+            r = tdn_analyse(tdn_load(a.csv))
+        else:
+            r = analyse(load(a.csv))
     except (InputError, OSError) as e:
         print(f'b1_test: {e}', file=sys.stderr)
         sys.exit(2)
-    print(to_json(r) if a.json else report(r))
+    if a.tdn:
+        print(tdn_to_json(r) if a.json else tdn_report(r))
+    else:
+        print(to_json(r) if a.json else report(r))
 
 
 if __name__ == '__main__':
