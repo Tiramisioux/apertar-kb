@@ -547,3 +547,10 @@ frames, and where do the losses come from?
   ~550 MB/s derived for the drive); CSI-2 OVLF > 0 in the losing seconds = the receiver; none of these = unexplained, said so.
   The trace (`apertar-b1-arm save` after the last step) shows whether the raw buffers ran out (`owned_by_drv = 0`).
 - n = 1 per step: the onset is a first estimate, not a bound (two clean 3-min takes bound the loss rate only at < 0.077 %).
+
+### Results, the sweep (arm F: mean lost 1.5 against 164 for N, mean P2 queued 0.00 against 0.915)
+
+| Step | Take | Lost | S2 median / p90 | threshold; jobs >= it | queued; largest 20-s | cycle | CPU cam / rec / UI | `dropped_queue_full`; `peak_queue` | Note |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 26 | s26-P1 (03:44) | 0 / 4,693 | 6.4 / 10.6 | 21.4; 0.00 | 0.01; 0.03 | 38.1 | 17.0 / 33.5 / 3.7 | 0; 2/12 | valid: mode fps 26.0, the copy, dump TDN off; NVMe 39.85 C, 0x0, fill 1 %, MemFree 701 MB; 4,498 jobs (4,498) |
+| 27 | u27-P1 (03:23) | 1 / 4,874 | 7.1 / 12.2 | 19.6; 0.01 | 0.02; 0.06 | 36.8 | 17.4 / 35.4 / 3.9 | 0; 2/12 | the 27-fps unit's P1 (not repeated) |
