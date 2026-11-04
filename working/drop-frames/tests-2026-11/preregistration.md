@@ -575,3 +575,104 @@ and 27 fps (0-2 lost per 3-min take) and loses at 28 (5 lost). The 28-fps losses
 - Next (not run tonight): log the rp1-cfe `csi2_errors` LEN / UNMATCHED fields and CFE frame-start / frame-end per second
   (the 1 Hz logger keeps only OVLF), and time the CFE interrupt against the long BE jobs; a 10-min take at 27 fps TDN off
   bounds how often the stall costs a frame there.
+
+## Tier 2, evening 4 (2026-11-04): FE Config queue depth, B6, denoise units (`tier2-plan-2026-11-04.md` section 6)
+
+Pre-registered in this commit (its hash goes into the findings), pushed before the first scored take with User's OK (20:12).
+Analysis = `be_overlap.py --prefix e4` as of `19f335c` (section 7 with the `L>2T` / `L>4T` columns `648d9f4`, the 1 Hz
+temperatures `f5aa4b2` / `19f335c`) and the scripts as of that commit; any later change to a metric is a listed deviation.
+
+**Rig (fixed now):** Core `9b5ea14` (`drop-frames`, the evening-3 binary), UI `c153c33`, libcamera installed `7e9fef0` (qbc),
+driver `cd548ef`. Each unit: `sudo apertar-b1-arm sync` (Core restarted, sync, tracefs events), 8 raw buffers,
+`buffer=ram`, 4K Clear HDR 16-bit uncompressed, full preview with peaking and zebra on (`ui switches:` empty), **the WebUI
+open on User's computer** (>= 1 client at the take's start: `TAKE_WEBUI=require`), `warm.bin` (2.5 GB, rewritten 20:11
+after User formatted the test card) read before P1, test card serial A936B442006AC2, fill <= 2 % at P1, takes by
+`take3v3.sh` through `e3-unit.sh` with `EVENING=e4 NVME_GATE=off`. Root steps through `/usr/local/libexec/apertar-b1-arm`
+(md5 `4e2fecc6...` = KB `b1-arm.sh`) and `/usr/local/libexec/apertar-e4-helper` (KB `e4-helper.sh` at `d34fba7`), exact
+commands in `/etc/sudoers.d/apertar-e4` (installed by User 20:14). `apertar-e4-helper arm` writes the `/run` drop-in
+`zz-libcamera-e4.conf`: `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR,RPI:0,RPiStream:0`, `LIBCAMERA_LOG_FILE=/run/apertar-media/
+libcamera-e4.log`, `LIBCAMERA_RPI_PISP_CONFIG_DUMP=/run/apertar-media/be-cfg.json`, `LIBCAMERA_RPI_CONFIG_FILE=/run/
+apertar-media/pisp-pipeline.yaml`. The `/run` YAML is copied (as pi) before every Core start that has the drop-in.
+
+**Arms (files fixed now):**
+- **D2** = `/home/pi/Tuning-Files/pipeline/pisp-depth2.yaml`, md5 `c1e0c3e99f51e553d11cfefcb4a4b68f` (byte-identical to the
+  installed `/usr/local/share/libcamera/pipeline/rpi/pisp/example.yaml`: every option commented, so libcamera's defaults,
+  `num_cfe_config_queue` 2, `pisp.cpp:1446@7e9fef0`). **D4** = `pisp-depth4.yaml`, md5 `88929ca34bc8e4e8d4ab5ffaac1e2b64`,
+  the same with the one line `"num_cfe_config_queue": 4` (`pisp.cpp:1470-1471`, 4 `prepareCfe()` at start `:1912`).
+- **F** = `set_tuning_file path=/home/pi/Tuning-Files/imx585_clearHDR_notdn.json` (md5 `98d98f2e...`, evening 3's copy).
+  **N** = `path=` (automatic, `defaults-pisp/imx585_clearHDR.json`, md5 `f53de0fe...`, TDN on). **Z** =
+  `path=/home/pi/Tuning-Files/imx585_clearHDR_nodenoise.json` (md5 `7250056e68cb67da1178ae68a954b7e4`, `tdn_strip.py --blocks
+  tdn,sdn,cdn`: 0 tdn / sdn / cdn, each denoise mode left as `{}`).
+
+**Drawn orders** (User asked the lead to roll; Python `secrets.randbelow(6) + 1`, 2026-11-04 20:11:38 CET, before this
+entry): depth A/B die **4 = D4 D2 D2 D4**; denoise units die **1 = N F Z**.
+
+### Deviations from `tier2-plan-2026-11-04.md`, decided with User before any data
+
+- **The WebUI is open in every take** (User, ~20:05: "a requirement"), the reverse of evenings 1-3 (`take3v3.sh` refused a
+  client). Tonight's D2 takes, not evening 3, are the comparison for D4; on 2026-11-01 an open WebUI added ~2 % of losses
+  (`README.md` finding 6). A take with no client does not start (not a void; the lead asks User or waits).
+- **NVMe temperature is not a gate** (User, ~20:13: it differs in real use) but is logged: at each unit's start and before
+  OFF0 (`(gate off)`), on each take's `drive:` / `drive after:` lines, and per second (`| temp nvme_mC= soc_mC=` in the 1 Hz
+  log). Reading the hwmon file each second is a small new load (an NVMe admin command per second), the same in every arm.
+  Section 5 reports Spearman rho of S2 against both temperatures and section 7 the temperature at each loss: description,
+  not a criterion. The "NVMe > 40 C at P1" void of `tier1-prep-2026-11-03.md` section 5 is removed.
+- **Dice rolled by the lead** at User's request (method above).
+
+### Depth A/B (plan item 1): 28 fps, F, one 3-min take per unit, units d1-d4 = D4 D2 D2 D4
+
+Per unit: copy the arm's YAML to `/run/apertar-media/pisp-pipeline.yaml` (md5 printed), `apertar-b1-arm sync` (copy and rm
+its `b1-trace` file), J until the new PID's tuning line, `set_tuning_file` F, ST and J, then `TAKE_FPS=28` one take (P1).
+After the take: md5 of the `/run` YAML again, `e3-collect.sh cut` and copies to the Mac before the next restart, delete the
+take's own clip folder.
+
+Per take (`be_overlap.py --prefix e4`): lost (`dropped_gap_estimate`), section 7's K2 / K3 / K4 replay, `L>2T`, `L>4T`;
+sections 1 and 4 reported.
+
+- **Support**: both D4 takes 0 lost, at least one D4 take with `L>2T` >= 1 (the depth was exercised), and in each D2 take
+  the K2 replay equals the actual lost within 1 (fixed now from evening 3: s28 replayed 4 of 5, every other take exact).
+  Reading: depth 4 removes the FE-Config losses (probable at n = 2 + 2).
+- **Refute**: a D4 take with a loss while `L>4T` = 0 in that take (the Config was on time at depth 4): another path.
+- **Config late even at depth 4**: a D4 loss with `L>4T` >= 1. Then B6 and the units run with the fallback arm (below).
+- **Inconclusive**: no D4 take with `L>2T` >= 1 (the bursts did not come), or D4 clean but a D2 take's replay off by > 1.
+- Manipulation check (void if it fails): the `/run` YAML's md5 equals the arm's at the copy and after the take; in the
+  libcamera log after that unit's Core start, `Using configuration file '/run/apertar-media/pisp-pipeline.yaml'` and none of
+  `Failed to open configuration file`, `Failed to parse configuration file`, `Unexpected configuration file version`,
+  `Invalid configuration`; Core's environ has `LIBCAMERA_RPI_CONFIG_FILE=/run/apertar-media/pisp-pipeline.yaml`; the `mode:`
+  line reads 3840x2160 / 28 / Clear HDR True / 16 / none / the F copy; the last `Using tuning file` line before OFF0 names the
+  F copy; ST not `error`. No log line states the depth (the fork does not print it): the md5 is the depth check.
+
+### B6 (plan item 3): 25 fps, five 10-min takes, two boots
+
+The preview arm User picks after the look (F or Z), D4 (D2 if the A/B reads Refute; with "Config late" the fallback arm).
+Units b1-b5, one take each (`UNIT_SECS=600`), a reboot through the helper after b3 (User allowed it, 20:17), then
+`apertar-e4-helper arm` and the same unit routine. **Done** = 0 lost in all five (target 1 met with that preview and
+depth). Any loss: classified by section 7 (`L>2T`, `L>4T`, K replay) and the trace, reported; B6 not met.
+
+### Denoise units (plan item 4): 25 fps, D4, N F Z, one unit each, P1 + P2 of 3 min
+
+Per unit: lost P1 + P2, queued share, S2 median, UI CPU per frame, section 7, temperatures. Expected (probable): N saturates
+the back end (queued >= 0.5, not fixed by depth), F and Z 0-0. Description, n = 1 each (TDN's test is evening 3's block).
+Positive check: `be-cfg-<unit>.json` from the take's 4K 16-bit configure: `bayer_enables` TDN (0x40) and TDN_OUTPUT (0x100)
+set for N, clear for F and Z; SDN (0x200) and CDN (0x20000) set for N and F, clear for Z (`pisp_be_config.h`). If a Z dump
+shows SDN or CDN set, Z is "not this route" and its unit is reported as such.
+
+### Then, if time: 27 fps 10 min (F or Z, D4, unit t27); the lossless pre-roll reading with F (`estimated_capacity_fps`)
+
+### Fallback arm (plan section 5), only after "Config late even at depth 4"
+
+`apertar-e4-helper compact0` (vm.compaction_proactiveness 20 -> 0) before the next unit, labelled `+C0` in every following
+row; `compact-restore` at the end.
+
+### Void (whole unit, decided from the checks alone before `be_overlap.py`; repeated once, a second void ends it)
+
+The manipulation check above (and for N/F/Z the tuning lines as evening 3); card serial or `warm.bin` failed; `throttled`
+not 0x0 on a `drive:` line; fill > 2 % at P1; a non-empty `ui switches:` line; a build running. BE readouts alone void as
+evening 3: no `clocks at record_start` line, `seeded from uptime`, or the job count not within 1 % of (secs - 7) x fps - lost.
+
+### Stop the night (restore, push, power off) on
+
+`set_tuning_file` error, Core `error`, a second void, `critical_warning` != 0, a take script that died, anything outside
+this entry. Restore: `apertar-e4-helper disarm`, the `/run` YAML removed, `set_tuning_file path=`, `compact-restore` if
+C0 ran, `apertar-b1-arm restore`, the restore list read back, `smartlog`, Core's mode back to User's (4K Clear HDR 16-bit,
+25 fps, uncompressed, **ladder off**, as at 20:13), `poweroff`.

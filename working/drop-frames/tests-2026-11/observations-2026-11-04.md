@@ -35,3 +35,28 @@ clip|ApertarCore tuning file|media tune"`).
 For each: the `recording clip:` line (`dropped_gap_estimate`, `enqueued`, `tune_override`), the `ApertarCore tuning file:`
 line, the compression, the length, Core's commit, the drive temperature. With those, O1 and O3 can go into the hardware log
 (after User confirms the reading) and O3 can extend target 2's record to the frame rate it reached.
+
+## From the journal (evening 4 lead, 2026-11-04 20:15; measured from Core's log unless labelled)
+
+The journal has two boots between evening 3's power-off and evening 4 (19:00:42, 19:46:52). Clips (all deleted when User
+formatted the test card at ~20:10):
+
+| Start | Clip | Compression | Frames | Core's `dropped_gap_estimate` at stop |
+| --- | --- | --- | --- | --- |
+| 19:00:45 | `cDNG_26_11_04_19004517_C0001` | lossless JPEG | (gone before 19:46) | none logged |
+| 19:45:39 | `cDNG_26_11_04_19453901_C0001` | lossless JPEG | 237 | none logged |
+| 19:46:56 | `cDNG_26_11_04_19465605_C0001` | lossless JPEG | (gone) | 1 |
+| 19:47:02 | `cDNG_26_11_04_19470222_C0001` | lossless JPEG | 181 | 3 |
+| 19:50:19 | `cDNG_26_11_04_19501918_C0001` | none | 124 | none logged |
+| **19:51:24** | **`cDNG_26_11_04_19512403_C0001`** | **none** | **15,037 (601 s at 25 fps, 16-bit 4K)** | **1** (20:01:25) |
+| 20:01:32 | `cDNG_26_11_04_20013201_C0001` | none | 447 | none logged |
+
+- **O1 = the 19:51 take** (User, 20:16: peaking and zebra on; the WebUI open). Core started 19:46:53 on **`defaults-pisp/
+  imx585_clearHDR.json (sensor default, pisp)`, the automatic tuning, TDN on**, and logged no tuning change after it: so O1
+  ran with TDN **on**, not the TDN-off copy as guessed above (measured from the journal). Core counted 1 lost
+  (`dropped_gap_estimate=1`); User's "a successful 10 min take" was the UI's reading (unconfirmed which counter it shows).
+- No libcamera debug log, no trace events, no `/run` drop-in in that boot. Evening 3's TDN-on units (58-116 lost per 3 min)
+  all ran with the RPi debug log (`RPI:0,RPiStream:0`) to tmpfs and the trace events; A0 (2026-10-30, TDN on, 10 min, clean)
+  ran without them. **Unconfirmed hypothesis**: the instrumentation itself costs a large part of the margin with TDN on.
+  Tonight's N unit runs with the log (pre-registered); an unlogged N take is proposed to User as an extra, unscored.
+- O3 (SDR12 ~42 fps) is not in this journal window: no SDR12 clip after 19:00 (unconfirmed when it was taken).
