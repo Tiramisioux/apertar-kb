@@ -413,7 +413,7 @@ def main():
     print('   default 2); a frame starts at its SOF only if one is queued; a started frame takes one at its SOF and hands it back at')
     print('   its Config dequeue (L = that time - its SOF). Replayed per depth K on the take\'s own L (a slot lost in reality gets the')
     print('   median L). "lost" = SOF gaps actually seen; K = 2 should reproduce them. Recording window only.')
-    print(f'  {"take":9s} {"T ms":>5s} {"L med":>6s} {"L max":>6s} {"margin<10 (K2)":>14s} {"K2":>4s} {"K3":>4s} {"K4":>4s} {"lost":>5s}  worst L (s in take)')
+    print(f'  {"take":9s} {"T ms":>5s} {"L med":>6s} {"L max":>6s} {"margin<10 (K2)":>14s} {"K2":>4s} {"K3":>4s} {"K4":>4s} {"lost":>5s} {"L>2T":>5s} {"L>4T":>5s}  worst L (s in take)')
     for t in takes:
         fr = sorted([f for f in t['frames'] if 'cfg' in f and t['lo'] <= f['ts'] < t['hi']], key=lambda f: f['ts'])
         if len(fr) < 10:
@@ -438,11 +438,13 @@ def main():
             sim[K] = lost_k
         L = [(f['cfg'] - f['ts']) * 1e3 for f in fr]
         near = sum(1 for x in L if 0 <= 2 * T * 1e3 - x < 10)
+        over2 = sum(1 for x in L if x > 2 * T * 1e3)
+        over4 = sum(1 for x in L if x > 4 * T * 1e3)
         lost = sum(f.get('lost', 0) for f in t['frames'] if t['lo'] <= f['ts'] < t['hi'])
         t0 = t['tk'][0]['t'] - t['off']
         worst = sorted(((f['cfg'] - f['ts']) * 1e3, f['ts'] - t0) for f in fr)[-3:][::-1]
         ws = ', '.join(f'{x:.0f} ({y:.0f})' for x, y in worst)
-        print(f'  {t["name"]:9s} {T * 1e3:5.1f} {Lm * 1e3:6.1f} {max(L):6.1f} {near:14d} {sim[2]:4d} {sim[3]:4d} {sim[4]:4d} {lost:5d}  {ws}')
+        print(f'  {t["name"]:9s} {T * 1e3:5.1f} {Lm * 1e3:6.1f} {max(L):6.1f} {near:14d} {sim[2]:4d} {sim[3]:4d} {sim[4]:4d} {lost:5d} {over2:5d} {over4:5d}  {ws}')
 
 if __name__ == '__main__':
     main()
