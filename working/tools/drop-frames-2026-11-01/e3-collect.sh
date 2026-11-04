@@ -1,11 +1,12 @@
 # e3-collect.sh cut <unit> | clips <unit> | delete <unit>   (as pi, on the Pi, never during a take)
-# cut:    from /run/apertar-media/e3-<unit>.out's OFF<n> lines, cut libcamera-e3.log into <unit>-<take>.log per take
+# EVENING=<name> (default e3) picks the files: e.g. EVENING=e4 bash e3-collect.sh cut d1 reads e4-d1.out and libcamera-e4.log.
+# cut:    from /run/apertar-media/$EVENING-<unit>.out's OFF<n> lines, cut libcamera-$EVENING.log into <unit>-<take>.log per take
 #         (bytes OFFk..OFFk+1, the take names from the "===== <take>" lines), and copy be-cfg.json to be-cfg-<unit>.json
 #         with its mtime printed.
 # clips:  print each take's "recording clip:" folder.
 # delete: rm -rf exactly those folders (each must be /media/RAW/cDNG_<digits/underscores>_C<4 digits>, a directory).
 set -eu
-R=/run/apertar-media; MODE=$1; U=$2; OUT=$R/e3-$U.out; LC=$R/libcamera-e3.log
+R=/run/apertar-media; MODE=$1; U=$2; EVENING=${EVENING:-e3}; OUT=$R/$EVENING-$U.out; LC=$R/libcamera-$EVENING.log
 [ -f "$OUT" ] || { echo "no $OUT"; exit 1; }
 clips(){ grep -oE '^recording clip: /media/RAW/[^ ]+' "$OUT" | awk '{print $3}'; }
 case "$MODE" in

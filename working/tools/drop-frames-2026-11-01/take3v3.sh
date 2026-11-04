@@ -16,6 +16,8 @@
 # It needs no sudo and deletes nothing: deleting the take's own clip folder and the trim are steps of the reviewed root
 # script for the arm (b1-arm.sh in the plan), never a cDNG_* glob. Nothing else may run on the Pi during the take, and the
 # WebUI must be closed (the script refuses otherwise). Patrik's ladder is restored at the end.
+# TAKE_WEBUI=refuse|require (default refuse = as above). require turns it round: the take refuses to start when NO WebUI
+# client is connected ("no WebUI client, not starting"), and starts with >= 1; the build check applies in both modes.
 SECS=${1:-180}
 LABEL=${2:-$(date +%H%M%S)}
 HDR=${TAKE_CLEAR_HDR:-true}; BITS=${TAKE_BITS:-16}; FPS=${TAKE_FPS:-25}; COMP=${TAKE_COMPRESSION:-none}
@@ -61,8 +63,10 @@ $C set_fps value=$FPS >/dev/null; sleep 4
 echo "mode: $($C get_state | python3 -c "import sys,json; d=json.load(sys.stdin); print(' '.join(f'{k}={d.get(k)!r}' for k in ('width','height','fps','clear_hdr','raw_bit_depth','recording_format','cdng_compression','tuning_file')))") (asked: hdr=$HDR bits=$BITS fps=$FPS compression=$COMP)"
 c=$(ss -tnH state established "( sport = :8000 )" | wc -l)
 b=$(ps -eo cmd | grep -cE '^[^ ]*(cc1plus|gmake|cmake) ')
-echo "start $(date +%T) clients=$c builds=$b"
-[ "$c" -gt 0 ] && { echo "WebUI connected, not starting"; exit 0; }
+WEBUI=${TAKE_WEBUI:-refuse}
+echo "start $(date +%T) clients=$c builds=$b$([ "$WEBUI" = require ] && echo " webui=require")"
+if [ "$WEBUI" = require ]; then [ "$c" -gt 0 ] || { echo "no WebUI client, not starting"; exit 0; }
+else [ "$c" -gt 0 ] && { echo "WebUI connected, not starting"; exit 0; }; fi
 [ "$b" -gt 0 ] && { echo "a build is running, not starting"; exit 0; }
 CSI(){ f=$(ls /sys/kernel/debug/rp1-cfe*/csi2_errors 2>/dev/null | head -1); [ -n "$f" ] && awk 'NR==1 || /^[0-9] /{printf "%s | ", $0}' "$f" | tr -s ' ' || echo "csi2 n/a"; }
 # csi2_errors is cleared on every read (measured 2026-11-02): this read clears it just before the take; during the take
@@ -84,6 +88,7 @@ t=0; while [ $t -lt $SECS ]; do s=$(( SECS - t < 60 ? SECS - t : 60 )); sleep $s
   echo "  ${t}s $(date +%T): dropped=$(D) clients=$(ss -tnH state established "( sport = :8000 )" | wc -l) $(grep -E '^(MemFree|Cached|Dirty):' /proc/meminfo | awk '{printf "%s%dM ", $1, $2/1024}')"
   echo "    minute deltas: $(DELTA "$prev" "$cur" | tr ' ' '\n' | grep -E '^(pgsteal_kswapd|pgsteal_direct|pgscan_direct|pgscan_direct_throttle|allocstall_normal|allocstall_movable|kswapd_low_wmark_hit_quickly|pageoutrun|pgmajfault|pswpin|compact_stall)=' | tr '\n' ' ')"; prev=$cur; done
 $C record_stop >/dev/null; sleep 8; kill "$LOGGER" 2>/dev/null; b2=$(S)
+echo "  clients after: $(ss -tnH state established "( sport = :8000 )" | wc -l)"
 echo "  mem after: $(M)"; echo "  psi after: $(P)"
 journalctl -u apertar-core --since "$T1" --no-pager | grep -oE "recording clip: [^ ]+|dropped_gap_estimate=[0-9]+|enqueued=[0-9]+|dropped_queue_full=[0-9]+|dropped_copy_slot=[0-9]+|peak_queue=[0-9/]+|queue_budget=[0-9]+|synced to the medium in [0-9]+ ms" | tr '\n' ' '; echo
 echo "  whole take: $(DELTA "$a" "$b2")"

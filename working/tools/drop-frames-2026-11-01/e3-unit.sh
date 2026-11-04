@@ -1,17 +1,19 @@
 # e3-unit.sh <unit> <take>...: the lead's unit loop for evening 3 (tier1-prep-2026-11-03.md section 8 steps 5 and 7).
 # Run as pi, detached: setsid nohup bash /run/apertar-media/e3-unit.sh u1 P1 P2 > /run/apertar-media/e3-u1.out 2>&1 </dev/null &
+# EVENING=<name> (default e3) names the log, the takes and the scratch file; TAKE_WEBUI=refuse|require passes through to take3v3.sh:
+#   EVENING=e4 TAKE_FPS=28 TAKE_WEBUI=require setsid nohup bash /run/apertar-media/e3-unit.sh d1 P1 > /run/apertar-media/e4-d1.out 2>&1 </dev/null &
 # Before the first take (and before every take with COOL_EACH=1, target 2): Core's pre-roll done, no b1-trace file,
 # NVMe <= 40 C (up to 30 min, else NOT STARTED), serial and warm.bin, cat warm.bin, MemFree, fill <= 2 %.
 # Before every other take: serial and warm.bin present. OFF<n> = byte size of libcamera's log before/after each take.
 # Take mode from TAKE_* in the environment (passed through to take3v3.sh); UNIT_SECS = take length (default 180).
 U=$1; shift
 R=/run/apertar-media; T=$HOME/apertar-kb/working/tools/drop-frames-2026-11-01/take3v3.sh
-LC=$R/libcamera-e3.log; SECS=${UNIT_SECS:-180}; SERIAL=A936B442006AC2
+EVENING=${EVENING:-e3}; LC=$R/libcamera-$EVENING.log; SECS=${UNIT_SECS:-180}; SERIAL=A936B442006AC2
 C="python3 -I $HOME/apertar-kb/working/tools/core.py"
 nvt(){ cat /sys/class/nvme/nvme0/hwmon*/temp1_input 2>/dev/null | head -1; }
 ser(){ tr -d ' ' < /sys/class/nvme/nvme0/serial 2>/dev/null; }
 off(){ stat -c %s "$LC" 2>/dev/null || echo 0; }
-echo "e3-unit.sh unit=$U takes=$* secs=$SECS env: TAKE_CLEAR_HDR=${TAKE_CLEAR_HDR:-} TAKE_BITS=${TAKE_BITS:-} TAKE_FPS=${TAKE_FPS:-} TAKE_COMPRESSION=${TAKE_COMPRESSION:-} COOL_EACH=${COOL_EACH:-0} ($(date '+%F %T'))"
+echo "$EVENING-unit.sh unit=$U takes=$* secs=$SECS env: TAKE_CLEAR_HDR=${TAKE_CLEAR_HDR:-} TAKE_BITS=${TAKE_BITS:-} TAKE_FPS=${TAKE_FPS:-} TAKE_COMPRESSION=${TAKE_COMPRESSION:-} TAKE_WEBUI=${TAKE_WEBUI:-} EVENING=$EVENING COOL_EACH=${COOL_EACH:-0} ($(date '+%F %T'))"
 CORE=$(systemctl show -p MainPID --value apertar-core)
 n=0; until journalctl -b _PID="$CORE" --no-pager 2>/dev/null | grep -q 'storage preroll: reason=start.*result='; do
   n=$((n+1)); [ $n -gt 120 ] && { echo "NOT STARTED: no storage preroll line for Core $CORE after 10 min"; exit 2; }; sleep 5; done
@@ -43,8 +45,8 @@ for P in "$@"; do
   echo "memfree: $(grep MemFree /proc/meminfo | tr -s ' ')"
   echo "OFF$i $(off)"; i=$((i+1))
   echo "===== $P"
-  bash "$T" "$SECS" "e3-$U-$P" 2>&1 | tee $R/.e3-cur.txt
-  if ! grep -q '^restored' $R/.e3-cur.txt; then
+  bash "$T" "$SECS" "$EVENING-$U-$P" 2>&1 | tee "$R/.$EVENING-cur.txt"
+  if ! grep -q '^restored' "$R/.$EVENING-cur.txt"; then
     echo "TAKE SCRIPT DID NOT FINISH ($P): sending record_stop at $(date +%T)"; $C record_stop; echo; echo "OFF$i $(off)"; exit 4
   fi
 done
