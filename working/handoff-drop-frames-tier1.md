@@ -164,6 +164,44 @@ state of the Pi after the restore.
 
 ---
 
-## State after evening 3
+## State after evening 3 (2026-11-04, written by the lead session at ~04:55, unsupervised from ~01:35)
 
-(The lead writes it here at the end of the evening: result, state of the Pi, open for Patrik, next.)
+Read first: `drop-frames/tests-2026-11/findings-2026-11-04.md`, then the evening's sections of `preregistration.md`
+(from "TDN off by a tuning copy, evening 3"). Raw data: `raw-2026-11-04.tgz` (reproduce with `tools/be_overlap.py <dir>
+--prefix e3` per unit directory).
+
+**Result:**
+- **TDN off removes the back-end bottleneck at 25 fps** (Support with margin in both F units; permutation p = 1/6 on both
+  statistics, probable): TDN on lost 58 + 39 and 115 + 116 (BE job ~37 ms, queued 0.91); TDN off 1 + 0 and 2 + 0 (BE job
+  5.9 ms, queued 0.00). Target 1 is close but not met: the TDN-off P1 takes still lost 1-2 single frames each.
+- **HDR16 with TDN off: clean to 27 fps (1 + 1 lost), onset at 28 (5 lost)**; the 28-fps losses are a second path: the CFE
+  never ran out of buffers, each loss follows one 79-105 ms BE job (probable); its cause is unconfirmed.
+- **Target 2 met**: 4K SDR 12-bit 33 fps, 10 min lossless 0 / 19,851 and 10 min uncompressed 0 / 19,857.
+
+**State of the Pi at the end:** restore list read back (`findings` and `preregistration.md`): no `/run` drop-in for Core or
+the UI, Core's environ only `LIBCAMERA_LOG_LEVELS=IPARPI:ERROR` from `/etc`, `buffer=ram`, tracefs restored by the helper
+(events 0, buffer 1408 KB), sysctls stock, swap on (zram), link frequency 891 MHz, driver checkout `cd548ef`, tuning
+automatic (`tuning_file ''`, settings file empty, `(sensor default, pisp)`), ladder on at 30 fps (`Resolution 1 ·
+3840×2160 · ClearHDR16 · ≤30 · Lossless JPEG`). Drive: only `warm.bin` (1 %). smart-log `critical_warning` 0, 29.01 TB
+written (+1.55 TB tonight). Core `9b5ea14` built and running (not on GitHub; the other session's WebUI commits). The TDN-off
+copy stays at `/home/pi/Tuning-Files/imx585_clearHDR_notdn.json` (inert unless selected). **Powered off** at the end
+(User's request).
+
+**Open for User:**
+- `sudo rm /etc/sudoers.d/apertar-b1-arm /usr/local/libexec/apertar-b1-arm` after booting (before any image is made).
+- Look at the preview with TDN off (`set_tuning_file path=/home/pi/Tuning-Files/imx585_clearHDR_notdn.json`, back with
+  `path=`): is the temporal noise acceptable? The DNGs do not depend on it.
+- The ladder's rung 1 now reads ClearHDR16 ≤ 30 lossless (was ≤ 25 before `31d5418`; lossless HDR16 encodes at ~17 fps):
+  your call.
+- From evening 2, still open: the Crucial P310's `fsck.exfat -n` and its two test clips; the fork-log rows `fe5d592` /
+  `c747f09` were rewritten by the other session as `1319967` / `b64e6f6` plus `9b5ea14` (fork log to fix with the sha).
+
+**Next (by the pre-registered outcome "Support with margin"; to plan with User, nothing run):**
+1. A second TDN block on another evening (another die roll, stratified test, minimum p 1/36), with User looking at the
+   preview once per arm. If it holds: TDN off for Clear HDR 16-bit, the least intrusive way: a tuning file Core selects
+   automatically for HDR16 (DTS), or `[camera]` tuning default, decided with User.
+2. B6 at 25 fps TDN off: five 10-min takes on two boots (inspection 8.3 B6); 27 fps TDN off as a second B6 candidate.
+3. The second loss path (1-2 frames per 3 min at 25, 5 at 28): log `csi2_errors` LEN / UNMATCHED and CFE frame start /
+   end per second, time the CFE interrupt against the rare 80-105 ms BE jobs, and test the 1782 Mbps link question.
+4. Deferred as before: B3's sysctl cells, U1, B8, B5, T2; Tier 2's swap/RawStats change is no longer first (the BE is
+   relieved); O_DIRECT stays a candidate for the write path's CPU.
