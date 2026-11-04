@@ -489,8 +489,26 @@ N take); the 27-fps gate needs every F unit; the positive check counts only a du
 | 3r | F | P1 (02:43) | 2 / 4,509 | 5.9 | 5.9 [4,299] | 23.6; 0.00 | 0.00; 0.01 | 8.3 / 6.0 | 16.1 / 30.5 / 3.6 | valid (the repeat of unit 3): copy loaded before the window, none inside; dump TDN off (0x47060d, Core's start 02:31:32); NVMe 39.85 C at the unit start and 39.85 before OFF0, SoC 57.1 C, 0x0, fill 1 %, uptime_s 6381, MemFree 470 MB; 4,322 jobs (4,323) |
 | 3r | F | P2 (02:47) | 0 / 4,513 | 5.9 | 5.9 [4,306] | 23.8; 0.00 | 0.00; 0.01 | 8.2 / 6.0 | 16.0 / 30.3 / 3.4 | valid; uptime_s 6608, NVMe 59.85 / SoC 56.0 C, 0x0, fill 8 %, MemFree 739 MB; 4,325 jobs (4,325) |
 
+| 4 | N | P1 (03:03) | 115 / 4,391 | 37.5 | 17.9 [31] (not read) | 20.9; 0.94 | 0.91; 0.94 | 9.2 / 6.7 | 18.3 / 35.1 / 4.5 | valid: `tuning_file ''`, `defaults-pisp/imx585_clearHDR.json` before the window, none inside; dump TDN on (0x47074d, Core's start 02:51:29); NVMe 39.85 C at the start and before OFF0, SoC 57.1 C, 0x0, fill 1 %, uptime_s 7599, MemFree 462 MB; 4,212 jobs (4,210) |
+| 4 | N | P2 (03:07) | 116 / 4,389 | 37.3 | 19.9 [27] (not read) | 20.5; 0.95 | 0.91; 0.94 | 9.2 / 6.7 | 18.3 / 35.4 / 4.5 | valid; uptime_s 7826, NVMe 57.85 / SoC 54.9 C, 0x0, fill 8 %, MemFree 1,214 MB; 4,208 jobs (4,209) |
+
 Units 2 and 3r against the rule (measured, n = 2 F units): **Support with margin** in both takes of each (3r-P1 at the <= 2 lost limit). UI CPU per frame 3.4 against
 4.4-4.5 ms in unit 1 (-24 %): the preview-noise confounder is live by the pre-registered 20 % line (reported, not decided).
+
+**Reading against the rule (block of 4 valid units, NFFN; unit 3 void and repeated as 3r):**
+- Each F unit (2, 3r): **Support with margin** in both takes (measured, n = 2): queued 0.00 (largest 20-s 0.00-0.01), jobs >=
+  threshold 0.00, lost 1 + 0 and 2 + 0, S2 median 5.9 ms against 36.8-37.5 ms in the N units of the same evening.
+- Permutation tests, F < N, one block (`b1_test.py --tdn`): P2 queued share T = 0.00, p = 1/6; P1 + P2 lost T = 3, p = 1/6;
+  complete separation on both, the minimum one block can give: **probable** by the pre-registration. A second block on
+  another evening (minimum p 1/36) before TDN-off becomes a default.
+- Secondary (fixed in advance): the swap (9.1-9.2 -> 8.1-8.3 ms) and RawStats (6.7 -> 5.9-6.1 ms) also get faster with TDN
+  off, CameraManager 18.2-18.3 -> 16.0-16.1 and the recording threads 34.4-35.4 -> 30.1-30.5 ms CPU per frame: part of the
+  relief is system-wide (less memory traffic for everyone, probable), but the BE job itself drops from ~37 to 5.9 ms, far
+  below the ~10.9 ms idle figure of evening 2: removing the TDN reference shortens the job even when uncontended (Model B
+  expected 10-15 ms; measured below it).
+- UI CPU per frame 3.4-3.6 against 4.4-4.5 ms (-20 to -24 %): the preview-noise confounder is live by the 20 % line; the UI
+  does less work per frame with TDN off (reported; User did not look at the preview tonight).
+- Gate for the 27-fps unit (every F unit Support with margin): **met**; it runs next (section 6 of tier1-prep).
 
 ## Frame-rate sweep above 25 fps, 4K Clear HDR 16-bit uncompressed, evening 3 (User's request 01:40; exploratory, unscored)
 
