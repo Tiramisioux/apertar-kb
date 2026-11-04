@@ -1,0 +1,17 @@
+# /etc/sudoers.d/apertar-e4: lets user pi run the two root helpers of the E4 unsupervised test night (drop-frames campaign), with
+# no password, and only with these exact arguments. It is removed after the night:
+#   sudo rm /etc/sudoers.d/apertar-e4 /usr/local/libexec/apertar-e4-helper /usr/local/libexec/apertar-b1-arm
+Cmnd_Alias APERTAR_E4 = \
+  /usr/local/libexec/apertar-e4-helper arm, \
+  /usr/local/libexec/apertar-e4-helper disarm, \
+  /usr/local/libexec/apertar-e4-helper compact0, \
+  /usr/local/libexec/apertar-e4-helper compact-restore, \
+  /usr/local/libexec/apertar-e4-helper smartlog, \
+  /usr/local/libexec/apertar-e4-helper status, \
+  /usr/local/libexec/apertar-e4-helper reboot, \
+  /usr/local/libexec/apertar-e4-helper poweroff, \
+  /usr/local/libexec/apertar-b1-arm sync, \
+  /usr/local/libexec/apertar-b1-arm sync --trace-buffer, \
+  /usr/local/libexec/apertar-b1-arm save, \
+  /usr/local/libexec/apertar-b1-arm restore
+pi ALL = (root) NOPASSWD: APERTAR_E4

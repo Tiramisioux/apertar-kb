@@ -1,0 +1,13 @@
+# run as pi on the Pi, from the KB checkout
+cd ~/apertar-kb/working/tools/drop-frames-2026-11-01
+# 1. root-owned copies of the two helpers
+sudo install -o root -g root -m 0755 b1-arm.sh /usr/local/libexec/apertar-b1-arm
+sudo install -o root -g root -m 0755 e4-helper.sh /usr/local/libexec/apertar-e4-helper
+# 2. sudoers: syntax-check a temp copy, move it into place only if visudo passes
+sudo install -o root -g root -m 0440 e4-sudoers /etc/sudoers.d/apertar-e4.tmp && sudo visudo -cf /etc/sudoers.d/apertar-e4.tmp && sudo mv /etc/sudoers.d/apertar-e4.tmp /etc/sudoers.d/apertar-e4
+# 3. installed copies equal the KB files
+md5sum b1-arm.sh /usr/local/libexec/apertar-b1-arm e4-helper.sh /usr/local/libexec/apertar-e4-helper
+# 4. NOPASSWD works
+sudo -n /usr/local/libexec/apertar-e4-helper status
+# 5. removal, after the night
+sudo rm /etc/sudoers.d/apertar-e4 /usr/local/libexec/apertar-e4-helper /usr/local/libexec/apertar-b1-arm
