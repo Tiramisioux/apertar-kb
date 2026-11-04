@@ -483,6 +483,9 @@ N take); the 27-fps gate needs every F unit; the positive check counts only a du
 | 2 | F | P1 (02:02) | 1 / 4,512 | 5.9 | 5.9 [4,301] | 23.8; 0.00 | 0.00; 0.01 | 8.1 / 6.0 | 16.0 / 30.1 / 3.4 | valid: `tuning_file` the copy, `ST` ready, `J` `(custom, pisp)`, last load before the window the copy, none inside; dump written after the switch (01:50:53 > 01:50:51), `bayer_enables` 0x47060d (`& 0x140` = 0: TDN off), input 3840x2200 stride 7680; uptime_s 3919, NVMe 39.85 / SoC 57.6 C, 0x0, fill 1 %, MemFree 534 MB; 4,325 jobs (4,324) |
 | 2 | F | P2 (02:06) | 0 / 4,511 | 5.9 | 5.9 [4,314] | 23.8; 0.00 | 0.00; 0.00 | 8.1 / 5.9 | 16.0 / 30.2 / 3.4 | valid; uptime_s 4146, NVMe 55.85 / SoC 54.3 C, 0x0, fill 8 %, MemFree 705 MB; 4,325 jobs (4,325) |
 
+| 3 | F | P1 (02:22) | 1 / 4,512 | 5.9 | 5.9 [4,293] | 23.7; 0.00 | 0.00; 0.01 | 8.2 / 6.0 | 16.1 / 30.5 / 3.6 | **void (whole unit): NVMe 40.85 C at the unit start** (`nvme at unit start: 40850`; the loop's check had passed on a 39.85 reading and printed a second read; loop fixed to print and check one reading, twice). Otherwise as unit 2: copy loaded, dump TDN off (0x47060d, at Core's start 02:11:51), uptime_s 5130, SoC 57.6 C, 0x0, fill 1 %, MemFree 456 MB; 4,324 jobs (4,324) |
+| 3 | F | P2 (02:26) | 0 / 4,512 | 5.9 | 5.9 [4,304] | 23.6; 0.00 | 0.00; 0.01 | 8.2 / 6.1 | 16.1 / 30.2 / 3.5 | void with the unit; uptime_s 5356, NVMe 51.85 / SoC 56.5 C, 0x0, fill 8 %; 4,325 jobs |
+
 Unit 2 against the rule (measured, n = 1 F unit): **Support with margin** in both takes. UI CPU per frame 3.4 against
 4.4-4.5 ms in unit 1 (-24 %): the preview-noise confounder is live by the pre-registered 20 % line (reported, not decided).
 
