@@ -93,7 +93,7 @@ Build commands: `Apertar-Core/README.md:205-208`. Manual run (stop the service f
 
 The live Pi runs `/home/pi/start-apertar-core.sh`, a copy outside the repo. **Confirmed** (Pi, 2026-10-25, `cmp`): byte-identical to `scripts/start-apertar-core.sh`.
 
-`Apertar-Core/config/apertar-core-capture-priority.conf` is a systemd drop-in: `[Service] LimitNICE=-5` (`:1-3`). It allows the camera callback thread a bounded nice boost. **Confirmed** installed (Pi, 2026-10-25: `systemctl cat apertar-core` shows `LimitNICE=-5`).
+`Apertar-Core/config/apertar-core-capture-priority.conf` is a systemd drop-in: `[Service] LimitNICE=-5` (`:1-3`). It allows the camera callback thread a bounded nice boost. **Confirmed** installed (Pi, 2026-10-25: `systemctl cat apertar-core` shows `LimitNICE=-5`). The fork's drop-in (`31d5418`) also sets `LimitRTPRIO=80` (`:7`); the rig has both (`systemctl cat`, 2026-11-03).
 
 `apertar-core.service` itself is not in either repo. Its contents (User=pi, WorkingDirectory, ExecStartPre gate) come from the live Pi.
 

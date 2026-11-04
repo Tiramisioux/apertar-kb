@@ -92,6 +92,7 @@ Abbreviations used in the maps:
  UI.conf (~/.config/CinePi/UI.conf): aids, audio, photo, hotspot. Written by the UI AND by Core (for WebUI
  changes). No event: the UI notices by file watch.
  apertar-hardware.conf: read ONCE at start by Core, UI and the CFE automounter, each with its own parser.
+   (Fork since T39: Core re-reads it every 2 s and restarts only the changed input groups.)
 ```
 
 Five facts that explain most behaviour:
@@ -107,7 +108,10 @@ Five facts that explain most behaviour:
 4. **Everything is compiled in.** QML is AOT-compiled into the UI binary; the WebUI HTML/JS is a C++
    string in Core. Any edit needs a rebuild and a service restart.
 5. **Config is read at start.** `apertar-hardware.conf` changes need a restart of the owning process.
-   The WebUI's config editor saves the file but does not reload anything.
+   The WebUI's config editor saves the file but does not reload anything. On the fork since T39 (`dcf09ee`), a
+   save, or an edit over ssh, reaches Core within 2 s: it restarts only the changed groups (GPIO and PCF8574 with
+   tally and trigger, NeoRotary 4, Grove ADC, the CFE hat), never during its own take (`App:11882-11969@31d5418`).
+   The UI's `[display]` section and the automounter still read the file once.
 
 ## 5. Traps that fool models
 
@@ -125,7 +129,7 @@ Five facts that explain most behaviour:
 | 10 | Hardware-input errors go only to stderr (journal), never to the WebUI | `sudo journalctl -u apertar-core` |
 | 11 | On this Pi `pi` is now in `systemd-journal` (`id`, confirmed 2026-11-03), so `journalctl` works without sudo. An older image may lack the group | Check `id` first; if the group is missing, ask Patrik to paste |
 | 12 | `CameraPage.qml` drops to column 0 for ~1300 lines; indentation does not show block ends | Use the `// =====` banners |
-| 13 | The UI sends `set_fps` / `set_resolution` by itself (`ensureValid*Selection`) when the sensor or format changes | Check those first when Core "changes on its own" |
+| 13 | `ensureValid*Selection` in `CameraPage.qml` look as if the UI sends `set_fps` / `set_resolution` by itself, but both return at once while a control bridge exists, which the rig always has (`:1357-1358`, `:1540-1541`; `:1485-1486`, `:1668-1669`@c153c33) | When Core "changes on its own", look at the WebUI, a knob, a preset or Core's own mode ladder |
 | 14 | Settings are stored per record format (`profile.cdng.iso=` …) | A format switch can show different values |
 | 15 | `SystemActionBridge::restartCamera()` reboots the Pi | Don't offer it as a "camera restart" |
 | 16 | Unknown hardware action names only log `Hardware input action ignored: unknown action` | grep the journal |

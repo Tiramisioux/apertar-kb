@@ -109,7 +109,7 @@ Source: `imx585-v4l2-driver/imx585-overlay.dts`. Built and installed by `dkms.po
 
 README omits `rotation`, `orientation`, `media-controller` and `ccmp` (`imx585-v4l2-driver/README.md:68-143`).
 
-**Possible bug:** the `cam0` override retargets `reg_alwayson_frag` to `cam0_reg` but not `reg_frag`, so the 300 ms `startup-delay-us` still lands on `cam1_reg` (`imx585-overlay.dts:36-41`, `:129-135`). **Unconfirmed** whether this matters on Pi 5 hardware.
+**Possible bug:** the `cam0` override retargets `reg_alwayson_frag` to `cam0_reg` but not `reg_frag`, so the 300 ms `startup-delay-us` still lands on `cam1_reg` (`imx585-overlay.dts:36-41`, `:129-135`). **Unconfirmed** whether this matters on Pi 5 hardware. **Not applicable on the rig** (2026-11-03): on its CM5, `cam1_reg` and `cam0_reg` are one node (GPIO 34), so both connectors share one regulator and its delay (`working/dual-sensor/r5-pi-hardware.md`).
 
 The live rig uses `dtoverlay=imx585,cam0,link-frequency=891000000` (`apertar-kb/sources/2026-10-23-i2c-dpi-cfe-hat-neorotary.md`, config.txt line 42).
 
@@ -117,11 +117,13 @@ The live rig uses `dtoverlay=imx585,cam0,link-frequency=891000000` (`apertar-kb/
 
 Core has **no Clear HDR support**. Nothing in Core writes `WIDE_DYNAMIC_RANGE` or any custom CID (no `hdr`/`wdr` hits in `Apertar-Core/src/camera/CameraController.cpp` or `Apertar-Core/src/ApertarCoreApp.cpp` besides PNG `IHDR`). `rawPixelFormatForBitDepth()` only returns 8/10/12-bit formats (`Apertar-Core/src/camera/CameraController.cpp:2181-2191`). The only direct subdev write is `resetStoppedSensorTiming()` (below).
 
+**Fork (`drop-frames` `31d5418`, what the Pi runs; since T16):** Core writes `WIDE_DYNAMIC_RANGE` (`CC:6925-6952`) and the HDR threshold, blend and gain-adder controls (`CC:6954-6970`) on the first imx585 subdev in `/sys/class/video4linux` readdir order (`CC:6875-6892`), before every camera-manager start (`CC:7239-7242`). With two sensors that can be the other camera's subdev (`working/dual-sensor/claim-check.md` K1 and new finding 1).
+
 ### Sensor family
 
 `detectSensorFamily()` lowercases the libcamera camera id and substring-matches `imx577`, `imx477`, `imx294`, `imx585` in that order (`Apertar-Core/src/camera/CameraController.cpp:2150-2167`). The id is the DT path, so the node name `imx585@1a` from the overlay (`imx585-overlay.dts:57`) is what matches. DNG model for IMX585 is `IMX585-AAQJ1` (`CameraController.cpp:2262`).
 
-The first non-USB camera wins (`CameraController.cpp:5304-5307`).
+The first non-USB camera wins (`CameraController.cpp:5304-5307`). Fork `31d5418`: `detectSensorFamily()` also matches `imx283` (`CC:2547-2565`); the camera is picked at `CC:7262-7265`, the probe's camera at `CC:7063-7066`.
 
 ### Mono
 

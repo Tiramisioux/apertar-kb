@@ -44,7 +44,7 @@ Two file-selection rules exist:
 
 | Part | When | Ref |
 | --- | --- | --- |
-| Core inputs and outputs (PCF, GPIO, NeoRotary4, Grove, trigger, LED) | `ApertarCoreApp::start()` only. **Restart Core after editing** (`sudo systemctl restart apertar-core`) | `App:6881-6893` |
+| Core inputs and outputs (PCF, GPIO, NeoRotary4, Grove, trigger, LED) | `ApertarCoreApp::start()` only. **Restart Core after editing** (`sudo systemctl restart apertar-core`). Fork since T39 (`dcf09ee`): Core re-reads the file every 2 s and restarts only the changed groups, never during its own take (`App:11882-11969@31d5418`) | `App:6881-6893` |
 | Core INA219 | once per process (`static const`) | `App:4602` |
 | Core `[camera]` (`cinemate-port` `8175273`) | once per process (`static const`, first use). **Restart Core after editing** | `CC` `clearHdrIsoLimits()` |
 | Core IMU | every recording, calibration and IMU command | `Apertar-Core/src/hardware/Mpu6050RecordingSession.cpp:1040`, `:1176`, `:1297` |
@@ -88,7 +88,7 @@ Two file-selection rules exist:
 | `controls_opacity` (`control_opacity`, `controlsOpacity`, `opacity`) | 1.0 (0.15–1.0); only a default for UI.conf `cameraControlsOpacity` | `:626-633`; `Apertar-UI/src/main.cpp:318` |
 | `zoom_toggle_factor` | 4.0 (1.0–4.0) | `:634-638` |
 | `windowed` (+4 aliases) | false | `:639-645` |
-| `hdmi_external_only` (`hdmiExternalOnly`) | false | `:646-649` |
+| `hdmi_external_only` (`hdmiExternalOnly`) | false (fork UI `c153c33`: **true**, `DisplayConfigBridge.cpp:294`, `:354-357`, so the rig's HDMI picture is ExternalMonitorWindow) | `:646-649` |
 | `controls_mode` | **parsed by nobody** (Core template only, `App:4326`) | — |
 
 The UI logs what it loaded: `Apertar display config: path=… size=WxH layout=…` (`Apertar-UI/src/main.cpp:280`).

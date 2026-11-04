@@ -105,7 +105,10 @@ S1, S2 and S7 hold with no correction. They are §7.1 and the HBLANK row of §2.
 
 ## 4 Stale KB pages the claim check found
 
-These are not part of the plan. They are fixed in their own KB commit:
+These are not part of the plan, and they got their own KB commit. The pages describe the `upstream-1.6.0`
+baseline, which was right about K1, K3, K5, K8 and X6. Those got a note on what the fork (`31d5418`, what the Pi
+runs) does instead. K2, K4, K6 and X5 were wrong at the baseline too and were corrected. K7 needs no change: the maps
+already say their line counts are upstream-1.6.0's.
 
 | Id | Page | Was | Is |
 | --- | --- | --- | --- |

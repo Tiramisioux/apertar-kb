@@ -357,7 +357,7 @@ WebUI commands go through the same `handleCommand`, so they obey the same gates.
 3. Mono: draft `ColorFilterArrangement == MONO`, else the Raw-role default format (`CC:5308-5321`).
 4. If the model's default tuning differs from the preselected one: tear down, set env, retry once (`CC:5322-5341`).
 5. Log/ProRes colour profile: write a derived tuning JSON (`makeProresIspTuning`), point the env at it, restart the manager (`CC:5343-5366`).
-6. `detectSensorFamily(camera->id())`: substring `imx577`, `imx477`, `imx294`, `imx585`, else Unknown (`CC:2151-2167`).
+6. `detectSensorFamily(camera->id())`: substring `imx577`, `imx477`, `imx294`, `imx585`, else Unknown (`CC:2151-2167`). Fork `31d5418` adds `imx283` (`CC:2547-2565`).
 7. `acquire()`, then `configureAndStart` (`CC:5378-5390`).
 
 `reconfigure()` is a full stop + start, CameraManager included (`CC:5481-5493`). Changes to resolution, bit depth, format class, photo mode, colour profile, tuning or H.264 size reconfigure. FPS, ISO, shutter, WB, EV, metering, AF are control-only (`applySettingsLocked`, `CC:8659-8723`).
@@ -438,7 +438,7 @@ Plugin loading (lazy dlopen, ABI check) is in [build.md](build.md#how-core-finds
 ## 7. Hardware inputs and outputs (`src/hardware/*`)
 
 Common pattern:
-- Config: first existing of `$APERTAR_HARDWARE_CONFIG`, `/home/pi/apertar-hardware.conf`, `/boot/firmware/…`, `/boot/…`; the list is copied into every class (e.g. `src/hardware/Pcf8574Input.cpp:55-76`). Read once in `start()`.
+- Config: first existing of `$APERTAR_HARDWARE_CONFIG`, `/home/pi/apertar-hardware.conf`, `/boot/firmware/…`, `/boot/…`; the list is copied into every class (e.g. `src/hardware/Pcf8574Input.cpp:55-76`). Read once in `start()`. Fork since T39 (`dcf09ee`): Core re-reads the file every 2 s and restarts only the changed groups, never during its own take (`App:11882-11969@31d5418`).
 - I2C: raw `/dev/i2c-N` + `I2C_SLAVE`. GPIO: kernel chardev uAPI v2 (`GPIO_V2_GET_LINE_IOCTL`), no libgpiod (`src/hardware/GpioInput.cpp:544-590`).
 - One poll thread per class. Open retried every 1 s, reopen 250 ms after an I/O error.
 - **Errors**: `setLastError()` prints `<Class> input: <error>` to stderr once per distinct message (e.g. `NeoRotary4Input.cpp:614-622`). `journalctl -u apertar-core | grep -i 'input:'` is the only place to see them.

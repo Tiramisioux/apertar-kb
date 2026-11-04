@@ -462,15 +462,17 @@ It sends no Core command. It runs `nmcli` and keeps `hotspotSsid`/`hotspotPasswo
 
 ## 3. Reverse index: Core socket command → sender → QML trigger
 
-Socket path default `/tmp/apertar-core.sock` (override `APERTAR_CONTROL_SOCKET`).
+Socket path default `/tmp/apertar-core.sock`. `APERTAR_CONTROL_SOCKET` overrides it for the control, media, audio and
+system bridges (`ApertarControlBridge.cpp:1168`, `:1805`@c153c33), not for the preview client: its path is the
+argument of `connectToCore` (`ApertarPreviewSocketClient.hpp:30`).
 
 | Command | Sent from | Triggered by (QML) |
 | --- | --- | --- |
-| `set_fps` (+`set_shutter_us`) | `ApertarControlBridge.cpp:270` (`:283`) | FPS `TopDropdownStat` `CameraPage.qml:2910`. **Also automatic**: `ensureValidFpsSelection` `:1549`, run on sensor, resolution and format changes (`:334`, `:567`, `:1765-1811`) |
+| `set_fps` (+`set_shutter_us`) | `ApertarControlBridge.cpp:270` (`:283`) | FPS `TopDropdownStat` `CameraPage.qml:2910`. `ensureValidFpsSelection` `:1549` would send it on sensor, resolution and format changes (`:334`, `:567`, `:1765-1811`), but it returns at once while a control bridge exists (`:1540-1541`), as on the rig |
 | `set_iso` / `set_iso_auto` | `:309` / `:294` | ISO dropdown `CameraPage.qml:2942` |
 | `set_shutter_us` / `set_shutter_auto` | `:339`, `:368` / `:321`, `:351` | Shutter dropdown `CameraPage.qml:2981` (angle), `:2975` (speed, photo mode) |
 | `set_wb` / `set_wb_auto` | `:399` / `:384` | WB dropdown `CameraPage.qml:3016` |
-| `set_resolution` | `:417` | Quick menu `applyResolutionBase` `CameraPage.qml:3315` / `applyCropResolution` `:3458` → `applyResolutionValue` `:1211`; **automatic** `ensureValidResolutionSelection` `:1366`; Settings Format card `SettingsPage.qml:3170`/`:3191` → `applyRecordResolutionValue` `:630` |
+| `set_resolution` | `:417` | Quick menu `applyResolutionBase` `CameraPage.qml:3315` / `applyCropResolution` `:3458` → `applyResolutionValue` `:1211`; `ensureValidResolutionSelection` `:1366` (returns at once while a control bridge exists, `:1357-1358`); Settings Format card `SettingsPage.qml:3170`/`:3191` → `applyRecordResolutionValue` `:630` |
 | `set_h264_resolution` | `:610` | `CameraPage.qml:1224`, `:1241`; `SettingsPage.qml:3166`, `:3188` (`recordFormatComponent`) |
 | `set_record_format` (+`set_lossy_dng_ratio`, `set_prores_profile`) | `:457` (`:460`, `:468`) | Format choice `SettingsPage.qml:3210` |
 | `set_prores_profile` | `:508` | `SettingsPage.qml:3235` |
@@ -575,7 +577,7 @@ Each row lists every copy that must change together.
 | Missing context properties in monitor-only | `gyroConfigBridge`, `wifiBridge`, `statsBridge` and others are undefined. `audioMeterBridge` is null. The code guards with `typeof x !== "undefined" && x` (120 such guards across `qml/`) |
 | Signal handler naming | Qt 6 style `function onFooChanged() {}` inside `Connections { target: … }`. No old-style `onFoo:` inside Connections was found. Component signals use `onValueSelected: function(v) {…}` (`SettingsChoice.valueSelected(string)`). Property-change handlers are `on<Prop>Changed:` at element level |
 | Optimistic local copies | CameraPage holds `iso`, `fps`, … (`:323-360`), set on selection and refreshed in `Connections` `:1824-1897`. A new Core value needs a property, a handler and the apply call |
-| Automatic commands with no user action | `ensureValidFpsSelection` / `ensureValidResolutionSelection` send `set_fps` / `set_resolution` when the sensor, format or resolution changes (`CameraPage.qml:1549`, `:1366`). Check these first when Core "changes by itself" |
+| Automatic commands with no user action | none from these two: `ensureValidFpsSelection` / `ensureValidResolutionSelection` return at once while a control bridge exists (`CameraPage.qml:1540-1541`, `:1357-1358`), which the rig always has; Core validates its own settings |
 | GUI thread blocks | Every invokable in §2.2/§2.4 blocks QML until Core replies (up to 60 s `record_stop`, 360 s `format_media`). See the KB |
 | Same flag, different meaning | `standardLandscapeLayout` = `landscape` only in `SettingsPage.qml:23`, but `landscape` or `landscape_large` in `Main.qml:43-44` and `ClipPlayerPage.qml:24-25` |
 | Greyscale vs grayscale | QML ids and item ids say `greyscale` (`monitoringGreyscaleComponent`, item id `greyscale`). The property and UI.conf key say `grayscaleEnabled` |

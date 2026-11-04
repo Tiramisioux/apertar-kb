@@ -2,7 +2,7 @@
 
 Which process owns what, how they connect, and in what order they start. Read this first when a bug could be in more than one place.
 
-Refs are against `upstream-1.6.0` (Apertar-Core HEAD `65ccfa8`, Apertar-UI HEAD `66d6d19`; both add only build/gitignore changes). Unit contents are from `systemctl cat` on the live Pi (Pi, 2026-10-25). Hardware: Pi 5 4 GB, HDMI display (DPI overlays disabled 2026-10-23), IMX585, CFE hat.
+Refs are against `upstream-1.6.0` (Apertar-Core HEAD `65ccfa8`, Apertar-UI HEAD `66d6d19`; both add only build/gitignore changes). Unit contents are from `systemctl cat` on the live Pi (Pi, 2026-10-25). Hardware: Compute Module 5 Lite, 4 GB, on a Waveshare Mini Base Board (A) (`CM5-IO-BASE-A`; read on the Pi 2026-11-03, `working/dual-sensor/r5-pi-hardware.md`; older pages and log entries say "Pi 5"), HDMI display (DPI overlays disabled 2026-10-23), IMX585, CFE hat.
 
 ## Processes
 
