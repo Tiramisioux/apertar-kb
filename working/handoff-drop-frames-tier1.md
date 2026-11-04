@@ -205,3 +205,8 @@ copy stays at `/home/pi/Tuning-Files/imx585_clearHDR_notdn.json` (inert unless s
    end per second, time the CFE interrupt against the rare 80-105 ms BE jobs, and test the 1782 Mbps link question.
 4. Deferred as before: B3's sysctl cells, U1, B8, B5, T2; Tier 2's swap/RawStats change is no longer first (the BE is
    relieved); O_DIRECT stays a candidate for the write path's CPU.
+
+**Since evening 3 (User's own takes, 2026-11-04, unscored):** a 10-min 4K Clear HDR 16-bit 25 fps uncompressed take
+without a lost frame, **with the WebUI open** (tuning not reported; probably the TDN-off copy); 4K HDR16 25 fps lossless
+JPEG still drops frames (expected: the encoder's ~17.5 fps capacity, `README.md` finding 12); 4K SDR 12-bit at about 42
+fps without dropped frames. Details and what is unconfirmed: `drop-frames/tests-2026-11/observations-2026-11-04.md`.
