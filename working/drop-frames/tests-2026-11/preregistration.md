@@ -461,3 +461,15 @@ N take); the 27-fps gate needs every F unit; the positive check counts only a du
   - The optional preview-only `dd` run (tier1-prep section 8 step 11) is skipped.
   - At the end, after the restore, the copy of `/run/apertar-media` to the Mac and the KB push: `systemctl poweroff` (User's
     request).
+- **Manipulation check, the `Using tuning file` lines (01:35, after the unscored warm-up, before any scored take).** On
+  `9b5ea14` the ladder restore at the end of `take3v3.sh` leaves the camera in 4K Clear HDR 16-bit (30 fps, lossless JPEG,
+  ladder on), not SDR12 as on evening 2 (`31d5418` lets HDR16 run past 25), so the next take's mode set (25 fps,
+  uncompressed) reloads no tuning and the window holds no `Using tuning file` line (measured: the warm-up's window has 0;
+  the log's three loads are at Core's start, 01:27:26). As written the check would void every unit for lines that do not
+  exist. Replaced by: the **last `Using tuning file` line before the window's start** (OFF0 for P1, OFF1 for P2) names the
+  copy (F) or `.../defaults-pisp/imx585_clearHDR.json` (N), and every such line inside the window names that same file;
+  the `mode:` line's `tuning_file`, `ST` not `error` and `J` on the new PID as written. The positive check is available:
+  the dump is written at configure (the warm-up's, N, at Core's start: `bayer_enables` 0x47074d, `& 0x140` = 0x140 set,
+  input 3840x2200 stride 7680 = the take's 16-bit 4K input); it counts if its mtime is after the unit's tuning switch (F)
+  or Core's start (N) and its input is 3840 wide at stride 7680.
+- Unscored warm-up (N, 01:28): 54 lost / 4,453 enqueued (reported, not scored).
