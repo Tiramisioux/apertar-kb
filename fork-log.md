@@ -156,6 +156,20 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 | `6bd002b` (was `20776ac`) | Preview temporal denoise switch, default off: Core loads a copy of the resolved tuning without `rpi.denoise` `tdn` (`TuningTdnStrip.hpp`, `~/.cache/apertar-core/tuning`), `set_preview_tdn`, state `preview_tdn`, `tuning_file_active`; WebUI Performance card; branches `drop-frames`, `cinemate-port` | fork-only; Pi only, built 2026-11-04; strip test byte-identical to the evening-3 copy |
 | `a344376` (was `532224b`) | WebUI: the frame-rate phase lock (existing `set_fps_phase_lock`, default off) on the Performance card; branches `drop-frames`, `cinemate-port` | fork-only; Pi only, built 2026-11-04 |
 
+| `69a700e` | Phase lock pins `{d, d+1}`, not `{d, d}`: libcamera's default blanking keeps HMAX fixed (as Cinemate), the lattice no longer moves the line length on every push (the 2026-10-26 flicker); saturation check reads the echo's lower end; branch `cinemate-port-clean` | fork-only; Pi only |
+
+2026-11-04 later (User): the clean cut had left out the campaign's features too (Log, the IMX585/IMX283 mode tables, the
+`~/apertar-media-tune.conf` reader, Boot Config, clip names, RAM buffer, Remote controls, …). User chose "everything back":
+Pi **`cinemate-port`** = `drop-frames-campaign` `9b5ea14` + the four rows below; the clean cut is kept as `drop-frames`
+(`a344376`) and `cinemate-port-clean` (`69a700e`). `f5ac28b` not ported: the campaign already defaults to `sync`.
+
+| Commit | Change | Status |
+| --- | --- | --- |
+| `ce0bd90` | The trim switch of `00f2327` ported by hand (`set_media_trim`, `media_trim=`, `media_trim_enabled`/`_env_off`, Performance card); the worker is the campaign's; branch `cinemate-port` | fork-only; Pi only |
+| `e625c68` | `6bd002b` (Preview TDN switch) on the campaign; branch `cinemate-port` | fork-only; Pi only |
+| `c810f85` | `a344376` (phase lock on the Performance card); branch `cinemate-port` | fork-only; Pi only |
+| `f4a1393` | `69a700e` (phase lock `{d, d+1}`); branch `cinemate-port` | fork-only; Pi only |
+
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
