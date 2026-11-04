@@ -473,3 +473,28 @@ N take); the 27-fps gate needs every F unit; the positive check counts only a du
   input 3840x2200 stride 7680 = the take's 16-bit 4K input); it counts if its mtime is after the unit's tuning switch (F)
   or Core's start (N) and its input is 3840 wide at stride 7680.
 - Unscored warm-up (N, 01:28): 54 lost / 4,453 enqueued (reported, not scored).
+
+## Frame-rate sweep above 25 fps, 4K Clear HDR 16-bit uncompressed, evening 3 (User's request 01:40; exploratory, unscored)
+
+Written before any take of the sweep (Tier 1's block was running; the arm rule below does not depend on its numbers beyond
+the pre-registered reading). Question (User): from which frame rate above 25 does 4K Clear HDR 16-bit uncompressed lose
+frames, and where do the losses come from?
+
+- **When**: after the TDN block (and after the conditional 27-fps unit of `tier1-prep-2026-11-03.md` section 6, if it runs),
+  before the tuning goes back to automatic and before target 2. If the evening has ended early on a stop condition, no sweep.
+- **Arm, fixed now**: F (the TDN-off copy) if both F units of the block read Support (with or without margin); otherwise N
+  (automatic, TDN on: the shipping tuning). Core `9b5ea14`, sync, 8 raw buffers, full preview, libcamera log as the block.
+- **Steps**: one 3-min take per step, `TAKE_FPS` = 26, 27, 28, 29, 30 in that order (30 = Core's `fps_max` in 4K), each its
+  own unit as in target 2: Core restarted (`apertar-b1-arm sync`) before each step, the tuning set and read back, the unit
+  loop's checks (NVMe <= 40 C, serial, `warm.bin`, fill <= 2 %), the clip folder deleted after it. If the conditional 27-fps
+  unit ran, its P1 is the 27 step (not repeated).
+- **Stop rule**: the sweep climbs while a step loses <= 2 frames; the first step with > 2 lost is the last one ("the onset"),
+  or 30 if none loses. A step whose `mode:` line reads another fps than asked is void and ends the sweep (Core clamps it).
+- **Why, per step (readout, labelled measured / probable)**: `be_overlap.py` section 1 cycle (must be ~1000/fps ms) and S2
+  median; section 4 threshold (frame period - dequeue to start), jobs >= it, queued share, largest 20-s share; section 6 CPU
+  per frame; from the console and the 1 Hz log: `dropped_queue_full`, `peak_queue`, NVMe write latency and MB/s, CSI-2 OVLF.
+  Reading, fixed now: losses with queued >= 0.5 and `dropped_queue_full` = 0 = the ISP back end (the block's mechanism);
+  `dropped_queue_full` > 0 or a full write queue = the drive or the write path (4K 16-bit at 30 fps is ~0.5 GB/s, near the
+  ~550 MB/s derived for the drive); CSI-2 OVLF > 0 in the losing seconds = the receiver; none of these = unexplained, said so.
+  The trace (`apertar-b1-arm save` after the last step) shows whether the raw buffers ran out (`owned_by_drv = 0`).
+- n = 1 per step: the onset is a first estimate, not a bound (two clean 3-min takes bound the loss rate only at < 0.077 %).
