@@ -482,8 +482,10 @@ frames, and where do the losses come from?
 
 - **When**: after the TDN block (and after the conditional 27-fps unit of `tier1-prep-2026-11-03.md` section 6, if it runs),
   before the tuning goes back to automatic and before target 2. If the evening has ended early on a stop condition, no sweep.
-- **Arm, fixed now**: F (the TDN-off copy) if both F units of the block read Support (with or without margin); otherwise N
-  (automatic, TDN on: the shipping tuning). Core `9b5ea14`, sync, 8 raw buffers, full preview, libcamera log as the block.
+- **Arm, fixed now** (amended 01:45 before any sweep take, User: "the best configuration"): the arm that did better in the
+  block on its two pre-registered per-unit statistics: F (the TDN-off copy) if its mean P1 + P2 lost and its mean P2 queued
+  share are both lower than N's; N (automatic, TDN on) if both are higher or equal; if the two disagree, the arm with fewer
+  mean lost. (First written: F only if both F units read Support.) Core `9b5ea14`, sync, 8 raw buffers, full preview, libcamera log as the block.
 - **Steps**: one 3-min take per step, `TAKE_FPS` = 26, 27, 28, 29, 30 in that order (30 = Core's `fps_max` in 4K), each its
   own unit as in target 2: Core restarted (`apertar-b1-arm sync`) before each step, the tuning set and read back, the unit
   loop's checks (NVMe <= 40 C, serial, `warm.bin`, fill <= 2 %), the clip folder deleted after it. If the conditional 27-fps
