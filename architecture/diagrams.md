@@ -12,6 +12,8 @@ One picture for working on the code yourself. Every box names the file you open.
 - 🟩 green box = **Apertar-UI** repo (`~/ApertarUI`), 🟦 blue = **Apertar-Core** repo (`~/ApertarCore`),
   🟪 purple = the **WebUI** (its HTML/JS is a C++ string *inside Core*), ⬜ grey = hardware,
   🟦 cyan cylinder = a file on disk, 🟥 red hexagon = the one place every command passes.
+- **Top to bottom** = the order things happen: you → front ends → the hub → camera → picture out → where it ends up. The people are at the top (you act)
+  and again at the bottom (you see the picture). Every path starts with its repo.
 - **Arrows: colour = what moves, line = how it travels.**
 
   | Line | Means | Example |
@@ -19,7 +21,7 @@ One picture for working on the code yourself. Every box names the file you open.
   | thin blue ─── | a command, as a **function call** inside one program | ② `apply*()`, ④ `camera_.set*()` |
   | **thick blue ━━━** | a command as a **message between programs** (socket or HTTP): change both ends, they must agree on the field names | ③ `set_iso` on the socket, `POST /api/command` |
   | thin green dashed ╌╌╌ | new state coming back **inside one program** | ⑦ `Q_PROPERTY` → QML binding |
-  | **thick green dashed ╍╍╍** | new state coming back **between programs** | ⑥ `settings` event, `/api/state` poll |
+  | **thick green dashed ╍╍╍** | new state coming back **between programs** | ⑥ `settings` event (Core *pushes* to the UI); `GET /api/state` (the WebUI *asks* every 1 s, so that arrow points at Core) |
   | **very thick orange ━━━** | pictures (heavy data, every frame) | frames → recorders, preview |
   | thin grey dotted ┈┈┈ | settings handed over **through a file**, not a message | `UI.conf` |
 
@@ -27,53 +29,55 @@ One picture for working on the code yourself. Every box names the file you open.
   field name fails silently, so check both sides.
 
 ```mermaid
+%%{init: {"flowchart": {"curve": "basis", "nodeSpacing": 30, "rankSpacing": 55, "padding": 14}, "themeVariables": {"fontSize": "19px"}}}%%
 flowchart TB
-  TOUCH(["👆 Touch screen"])
-  BROWSER(["🌐 Browser on phone / laptop"])
-  BTN(["🎛️ Buttons / encoders"])
-  SENSOR[/"📷 IMX585 + libcamera"/]
+    TOUCH(["👆 Touch screen"])
+    BROWSER(["🌐 Browser"])
+    BTN(["🎛️ Buttons / encoders"])
 
-  subgraph UIREPO["Apertar-UI  ·  ~/ApertarUI"]
-    QML["<b>Screens (QML)</b><br/>qml/CameraPage.qml<br/>qml/SettingsPage.qml"]
-    BRIDGE["<b>C++ bridge</b><br/>src/ApertarControlBridge.cpp<br/>apply*() → sendCoreCommand()"]
-    RENDER["<b>Preview drawing</b><br/>src/PreviewWindowRenderer.cpp<br/>zebra, peaking, LUT shaders"]
-  end
+    QML("<b>Screens</b><br/>ApertarUI/qml/<br/>CameraPage.qml")
+    BRIDGE("<b>C++ bridge</b><br/>ApertarUI/src/<br/>ApertarControlBridge.cpp")
+    WEBPAGE("<b>WebUI page</b><br/>ApertarCore/src/web/<br/>WebControlPage.cpp")
+    HWIN("<b>Hardware inputs</b><br/>ApertarCore/src/hardware/<br/>*Input.cpp")
 
-  subgraph COREREPO["Apertar-Core  ·  ~/ApertarCore"]
-    WEBPAGE["<b>WebUI page</b><br/>src/web/WebControlPage.cpp<br/>HTML + JS in a C++ string"]
-    HWIN["<b>Hardware inputs</b><br/>src/hardware/*Input.cpp<br/>action name → command"]
-    HUB{{"<b>handleCommand</b><br/>src/ApertarCoreApp.cpp<br/>one if-branch per command"}}
-    CAM["<b>Camera</b><br/>src/camera/CameraController.cpp<br/>setting → libcamera control"]
-    RECS["<b>Recorders</b><br/>src/cdng · src/mlv<br/>src/prores · src/video"]
-    PUB["<b>Preview out</b><br/>publishPreviewFrame()<br/>streamMjpeg()"]
-  end
+    HUB{{"<b>handleCommand</b><br/>ApertarCore/src/<br/>ApertarCoreApp.cpp"}}
 
-  DISK[("💾 /media/RAW")]
-  UICONF[("📄 UI.conf<br/>aids, photo, audio")]
+    CAM("<b>Camera</b><br/>ApertarCore/src/camera/<br/>CameraController.cpp")
+    SENSOR("<b>📷 IMX585</b><br/>libcamera")
+
+    RECS("<b>Recorders</b><br/>ApertarCore/src/<br/>cdng · mlv · prores · video")
+    PUB("<b>Preview out</b><br/>publishPreviewFrame<br/>streamMjpeg")
+
+    DISK[("💾 /media/RAW")]
+    UICONF[("📄 UI.conf")]
+    RENDER("<b>Preview drawing</b><br/>ApertarUI/src/<br/>PreviewWindowRenderer.cpp")
+    SCREEN(["👆 Touch screen<br/>shows the picture"])
+    BROWSEROUT(["🌐 Browser<br/>shows the picture"])
 
   TOUCH -- "① tap" --> QML
-  QML -- "② call apply*()" --> BRIDGE
-  BRIDGE -- "③ socket: set_iso …" --> HUB
+  QML -- "② apply*()" --> BRIDGE
+  BRIDGE -- "③ socket" --> HUB
   BROWSER -- "① click" --> WEBPAGE
-  WEBPAGE -- "③ POST /api/command" --> HUB
-  BTN -- "① press / turn" --> HWIN
+  WEBPAGE -- "③ HTTP POST" --> HUB
+  BTN -- "① press" --> HWIN
   HWIN -- "③ dispatch" --> HUB
-  HUB -- "④ camera_.set*()" --> CAM
-  CAM -- "⑤ new controls" --> SENSOR
+  HUB -- "④ set*()" --> CAM
+  CAM -- "⑤ controls" --> SENSOR
 
   SENSOR == "frames" ==> RECS
   RECS == "files" ==> DISK
   SENSOR == "frames" ==> PUB
-  PUB == "dma-buf over the socket" ==> RENDER
-  PUB == "MJPEG" ==> WEBPAGE
+  PUB == "dma-buf" ==> RENDER
+  RENDER ==> SCREEN
+  PUB == "MJPEG" ==> BROWSEROUT
 
   CAM -- "⑥ settings event" ---> BRIDGE
-  CAM -- "⑥ GET /api/state, every 1 s" ---> WEBPAGE
-  BRIDGE -- "⑦ Q_PROPERTY → binding" ---> QML
+  WEBPAGE -- "⑥ asks every 1 s<br/>GET /api/state" ---> HUB
+  BRIDGE -- "⑦ binding" ---> QML
 
-  QML -. "touch aids saved here" .-> UICONF
-  HUB -. "WebUI aids saved here" .-> UICONF
-  UICONF -. "file watcher" .-> RENDER
+  QML -. "touch aids" .-> UICONF
+  HUB -. "WebUI aids" .-> UICONF
+  UICONF -. "watcher" .-> RENDER
 
   classDef ui fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
   classDef core fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
@@ -81,22 +85,55 @@ flowchart TB
   classDef hw fill:#e5e7eb,stroke:#4b5563,color:#111827,stroke-width:2px
   classDef file fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px
   classDef hub fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:3px
-  class QML,BRIDGE,RENDER,TOUCH ui
+  class QML,BRIDGE,RENDER,TOUCH,SCREEN ui
   class CAM,RECS,PUB,HWIN core
-  class WEBPAGE,BROWSER web
+  class WEBPAGE,BROWSER,BROWSEROUT web
   class SENSOR,BTN hw
   class DISK,UICONF file
   class HUB hub
-  style UIREPO fill:#f0fdf4,stroke:#16a34a,color:#14532d
-  style COREREPO fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
 
   linkStyle 0,1,3,5,6,7,8 stroke:#2563eb,stroke-width:1.5px
   linkStyle 2,4 stroke:#2563eb,stroke-width:4px
-  linkStyle 9,10,11,12,13 stroke:#ea580c,stroke-width:7px
-  linkStyle 16 stroke:#16a34a,stroke-width:1.5px,stroke-dasharray:8 5
-  linkStyle 14,15 stroke:#16a34a,stroke-width:4px,stroke-dasharray:8 5
-  linkStyle 17,18,19 stroke:#64748b,stroke-width:1.5px,stroke-dasharray:2 5
+  linkStyle 9,10,11,12,13,14 stroke:#ea580c,stroke-width:7px
+  linkStyle 17 stroke:#16a34a,stroke-width:1.5px,stroke-dasharray:8 5
+  linkStyle 15,16 stroke:#16a34a,stroke-width:4px,stroke-dasharray:8 5
+  linkStyle 18,19,20 stroke:#64748b,stroke-width:1.5px,stroke-dasharray:2 5
 ```
+
+**What travels on each arrow: one ISO change to 800, followed through the code**
+
+The numbers match the arrows. JSON is shortened with `…`. The full trace with line refs is
+[flows.md A1](../llm/flows.md).
+
+| Step | Arrow | Kind | What it looks like in the code |
+| --- | --- | --- | --- |
+| ① | tap → Screens | touch | `CameraPage.qml`: `root.controlBridge.applyIso(v)` |
+| ② | Screens → C++ bridge | function call | `ApertarControlBridge::applyIso("800")` → `sendCoreCommand(...)` |
+| ③ | bridge → hub | **Unix socket** `/tmp/apertar-core.sock`, one JSON line | `{"cmd":"set_iso","id":7,"value":"800"}\n` |
+| ③ | WebUI → hub | **HTTP** | `POST /api/command` with body `{"cmd":"set_iso","value":"800"}` (`sendCommand(...)` in the page JS) |
+| ③ | buttons → hub | function call on the poll thread | `apertar-hardware.conf`: `encoder0_cw=iso_up` → `dispatch("set_iso", …)` |
+| hub | inside `handleCommand` | if-branch | `if (command.name == "set_iso") { camera_.setIso(value); … }` |
+| ④ | hub → Camera | function call | `CameraController::setIso(800)` → `AnalogueGain = max(1, iso / 100)` = 8.0 |
+| ⑤ | Camera → sensor | libcamera control | `request->controls().merge(pendingControls_);` (lands one frame later) |
+| ⑥ | Camera → bridge | **socket event**, pushed to every client | `{"event":"settings",…,"iso":800,"iso_auto":false,…}` |
+| ⑥ | WebUI → hub | **HTTP poll**, every 1 s | `GET /api/state` → `{…,"iso":800,"iso_auto":false,…}` |
+| ⑦ | bridge → Screens | Qt property | `setIso("800")` emits `isoChanged` → QML `function onIsoChanged()` |
+| preview | Preview out → UI | **socket + file descriptors** (`SCM_RIGHTS`) | once per buffer: `{"event":"preview_buffer",…}` + fds; then each frame `{"event":"preview_frame","slot":2,…}` |
+| preview | Preview out → browser | **HTTP stream** | `<img src="/preview.mjpeg?stream=…">`, multipart JPEG |
+| file | anyone → `UI.conf` | **INI file**, file-watched | `[General]` / `zebraEnabled=true` |
+
+Try ③ and ⑥ yourself from the Mac (the same calls the WebUI makes; values are strings because
+Core's parser is flat):
+
+```bash
+curl -s -m 5 http://apertar.local:8000/api/state | grep -o '"iso":[0-9]*'
+```
+
+```bash
+curl -s -m 5 -X POST http://apertar.local:8000/api/command -d '{"cmd":"set_iso","value":"800"}'
+```
+
+(The second one changes the camera. The note "manual-addendum talk-to-core" has more.)
 
 **Where your change goes** (follow the arrows; each row is one of them)
 
