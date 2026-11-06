@@ -4,6 +4,7 @@ Source-derived pages with `path:line` refs against `upstream-1.6.0`. Re-check re
 
 | Page | Covers | Start here when |
 | --- | --- | --- |
+| [diagrams.md](diagrams.md) | Mermaid: processes and channels, image path (record + touch/WebUI preview), control path (touch/WebUI/buttons → `handleCommand` → state back) | You want the picture before the tables |
 | [overview.md](overview.md) | Processes, who owns what, socket/WebUI/file channels, startup order and readiness files, "who owns this bug" | You don't know which process is at fault |
 | [core.md](core.md) | Apertar-Core: camera controller, recorders, control protocol, WebUI, hardware inputs, standby | Recording, sensor, format, socket command or WebUI behaviour |
 | [ui.md](ui.md) | Apertar-UI: source map, `main.cpp` startup, QML bridges, Core client, preview path, QML pages, `run_pi_direct.sh`, helper binaries, "where to change X" | Screen, touch, HDMI, layout, settings page, preview rendering |
