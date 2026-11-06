@@ -1,8 +1,103 @@
 # Diagrams: architecture, image path, control path
 
-Mermaid views of [overview.md](overview.md), [core.md](core.md), [ui.md](ui.md) and the traces in
+Start with §0. Mermaid views of [overview.md](overview.md), [core.md](core.md), [ui.md](ui.md) and the traces in
 [../llm/flows.md](../llm/flows.md). Refs are against `upstream-1.6.0`, like those pages. The diagrams
 leave out detail; follow the links for `path:line`. Renders in Obsidian and on GitHub.
+
+## 0. Start here: the coding map
+
+One picture for working on the code yourself. Every box names the file you open.
+
+**How to read it**
+- 🟩 green box = **Apertar-UI** repo (`~/ApertarUI`), 🟦 blue = **Apertar-Core** repo (`~/ApertarCore`),
+  🟪 purple = the **WebUI** (its HTML/JS is a C++ string *inside Core*), ⬜ grey = hardware,
+  🟦 cyan cylinder = a file on disk, 🟥 red hexagon = the one place every command passes.
+- **Blue arrows ①→⑤** = a command going in. **Green dashed ⑥→⑦** = the new state coming back.
+  **Thick orange** = pictures. **Grey dotted** = settings passed through a file, not a message.
+
+```mermaid
+flowchart TB
+  TOUCH(["👆 Touch screen"])
+  BROWSER(["🌐 Browser on phone / laptop"])
+  BTN(["🎛️ Buttons / encoders"])
+  SENSOR[/"📷 IMX585 + libcamera"/]
+
+  subgraph UIREPO["Apertar-UI  ·  ~/ApertarUI"]
+    QML["<b>Screens (QML)</b><br/>qml/CameraPage.qml<br/>qml/SettingsPage.qml"]
+    BRIDGE["<b>C++ bridge</b><br/>src/ApertarControlBridge.cpp<br/>apply*() → sendCoreCommand()"]
+    RENDER["<b>Preview drawing</b><br/>src/PreviewWindowRenderer.cpp<br/>zebra, peaking, LUT shaders"]
+  end
+
+  subgraph COREREPO["Apertar-Core  ·  ~/ApertarCore"]
+    WEBPAGE["<b>WebUI page</b><br/>src/web/WebControlPage.cpp<br/>HTML + JS in a C++ string"]
+    HWIN["<b>Hardware inputs</b><br/>src/hardware/*Input.cpp<br/>action name → command"]
+    HUB{{"<b>handleCommand</b><br/>src/ApertarCoreApp.cpp<br/>one if-branch per command"}}
+    CAM["<b>Camera</b><br/>src/camera/CameraController.cpp<br/>setting → libcamera control"]
+    RECS["<b>Recorders</b><br/>src/cdng · src/mlv<br/>src/prores · src/video"]
+    PUB["<b>Preview out</b><br/>publishPreviewFrame()<br/>streamMjpeg()"]
+  end
+
+  DISK[("💾 /media/RAW")]
+  UICONF[("📄 UI.conf<br/>aids, photo, audio")]
+
+  TOUCH -- "① tap" --> QML
+  QML -- "② call apply*()" --> BRIDGE
+  BRIDGE -- "③ socket: set_iso …" --> HUB
+  BROWSER -- "① click" --> WEBPAGE
+  WEBPAGE -- "③ POST /api/command" --> HUB
+  BTN -- "① press / turn" --> HWIN
+  HWIN -- "③ dispatch" --> HUB
+  HUB -- "④ camera_.set*()" --> CAM
+  CAM -- "⑤ new controls" --> SENSOR
+
+  SENSOR == "frames" ==> RECS
+  RECS == "files" ==> DISK
+  SENSOR == "frames" ==> PUB
+  PUB == "dma-buf over the socket" ==> RENDER
+  PUB == "MJPEG" ==> WEBPAGE
+
+  CAM -- "⑥ settings event" ---> BRIDGE
+  CAM -- "⑥ GET /api/state, every 1 s" ---> WEBPAGE
+  BRIDGE -- "⑦ Q_PROPERTY → binding" ---> QML
+
+  QML -. "touch aids saved here" .-> UICONF
+  HUB -. "WebUI aids saved here" .-> UICONF
+  UICONF -. "file watcher" .-> RENDER
+
+  classDef ui fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px
+  classDef core fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px
+  classDef web fill:#f3e8ff,stroke:#9333ea,color:#581c87,stroke-width:2px
+  classDef hw fill:#e5e7eb,stroke:#4b5563,color:#111827,stroke-width:2px
+  classDef file fill:#cffafe,stroke:#0891b2,color:#164e63,stroke-width:2px
+  classDef hub fill:#fee2e2,stroke:#dc2626,color:#7f1d1d,stroke-width:3px
+  class QML,BRIDGE,RENDER,TOUCH ui
+  class CAM,RECS,PUB,HWIN core
+  class WEBPAGE,BROWSER web
+  class SENSOR,BTN hw
+  class DISK,UICONF file
+  class HUB hub
+  style UIREPO fill:#f0fdf4,stroke:#16a34a,color:#14532d
+  style COREREPO fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+
+  linkStyle 0,1,2,3,4,5,6,7,8 stroke:#2563eb,stroke-width:2px
+  linkStyle 9,10,11,12,13 stroke:#ea580c,stroke-width:4px
+  linkStyle 14,15,16 stroke:#16a34a,stroke-width:2px,stroke-dasharray:6 4
+  linkStyle 17,18,19 stroke:#64748b,stroke-width:1.5px
+```
+
+**Where your change goes** (follow the arrows; each row is one of them)
+
+| You want to… | Touch these, in arrow order | Don't forget |
+| --- | --- | --- |
+| Add a control on the touch screen for an existing camera setting | `QML` → bridge `apply*()` | The command already exists: grep `command.name == "set_` in `ApertarCoreApp.cpp` |
+| Add a new camera setting | `handleCommand` branch → `CameraController::set*` → `controlsForSettings` | State goes back in **three** hand-written copies: `settingsBody`, `settingsEvent`, `buildWebStateJson` ([change-recipes.md](../llm/change-recipes.md)) |
+| Show it in the WebUI | `WebControlPage.cpp` (`renderSnapshot`, `sendCommand`) | Core must be rebuilt: the page is compiled into it |
+| Map a button or encoder to it | `handleSingleHardwareInputAction` + `normalizeAction` in each `*Input.cpp` | Config is read once: restart Core |
+| Change how the preview looks (aid, overlay) | `PreviewWindowRenderer.cpp` shader + `CameraPreviewItem` | Aids live in `UI.conf`, not in Core's state |
+| Change what is written to disk | `src/cdng/…` or the recorder in `CameraController.cpp` | Never build while a take runs |
+
+Rebuild after a change: UI `cmake --build ~/ApertarUI/build`, Core `cmake --build ~/ApertarCore-build -j2`,
+then restart the matching service ([build.md](build.md#quick-reference)).
 
 ## 1. Processes and channels
 
