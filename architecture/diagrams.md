@@ -6,8 +6,8 @@ leave out detail; follow the links for `path:line`. Renders in Obsidian and on G
 
 ## 0. Start here: the coding map
 
-Interactive version (click boxes and arrows, step through flows): [coding-map.html](coding-map.html),
-published at https://claude.ai/artifact/TYfMc4ZFPRMhFWkDPVZ4DB (private).
+Interactive version (click boxes and arrows, step through flows): https://tiramisioux.github.io/apertar-coding-map/
+(public; source and master copy: `~/Documents/Apertar/apertar-coding-map`, GitHub `Tiramisioux/apertar-coding-map`).
 
 One picture for working on the code yourself. Every box names the file you open.
 
