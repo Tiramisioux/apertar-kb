@@ -1,7 +1,20 @@
-# Long-take campaign: plan (2026-11-06, not started)
+# Long-take campaign: plan (2026-11-06, runner written, not yet run)
 
 Request (User, 2026-11-06): unsupervised 30-minute takes with audio, to find out whether the storage tuning is optimal.
-Status: **plan only. Nothing has run.** The Pi was unreachable (`ssh apertar`: could not resolve `apertar.local`).
+Status: runner written (`working/tools/longtakes.py`, runs on the Pi, copy in `~/longtakes/bin/`). **No real take has run.**
+The smoke test was cut off twice by Pi resets (21:57 and ~22:00); the kernel logged `Voltage normalised` just before, and
+EXT5V read 4.78 V at idle: power supply suspected (unconfirmed). The User is trying another supply.
+
+## Decisions (User, 2026-11-06)
+
+- Staged vs full grid: just run it, see how far it gets. Order: baseline first, then by number of factors changed.
+- Drive: Kingston SKC3000S512G (477 GB), formatted by the User. NOT the Corsair of earlier campaigns.
+- Target per take: 30 min **or as long as the drive allows** at those settings (about 25 min at the top fps). A take that
+  fills the drive with no drop is a pass (`pass_drive_full`, minutes logged); every take that fills the drive is logged.
+- Before each take all clip folders (`cDNG_*`) on the drive are removed. Nothing else is deleted.
+- Lowest fps tried: **25**. Phase 2, after the 64 configs at 16-bit: the same 64 at **12-bit** 4K (Log configs will be
+  skipped where Core reports Log unavailable at 12-bit).
+- Audio: the configured USB PnP Sound Device (`hw:2,0`), unchanged.
 
 ## Rules from the request
 
