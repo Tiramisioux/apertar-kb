@@ -16,6 +16,8 @@ Branch `cinemate-port` (Core and driver) was named `clearhdr-fixes` (Core) / `ap
 
 2026-10-28: the `temp:` commits (Core `55e7ba9`..`0296ed1`, UI `d5a1bf2`..`5aab7e2`) moved to the local Pi branch `cinemate-port-temp`; Pi `cinemate-port` reset to Core `bda2066`, UI `2d27c46`, so T31/T32 are typed on the tree they were written for (all five reference patches apply cleanly there). GitHub `cinemate-port` and the Mac still point at the temp tips; on 2026-10-28 the speed-ramp commits were rewritten on the Pi (author → noreply address, `Tested:` lines; same tree `0f16e77`), backup branch `cinemate-port-before-author-fix`; 2026-10-28 (Patrik): GitHub `cinemate-port-temp` = the temp tips (Core `0296ed1`, UI `5aab7e2`); GitHub `cinemate-port` force-pushed (with lease) to the T32 cut, Core `e25fd2b`, UI `f1edf96`. T33 and later (Core `97adea0`..`4d5fdd1`, UI `1367b7f`..`da2a9b5`) were Pi only until 2026-10-29: then Patrik had the WebUI stage pushed, fast-forward, GitHub `cinemate-port` = Core `8050d56`, UI `c716dec`.
 
+2026-11-06 (Patrik pushed): GitHub `cinemate-port` (Core) force-replaced with the Pi's `f4a1393` (grown from `controls` `a40112a`: drop-frames, Boot Config, IMX283 modes, PRs #3-#5, phase lock). The 4 superseded GitHub commits (`00f2327`, `f5ac28b`, `6bd002b`, `a344376`) are kept on the Mac branch `cinemate-port-before-pi-rewrite-2026-11-06`. UI `cinemate-port` unchanged (`7029db1`).
+
 | Commit | Change | Status |
 | --- | --- | --- |
 | `65ccfa8` | `.gitignore` for build dirs and editor state | fork-only |
