@@ -12,8 +12,19 @@ One picture for working on the code yourself. Every box names the file you open.
 - 🟩 green box = **Apertar-UI** repo (`~/ApertarUI`), 🟦 blue = **Apertar-Core** repo (`~/ApertarCore`),
   🟪 purple = the **WebUI** (its HTML/JS is a C++ string *inside Core*), ⬜ grey = hardware,
   🟦 cyan cylinder = a file on disk, 🟥 red hexagon = the one place every command passes.
-- **Blue arrows ①→⑤** = a command going in. **Green dashed ⑥→⑦** = the new state coming back.
-  **Thick orange** = pictures. **Grey dotted** = settings passed through a file, not a message.
+- **Arrows: colour = what moves, line = how it travels.**
+
+  | Line | Means | Example |
+  | --- | --- | --- |
+  | thin blue ─── | a command, as a **function call** inside one program | ② `apply*()`, ④ `camera_.set*()` |
+  | **thick blue ━━━** | a command as a **message between programs** (socket or HTTP): change both ends, they must agree on the field names | ③ `set_iso` on the socket, `POST /api/command` |
+  | thin green dashed ╌╌╌ | new state coming back **inside one program** | ⑦ `Q_PROPERTY` → QML binding |
+  | **thick green dashed ╍╍╍** | new state coming back **between programs** | ⑥ `settings` event, `/api/state` poll |
+  | **very thick orange ━━━** | pictures (heavy data, every frame) | frames → recorders, preview |
+  | thin grey dotted ┈┈┈ | settings handed over **through a file**, not a message | `UI.conf` |
+
+  Rule of thumb: a **thick** arrow is where you cross a boundary. That is where a typo in a
+  field name fails silently, so check both sides.
 
 ```mermaid
 flowchart TB
@@ -79,10 +90,12 @@ flowchart TB
   style UIREPO fill:#f0fdf4,stroke:#16a34a,color:#14532d
   style COREREPO fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
 
-  linkStyle 0,1,2,3,4,5,6,7,8 stroke:#2563eb,stroke-width:2px
-  linkStyle 9,10,11,12,13 stroke:#ea580c,stroke-width:4px
-  linkStyle 14,15,16 stroke:#16a34a,stroke-width:2px,stroke-dasharray:6 4
-  linkStyle 17,18,19 stroke:#64748b,stroke-width:1.5px
+  linkStyle 0,1,3,5,6,7,8 stroke:#2563eb,stroke-width:1.5px
+  linkStyle 2,4 stroke:#2563eb,stroke-width:4px
+  linkStyle 9,10,11,12,13 stroke:#ea580c,stroke-width:7px
+  linkStyle 16 stroke:#16a34a,stroke-width:1.5px,stroke-dasharray:8 5
+  linkStyle 14,15 stroke:#16a34a,stroke-width:4px,stroke-dasharray:8 5
+  linkStyle 17,18,19 stroke:#64748b,stroke-width:1.5px,stroke-dasharray:2 5
 ```
 
 **Where your change goes** (follow the arrows; each row is one of them)
