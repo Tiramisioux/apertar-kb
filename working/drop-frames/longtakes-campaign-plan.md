@@ -1,9 +1,15 @@
-# Long-take campaign: plan (2026-11-06, runner written, not yet run)
+# Long-take campaign: plan (2026-11-06; first run erased 2026-11-07, rerun on a different Pi)
 
 Request (User, 2026-11-06): unsupervised 30-minute takes with audio, to find out whether the storage tuning is optimal.
 Status: runner written (`working/tools/longtakes.py`, runs on the Pi, copy in `~/longtakes/bin/`). **No real take has run.**
 The smoke test was cut off twice by Pi resets (21:57 and ~22:00); the kernel logged `Voltage normalised` just before, and
 EXT5V read 4.78 V at idle: power supply suspected (unconfirmed). The User is trying another supply.
+
+## Rerun (User, 2026-11-07)
+
+The first run (Kingston NVMe, CM5 Lite: 64 configs at 16-bit, 12-bit started; none clean to 25 fps) was erased at the User's
+request; the Pi has a different CPU type now. The run and its findings page remain in git history (`242c0be`) only.
+The runner (`working/tools/longtakes.py`, `webui_remote.py`) is unchanged.
 
 ## Decisions (User, 2026-11-06)
 
