@@ -1057,13 +1057,15 @@ def main():
             stop['now'] = True
         return row
 
-    def walk_config(c):
+    def walk_config(c, force=False):
         """Step fps down from the mode's storage cap until a take passes (30 min or drive full)."""
         rows = [r for r in load_rows(out) if r['cfg_id'] == c.id and not r.get('variant')]
+        if force:
+            rows = [r for r in rows if r['outcome'] != 'pruned']
         if any(r['outcome'].startswith('pass') or r['outcome'] in ('skipped_unavailable', 'exhausted', 'pruned') for r in rows):
             return
         mode_cfgs = [x for x in cfgs if x.mode == c.mode]
-        why = prune_reason(c, load_rows(out), mode_cfgs) if not a.no_prune else None
+        why = prune_reason(c, load_rows(out), mode_cfgs) if not (a.no_prune or force) else None
         if why:
             log(out, '-- pruned %s: %s' % (c.id, why))
             append_row(out, {'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn,
@@ -1084,7 +1086,7 @@ def main():
         rows = [r for r in rows if r['outcome'] != 'stopped_externally']
         if rows:
             fps = min(fps, min(float(r['fps']) for r in rows) - 1)
-        fr = None if (a.no_prune or c.comp != 'none' or c.log) else storage_frontier(load_rows(out), mode_size_mb(c.mode))
+        fr = None if (a.no_prune or force or c.comp != 'none' or c.log) else storage_frontier(load_rows(out), mode_size_mb(c.mode))
         if fr is not None:
             allowed = int(fr * DISK_MARGIN / mode_size_mb(c.mode) - 1e-9)     # rates below the frontier only
             if allowed < fps:
@@ -1118,7 +1120,7 @@ def main():
                 stop['now'] = True; break
             if o == 'skipped_unavailable': break
             if o.startswith('pass'): break
-            if o == 'buffer_full' and not a.no_prune:
+            if o == 'buffer_full' and not a.no_prune and not force:
                 jump = smart_next_fps(row, fps)
                 if jump and jump[1] < FPS_FLOOR * 0.8:
                     est = jump[1]
@@ -1213,6 +1215,54 @@ def main():
         else:
             log(out, '== %s %s: clean at %d fps%s' % (label, c.id, lo, '' if hi is None else ' (fails at %d)' % hi))
 
+    def follow_log_stage():
+        """Log on top of each Clear HDR mode's winning config (User, 2026-11-07). Log only applies where the raw stream is
+        unpacked 16-bit containers (Clear HDR; the SDR streams are PISP-packed and Core records them linear): 16 -> 12 bit,
+        and 12 -> 10 bit in Clear HDR 12-bit. The winner is the config with the highest fps that passed the 30-minute round
+        (the simplest on a tie). With no winner (4K Clear HDR 12-bit was ruled out earlier) lossless, lossless + Log and Log
+        are tried. Each Log config gets its own ladder: 5 min walk from the mode's top fps, then 10, 20, 30 minutes."""
+        rows_all = load_rows(out)
+        for m in inc:
+            if not m[4]:
+                continue
+            mine = [c for c in cfgs if c.mode == m]
+            best = {}
+            for r in rows_all:
+                if r.get('variant') == 'tier30' and r['outcome'].startswith('pass'):
+                    best[r['cfg_id']] = max(best.get(r['cfg_id'], 0), float(r['fps']))
+            by_id = {c.id: c for c in mine}
+            win = None
+            if best:
+                win = by_id[sorted(best, key=lambda k: (-best[k], len(factors_of(by_id[k])), k))[0]]
+            def cfg_like(comp, log, base):
+                for x in mine:
+                    if (x.comp, x.log, x.tdn, x.lock, x.trim, x.web) == (comp, log, base.tdn, base.lock, base.trim, base.web):
+                        return x
+            base0 = mine[0]
+            if win:
+                targets = [cfg_like(win.comp, True, win)]
+                log(out, '== follow-up Log %s: winner %s (%d fps at 30 min), testing %s' % (m[0], win.id, best[win.id], targets[0].id))
+            else:
+                targets = [cfg_like('lossless_jpeg', False, base0), cfg_like('lossless_jpeg', True, base0), cfg_like('none', True, base0)]
+                log(out, '== follow-up Log %s: no 30-minute winner, testing %s' % (m[0], [t.id for t in targets]))
+            for c in targets:
+                if stop['now']: return
+                walk_config(c, force=True)
+                prow = [r for r in load_rows(out) if r['cfg_id'] == c.id and not r.get('variant') and r['outcome'].startswith('pass')]
+                if not prow:
+                    log(out, '-- follow-up Log %s: no pass in the 5-minute walk, stops here' % c.id)
+                    continue
+                f0 = max(float(r['fps']) for r in prow)
+                for label, secs in (('logt10', a.tier10_seconds), ('logt20', a.tier2_seconds), ('logt30', a.tier3_seconds)):
+                    if stop['now']: return
+                    rows_now = load_rows(out)
+                    bracket(c, f0, secs, label, rows_now)
+                    ps = [float(r['fps']) for r in load_rows(out)
+                          if r['cfg_id'] == c.id and r.get('variant') == label and r['outcome'].startswith('pass')]
+                    if not ps:
+                        break
+                    f0 = max(ps)
+
     def tier_stage():
         """Successive elimination by duration (User, 2026-11-07). Round 0 is the walk above (5 min per take, every config
         that survives pruning). Then 10, 20 and 30 min (30 = until the drive is full): per mode only the configs at the
@@ -1271,6 +1321,8 @@ def main():
                 walk_config(c)
         if 'c' in a.stages and not stop['now']:
             tier_stage()
+        if 'F' in a.stages and not stop['now']:
+            follow_log_stage()
     finally:
         try:
             set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on
