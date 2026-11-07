@@ -74,6 +74,11 @@ failure (`bracket_search`, tested offline). **Smart steps:**
   fit reaches the round's target, minus one fps;
 - buffer-full failures: jump to `fps x (enqueued - queued at the stop) / enqueued` (+10-35 %), the fps the drive actually wrote;
 - failures already on file are reused after a restart.
+**A pass ends the search downward (User, 2026-11-07):** once a config passes at some fps in a round, nothing lower is ever tested for it
+in that round, and the next round starts from that fps. The only extra tests after a pass are in the gap *above* it (between the highest
+pass and the lowest failure, which the 3/6/12 steps can leave). In the 60 s and 5 min rounds that gap is bisected down to 1 fps (cheap);
+in the 10, 20 and 30 min rounds it is **left alone once it is 2 fps or less**, so a long take is not spent on a 1 fps refinement: the
+result is then right to within 1 fps.
 Only **25 fps and above** count as survivors; a config that cannot reach 25 fps at the probe is ruled out without testing 25 if the
 fit says it is far below.
 
