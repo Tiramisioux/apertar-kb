@@ -72,31 +72,79 @@ def state():
     return r if r.get('ok') else {}
 
 
-class Cfg:
-    FIELDS = ('bits', 'comp', 'log', 'tdn', 'lock', 'trim', 'web')
+# The sensor modes the campaign walks through, all activated in Apertar's Mode Ladder list (User, 2026-11-07).
+# (key, width, height, raw bits, Clear HDR).  Only modes the storage can carry at the lowest fps (FPS_FLOOR) are run:
+# DNG bytes per frame x 25 fps must fit in DISK_MBPS (the SSD measured 354 MB/s sustained over 60 GiB, USB 3.0 UAS).
+MODES = [('4kSDR12', 3840, 2160, 12, False), ('4kSDR10', 3840, 2160, 10, False),
+         ('2kSDR12', 1920, 1080, 12, False), ('2kSDR10', 1920, 1080, 10, False),
+         ('2kHDR16', 1920, 1080, 16, True), ('2kHDR12', 1920, 1080, 12, True),
+         ('4kHDR12', 3840, 2160, 12, True), ('4kHDR16', 3840, 2160, 16, True)]
+MODE_FILTER = None
+DISK_MBPS = 354.0
+DISK_MARGIN = 0.98
 
-    def __init__(self, bits, comp, log, tdn, lock, trim, web):
-        self.bits, self.comp, self.log, self.tdn, self.lock, self.trim, self.web = bits, comp, log, tdn, lock, trim, web
+
+def mode_size_mb(m):
+    """DNG bytes per frame in MB: width x raw height x bits / 8 (16-bit Clear HDR raw frames carry 40 extra lines)."""
+    key, w, h, bits, hdr = m
+    raw_h = {2160: 2200, 1080: 1100}[h] if bits == 16 else h
+    return w * raw_h * bits / 8 / 1e6
+
+
+def mode_possible(m):
+    return mode_size_mb(m) * FPS_FLOOR <= DISK_MBPS * DISK_MARGIN
+
+
+def mode_cap_fps(m):
+    """Highest fps the storage can carry at all for this mode."""
+    return int(DISK_MBPS * DISK_MARGIN / mode_size_mb(m))
+
+
+class Cfg:
+    def __init__(self, mode, comp, log, tdn, lock, trim, web):
+        self.mode = mode
+        self.key, self.w, self.h, self.bits, self.hdr = mode
+        self.comp, self.log, self.tdn, self.lock, self.trim, self.web = comp, log, tdn, lock, trim, web
 
     @property
     def id(self):
-        return '%db_%s_log%s_tdn%s_lock%s_trim%s_web%s' % (
-            self.bits, 'unc' if self.comp == 'none' else 'lossless', int(self.log), int(self.tdn),
+        return '%s_%s_log%d_tdn%d_lock%d_trim%d_web%d' % (
+            self.key, 'unc' if self.comp == 'none' else 'lossless', int(self.log), int(self.tdn),
             int(self.lock), int(self.trim), int(self.web))
 
     def distance(self):   # number of factors away from the baseline
         return sum([self.comp != 'none', self.log, self.tdn, self.lock, not self.trim, self.web])
 
 
+def included_modes():
+    return [m for m in MODES if (m[0] in MODE_FILTER if MODE_FILTER else mode_possible(m))]
+
+
 def all_configs():
-    out = []
-    for bits in (16, 12):
-        cs = [Cfg(bits, comp, log, tdn, lock, trim, web)
+    """Stage order: (1) the baseline of every mode, (d) every config one factor away from its baseline, (r) the rest."""
+    base, d1, rest = [], [], []
+    for mode in included_modes():
+        cs = [Cfg(mode, comp, log, tdn, lock, trim, web)
               for comp in ('none', 'lossless_jpeg') for log in (False, True) for tdn in (False, True)
               for lock in (False, True) for trim in (True, False) for web in (False, True)]
         cs.sort(key=lambda c: (c.distance(), c.id))
-        out += cs
-    return out
+        base.append(cs[0])
+        d1 += [c for c in cs[1:] if c.distance() == 1]
+        rest += [c for c in cs[1:] if c.distance() > 1]
+    return base + d1 + rest
+
+
+def config_score(rows):
+    """Rank a config's takes: a pass beats everything (higher fps first, then longer); otherwise the longest take."""
+    rows = [r for r in rows if r['outcome'] not in ('exhausted', 'stopped_externally', 'skipped_unavailable')
+            and not r.get('variant')]
+    if not rows:
+        return None
+    passes = [r for r in rows if r['outcome'].startswith('pass')]
+    if passes:
+        b = max(passes, key=lambda r: (float(r['fps']), float(r['seconds'] or 0)))
+        return (1, float(b['fps']), float(b['seconds'] or 0))
+    return (0, 0.0, max(float(r['seconds'] or 0) for r in rows))
 
 
 class Sampler(threading.Thread):
@@ -166,8 +214,14 @@ def settle(timeout=40):
 
 
 def apply_cfg(c, fps):
-    other = 12 if c.bits == 16 else 16
-    core('set_clear_hdr', value=True)
+    # Clear HDR and the resolution first, then a bit-depth round trip so every take starts from a fresh camera config.
+    # (set_clear_hdr takes `enabled`; set_resolution takes width and height.)
+    st = state()
+    if bool(st.get('clear_hdr')) != c.hdr:
+        core('set_clear_hdr', enabled=c.hdr); time.sleep(4)
+    if st.get('resolution') != '%dx%d' % (c.w, c.h):
+        core('set_resolution', width=c.w, height=c.h); time.sleep(4)
+    other = {16: 12, 12: (16 if c.hdr else 10), 10: 12}[c.bits]
     core('set_raw_bit_depth', value=other); time.sleep(5)
     core('set_raw_bit_depth', value=c.bits); time.sleep(6)
     settle()
@@ -190,7 +244,8 @@ def verify(c, fps, st):
     if bool(st.get('preview_tdn')) != c.tdn: bad.append('tdn=%s' % st.get('preview_tdn'))
     if bool(st.get('fps_phase_lock')) != c.lock: bad.append('lock=%s' % st.get('fps_phase_lock'))
     if abs(float(st.get('fps', 0)) - fps) > 0.01: bad.append('fps=%s' % st.get('fps'))
-    if st.get('resolution') != '3840x2160': bad.append('res=%s' % st.get('resolution'))
+    if st.get('resolution') != '%dx%d' % (c.w, c.h): bad.append('res=%s' % st.get('resolution'))
+    if bool(st.get('clear_hdr')) != c.hdr: bad.append('clear_hdr=%s' % st.get('clear_hdr'))
     return ' '.join(bad)
 
 
@@ -314,12 +369,13 @@ def estimate_cause(c, fps, rec, ctx, kinds, stats, written_gb_since_trim):
 # <run>/longtakes.db (takes, samples, drop_events, stats, journal). One file, stdlib only, nothing runs during a recording.
 DB_SCHEMA = '''
 CREATE TABLE IF NOT EXISTS session(k TEXT PRIMARY KEY, v TEXT);
-CREATE TABLE IF NOT EXISTS takes(take_id TEXT PRIMARY KEY, cfg_id TEXT, bits INT, comp TEXT, log INT, tdn INT, lock INT,
+CREATE TABLE IF NOT EXISTS takes(take_id TEXT PRIMARY KEY, cfg_id TEXT, mode TEXT, bits INT, comp TEXT, log INT, tdn INT, lock INT,
   trim INT, web INT, fps REAL, outcome TEXT, seconds REAL, dropped INT, first_drop_s REAL, drop_kinds TEXT,
   cause_estimate TEXT, pi_c REAL, nvme_c REAL, pi_c_max REAL, nvme_c_max REAL, cpu_pct REAL, load1 REAL,
   mem_avail_mb REAL, fill_pct REAL, throttled TEXT, files INT, missing INT, audio TEXT, gb_written REAL,
   trim_events INT, drive_full TEXT, drive_full_at_s REAL, start_pi_c REAL, start_nvme_c REAL, clip TEXT,
-  started TEXT, mismatch TEXT);
+  started TEXT, mismatch TEXT, variant TEXT, media_class TEXT, buffer_setting TEXT, buffer_safety_stop TEXT,
+  buffer_flush_discarded TEXT, tune_readback TEXT);
 CREATE TABLE IF NOT EXISTS samples(take_id TEXT, t_s REAL, pi_c REAL, nvme_c REAL, cpu_pct REAL, load1 REAL,
   mem_avail_mb REAL, fill_pct REAL, free_gb REAL, throttled TEXT, dropped INT, state TEXT);
 CREATE INDEX IF NOT EXISTS samples_take ON samples(take_id);
@@ -330,7 +386,7 @@ CREATE TABLE IF NOT EXISTS stats(take_id TEXT, k TEXT, v TEXT);
 CREATE TABLE IF NOT EXISTS journal(take_id TEXT, t_unix REAL, line TEXT);
 CREATE INDEX IF NOT EXISTS journal_take ON journal(take_id);
 CREATE VIEW IF NOT EXISTS config_summary AS
-  SELECT cfg_id, bits, comp, log, tdn, lock, trim, web, COUNT(*) AS takes, MAX(seconds) AS best_seconds,
+  SELECT cfg_id, mode, bits, comp, log, tdn, lock, trim, web, COUNT(*) AS takes, MAX(seconds) AS best_seconds,
          (SELECT t2.fps FROM takes t2 WHERE t2.cfg_id = takes.cfg_id ORDER BY t2.seconds DESC LIMIT 1) AS best_fps,
          MAX(outcome LIKE 'pass%') AS passed, MAX(drive_full = 'yes') AS filled_drive
   FROM takes GROUP BY cfg_id;
@@ -359,8 +415,8 @@ def db_ingest(out, row, payload):
         for t in ('takes', 'samples', 'drop_events', 'stats', 'journal'):
             con.execute('DELETE FROM %s WHERE take_id=?' % t, (tid,))
         r = row
-        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 37), (
-            tid, r.get('cfg_id'), int(r.get('bits') or 0), r.get('comp'), _flag(r.get('log')), _flag(r.get('tdn')),
+        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 44), (
+            tid, r.get('cfg_id'), r.get('mode'), int(r.get('bits') or 0), r.get('comp'), _flag(r.get('log')), _flag(r.get('tdn')),
             _flag(r.get('lock')), _flag(r.get('trim')), _flag(r.get('web')), _num(r.get('fps')), r.get('outcome'),
             _num(r.get('seconds')), int(_num(r.get('dropped')) or 0), _num(r.get('first_drop_s')), r.get('drop_kinds'),
             r.get('cause_estimate'), _num(r.get('pi_c')), _num(r.get('nvme_c')), _num(r.get('pi_c_max')),
@@ -368,7 +424,8 @@ def db_ingest(out, row, payload):
             _num(r.get('fill_pct')), r.get('throttled'), int(_num(r.get('files')) or 0), int(_num(r.get('missing')) or 0),
             r.get('audio'), _num(r.get('gb_written')), int(_num(r.get('trim_events')) or 0), r.get('drive_full'),
             _num(r.get('drive_full_at_s')), _num(r.get('start_pi_c')), _num(r.get('start_nvme_c')), r.get('clip'),
-            r.get('started'), r.get('mismatch')))
+            r.get('started'), r.get('mismatch'), r.get('variant'), r.get('media_class'), r.get('buffer_setting'),
+            r.get('buffer_safety_stop'), r.get('buffer_flush_discarded'), r.get('tune_readback')))
         con.executemany('INSERT INTO samples VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', [
             (tid, x.get('t_s'), x.get('pi_c'), x.get('nvme_c'), x.get('cpu_pct'), x.get('load1'), x.get('mem_avail_mb'),
              x.get('fill_pct'), x.get('free_gb'), x.get('throttled'), x.get('dropped'), x.get('state'))
@@ -457,10 +514,11 @@ def backfill(out):
         log(out, 'database: backfilled %d earlier take(s)' % n)
 
 
-FIELDS = ['take_id', 'cfg_id', 'bits', 'comp', 'log', 'tdn', 'lock', 'trim', 'web', 'fps', 'outcome', 'seconds', 'dropped',
+FIELDS = ['take_id', 'cfg_id', 'mode', 'bits', 'comp', 'log', 'tdn', 'lock', 'trim', 'web', 'fps', 'outcome', 'seconds', 'dropped',
           'first_drop_s', 'drop_kinds', 'cause_estimate', 'pi_c', 'nvme_c', 'pi_c_max', 'nvme_c_max', 'cpu_pct',
           'load1', 'mem_avail_mb', 'fill_pct', 'throttled', 'files', 'missing', 'audio', 'gb_written', 'trim_events',
-          'drive_full', 'drive_full_at_s', 'start_pi_c', 'start_nvme_c', 'clip', 'stats', 'mismatch', 'started']
+          'drive_full', 'drive_full_at_s', 'start_pi_c', 'start_nvme_c', 'clip', 'stats', 'mismatch', 'started', 'variant', 'media_class', 'buffer_setting',
+          'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback']
 
 
 def append_row(out, row):
@@ -486,12 +544,12 @@ def write_md(out):
         'Temperatures and loads are at the drop (or at the end of a clean take). Causes are estimates: '
         'probable / unconfirmed, never confirmed.',
         'Target per take: 30 min, or as long as the drive allows at these settings (pass_drive_full = clean until <6 GiB free). Every take that fills the drive is logged (drive full at s). Lowest fps tried: 25.', '',
-        '| bits | comp | log | tdn | lock | trim | web | fps | outcome | s | dropped | first drop s | kinds | Pi C | NVMe C (peak) | cpu % | RAM avail MB | fill % | drive full at s | cause (estimate) |',
+        '| mode | comp | log | tdn | lock | trim | web | fps | outcome | s | dropped | first drop s | kinds | Pi C | NVMe C (peak) | cpu % | RAM avail MB | fill % | drive full at s | cause (estimate) |',
         '|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|']
     yn = lambda v: 'on' if v in ('True', '1', True) else 'off'
     for r in rows:
         L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s (%s) | %s | %s | %s | %s | %s |' % (
-            r['bits'], 'unc' if r['comp'] == 'none' else 'lossless', yn(r['log']), yn(r['tdn']), yn(r['lock']),
+            r.get('mode') or r['bits'], 'unc' if r['comp'] == 'none' else 'lossless', yn(r['log']), yn(r['tdn']), yn(r['lock']),
             yn(r['trim']), yn(r['web']), r['fps'], r['outcome'], r['seconds'], r['dropped'], r['first_drop_s'],
             r['drop_kinds'], r['pi_c'], r['nvme_c'], r['nvme_c_max'], r['cpu_pct'], r['mem_avail_mb'],
             r['fill_pct'], r.get('drive_full_at_s', ''), r['cause_estimate']))
@@ -505,10 +563,55 @@ def write_md(out):
     open(out + '/results.md', 'w').write('\n'.join(L) + '\n')
 
 
-def run_take(out, c, fps, max_seconds, written):
+# ---- Storage tuning A/B (User, 2026-11-07). Core re-reads the media tuning files when a take starts, so workers, queue,
+# sync_ms and raw_buffers change between takes through the override file; kernel_tune (dirty pages, scheduler,
+# nr_requests, rq_affinity via the root helper) is applied when the drive is mounted, so it is switched by eject + mount.
+AB_VARIANTS = [('base', {}), ('workers2', {'workers': 2}), ('workers6', {'workers': 6}), ('queue24', {'queue': 24}),
+               ('queue48', {'queue': 48}), ('sync500', {'sync_ms': 500}), ('sync2000', {'sync_ms': 2000}),
+               ('rawbuf12', {'raw_buffers': 12}), ('kerneltune', {'kernel_tune': 'on'})]
+KT = {'on': False, 'dev': '/dev/sda1'}
+TUNE_CLI = os.path.expanduser('~/ApertarCore/scripts/apertar-tune')
+
+
+def sh(args):
+    r = subprocess.run(args, capture_output=True, text=True)
+    return r.returncode, (r.stdout + r.stderr).strip()
+
+
+def kernel_readback():
+    dev = os.path.basename(KT['dev']).rstrip('0123456789')
+    f = lambda p: (rd(p, '?') or '?').replace('\n', ' ')
+    sched = f('/sys/block/%s/queue/scheduler' % dev)
+    return 'dirty_bytes=%s dirty_bg=%s writeback_cs=%s sched=%s nr_requests=%s rq_affinity=%s' % (
+        f('/proc/sys/vm/dirty_bytes'), f('/proc/sys/vm/dirty_background_bytes'), f('/proc/sys/vm/dirty_writeback_centisecs'),
+        sched, f('/sys/block/%s/queue/nr_requests' % dev), f('/sys/block/%s/queue/rq_affinity' % dev))
+
+
+def set_variant(out, name, settings):
+    """Put the override file in the state for this variant; switch kernel_tune by remounting if it changed."""
+    sh([sys.executable, TUNE_CLI, 'clear'])
+    if settings:
+        rc, msg = sh([sys.executable, TUNE_CLI, 'set'] + ['%s=%s' % kv for kv in settings.items()])
+        if rc:
+            log(out, 'WARNING: apertar-tune set %s failed: %s' % (settings, msg[:200]))
+    want = settings.get('kernel_tune') == 'on'
+    if want != KT['on']:
+        # Call the root helper the way Core does (sudo -n, allowed for apertar-media-tune) instead of remounting: an
+        # eject powers a USB drive off (2026-11-07: the SSD vanished from the bus and needed a replug).
+        root = os.path.basename(KT['dev']).rstrip('0123456789')
+        rc, msg = sh(['sudo', '-n', '/usr/local/libexec/apertar-media-tune', 'apply' if want else 'restore', root,
+                      KT.get('class', 'usb-storage'), 'exfat'])
+        log(out, 'variant %s: kernel tuning %s (%s class) rc=%d: %s' % (
+            name, 'applied' if want else 'restored', KT.get('class', 'usb-storage'), rc, msg.replace('\n', ' | ')[:240]))
+        KT['on'] = want
+    return kernel_readback()
+
+
+def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', tune_note=''):
     tid = '%s_fps%s_%s' % (c.id, int(fps), time.strftime('%H%M%S'))
-    row = {'take_id': tid, 'cfg_id': c.id, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn, 'lock': c.lock,
-           'trim': c.trim, 'web': c.web, 'fps': fps, 'started': time.strftime('%F %T')}
+    row = {'take_id': tid, 'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn, 'lock': c.lock,
+           'trim': c.trim, 'web': c.web, 'fps': fps, 'started': time.strftime('%F %T'), 'variant': variant,
+           'tune_readback': tune_note}
     st = apply_cfg(c, fps)
     mism = verify(c, fps, st)
     row['mismatch'] = mism
@@ -557,7 +660,7 @@ def run_take(out, c, fps, max_seconds, written):
         el = time.monotonic() - t_rec
         if not last:
             continue
-        if last['dropped'] and last['dropped'] > 0:
+        if stop_on_drop and last['dropped'] and last['dropped'] > 0:
             outcome, ctx_drop = 'drop', dict(last)
         elif os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < CAPACITY_GUARD:
             outcome = 'pass_drive_full'
@@ -608,8 +711,21 @@ def run_take(out, c, fps, max_seconds, written):
         jf.write('\n'.join(jl) + '\n')
     kinds, first, stats, trims = parse_journal(jl, t_rec_wall)
     st_end = state()
+    row['buffer_setting'] = st_end.get('buffer_setting')
+    row['buffer_safety_stop'] = st_end.get('buffer_safety_stop')
+    row['buffer_flush_discarded'] = st_end.get('buffer_flush_discarded')
+    for l in jl:
+        m = re.search(r'recording clip: .*?media_class=([a-z-]+)', l)
+        if m:
+            row['media_class'] = m.group(1)
     dropped = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0), missing)
-    gb = (files * (16.9 if c.bits == 16 else 12.7) / 1000) if files else 0
+    gb = 0
+    if clip and os.path.isdir(clip) and files:
+        names = [n for n in os.listdir(clip) if n.endswith('.dng')][:20]
+        if names:
+            gb = files * (sum(os.path.getsize(os.path.join(clip, n)) for n in names) / len(names)) / 1e9
+    if not stop_on_drop and outcome.startswith('pass'):
+        outcome = 'ab_clean' if dropped == 0 else 'ab_dropped'
     pis = [x['pi_c'] for x in sam.rows]; nvs = [x['nvme_c'] for x in sam.rows if x['nvme_c']]
     row.update({
         'outcome': outcome, 'seconds': round(seconds, 1), 'dropped': dropped,
@@ -642,40 +758,66 @@ def run_take(out, c, fps, max_seconds, written):
 
 
 def main():
+    global WEB_REMOTE, CLEAR_ALL, MODE_FILTER, DISK_MBPS, AB_VARIANTS
     ap = argparse.ArgumentParser()
     ap.add_argument('--out', required=True)
     ap.add_argument('--dry-run', action='store_true')
-    ap.add_argument('--max-seconds', type=int, default=0, help='cap every take (smoke test)')
+    ap.add_argument('--max-seconds', type=int, default=0, help='cap every stage-1/3 take (smoke test)')
     ap.add_argument('--only', type=int, default=0, help='run only the first N unfinished configs')
     ap.add_argument('--web-remote', action='store_true',
                     help='WebUI-on takes use a real client on another machine (webui_remote.py on the Mac) instead of a local stand-in')
     ap.add_argument('--clear-all', action='store_true', help='also delete clip folders that were on the drive at the start')
+    ap.add_argument('--modes', default='', help='comma list of mode keys to run (default: every mode the storage can carry)')
     ap.add_argument('--fps-start', type=float, default=0, help='override the starting fps (smoke test)')
+    ap.add_argument('--disk-mbps', type=float, default=DISK_MBPS, help='sustained write speed of the drive, MB/s')
+    ap.add_argument('--stages', default='1d2r', help='1 = baseline of every mode, d = configs one factor away, 2 = storage A/B on the best configs, r = the rest')
+    ap.add_argument('--ab-seconds', type=int, default=120, help='length of one A/B take')
+    ap.add_argument('--ab-variants', default='', help='comma list of A/B variants to run (default: all)')
+    ap.add_argument('--ab-reps', type=int, default=3, help='repeats of every A/B variant (interleaved)')
     a = ap.parse_args()
     out = os.path.expanduser(a.out)
-    global WEB_REMOTE, CLEAR_ALL
-    WEB_REMOTE, CLEAR_ALL = a.web_remote, a.clear_all
+    if a.ab_variants:
+        AB_VARIANTS = [v for v in AB_VARIANTS if v[0] in a.ab_variants.split(',')]
+    WEB_REMOTE, CLEAR_ALL, DISK_MBPS = a.web_remote, a.clear_all, a.disk_mbps
+    MODE_FILTER = [m for m in a.modes.split(',') if m] or None
     os.makedirs(out + '/webui', exist_ok=True)
     cfgs = all_configs()
+    inc = included_modes()
+    excl = [m for m in MODES if m not in inc]
+    n_base = len(inc)
+    n_d1 = sum(1 for c in cfgs if c.distance() == 1)
     if a.dry_run:
-        for i, c in enumerate(cfgs, 1): print(i, c.id)
-        print(len(cfgs), 'configs')
+        for m in MODES:
+            print('%-8s %5.2f MB/frame  %4.0f MB/s at %d fps (%3.0f%% of %.0f)  storage cap %d fps  %s' % (
+                m[0], mode_size_mb(m), mode_size_mb(m) * FPS_FLOOR, FPS_FLOOR, 100 * mode_size_mb(m) * FPS_FLOOR / DISK_MBPS,
+                DISK_MBPS, mode_cap_fps(m), 'RUN' if m in inc else 'excluded: storage too slow'))
+        print('stage 1: %d baseline configs; d: %d single-factor configs; 2: A/B on the best config of each mode at >= 70%% of '
+              'the disk speed (+ the baseline); r: %d other configs' % (n_base, n_d1, len(cfgs) - n_base - n_d1))
+        print('A/B variants:', ', '.join(v for v, _ in AB_VARIANTS))
         return
     st0 = state()
     if not st0:
         sys.exit('Core is not answering on ' + SOCK)
+    src = subprocess.run(['findmnt', '-no', 'SOURCE', MEDIA], capture_output=True, text=True).stdout.strip()
+    KT['dev'] = src or KT['dev']
+    parent = subprocess.run(['lsblk', '-no', 'pkname', src], capture_output=True, text=True).stdout.strip().splitlines()
+    parent = '/dev/' + parent[0] if parent else src
     if not os.path.exists(out + '/session.json'):
         sess = {'started': time.strftime('%F %T'), 'pi_model': rd('/proc/device-tree/model', '').strip('\0'),
                 'kernel': subprocess.run(['uname', '-r'], capture_output=True, text=True).stdout.strip(),
                 'core_commit': subprocess.run(['git', '-C', os.path.expanduser('~/ApertarCore'), 'log', '--oneline', '-1'],
                                               capture_output=True, text=True).stdout.strip(),
-                'nvme': subprocess.run(['lsblk', '-dno', 'MODEL,SIZE', '/dev/nvme0n1'], capture_output=True, text=True).stdout.strip(),
+                'drive': subprocess.run(['lsblk', '-dno', 'MODEL,SIZE,TRAN', parent], capture_output=True, text=True).stdout.strip(),
                 'mount': subprocess.run(['findmnt', '-no', 'SOURCE,FSTYPE,OPTIONS', MEDIA], capture_output=True, text=True).stdout.strip(),
+                'disk_mbps_sustained': DISK_MBPS,
+                'modes_run': [(m[0], round(mode_size_mb(m), 2), mode_cap_fps(m)) for m in inc],
+                'modes_excluded_storage_too_slow': [(m[0], round(mode_size_mb(m) * FPS_FLOOR)) for m in excl],
                 'tuning_file': st0.get('tuning_file'), 'ui_running': rd('/proc/loadavg'),
                 'ui_service': subprocess.run(['systemctl', 'is-active', 'apertar-ui-direct'], capture_output=True, text=True).stdout.strip(),
                 'throttled_at_start': subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip(),
+                'kernel_tune_readback_at_start': kernel_readback(),
                 'original_settings': {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log',
-                                                               'preview_tdn', 'fps_phase_lock', 'fps_speed_ramp')},
+                                                               'preview_tdn', 'fps_phase_lock', 'fps_speed_ramp', 'clear_hdr', 'resolution')},
                 'pi_revision': next((l.split(':')[1].strip() for l in open('/proc/cpuinfo') if l.startswith('Revision')), ''),
                 'pi_mac_eth0': rd('/sys/class/net/eth0/address'),
                 'preexisting_clips': sorted(clip_dirs()),
@@ -694,10 +836,9 @@ def main():
         log(out, 'WARNING: database session info failed: %s' % e)
     PRESERVE.update(json.load(open(out + '/session.json')).get('preexisting_clips', []))
     log(out, 'preserving %d pre-existing clip folder(s)%s' % (len(PRESERVE), ' (--clear-all: they WILL be deleted)' if CLEAR_ALL else ''))
-    log(out, 'campaign start: %d configs, out=%s' % (len(cfgs), out))
+    log(out, 'campaign start: modes %s; excluded (storage too slow at %d fps): %s; %d configs; drive %.0f MB/s; out=%s' % (
+        [m[0] for m in inc], FPS_FLOOR, [m[0] for m in excl], len(cfgs), DISK_MBPS, out))
     core('set_fps_speed_ramp', enabled=False)
-    # The configured USB PnP Sound Device only does S16_LE mono 44.1/48 kHz; a fixed s24 format makes record_start
-    # fail. Use Auto format (the device picks), keep rate and channels. The original is restored at the end.
     aud = ui_audio()
     sess = json.load(open(out + '/session.json'))
     sess.setdefault('audio_original', aud)
@@ -706,55 +847,124 @@ def main():
     signal.signal(signal.SIGTERM, lambda *_: stop.update(now=True))
     written = {'gb': 0}
     ext_stops = {}
-    done_n = 0
-    try:
-        for c in cfgs:
+    counter = {'n': 0}
+
+    def take(c, fps, **kw):
+        row = run_take(out, c, fps, kw.pop('max_seconds', a.max_seconds), written, **kw)
+        payload = row.pop('_payload', None)
+        append_row(out, row)
+        start_ingest(out, row, payload)     # runs while the next take is set up
+        if row.get('media_class'):
+            KT['class'] = row['media_class']
+        o = row.get('outcome', '')
+        if o in ('record_start_failed', 'setup_mismatch', 'media_not_mounted'):
+            log(out, 'setup problem (%s): %s - campaign needs a human' % (o, row.get('cause_estimate') or row.get('mismatch')))
+            stop['now'] = True
+        return row
+
+    def walk_config(c):
+        """Step fps down from the mode's storage cap until a take passes (30 min or drive full)."""
+        rows = [r for r in load_rows(out) if r['cfg_id'] == c.id and not r.get('variant')]
+        if any(r['outcome'].startswith('pass') or r['outcome'] in ('skipped_unavailable', 'exhausted') for r in rows):
+            return
+        if a.only and counter['n'] >= a.only:
+            stop['now'] = True
+            return
+        counter['n'] += 1
+        apply_cfg(c, 25)
+        fmax = float(state().get('fps_take_max') or state().get('fps_max') or 30)
+        fps = float(int(min(fmax, mode_cap_fps(c.mode))))
+        if a.fps_start: fps = a.fps_start
+        rows = [r for r in rows if r['outcome'] != 'stopped_externally']
+        if rows:
+            fps = min(fps, min(float(r['fps']) for r in rows) - 1)
+        log(out, '== config %s: stepping down from %s fps (storage cap %d, mode max %.0f)' % (c.id, fps, mode_cap_fps(c.mode), fmax))
+        while fps >= FPS_FLOOR and not stop['now']:
+            clear_media(out)
+            if os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < 20 * 2**30:
+                log(out, 'drive still nearly full after clearing the clips: stopping')
+                stop['now'] = True; break
+            row = take(c, fps)
+            o = row.get('outcome', '')
             if stop['now']: break
-            rows = [r for r in load_rows(out) if r['cfg_id'] == c.id]
-            if any(r['outcome'].startswith('pass') or r['outcome'] in ('skipped_unavailable', 'exhausted') for r in rows):
+            if o == 'stopped_externally' and dropped_none(row):
+                ext_stops[c.id] = ext_stops.get(c.id, 0) + 1
+                log(out, 'take stopped by someone else with no drop (%ds): not a result; retrying %s fps (%d/2)' % (
+                    float(row.get('seconds') or 0), fps, ext_stops[c.id]))
+                if ext_stops[c.id] <= 2:
+                    continue
+                stop['now'] = True; break
+            if o == 'skipped_unavailable': break
+            if o.startswith('pass'): break
+            fps -= 1
+        else:
+            if not stop['now']:
+                append_row(out, {'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn,
+                                 'lock': c.lock, 'trim': c.trim, 'web': c.web, 'fps': FPS_FLOOR, 'outcome': 'exhausted',
+                                 'started': time.strftime('%F %T')})
+
+    def ab_stage():
+        """Short A/B takes of the storage tuning on the best setups: per mode the best config found so far (a pass beats
+        a drop, then higher fps, then longer) plus the plain baseline when that is a different config. Only modes that
+        need >= 70% of the disk speed. Fps = the first fps above where the config was clean (or 25 if it never was).
+        Every take runs its full length (no stop at the first drop); the metric is dropped frames and queue peak."""
+        rows_all = load_rows(out)
+        for m in inc:
+            mine = [c for c in cfgs if c.mode == m]
+            scored = [(config_score([r for r in rows_all if r['cfg_id'] == c.id]), c) for c in mine]
+            scored = [(sc, c) for sc, c in scored if sc is not None]
+            if not scored:
                 continue
-            if a.only and done_n >= a.only: break
-            done_n += 1
-            apply_cfg(c, 25)
-            fmax = float(state().get('fps_take_max') or state().get('fps_max') or 30)
-            fps = float(int(fmax))
-            if a.fps_start: fps = a.fps_start
-            rows = [r for r in rows if r['outcome'] != 'stopped_externally']   # not results: do not step down for them
-            if rows:
-                fps = min(fps, min(float(r['fps']) for r in rows) - 1)
-            log(out, '== config %s: stepping down from %s fps' % (c.id, fps))
-            while fps >= FPS_FLOOR and not stop['now']:
-                clear_media(out)
-                if os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < 20 * 2**30:
-                    log(out, 'drive still nearly full after clearing the clips: stopping')
-                    stop['now'] = True; break
-                row = run_take(out, c, fps, a.max_seconds, written)
-                payload = row.pop('_payload', None)
-                append_row(out, row)
-                start_ingest(out, row, payload)     # runs while the next take is set up
-                o = row.get('outcome', '')
-                if o in ('media_not_mounted',):
-                    log(out, 'media not mounted: campaign needs a human'); stop['now'] = True; break
-                if o == 'stopped_externally' and dropped_none(row):
-                    ext_stops[c.id] = ext_stops.get(c.id, 0) + 1
-                    log(out, 'take stopped by someone else with no drop (%ds): not a result; retrying %s fps (%d/2)' % (
-                        float(row.get('seconds') or 0), fps, ext_stops[c.id]))
-                    if ext_stops[c.id] <= 2:
-                        continue
-                    stop['now'] = True; break
-                if o in ('record_start_failed', 'setup_mismatch', 'media_not_mounted'):
-                    log(out, 'setup problem (%s): %s - campaign needs a human' % (o, row.get('cause_estimate') or row.get('mismatch')))
-                    stop['now'] = True; break
-                if o == 'skipped_unavailable': break
-                if o.startswith('pass'): break
-                fps -= 1
-            else:
-                if not stop['now']:
-                    append_row(out, {'cfg_id': c.id, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn,
-                                     'lock': c.lock, 'trim': c.trim, 'web': c.web, 'fps': FPS_FLOOR, 'outcome': 'exhausted',
-                                     'started': time.strftime('%F %T')})
+            best = max(scored, key=lambda t: t[0])[1]
+            targets = [best] + ([mine[0]] if mine[0].id != best.id and config_score(
+                [r for r in rows_all if r['cfg_id'] == mine[0].id]) is not None else [])
+            for c in targets:
+                if stop['now']: return
+                base_rows = [r for r in rows_all if r['cfg_id'] == c.id and not r.get('variant')]
+                passes = sorted(int(float(r['fps'])) for r in base_rows if r['outcome'].startswith('pass'))
+                cap = mode_cap_fps(m)
+                ab_fps = (passes[-1] + 1 if passes[-1] + 1 <= cap else passes[-1]) if passes else FPS_FLOOR
+                util = mode_size_mb(m) * ab_fps / DISK_MBPS
+                if util < 0.70:
+                    log(out, 'A/B %s %s: skipped, %.0f%% of the disk speed at %d fps (not storage-limited)' % (m[0], c.id, 100 * util, ab_fps))
+                    continue
+                log(out, '== A/B %s%s at %d fps (%.0f%% of the disk speed): %d variants x %d reps, %d s each' % (
+                    c.id, ' (best)' if c is best else ' (baseline)', ab_fps, 100 * util, len(AB_VARIANTS), a.ab_reps, a.ab_seconds))
+                done = collections_count(load_rows(out), c.id)
+                for rep in range(a.ab_reps):
+                    for vname, settings in AB_VARIANTS:
+                        if stop['now']: return
+                        if done.get(vname, 0) > rep: continue
+                        clear_media(out)
+                        note = set_variant(out, vname, settings)
+                        row = take(c, ab_fps, max_seconds=a.ab_seconds, stop_on_drop=False, variant=vname, tune_note=note)
+                        log(out, 'A/B %s rep %d %s: %s dropped=%s' % (c.id, rep + 1, vname, row.get('outcome'), row.get('dropped')))
+                set_variant(out, 'base', {})
+
+    try:
+        if '1' in a.stages:
+            for c in cfgs[:n_base]:
+                if stop['now']: break
+                walk_config(c)
+        if 'd' in a.stages:
+            for c in cfgs[n_base:n_base + n_d1]:
+                if stop['now']: break
+                walk_config(c)
+        if '2' in a.stages and not stop['now']:
+            ab_stage()
+        if 'r' in a.stages:
+            for c in cfgs[n_base + n_d1:]:
+                if stop['now']: break
+                walk_config(c)
     finally:
-        for cmd, kw in (('set_preview_tdn', {'enabled': bool(orig.get('preview_tdn'))}),
+        try:
+            set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on
+        except Exception as e:
+            log(out, 'WARNING: could not restore the tuning override: %s' % e)
+        ow, oh = (orig.get('resolution') or '3840x2160').split('x')
+        for cmd, kw in (('set_clear_hdr', {'enabled': bool(orig.get('clear_hdr', True))}),
+                        ('set_resolution', {'width': int(ow), 'height': int(oh)}),
+                        ('set_preview_tdn', {'enabled': bool(orig.get('preview_tdn'))}),
                         ('set_fps_phase_lock', {'enabled': bool(orig.get('fps_phase_lock'))}),
                         ('set_media_trim', {'enabled': True}),
                         ('set_cdng_compression', {'value': orig.get('cdng_compression') or 'none'}),
@@ -767,6 +977,14 @@ def main():
         if orig_fmt and orig_fmt != 'auto':
             core('set_audio_capture_options', format=orig_fmt)
         log(out, 'campaign ended (settings restored except Log, which stays as last set)')
+
+
+def collections_count(rows, cfg_id):
+    d = {}
+    for r in rows:
+        if r['cfg_id'] == cfg_id and r.get('variant') and r['outcome'].startswith('ab_'):
+            d[r['variant']] = d.get(r['variant'], 0) + 1
+    return d
 
 
 if __name__ == '__main__':
