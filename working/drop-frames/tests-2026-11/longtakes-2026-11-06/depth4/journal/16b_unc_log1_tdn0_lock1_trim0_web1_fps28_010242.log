@@ -1,0 +1,16 @@
+1794009778.984236 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794009778.987813 apertar start-apertar-core.sh[23635]: ApertarCore CineMate Log 16->12 mu=10000 black=3200 white=65520 footroom=32/487
+1794009778.987956 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 189 MiB: staying on frames
+1794009779.026316 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794009779.086857 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=10773955269
+1794009780.380899 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71433 nominal_us=35718 total_estimate=1
+1794009781.031207 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=4 requeue_failures=0
+1794009781.031207 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock stats: max_abs_err_us=243 duration_pushes=227
+1794009781.086630 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=28 nominal_us=3.6e+04 ref=boottime kp=0.06 ki=0.0015 deadband_us=6 clamp_us=1.5e+02
+1794009781.096010 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=44 written=44 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=2/12
+1794009781.096565 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=35713 requested_us=35714 nominal_us=3.6e+04
+1794009781.111316 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 15 ms
+1794009781.113348 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=28 nominal_us=3.6e+04 ref=boottime kp=0.06 ki=0.0015 deadband_us=6 clamp_us=1.5e+02
+1794009781.123048 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=35713 requested_us=35714 nominal_us=3.6e+04
+1794009781.156800 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=28 nominal_us=3.6e+04 ref=boottime kp=0.06 ki=0.0015 deadband_us=6 clamp_us=1.5e+02
+1794009781.262168 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=35716 requested_us=35716 nominal_us=3.6e+04

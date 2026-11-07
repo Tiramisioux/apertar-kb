@@ -1,0 +1,24 @@
+1794010342.112257 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794010342.112836 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 379 MiB: staying on frames
+1794010342.164565 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1794010342.280948 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=11337122194
+1794010343.189968 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=68965 nominal_us=34488 total_estimate=1
+1794010343.501171 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=103419 nominal_us=34481 total_estimate=5
+1794010343.767130 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=103419 nominal_us=34481 total_estimate=8
+1794010344.095109 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=103408 nominal_us=34481 total_estimate=11
+1794010344.171978 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=11 requeue_failures=0
+1794010344.171978 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock stats: max_abs_err_us=191 duration_pushes=96
+1794010344.288900 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=29.000 nominal_us=34482.759 ref=boottime kp=0.060 ki=0.002 deadband_us=6.000 clamp_us=150.000
+1794010344.316813 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=34487 requested_us=34483 nominal_us=34482.759
+1794010344.362842 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=29.000 nominal_us=34482.759 ref=boottime kp=0.060 ki=0.002 deadband_us=6.000 clamp_us=150.000
+1794010344.423464 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=29.000 nominal_us=34482.759 ref=boottime kp=0.060 ki=0.002 deadband_us=6.000 clamp_us=150.000
+1794010344.451414 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=34490 requested_us=34483 nominal_us=34482.759
+1794010344.599621 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=29.000 nominal_us=34482.759 ref=boottime kp=0.060 ki=0.002 deadband_us=6.000 clamp_us=150.000
+1794010344.632649 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=34483 requested_us=34483 nominal_us=34482.759
+1794010344.655869 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=36 written=36 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=4/24
+1794010344.655927 apertar start-apertar-core.sh[23635]: ApertarCore lossless timing: jobs=36 avg_wall_ms=284.50 avg_thread_cpu_ms=178.38 avg_wait_or_preempt_ms=106.12 max_wall_ms=411.80 estimated_capacity_fps=17.57
+1794010344.655927 apertar start-apertar-core.sh[23635]: ApertarCore lossless phases: jobs=36 avg_encode_ms=237.03 avg_payload_write_ms=39.99 avg_container_ms=1.89 avg_payload_mib=11.84 tile_writes_per_frame=17.00
+1794010344.655927 apertar start-apertar-core.sh[23635]: ApertarCore recorder stop time: 0.484s format=cdng discarded_on_stop=0
+1794010344.663388 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 7 ms
+1794010344.693916 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=29.000 nominal_us=34482.759 ref=boottime kp=0.060 ki=0.002 deadband_us=6.000 clamp_us=150.000
+1794010344.704470 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=34483 requested_us=34482 nominal_us=34482.759

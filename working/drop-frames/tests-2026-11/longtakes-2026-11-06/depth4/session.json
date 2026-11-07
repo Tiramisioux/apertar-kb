@@ -1,0 +1,36 @@
+{
+ "started": "2026-11-06 22:16:23",
+ "pi_model": "Raspberry Pi Compute Module 5 Lite Rev 1.0",
+ "kernel": "6.12.75+rpt-rpi-2712",
+ "core_commit": "f4a1393 camera: phase lock pins {d, d+1} so the line length stays fixed",
+ "nvme": "KINGSTON SKC3000S512G 476.9G",
+ "mount": "/dev/nvme0n1 exfat rw,noatime,uid=1000,gid=1000,fmask=0002,dmask=0002,allow_utime=0020,iocharset=utf8,errors=remount-ro",
+ "tuning_file": "",
+ "ui_running": "2.21 2.16 1.26 1/214 10115",
+ "ui_service": "active",
+ "throttled_at_start": "throttled=0x0",
+ "original_settings": {
+  "fps": 25.0,
+  "raw_bit_depth": 16,
+  "cdng_compression": "none",
+  "cdng_log": "off",
+  "preview_tdn": false,
+  "fps_phase_lock": false,
+  "fps_speed_ramp": false
+ },
+ "audio": "unchanged: record_audio_enabled, input as configured (USB PnP Sound Device hw:2,0)",
+ "audio_original": {
+  "audio_sample_format": "s24",
+  "audio_sample_rate": 48000,
+  "audio_channels": "auto",
+  "record_audio_enabled": true,
+  "audio_input_device": "hw:2,0"
+ },
+ "audio_used": {
+  "audio_sample_format": "auto",
+  "audio_sample_rate": 48000,
+  "audio_channels": "auto",
+  "record_audio_enabled": true,
+  "audio_input_device": "hw:2,0"
+ }
+}

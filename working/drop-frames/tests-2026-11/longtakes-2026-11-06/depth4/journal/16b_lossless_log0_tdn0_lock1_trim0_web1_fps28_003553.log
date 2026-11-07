@@ -1,0 +1,15 @@
+1794008170.019526 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794008170.019526 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 379 MiB: staying on frames
+1794008170.066663 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1794008170.125296 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=9164994563
+1794008170.912382 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71437 nominal_us=35718 total_estimate=1
+1794008171.303436 apertar start-apertar-core.sh[23635]: ApertarCore drop[copy-slot]: frame=32 held=6/6 dropped_total=1
+1794008171.579557 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=3 requeue_failures=0
+1794008171.579557 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock stats: max_abs_err_us=262 duration_pushes=260
+1794008171.738919 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=28.000 nominal_us=35714.286 ref=boottime kp=0.060 ki=0.002 deadband_us=6.000 clamp_us=150.000
+1794008171.808400 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=35715 requested_us=35713 nominal_us=35714.286
+1794008172.468575 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=33 written=33 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=1 fault= peak_queue=10/24
+1794008172.468575 apertar start-apertar-core.sh[23635]: ApertarCore lossless timing: jobs=33 avg_wall_ms=320.77 avg_thread_cpu_ms=179.32 avg_wait_or_preempt_ms=141.45 max_wall_ms=583.49 estimated_capacity_fps=15.59
+1794008172.469652 apertar start-apertar-core.sh[23635]: ApertarCore lossless phases: jobs=33 avg_encode_ms=271.00 avg_payload_write_ms=44.96 avg_container_ms=0.81 avg_payload_mib=11.89 tile_writes_per_frame=17.00
+1794008172.469652 apertar start-apertar-core.sh[23635]: ApertarCore recorder stop time: 0.893s format=cdng discarded_on_stop=0
+1794008172.472875 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 2 ms

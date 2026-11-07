@@ -1,0 +1,12 @@
+1794001391.203521 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794001391.214651 apertar start-apertar-core.sh[23635]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1794001391.214651 apertar start-apertar-core.sh[23635]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1794001391.215086 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 197 MiB (MemAvailable 1183 MiB, fraction 0.60, floor 512 MiB, cap 1005 MiB, frame 15.8 MiB = 12 frames) source=conf
+1794001391.257318 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-06_C0001 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794001391.336511 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=2386204945
+1794001394.411582 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71413 nominal_us=35715 total_estimate=1
+1794001395.267577 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=1 requeue_failures=0
+1794001395.310937 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=103 written=103 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=2/12 queue_bytes_peak=33177600 queue_budget=207408332
+1794001395.324827 apertar start-apertar-core.sh[23635]: ApertarCore audio writer: peak_backlog_kb=1
+1794001395.325109 apertar start-apertar-core.sh[23635]: ApertarCore audio sync: video_boot_us=2386204945 audio_boot_us=2386140166 trim_samples=3109 pad_samples=0 output_samples=178286 sample_rate=48000
+1794001395.326714 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 0 ms

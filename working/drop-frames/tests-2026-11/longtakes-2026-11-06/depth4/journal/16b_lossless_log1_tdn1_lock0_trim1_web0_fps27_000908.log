@@ -1,0 +1,11 @@
+1794006563.567568 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794006563.568555 apertar start-apertar-core.sh[23635]: ApertarCore CineMate Log 16->12 mu=10000 black=3200 white=65520 footroom=32/487
+1794006563.568756 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 379 MiB: staying on frames
+1794006563.620057 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1794006563.701643 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=7558563789
+1794006564.772409 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=74060 nominal_us=37037 total_estimate=1
+1794006565.629483 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=8 requeue_failures=0
+1794006565.699063 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=36 written=36 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=2/24
+1794006565.699063 apertar start-apertar-core.sh[23635]: ApertarCore lossless timing: jobs=36 avg_wall_ms=75.09 avg_thread_cpu_ms=68.55 avg_wait_or_preempt_ms=6.54 max_wall_ms=98.24 estimated_capacity_fps=66.58
+1794006565.699413 apertar start-apertar-core.sh[23635]: ApertarCore lossless phases: jobs=36 avg_encode_ms=54.12 avg_payload_write_ms=16.29 avg_container_ms=0.71 avg_payload_mib=8.49 tile_writes_per_frame=17.00
+1794006565.706864 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 7 ms

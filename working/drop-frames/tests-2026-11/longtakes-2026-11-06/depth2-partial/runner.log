@@ -1,0 +1,16 @@
+2026-11-06 22:07:50 campaign start: 128 configs, out=/home/pi/longtakes/run-20261106-2207
+2026-11-06 22:07:51 audio: format s24 -> auto (device is S16-only)
+2026-11-06 22:08:06 == config 16b_unc_log0_tdn0_lock0_trim1_web0: stepping down from 30.0 fps
+2026-11-06 22:08:27 16b_unc_log0_tdn0_lock0_trim1_web0 fps=30.0 -> drop after 2s dropped=2 kinds=capture-gap:1 pi=59C nvme=28.85
+2026-11-06 22:08:57 16b_unc_log0_tdn0_lock0_trim1_web0 fps=29.0 -> drop after 4s dropped=3 kinds=capture-gap:1 pi=60C nvme=28.85
+2026-11-06 22:09:29 16b_unc_log0_tdn0_lock0_trim1_web0 fps=28.0 -> drop after 5s dropped=2 kinds=capture-gap:1 pi=60C nvme=29.85
+2026-11-06 22:10:03 16b_unc_log0_tdn0_lock0_trim1_web0 fps=27.0 -> drop after 8s dropped=2 kinds=capture-gap:1 pi=60C nvme=30.85
+2026-11-06 22:10:54 16b_unc_log0_tdn0_lock0_trim1_web0 fps=26.0 -> drop after 24s dropped=1 kinds=capture-gap:1 pi=60C nvme=34.85
+2026-11-06 22:12:35 16b_unc_log0_tdn0_lock0_trim1_web0 fps=25.0 -> drop after 74s dropped=1 kinds=capture-gap:1 pi=61C nvme=43.85
+2026-11-06 22:12:50 == config 16b_lossless_log0_tdn0_lock0_trim1_web0: stepping down from 30.0 fps
+2026-11-06 22:13:11 16b_lossless_log0_tdn0_lock0_trim1_web0 fps=30.0 -> drop after 2s dropped=3 kinds=capture-gap:1 pi=62C nvme=38.85
+2026-11-06 22:13:32 16b_lossless_log0_tdn0_lock0_trim1_web0 fps=29.0 -> drop after 2s dropped=3 kinds=capture-gap:1 pi=62C nvme=38.85
+2026-11-06 22:13:55 16b_lossless_log0_tdn0_lock0_trim1_web0 fps=28.0 -> drop after 2s dropped=6 kinds=capture-gap:3 pi=63C nvme=37.85
+2026-11-06 22:14:17 16b_lossless_log0_tdn0_lock0_trim1_web0 fps=27.0 -> drop after 2s dropped=4 kinds=capture-gap:1 pi=62C nvme=36.85
+2026-11-06 22:14:40 16b_lossless_log0_tdn0_lock0_trim1_web0 fps=26.0 -> drop after 2s dropped=4 kinds=capture-gap:1 pi=63C nvme=36.85
+2026-11-06 22:14:40 campaign ended (settings restored except Log, which stays as last set)

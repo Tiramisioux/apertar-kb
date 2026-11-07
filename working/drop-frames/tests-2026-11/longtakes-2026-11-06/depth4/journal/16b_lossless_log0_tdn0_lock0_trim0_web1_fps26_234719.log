@@ -1,0 +1,11 @@
+1794005255.792712 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794005255.794114 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 379 MiB: staying on frames
+1794005255.845508 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-06_C0001 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1794005255.931524 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=6250796424
+1794005256.745499 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=76905 nominal_us=38461 total_estimate=1
+1794005257.350018 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=1 requeue_failures=0
+1794005258.159155 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=31 written=31 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=10/24
+1794005258.159155 apertar start-apertar-core.sh[23635]: ApertarCore lossless timing: jobs=31 avg_wall_ms=327.49 avg_thread_cpu_ms=181.10 avg_wait_or_preempt_ms=146.39 max_wall_ms=494.71 estimated_capacity_fps=15.27
+1794005258.159155 apertar start-apertar-core.sh[23635]: ApertarCore lossless phases: jobs=31 avg_encode_ms=275.57 avg_payload_write_ms=48.03 avg_container_ms=0.54 avg_payload_mib=12.00 tile_writes_per_frame=17.00
+1794005258.159155 apertar start-apertar-core.sh[23635]: ApertarCore recorder stop time: 0.809s format=cdng discarded_on_stop=0
+1794005258.184763 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 25 ms

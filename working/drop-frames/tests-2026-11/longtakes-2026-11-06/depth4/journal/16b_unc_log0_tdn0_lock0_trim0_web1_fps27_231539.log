@@ -1,0 +1,12 @@
+1794003356.160106 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794003356.169787 apertar start-apertar-core.sh[23635]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1794003356.169856 apertar start-apertar-core.sh[23635]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1794003356.170173 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 189 MiB: staying on frames
+1794003356.210062 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-06_C0001 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794003356.274368 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=4351141136
+1794003358.974109 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=74059 nominal_us=37037 total_estimate=1
+1794003359.718321 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=1 requeue_failures=0
+1794003359.846990 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=87 written=87 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=2/12
+1794003359.852120 apertar start-apertar-core.sh[23635]: ApertarCore audio writer: peak_backlog_kb=1
+1794003359.852330 apertar start-apertar-core.sh[23635]: ApertarCore audio sync: video_boot_us=4351141136 audio_boot_us=4351095356 trim_samples=2197 pad_samples=0 output_samples=156444 sample_rate=48000
+1794003359.854030 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 0 ms

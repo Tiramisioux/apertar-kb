@@ -1,0 +1,16 @@
+1794003456.367130 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794003456.377284 apertar start-apertar-core.sh[23635]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1794003456.377582 apertar start-apertar-core.sh[23635]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1794003456.378167 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 219 MiB (MemAvailable 1219 MiB, fraction 0.60, floor 512 MiB, cap 1005 MiB, frame 15.8 MiB = 13 frames) source=conf
+1794003456.421641 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-06_C0001 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794003456.506549 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=4451375915
+1794003458.028691 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=66656 nominal_us=33333 total_estimate=1
+1794003458.943559 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=4 requeue_failures=0
+1794003458.943559 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock stats: max_abs_err_us=179 duration_pushes=183
+1794003459.013540 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=30 nominal_us=3.3e+04 ref=boottime kp=0.06 ki=0.0015 deadband_us=6 clamp_us=1.5e+02
+1794003459.026486 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=63 written=63 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=2/12 queue_bytes_peak=33177600 queue_budget=230627737
+1794003459.036227 apertar start-apertar-core.sh[23635]: ApertarCore audio writer: peak_backlog_kb=3
+1794003459.036227 apertar start-apertar-core.sh[23635]: ApertarCore audio sync: video_boot_us=4451375915 audio_boot_us=4451303686 trim_samples=3467 pad_samples=0 output_samples=107200 sample_rate=48000
+1794003459.038654 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 2 ms
+1794003459.116045 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: armed fps=30 nominal_us=3.3e+04 ref=boottime kp=0.06 ki=0.0015 deadband_us=6 clamp_us=1.5e+02
+1794003460.671638 apertar start-apertar-core.sh[23635]: ApertarCore phase-lock: saturated echoed_us=33333 requested_us=33331 nominal_us=3.3e+04

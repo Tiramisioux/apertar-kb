@@ -1,0 +1,12 @@
+1794012976.747575 apertar start-apertar-core.sh[23635]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794012976.747575 apertar start-apertar-core.sh[23635]: ApertarCore CineMate Log 16->12 mu=10000 black=3200 white=65520 footroom=32/487 composed with the CCMP expansion
+1794012976.747575 apertar start-apertar-core.sh[23635]: ApertarCore buffer: ram budget 0 MiB below the frames-mode 379 MiB: staying on frames
+1794012976.801058 apertar start-apertar-core.sh[23635]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1794012976.866057 apertar start-apertar-core.sh[23635]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=13971735810
+1794012977.945254 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=68952 nominal_us=34484 total_estimate=1
+1794012978.215036 apertar start-apertar-core.sh[23635]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=103462 nominal_us=34484 total_estimate=4
+1794012978.804844 apertar start-apertar-core.sh[23635]: ApertarCore capture stats: dropped_gap_estimate=6 requeue_failures=0
+1794012978.897784 apertar start-apertar-core.sh[23635]: ApertarCore recording stats: enqueued=43 written=43 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=2/24
+1794012978.897784 apertar start-apertar-core.sh[23635]: ApertarCore lossless timing: jobs=43 avg_wall_ms=97.56 avg_thread_cpu_ms=81.22 avg_wait_or_preempt_ms=16.35 max_wall_ms=135.34 estimated_capacity_fps=51.25
+1794012978.897784 apertar start-apertar-core.sh[23635]: ApertarCore lossless phases: jobs=43 avg_encode_ms=65.58 avg_payload_write_ms=25.02 avg_container_ms=1.12 avg_payload_mib=8.26 tile_writes_per_frame=17.00
+1794012978.905520 apertar start-apertar-core.sh[23635]: ApertarCore recording stop: synced to the medium in 7 ms
