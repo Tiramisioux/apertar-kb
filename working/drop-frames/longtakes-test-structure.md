@@ -105,6 +105,20 @@ second; the USB SSD has no temperature sensor Core can read (column empty).
 - **30-minute failures at 38 and 37 fps both came at about 27 minutes** (1637 s, 1652 s): looks time-based (drive slowing after
   about 25 minutes, e.g. throttling) not a steady deficit; the SSD has no temperature Core can read. (unconfirmed)
 
+## 8b. Log follow-up (stage F, added 2026-11-07, runs after the main run)
+
+Log stores 16 -> 12 bit (Clear HDR 16-bit) or 12 -> 10 bit (12-bit modes): 17-25 % smaller files. The main run had pruned it. Core's code
+maps Log only on unpacked 16-bit raw streams (Clear HDR); the User says it also applies to the SDR modes, so **Core decides per mode** and
+a 4 s probe take keeps Core's own reason where it says no. Stage F tries Log wherever a smaller file can matter:
+
+- **Parents:** every config of a mode that ended a take in buffer full (the storage limit), plus the winner. Each gets a Log twin (same switches,
+  Log on). A twin's 5-minute walk starts at 1.4 x its parent's 5-minute fps; it gets the 10, 20, 30 min ladder only if it gained at 5 min, or if it
+  is the winner's twin. A mode with no parent (4K Clear HDR 12-bit, ruled out earlier) tries lossless, lossless + Log, and Log.
+- **4K first** (4K Clear HDR 12-bit, 4K SDR 10-bit, 4K SDR 12-bit), because the question is whether Log (alone or with lossless) can make 4K work on this
+  SSD. A rough model fitted to the runs: frame write time = 19 ms + size / 345 MB/s, so 25 fps needs files of at most about 7 MB; 4K 12-bit with Log is
+  10.4 MB (about 20 fps) and 4K SDR 10-bit lossless held 25 fps for 5 min but not 10, so lossless + Log is the plausible route. (probable, a model of two points)
+- **CPU:** Core's CPU use (sum over threads, busiest thread) is logged per second and per take, so the cost of Log shows next to its gain.
+
 ## 9. Findings while building it (2026-11-07)
 
 - **Core's own stop is a result.** On the SSD at 27 fps 4K SDR 12-bit three takes ended after 15-23 s with `peak_queue` 101-117
