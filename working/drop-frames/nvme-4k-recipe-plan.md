@@ -85,7 +85,8 @@ fit says it is far below.
 
 ## 5. Ruling out options (so nothing is recorded that cannot change the result)
 
-1. **By theory (section 1):** TDN, lossless on 16-bit, 16 raw buffers, depth 2, `dontneed=writer`, thread counts, preallocation,
+1. **By theory (section 1):** **lossless + Log at 4K** (SSD campaign, 4K Clear HDR 12-bit: lossless files 6.1 MB, lossless + Log 8.5 MB and the slowest, 9-12 fps
+   written; Log did not shrink uncompressed 12-bit files; lossless at 4K looks encoder-limited, 11-25 fps), TDN, lossless on 16-bit, 16 raw buffers, depth 2, `dontneed=writer`, thread counts, preallocation,
    sub-folders etc. are never tested. Lossless on the 12-bit modes stays (it shrinks files; unmeasured encoder speed).
 2. **By cause:** the probe says per mode whether it is **capture-limited** or **storage-limited** (buffer_full). Capture-limited:
    test the capture options only. Storage-limited: test the storage options and the filesystem only. Both: both.
