@@ -97,8 +97,10 @@ fit says it is far below.
 4. **Group testing** for the storage knobs (`workers`, `queue`, `sync_ms`, `kernel_tune`): one combined variant versus the baseline; if it
    shows no difference all four are dropped at once; if it helps, halve the set to find which one.
 5. **Stacking, not a grid:** greedy forward selection (add the best option, re-test, add the next, stop when nothing helps), at most 4
-   rounds. No 2^n combinations. **Log is never part of the screening; it is tried on the finished stack** (section 7, step 3b), because
-   it trades bytes for CPU and its effect depends on what the rest of the stack already uses.
+   rounds. No 2^n combinations. **Log is treated by what limits the mode** (User, 2026-11-07: try it on all
+   relevant settings, where a 25 % smaller file can make a difference): in a **storage-limited** mode (buffer full) Log is an ordinary
+   screening option and is carried into the stack, because fewer bytes move that limit; in a **capture-limited** mode it is tried only
+   on the finished stack (section 7, step 3b), because it trades bytes for CPU there. In both cases it is also tried on the winner.
 6. **Same frame size only** for the buffer-full frontier (HDR12 and SDR12 share 12.44 MB: once SDR12 hits buffer full at R MB/s,
    HDR12 at or above R is skipped). Capture-gap results do not transfer between modes.
 7. **Simplest wins:** at equal result the config with fewer switches stands in for the tie.
@@ -123,7 +125,7 @@ is asked for about 6-8 restarts in total, not one per take. Group C comes last a
    limiter (capture or storage).
 2. **Screening at the edge** (group A, then B in batches), paired and interleaved, with control takes.
 3. **Stacking** of the options that helped.
-3b. **Log on the winning stack**, in every mode where Core applies it: paired and interleaved against the stack without Log at the edge
+3b. **Log on the winning stack and on every storage-limited config of the stacking**, in every mode where Core applies it: paired and interleaved against the stack without Log at the edge
    fps (3 repeats, 90 s cap, plus controls), reading both the time to stop and **Core's CPU use** (average, peak, busiest thread) from
    the per-second samples. Three possible outcomes, all worth knowing: Log helps (fewer bytes win), Log hurts (the CPU cost wins), no
    difference. Only a Log stack that wins goes into the ladder as an extra candidate; a loser is recorded and costs no long take.
