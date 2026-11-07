@@ -250,8 +250,8 @@ def bracket_search(f0, prior, attempt):
     lo = int(max(passes)) if passes else None
     fails = sorted(int(f) for f, o in prior if not o.startswith('pass') and (lo is None or f > lo))
     hi = fails[0] if fails else None
-    nfail = len(fails)
-    f = int(f0) if hi is None else hi - 3 * 2 ** max(nfail - 1, 0)
+    step = 3
+    f = int(f0) if hi is None else hi - step
     while lo is None:
         f = max(int(f), FPS_FLOOR)
         ok = attempt(f)
@@ -260,10 +260,11 @@ def bracket_search(f0, prior, attempt):
         if ok:
             lo = f
         else:
-            hi, nfail = f, nfail + 1
+            hi = f
             if f <= FPS_FLOOR:
                 return None, hi
-            f = f - 3 * 2 ** (nfail - 1)
+            step *= 2
+            f = f - step
     while hi is not None and hi - lo > 1:
         mid = (lo + hi) // 2
         ok = attempt(mid)
@@ -654,7 +655,7 @@ def backfill(out):
         return
     n = 0
     for r in load_rows(out):
-        if r.get('outcome') == 'exhausted':
+        if r.get('outcome') in ('exhausted', 'pruned') or not r.get('fps'):
             continue
         tid = r.get('take_id')
         if not tid:
