@@ -241,6 +241,39 @@ def prune_reason(c, rows, mode_cfgs):
     return None
 
 
+def bracket_search(f0, prior, attempt):
+    """Highest fps that passes. f0 = first guess (the previous round's best). prior = [(fps, outcome)] already recorded for
+    this config and round. attempt(f) -> True (pass) / False (fail) / None (stop the campaign). A failure costs a whole
+    take, so: after a failure go down 3, 6, 12 ... fps until a take passes, then bisect between the highest pass (lo) and
+    the lowest failure (hi). Returns (lo, hi); lo None = nothing passed down to FPS_FLOOR."""
+    passes = [f for f, o in prior if o.startswith('pass')]
+    lo = int(max(passes)) if passes else None
+    fails = sorted(int(f) for f, o in prior if not o.startswith('pass') and (lo is None or f > lo))
+    hi = fails[0] if fails else None
+    nfail = len(fails)
+    f = int(f0) if hi is None else hi - 3 * 2 ** max(nfail - 1, 0)
+    while lo is None:
+        f = max(int(f), FPS_FLOOR)
+        ok = attempt(f)
+        if ok is None:
+            return None, hi
+        if ok:
+            lo = f
+        else:
+            hi, nfail = f, nfail + 1
+            if f <= FPS_FLOOR:
+                return None, hi
+            f = f - 3 * 2 ** (nfail - 1)
+    while hi is not None and hi - lo > 1:
+        mid = (lo + hi) // 2
+        ok = attempt(mid)
+        if ok is None:
+            return lo, hi
+        if ok: lo = mid
+        else: hi = mid
+    return lo, hi
+
+
 def smart_next_fps(row, fps):
     """After a buffer_full failure: the frames the drive actually wrote per second during the take is
     fps x (enqueued - frames still queued at the stop) / enqueued (conservation: the rest of the frames were in the queue).
@@ -259,13 +292,15 @@ def smart_next_fps(row, fps):
     return max(FPS_FLOOR, min(int(fps) - 1, nxt)), est
 
 
-def storage_frontier(rows):
-    """Lowest data rate (MB/s) at which an uncompressed, Log-off take already filled the RAM buffer; None if none did."""
+def storage_frontier(rows, size_mb):
+    """Lowest data rate (MB/s) at which an uncompressed, Log-off take of THIS frame size (+-3 %) already filled the RAM buffer;
+    None if none did. Modes with other frame sizes are not comparable: the drive's limit is per file as well as per MB/s
+    (2026-11-07: 2K frames filled the buffer at 118 MB/s, 4K frames at 220 MB/s)."""
     rates = []
     for r in rows:
         if r['outcome'] == 'buffer_full' and r.get('comp') == 'none' and r.get('log') in ('False', '0', False):
             for m in MODES:
-                if m[0] == r.get('mode'):
+                if m[0] == r.get('mode') and abs(mode_size_mb(m) - size_mb) <= 0.03 * size_mb:
                     rates.append(mode_size_mb(m) * float(r['fps']))
     return min(rates) if rates else None
 
@@ -1048,7 +1083,7 @@ def main():
         rows = [r for r in rows if r['outcome'] != 'stopped_externally']
         if rows:
             fps = min(fps, min(float(r['fps']) for r in rows) - 1)
-        fr = None if (a.no_prune or c.comp != 'none' or c.log) else storage_frontier(load_rows(out))
+        fr = None if (a.no_prune or c.comp != 'none' or c.log) else storage_frontier(load_rows(out), mode_size_mb(c.mode))
         if fr is not None:
             allowed = int(fr * DISK_MARGIN / mode_size_mb(c.mode) - 1e-9)     # rates below the frontier only
             if allowed < fps:
@@ -1156,6 +1191,27 @@ def main():
                         log(out, 'A/B %s rep %d %s: %s dropped=%s' % (c.id, rep + 1, vname, row.get('outcome'), row.get('dropped')))
                 set_variant(out, 'base', {})
 
+    def bracket(c, f0, secs, label, rows_all):
+        prior = [(float(r['fps']), r['outcome']) for r in rows_all
+                 if r['cfg_id'] == c.id and r.get('variant') == label and r['outcome'] not in ('stopped_externally', 'pruned')]
+        ext = {'n': 0}
+
+        def attempt(f):
+            while True:
+                clear_media(out)
+                row = take(c, float(f), max_seconds=secs, variant=label)
+                if stop['now']:
+                    return None
+                if row.get('outcome') == 'stopped_externally' and dropped_none(row) and ext['n'] < 2:
+                    ext['n'] += 1
+                    continue
+                return row.get('outcome', '').startswith('pass')
+        lo, hi = bracket_search(f0, prior, attempt)
+        if lo is None:
+            log(out, '-- %s %s: no pass down to %d fps at this length' % (label, c.id, FPS_FLOOR))
+        else:
+            log(out, '== %s %s: clean at %d fps%s' % (label, c.id, lo, '' if hi is None else ' (fails at %d)' % hi))
+
     def tier_stage():
         """Successive elimination by duration (User, 2026-11-07). Round 0 is the walk above (5 min per take, every config
         that survives pruning). Then 10, 20 and 30 min (30 = until the drive is full): per mode only the configs at the
@@ -1194,18 +1250,8 @@ def main():
                         continue
                     keep.append(c)
                 for c in keep[:topn]:
-                    if any(r['cfg_id'] == c.id and r.get('variant') == label and r['outcome'].startswith('pass') for r in rows_all):
-                        continue
-                    fps = float(best_fps)
-                    log(out, '== %s %s: %s from %d fps, %s' % (label, m[0], c.id, fps, '%d s' % secs if secs else '30 min / drive full'))
-                    while fps >= FPS_FLOOR and not stop['now']:
-                        clear_media(out)
-                        row = take(c, fps, max_seconds=secs, variant=label)
-                        if stop['now'] or row.get('outcome', '').startswith('pass'):
-                            break
-                        if row.get('outcome') == 'stopped_externally' and dropped_none(row):
-                            continue
-                        fps -= 1
+                    log(out, '== %s %s: %s from %d fps, %s' % (label, m[0], c.id, best_fps, '%d s' % secs if secs else '30 min / drive full'))
+                    bracket(c, best_fps, secs, label, rows_all)
 
     try:
         if '1' in a.stages:
