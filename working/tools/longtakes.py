@@ -241,6 +241,23 @@ def prune_reason(c, rows, mode_cfgs):
     return None
 
 
+def smart_next_fps(row, fps):
+    """After a buffer_full failure: the frames the drive actually wrote per second during the take is
+    fps x (enqueued - frames still queued at the stop) / enqueued (conservation: the rest of the frames were in the queue).
+    Jump to about that fps (10 % headroom), never to less than FPS_FLOOR, never higher than fps - 1. None = no usable estimate."""
+    try:
+        st = json.loads(row.get('stats') or '{}')
+        enq = int(st.get('enqueued', 0))
+        peak = int(str(st.get('peak_queue', '0')).split('/')[0])
+    except (ValueError, TypeError):
+        return None
+    if enq < 60 or enq / float(fps) < 4.0 or peak <= 0:     # too short a take to say anything
+        return None
+    est = fps * max(enq - peak, 0) / enq
+    nxt = int(est * 1.10)
+    return max(FPS_FLOOR, min(int(fps) - 1, nxt)), est
+
+
 def storage_frontier(rows):
     """Lowest data rate (MB/s) at which an uncompressed, Log-off take already filled the RAM buffer; None if none did."""
     rates = []
@@ -1060,6 +1077,15 @@ def main():
                 stop['now'] = True; break
             if o == 'skipped_unavailable': break
             if o.startswith('pass'): break
+            if o == 'buffer_full' and not a.no_prune:
+                jump = smart_next_fps(row, fps)
+                if jump:
+                    nxt, est = jump
+                    if nxt < fps - 1:
+                        log(out, '-- smart step: the drive wrote the equivalent of %.1f fps in that take; trying %d fps next (instead of %d)' % (
+                            est, nxt, fps - 1))
+                    fps = float(nxt)
+                    continue
             fps -= 1
         else:
             if not stop['now']:
