@@ -14,6 +14,7 @@ Runner: `working/tools/longtakes.py` (extended, see section 9). Labels: measured
 | --- | --- | --- |
 | On the NVMe every 16-bit drop was a **capture gap** (CFE had no free raw buffer; ISP back end behind), the queue peaked at 2 of 12, no write failures. The drive was not the limit at <= 30 fps. | first NVMe run (git `242c0be`) | Decide **per mode and per fps what limits it** (capture-gap vs buffer-full) and test only options that act on that limit. |
 | **Time to first drop falls smoothly with fps** (baseline 30 fps 2 s, 29: 3, 28: 4, 27: 6-8, 26: 8-213, 25: 27-453 s) on the earlier board. | same | Do not walk 1 fps at a time: **fit log(T) against fps** from the first two failures and jump to the fps predicted to reach the target time. |
+| **Log** stores 16 -> 12 bit (Clear HDR 16-bit) or 12 -> 10 bit (12-bit modes), so smaller files, but the **conversion runs on the CPU** in the cDNG copy worker. In the first NVMe run Log on failed within 2-3 s at every fps although it writes fewer bytes, which fits a CPU cost, not a storage one. The User: the CPU seems to be the 4K limiter, so the cost of Log is worth knowing either way. Core's code applies it only to unpacked 16-bit raw streams; the User says it also applies to the SDR modes, so Core decides per mode. | first NVMe run; `planCdngLog` in Core; User 2026-11-07 | Log is **not ruled out**: it is tested **on top of the winning options** in every mode, in both directions (fewer bytes versus more CPU), with Core's CPU measured per take. |
 | TDN adds ~37 ms back-end work per frame (frame time 40 ms); lossless JPEG at 4K Clear HDR 16 encodes at ~17.5 fps. | recipe rows 2, 7 | **Ruled out in theory, never recorded**: TDN everywhere; lossless on 16-bit. |
 | Did not help: dirty-page tuning alone, sub-folders, creating files ahead, preallocation, writer thread count, 16 raw buffers, a large RAM write buffer, slowing the touch UI's preview, moving GPU interrupts. FE config queue depth 4 helped a lot (25 fps: 74 s -> 453 s). `dontneed=writer` lost 34-153 frames per 3 min. | recipe sections 2-3 | All of these **excluded a priori**; depth 4 and `dontneed=sync` stay fixed. |
 | The USB SSD: `workers`, `queue`, `sync_ms`, `kernel_tune` made **no difference** (3 repeats each, two modes). The limit there was **per file** (12.4 MB frames ~18 fps, 3.1 MB frames ~38 fps) far below the drive's 354 MB/s. | SSD campaign | Storage knobs are tested as **one combined stack**, not one by one; the real storage levers are the structural ones (filesystem, file size, direct I/O). |
@@ -96,7 +97,8 @@ fit says it is far below.
 4. **Group testing** for the storage knobs (`workers`, `queue`, `sync_ms`, `kernel_tune`): one combined variant versus the baseline; if it
    shows no difference all four are dropped at once; if it helps, halve the set to find which one.
 5. **Stacking, not a grid:** greedy forward selection (add the best option, re-test, add the next, stop when nothing helps), at most 4
-   rounds. No 2^n combinations.
+   rounds. No 2^n combinations. **Log is never part of the screening; it is tried on the finished stack** (section 7, step 3b), because
+   it trades bytes for CPU and its effect depends on what the rest of the stack already uses.
 6. **Same frame size only** for the buffer-full frontier (HDR12 and SDR12 share 12.44 MB: once SDR12 hits buffer full at R MB/s,
    HDR12 at or above R is skipped). Capture-gap results do not transfer between modes.
 7. **Simplest wins:** at equal result the config with fewer switches stands in for the tie.
@@ -105,7 +107,7 @@ fit says it is far below.
 
 | Group | Options | How | Who |
 | --- | --- | --- | --- |
-| **A. between takes, no restart** | Log on/off (16-bit only), phase lock, WebUI client (a real client on the Mac), trim on/off, `kernel_tune` (pi-nvme class: dirty 1 GiB / 256 MiB, scheduler none, nr_requests 512, APST 0), writer `workers`, `queue`, `sync_ms`, compression (12-bit modes only) | Core commands, the tuning override file, the root helper called directly | runner |
+| **A. between takes, no restart** | Log on/off (on the winning stack only; whether it applies is checked per mode, see step 0), phase lock, WebUI client (a real client on the Mac), trim on/off, `kernel_tune` (pi-nvme class: dirty 1 GiB / 256 MiB, scheduler none, nr_requests 512, APST 0), writer `workers`, `queue`, `sync_ms`, compression (12-bit modes only) | Core commands, the tuning override file, the root helper called directly | runner |
 | **B. needs a Core restart** | FE config queue depth {4 (default), 6}, `dontneed` {sync (default), off}, `writeback` {on, off}, capture thread priority {off, SCHED_FIFO for libcamera's completion thread, whole process under `chrt`}, direct I/O for the DNG writes if the build has the switch (to verify in code first) | runner writes the value to a small file that `start-apertar-core.sh` reads, then pauses with the exact command; the User runs `sudo systemctl restart apertar-core`; the runner checks `/proc/<pid>/environ` | User |
 | **C. needs sudo, a remount or a reboot** | HDMI/touch UI stopped (`apertar-ui-direct`), exFAT mount flags, **filesystem exFAT vs ext4 (format: wipes the drive; a Mac cannot read ext4)**, PCIe Gen 3 vs Gen 2 (`config.txt`, 437 MB/s at Gen 2), `nvme.max_host_mem_size_mb` boot argument (untested) | commands staged by the runner, run by the User | User |
 
@@ -115,11 +117,16 @@ is asked for about 6-8 restarts in total, not one per take. Group C comes last a
 ## 7. Order of the run
 
 0. **Calibrate** (after the SSD campaign ends and the drive is swapped back): identify the NVMe, PCIe link and class, temperature, free
-   space, a 60 s direct-write test (~45 GB), media tune values in effect.
+   space, a 60 s direct-write test (~45 GB), media tune values in effect. **Log probe:** for each of the three modes switch Log on and, if
+   Core reports it as not applied, make a 4 s take and keep Core's own reason from the journal (already built into the runner).
 1. **Edge finding per mode:** probe round (60 s), then the 5-min bracket. Output: the highest fps with 60 s and 5 min clean, and the
    limiter (capture or storage).
 2. **Screening at the edge** (group A, then B in batches), paired and interleaved, with control takes.
 3. **Stacking** of the options that helped.
+3b. **Log on the winning stack**, in every mode where Core applies it: paired and interleaved against the stack without Log at the edge
+   fps (3 repeats, 90 s cap, plus controls), reading both the time to stop and **Core's CPU use** (average, peak, busiest thread) from
+   the per-second samples. Three possible outcomes, all worth knowing: Log helps (fewer bytes win), Log hurts (the CPU cost wins), no
+   difference. Only a Log stack that wins goes into the ladder as an extra candidate; a loser is recorded and costs no long take.
 4. **Ladder** 10 -> 20 -> 30 min for the stack, the plain baseline and the runner-up.
 5. **Mount/filesystem session** (group C) if any mode is storage-limited: the best stack re-run at two fps with each variant.
 6. **Soak:** the final recipe of each mode twice at 30 min (repeatability and drift).
@@ -131,6 +138,8 @@ buffer-full frontier to skip what is hopeless.
 
 - **Duration-versus-fps table per mode and per recipe:** for each fps from the top, the longest clean take seen (seconds to the first
   drop, buffer full, or 30 min) and the cause when it ended. This answers "how long a take can I make at this fps with this recipe".
+- **What Log costs and buys per mode:** the change in the clean fps at the edge, the change in file size, and the change in Core's CPU
+  use (average and peak, and which thread is busiest), next to the same numbers without Log.
 - The **recommended recipe** per mode (switches, tuning values, environment) with the evidence that each switch matters, and the list of
   switches shown to make no difference.
 - Writes used (GB, against the cap) and the NVMe temperature at the start and the peak of every take.
@@ -142,7 +151,9 @@ Reused as is: stages and pruning, `bracket_search`, the smart step, buffer-full 
 and the `kernel_tune` helper call, the database, the Mac WebUI client, mode switching, audio handling, resume.
 New:
 1. The three modes, no storage exclusion, NVMe temperature (hwmon `nvme`) already read.
-2. A 60 s probe round and the **log(T)-versus-fps fit** for capture-gap failures.
+2. A 60 s probe round and the **log(T)-versus-fps fit** for capture-gap failures. (**Already built for the SSD run:** the Log probe take
+   with Core's own reason, and Core's CPU per second and per take: sum over threads in % of one core, and the busiest thread; both in
+   `results.csv`, the per-second samples and `longtakes.db`.)
 3. A **write-budget guard** (byte counter, projection before each take, cap, report).
 4. **Control takes** and **spread-based "no difference"** (replacing the 2x-baseline rule's single sample).
 5. **Group testing** of the storage knobs and the **greedy stacking** stage.
