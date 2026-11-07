@@ -38,8 +38,13 @@ Baseline = uncompressed, Log off, TDN off, lock off, trim on, no client. fps ste
    phase lock, WebUI, Log. A clean baseline prunes everything else. (rule; the mapping is a judgement)
 2. **By result.** A switch whose single-switch config did not beat the baseline is never combined with others; combinations are made
    only from switches that helped ("better" = a higher clean fps, or a 2x longer time to failure).
-3. **Data-rate frontier.** When an uncompressed take fills the RAM buffer at R MB/s, every uncompressed config at or above 0.98 R is
-   skipped (so 4K Clear HDR 12-bit, same bytes as 4K SDR 12-bit, is skipped once that one fails).
+3. **Data-rate frontier (same frame size only).** When an uncompressed take fills the RAM buffer at R MB/s, every uncompressed config
+   of a mode with the same frame size (+-3 %) at or above 0.98 R is skipped (so 4K Clear HDR 12-bit, same bytes as 4K SDR 12-bit, is
+   skipped once that one fails). Fixed 2026-11-07: the first version compared across frame sizes, and a 2K failure at 118 MB/s pruned 4K
+   configs; the drive's limit is per file as well as per MB/s, so rates of different frame sizes are not comparable.
+3b. **Smart step.** After a buffer-full failure the walk jumps to the fps the drive actually wrote in that take
+   (`fps x (enqueued - queued at the stop) / enqueued`, +10-35 % headroom); if that is below 20 fps the config is ruled out without
+   testing 25 ("ruled out in theory"). The walk starts at the fps the storage can theoretically carry (`--start-at-mode-max` overrides).
 4. **No difference.** In every later round, if a simpler config (fewer switches) reached the same fps, the config with the extra
    switch is dropped and the log names it.
 5. A take stops at the **first dropped frame** or at **buffer full**; failing takes are short, only passes cost recording time.
@@ -53,8 +58,10 @@ Baseline = uncompressed, Log off, TDN off, lock off, trim on, no client. fps ste
 | 2 | 20 min | the same from round 1 (at most 2) |
 | 3 | 30 min, or until the 466 GB drive is full | the best of round 2 (1) |
 
-A config that fails a round steps down one fps at that round's length. A pass at 30 minutes, or a clean take until the drive is
-full (below 6 GiB free), counts as the top result.
+A config that fails a round does not step down one fps at a time (a failed 30-minute take costs 27 minutes): it goes down 3, 6, 12 fps
+until a take passes, then bisects between the highest pass and the lowest failure (`bracket_search`, tested offline: 8 takes instead
+of 17 for a limit 16 fps below the start; one extra take when the limit is within a fps or two). Failures already recorded are reused
+after a restart. A pass at 30 minutes, or a clean take until the drive is full (below 6 GiB free), counts as the top result.
 
 ## 5. Order of the run
 
@@ -77,7 +84,28 @@ raw journal lines), filled while the next take is set up. New columns: `buffer_p
 `buffer_setting`, `buffer_safety_stop`, `buffer_flush_discarded`, `media_class`, `variant`, `tune_readback`. Pi temperature per
 second; the USB SSD has no temperature sensor Core can read (column empty).
 
-## 8. Findings while building it (2026-11-07)
+## 8. Results so far (2026-11-07, run `run-20261107-ssd4`, 9 hours in, 30-minute round running)
+
+| Mode | Best config | 5 min | 10 min | 20 min | 30 min |
+| --- | --- | --- | --- | --- | --- |
+| 4K SDR 12-bit | none | no clean fps, buffer full even at 25 | | | |
+| 4K SDR 10-bit | lossless | 25 fps | failed (259 s) | | |
+| 2K SDR 12-bit | lossless | 60 fps | 38 fps | 38 fps | failed at 38 and 37 fps after 27 min |
+| 2K SDR 10-bit | uncompressed | 44 fps | 38 fps | 37 fps | not yet |
+| 2K Clear HDR 16-bit | uncompressed | 27 fps | 26 fps | 26 fps | not yet |
+| 2K Clear HDR 12-bit | uncompressed | 30 fps | 30 fps | 29 fps | not yet |
+| 4K Clear HDR 12-bit | - | skipped (same bytes as 4K SDR 12-bit) | | | |
+
+- **Storage tuning A/B changed nothing** (4K SDR 12-bit at 25 fps, 4K SDR 10-bit at 25 and 26 fps; `workers` 2/6, `queue` 24/48,
+  `sync_ms` 500/2000, `kernel_tune`; 3 repeats each): all variants filled the buffer in 7-20 s at 25 fps, all stayed clean 120 s at
+  26 fps. (measured)
+- **The limit is per file as well as per MB/s:** 12.4 MB frames top out near 18 fps (220 MB/s), 3.1 MB frames near 38 fps (115 MB/s),
+  both far below the 354 MB/s of large direct writes. Lossless wins because the files are smaller. Per-file overhead of exFAT is the
+  probable cause. (probable)
+- **30-minute failures at 38 and 37 fps both came at about 27 minutes** (1637 s, 1652 s): looks time-based (drive slowing after
+  about 25 minutes, e.g. throttling) not a steady deficit; the SSD has no temperature Core can read. (unconfirmed)
+
+## 9. Findings while building it (2026-11-07)
 
 - **Core's own stop is a result.** On the SSD at 27 fps 4K SDR 12-bit three takes ended after 15-23 s with `peak_queue` 101-117
   frames and the queue at 90 % of its budget (`queue_bytes_peak=655257600 queue_budget=724811776`). Core stopped them (RAM-buffer safety
