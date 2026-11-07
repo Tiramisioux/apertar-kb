@@ -345,6 +345,10 @@ def parse_journal(lines, t_rec_wall):
 def estimate_cause(c, fps, rec, ctx, kinds, stats, written_gb_since_trim):
     """Heuristic only: every estimate is 'probable' or 'unconfirmed' (see recipe.md for the mechanisms)."""
     why = []
+    if rec.get('outcome') == 'buffer_full' or 'buffer_full' in kinds:
+        pk = stats.get('peak_queue', '?')
+        why.append('probable: the drive fell behind - the write queue filled the RAM buffer to Core\'s 90 %% safety stop '
+                   '(peak queue %s frames, stopped after %.0f s)' % (pk, float(rec.get('seconds') or 0)))
     q = int(stats.get('dropped_queue_full', 0) or 0)
     if c.comp == 'lossless_jpeg' and fps > 17:
         why.append('probable: lossless JPEG encoder too slow above ~17.5 fps (recipe row 2)')
@@ -666,8 +670,17 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
             outcome = 'pass_drive_full'
         elif el >= (max_seconds or 1800):
             outcome = 'pass_30min' if not max_seconds else 'pass_capped_%ds' % max_seconds
-        elif last['state'] != 'rec' and el > 5:
-            outcome, ctx_drop = ('drive_full' if last['free_gb'] < 1.5 else 'stopped_externally'), dict(last)
+        elif last['state'] != 'rec' and el > 3:
+            # Core stopped the take itself. The RAM write buffer reaching 90 % (buffer_safety_stop) means the drive fell
+            # behind: that is a result (the drive cannot carry this fps), not an outside interference.
+            safety = any(x.get('_st', {}).get('buffer_safety_stop') for x in sam.rows[-12:])
+            if safety:
+                outcome = 'buffer_full'
+            elif last['free_gb'] < 1.5:
+                outcome = 'drive_full'
+            else:
+                outcome = 'stopped_externally'
+            ctx_drop = dict(last)
         elif (last['_st'].get('recording_error') or last['_st'].get('recording_fault')):
             outcome, ctx_drop = 'fault', dict(last)
     seconds = time.monotonic() - t_rec
@@ -737,10 +750,11 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         'files': files, 'missing': missing, 'audio': audio, 'gb_written': round(gb, 1), 'trim_events': trims,
         'clip': os.path.basename(clip), 'stats': json.dumps(stats)})
     if outcome != 'record_start_failed':
-        if dropped > 0 or outcome in ('fault', 'recording_stopped_by_core', 'drive_full', 'stopped_externally'):
+        if dropped > 0 or outcome in ('fault', 'recording_stopped_by_core', 'drive_full', 'stopped_externally', 'buffer_full'):
             written_total = written['gb'] + gb
+            row['outcome'], row['seconds'] = outcome, round(seconds, 1)
             row['cause_estimate'] = estimate_cause(c, fps, row, ctx, kinds, stats, written_total)
-            if outcome in ('fault', 'recording_stopped_by_core', 'drive_full', 'stopped_externally'):
+            if outcome in ('fault', 'recording_stopped_by_core', 'drive_full', 'stopped_externally', 'buffer_full'):
                 row['cause_estimate'] = '%s: %s %s | %s' % (outcome, st_end.get('recording_error'), st_end.get('recording_fault'), row['cause_estimate'])
         else:
             row['cause_estimate'] = ''
@@ -987,7 +1001,7 @@ def main():
 def collections_count(rows, cfg_id):
     d = {}
     for r in rows:
-        if r['cfg_id'] == cfg_id and r.get('variant') and r['outcome'].startswith('ab_'):
+        if r['cfg_id'] == cfg_id and r.get('variant') and (r['outcome'].startswith('ab_') or r['outcome'] == 'buffer_full'):
             d[r['variant']] = d.get(r['variant'], 0) + 1
     return d
 
