@@ -82,6 +82,8 @@ MODES = [('4kSDR12', 3840, 2160, 12, False), ('4kSDR10', 3840, 2160, 10, False),
 MODE_FILTER = None
 DISK_MBPS = 354.0
 DISK_MARGIN = 0.98
+SCREEN = {'s': 300}     # round 0: every config in the walk records this long (5 min); 10, 20 and 30 min only for the survivors
+TIER_NAMES = {300: '5min', 600: '10min', 1200: '20min', 1800: '30min'}
 
 
 def mode_size_mb(m):
@@ -136,7 +138,7 @@ def all_configs():
 
 def config_score(rows):
     """Rank a config's takes: a pass beats everything (higher fps first, then longer); otherwise the longest take."""
-    rows = [r for r in rows if r['outcome'] not in ('exhausted', 'stopped_externally', 'skipped_unavailable')
+    rows = [r for r in rows if r['outcome'] not in ('exhausted', 'stopped_externally', 'skipped_unavailable', 'pruned')
             and not r.get('variant')]
     if not rows:
         return None
@@ -145,6 +147,102 @@ def config_score(rows):
         b = max(passes, key=lambda r: (float(r['fps']), float(r['seconds'] or 0)))
         return (1, float(b['fps']), float(b['seconds'] or 0))
     return (0, 0.0, max(float(r['seconds'] or 0) for r in rows))
+
+
+def factors_of(c):
+    """The factors this config switches on, against the baseline (trim counts when it is OFF)."""
+    f = set()
+    if c.comp != 'none': f.add('comp')
+    if c.log: f.add('log')
+    if c.tdn: f.add('tdn')
+    if c.lock: f.add('lock')
+    if not c.trim: f.add('trim')
+    if c.web: f.add('web')
+    return f
+
+
+# What can change the outcome, by what limits the mode (User, 2026-11-07: do not try things that cannot have an effect).
+RELEVANT = {'storage': {'comp', 'log', 'trim'},          # fewer bytes, or drive stalls
+            'capture': {'tdn', 'lock', 'web', 'log'}}    # camera / ISP / memory load
+
+
+def limiter_of(rows, cap_fps):
+    """What stopped a mode's baseline: {'storage'}, {'capture'}, both, or set() when it was clean at the highest fps."""
+    rows = [r for r in rows if r['outcome'] not in ('exhausted', 'stopped_externally', 'skipped_unavailable', 'pruned')
+            and not r.get('variant')]
+    passes = [r for r in rows if r['outcome'].startswith('pass')]
+    if passes and max(float(r['fps']) for r in passes) >= cap_fps:
+        return set()
+    fails = [r for r in rows if not r['outcome'].startswith('pass')]
+    if passes:      # only the failure just above the clean fps says what limits it
+        top = max(float(r['fps']) for r in passes)
+        fails = [r for r in fails if float(r['fps']) > top] or fails
+    lim = set()
+    for r in fails:
+        kinds = r.get('drop_kinds') or ''
+        if r['outcome'] == 'buffer_full' or 'queue-full' in kinds or 'buffer_full' in kinds:
+            lim.add('storage')
+        if 'capture-gap' in kinds:
+            lim.add('capture')
+    return lim
+
+
+def compare_scores(sc, base):
+    """'better' / 'worse' / 'neutral' / None (no data) against the baseline's score (see config_score)."""
+    if sc is None or base is None:
+        return None
+    if sc[0] != base[0]:
+        return 'better' if sc[0] > base[0] else 'worse'
+    if sc[0] == 1:                       # both passed: higher clean fps wins
+        if sc[1] != base[1]:
+            return 'better' if sc[1] > base[1] else 'worse'
+        return 'neutral'
+    a, b = max(sc[2], 0.1), max(base[2], 0.1)    # both failed: time to failure, 2x either way counts
+    return 'better' if a >= 2 * b else ('worse' if a <= 0.5 * b else 'neutral')
+
+
+def beneficial_factors(rows, mode_cfgs):
+    """Single factors whose config beat the mode's baseline; combinations are only made from these."""
+    base = config_score([r for r in rows if r['cfg_id'] == mode_cfgs[0].id])
+    good = set()
+    for c in mode_cfgs[1:]:
+        fs = factors_of(c)
+        if len(fs) == 1 and compare_scores(config_score([r for r in rows if r['cfg_id'] == c.id]), base) == 'better':
+            good |= fs
+    return good
+
+
+def prune_reason(c, rows, mode_cfgs):
+    """None if the config is worth testing, else why it cannot add information."""
+    base_rows = [r for r in rows if r['cfg_id'] == mode_cfgs[0].id]
+    lim = limiter_of(base_rows, mode_cap_fps(c.mode))
+    fs = factors_of(c)
+    if not fs:
+        return None
+    if not base_rows:
+        return None
+    if not lim:
+        return 'baseline already clean at the highest fps the storage allows: nothing to improve'
+    rel = set().union(*[RELEVANT[l] for l in lim])
+    if len(fs) == 1:
+        if not fs <= rel:
+            return 'cannot affect a %s limit (%s): %s' % ('/'.join(sorted(lim)), 'baseline stopped by', ','.join(sorted(fs)))
+        return None
+    good = beneficial_factors(rows, mode_cfgs)
+    if not fs <= good:
+        return 'combination skipped: %s did not help on its own' % ','.join(sorted(fs - good))
+    return None
+
+
+def storage_frontier(rows):
+    """Lowest data rate (MB/s) at which an uncompressed, Log-off take already filled the RAM buffer; None if none did."""
+    rates = []
+    for r in rows:
+        if r['outcome'] == 'buffer_full' and r.get('comp') == 'none' and r.get('log') in ('False', '0', False):
+            for m in MODES:
+                if m[0] == r.get('mode'):
+                    rates.append(mode_size_mb(m) * float(r['fps']))
+    return min(rates) if rates else None
 
 
 class Sampler(threading.Thread):
@@ -321,7 +419,8 @@ def journal(t_wall):
     return r.stdout.splitlines()
 
 
-STAT_KEYS = ('enqueued', 'dropped_queue_full', 'dropped_gap_estimate', 'peak_queue', 'write_failures', 'fault')
+STAT_KEYS = ('enqueued', 'dropped_queue_full', 'dropped_gap_estimate', 'peak_queue', 'queue_bytes_peak', 'queue_budget',
+             'write_failures', 'fault')
 
 
 def parse_journal(lines, t_rec_wall):
@@ -522,7 +621,7 @@ FIELDS = ['take_id', 'cfg_id', 'mode', 'bits', 'comp', 'log', 'tdn', 'lock', 'tr
           'first_drop_s', 'drop_kinds', 'cause_estimate', 'pi_c', 'nvme_c', 'pi_c_max', 'nvme_c_max', 'cpu_pct',
           'load1', 'mem_avail_mb', 'fill_pct', 'throttled', 'files', 'missing', 'audio', 'gb_written', 'trim_events',
           'drive_full', 'drive_full_at_s', 'start_pi_c', 'start_nvme_c', 'clip', 'stats', 'mismatch', 'started', 'variant', 'media_class', 'buffer_setting',
-          'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback']
+          'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback', 'buffer_peak_pct']
 
 
 def append_row(out, row):
@@ -572,7 +671,7 @@ def write_md(out):
 # nr_requests, rq_affinity via the root helper) is applied when the drive is mounted, so it is switched by eject + mount.
 AB_VARIANTS = [('base', {}), ('workers2', {'workers': 2}), ('workers6', {'workers': 6}), ('queue24', {'queue': 24}),
                ('queue48', {'queue': 48}), ('sync500', {'sync_ms': 500}), ('sync2000', {'sync_ms': 2000}),
-               ('rawbuf12', {'raw_buffers': 12}), ('kerneltune', {'kernel_tune': 'on'})]
+               ('kerneltune', {'kernel_tune': 'on'})]
 KT = {'on': False, 'dev': '/dev/sda1'}
 TUNE_CLI = os.path.expanduser('~/ApertarCore/scripts/apertar-tune')
 
@@ -670,6 +769,8 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
             outcome = 'pass_drive_full'
         elif el >= (max_seconds or 1800):
             outcome = 'pass_30min' if not max_seconds else 'pass_capped_%ds' % max_seconds
+            if max_seconds in TIER_NAMES:
+                outcome = 'pass_' + TIER_NAMES[max_seconds]
         elif last['state'] != 'rec' and el > 3:
             # Core stopped the take itself. The RAM write buffer reaching 90 % (buffer_safety_stop) means the drive fell
             # behind: that is a result (the drive cannot carry this fps), not an outside interference.
@@ -723,6 +824,16 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     with open(out + '/journal/%s.log' % tid, 'w') as jf:   # raw Core journal for the take, to re-check a cause later
         jf.write('\n'.join(jl) + '\n')
     kinds, first, stats, trims = parse_journal(jl, t_rec_wall)
+    # Core's RAM-buffer safety stop (90 % of the queue budget): its flag falls as soon as the queue drains, but the stats
+    # line at the stop shows the queue's peak bytes against its budget. That is a result: the drive fell behind.
+    try:
+        fill = float(stats.get('queue_bytes_peak', 0)) / float(stats.get('queue_budget', 0) or 1)
+    except ValueError:
+        fill = 0.0
+    row['buffer_peak_pct'] = round(100 * fill, 1)
+    if outcome == 'stopped_externally' and fill >= 0.88:
+        outcome = 'buffer_full'
+        kinds['buffer_full'] = 1
     st_end = state()
     row['buffer_setting'] = st_end.get('buffer_setting')
     row['buffer_safety_stop'] = st_end.get('buffer_safety_stop')
@@ -784,8 +895,14 @@ def main():
     ap.add_argument('--modes', default='', help='comma list of mode keys to run (default: every mode the storage can carry)')
     ap.add_argument('--fps-start', type=float, default=0, help='override the starting fps (smoke test)')
     ap.add_argument('--disk-mbps', type=float, default=DISK_MBPS, help='sustained write speed of the drive, MB/s')
-    ap.add_argument('--stages', default='1d2r', help='1 = baseline of every mode, d = configs one factor away, 2 = storage A/B on the best configs, r = the rest')
+    ap.add_argument('--stages', default='1d2rc', help='1 = baseline of every mode, d = configs one factor away, 2 = storage A/B on the best configs, r = the rest')
     ap.add_argument('--ab-seconds', type=int, default=120, help='length of one A/B take')
+    ap.add_argument('--tier1-seconds', type=int, default=SCREEN['s'], help='round 0: length of the take of every config (default 300 = 5 min)')
+    ap.add_argument('--tier10-seconds', type=int, default=600)
+    ap.add_argument('--tier2-seconds', type=int, default=1200)
+    ap.add_argument('--tier3-seconds', type=int, default=0, help='0 = 30 min (or until the drive is full)')
+    ap.add_argument('--tier-top', default='3,2,1', help='at most this many survivors per mode try 10, 20 and 30 min')
+    ap.add_argument('--no-prune', action='store_true', help='test every config, even those that cannot have an effect')
     ap.add_argument('--ab-variants', default='', help='comma list of A/B variants to run (default: all)')
     ap.add_argument('--ab-reps', type=int, default=3, help='repeats of every A/B variant (interleaved)')
     a = ap.parse_args()
@@ -793,6 +910,7 @@ def main():
     if a.ab_variants:
         AB_VARIANTS = [v for v in AB_VARIANTS if v[0] in a.ab_variants.split(',')]
     WEB_REMOTE, CLEAR_ALL, DISK_MBPS = a.web_remote, a.clear_all, a.disk_mbps
+    SCREEN['s'] = a.tier1_seconds
     MODE_FILTER = [m for m in a.modes.split(',') if m] or None
     os.makedirs(out + '/webui', exist_ok=True)
     cfgs = all_configs()
@@ -805,8 +923,9 @@ def main():
             print('%-8s %5.2f MB/frame  %4.0f MB/s at %d fps (%3.0f%% of %.0f)  storage cap %d fps  %s' % (
                 m[0], mode_size_mb(m), mode_size_mb(m) * FPS_FLOOR, FPS_FLOOR, 100 * mode_size_mb(m) * FPS_FLOOR / DISK_MBPS,
                 DISK_MBPS, mode_cap_fps(m), 'RUN' if m in inc else 'excluded: storage too slow'))
-        print('stage 1: %d baseline configs; d: %d single-factor configs; 2: A/B on the best config of each mode at >= 70%% of '
-              'the disk speed (+ the baseline); r: %d other configs' % (n_base, n_d1, len(cfgs) - n_base - n_d1))
+        print('upper bounds, before pruning - stage 1: %d baseline configs; d: %d single-factor configs; 2: storage A/B only where the '
+              'baseline hit the storage limit; r: %d combinations (only of factors that helped); c: 10, 20 then 30 min for the survivors only (round 0 is 5 min)' % (
+                  n_base, n_d1, len(cfgs) - n_base - n_d1))
         print('A/B variants:', ', '.join(v for v, _ in AB_VARIANTS))
         return
     st0 = state()
@@ -879,7 +998,15 @@ def main():
     def walk_config(c):
         """Step fps down from the mode's storage cap until a take passes (30 min or drive full)."""
         rows = [r for r in load_rows(out) if r['cfg_id'] == c.id and not r.get('variant')]
-        if any(r['outcome'].startswith('pass') or r['outcome'] in ('skipped_unavailable', 'exhausted') for r in rows):
+        if any(r['outcome'].startswith('pass') or r['outcome'] in ('skipped_unavailable', 'exhausted', 'pruned') for r in rows):
+            return
+        mode_cfgs = [x for x in cfgs if x.mode == c.mode]
+        why = prune_reason(c, load_rows(out), mode_cfgs) if not a.no_prune else None
+        if why:
+            log(out, '-- pruned %s: %s' % (c.id, why))
+            append_row(out, {'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn,
+                             'lock': c.lock, 'trim': c.trim, 'web': c.web, 'outcome': 'pruned', 'cause_estimate': why,
+                             'started': time.strftime('%F %T')})
             return
         if a.only and counter['n'] >= a.only:
             stop['now'] = True
@@ -892,13 +1019,28 @@ def main():
         rows = [r for r in rows if r['outcome'] != 'stopped_externally']
         if rows:
             fps = min(fps, min(float(r['fps']) for r in rows) - 1)
+        fr = None if (a.no_prune or c.comp != 'none' or c.log) else storage_frontier(load_rows(out))
+        if fr is not None:
+            allowed = int(fr * DISK_MARGIN / mode_size_mb(c.mode) - 1e-9)     # rates below the frontier only
+            if allowed < fps:
+                log(out, '-- %s: starting at %d fps instead of %d (the drive already filled its buffer at %.0f MB/s)' % (
+                    c.id, allowed, fps, fr))
+                fps = float(allowed)
+            if fps < FPS_FLOOR:
+                append_row(out, {'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn,
+                                 'lock': c.lock, 'trim': c.trim, 'web': c.web, 'outcome': 'pruned',
+                                 'cause_estimate': 'data rate at %d fps (%.0f MB/s) is at or above %.0f MB/s, where the drive '
+                                                   'already filled its RAM buffer' % (FPS_FLOOR, mode_size_mb(c.mode) * FPS_FLOOR, fr),
+                                 'started': time.strftime('%F %T')})
+                log(out, '-- pruned %s: the drive cannot carry this data rate (frontier %.0f MB/s)' % (c.id, fr))
+                return
         log(out, '== config %s: stepping down from %s fps (storage cap %d, mode max %.0f)' % (c.id, fps, mode_cap_fps(c.mode), fmax))
         while fps >= FPS_FLOOR and not stop['now']:
             clear_media(out)
             if os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < 20 * 2**30:
                 log(out, 'drive still nearly full after clearing the clips: stopping')
                 stop['now'] = True; break
-            row = take(c, fps)
+            row = take(c, fps, max_seconds=(a.max_seconds or SCREEN['s']))
             o = row.get('outcome', '')
             if stop['now']: break
             if o == 'stopped_externally' and dropped_none(row):
@@ -925,6 +1067,11 @@ def main():
         rows_all = load_rows(out)
         for m in inc:
             mine = [c for c in cfgs if c.mode == m]
+            lim = limiter_of([r for r in rows_all if r['cfg_id'] == mine[0].id], mode_cap_fps(m))
+            if 'storage' not in lim and not a.no_prune:
+                log(out, 'A/B %s: skipped, the baseline was not limited by the storage (%s)' % (
+                    m[0], '/'.join(sorted(lim)) or 'clean at the highest fps'))
+                continue
             scored = [(config_score([r for r in rows_all if r['cfg_id'] == c.id]), c) for c in mine]
             scored = [(sc, c) for sc, c in scored if sc is not None]
             if not scored:
@@ -960,6 +1107,57 @@ def main():
                         log(out, 'A/B %s rep %d %s: %s dropped=%s' % (c.id, rep + 1, vname, row.get('outcome'), row.get('dropped')))
                 set_variant(out, 'base', {})
 
+    def tier_stage():
+        """Successive elimination by duration (User, 2026-11-07). Round 0 is the walk above (5 min per take, every config
+        that survives pruning). Then 10, 20 and 30 min (30 = until the drive is full): per mode only the configs at the
+        best clean fps of the previous round try the next, longer take. A switch that makes no difference (a simpler
+        config reached the same fps) is dropped: only the config with the fewest switches stands in for the tie. A
+        config that fails a round steps down one fps at that round's length."""
+        tops = [int(x) for x in a.tier_top.split(',')]
+        rounds = [('tier10', a.tier10_seconds, tops[0], ''), ('tier20', a.tier2_seconds, tops[1], 'tier10'),
+                  ('tier30', a.tier3_seconds, tops[2], 'tier20')]
+        for label, secs, topn, prev in rounds:
+            for m in inc:
+                if stop['now']: return
+                rows_all = load_rows(out)
+                mine = [c for c in cfgs if c.mode == m]
+                cand = []
+                for c in mine:
+                    if prev:
+                        ps = [r for r in rows_all if r['cfg_id'] == c.id and r.get('variant') == prev and r['outcome'].startswith('pass')]
+                        if ps:
+                            cand.append((max(float(r['fps']) for r in ps), c))
+                    else:
+                        sc = config_score([r for r in rows_all if r['cfg_id'] == c.id])
+                        if sc and sc[0] == 1:
+                            cand.append((sc[1], c))
+                if not cand:
+                    log(out, '%s %s: nothing passed the previous round, ruled out' % (label, m[0]))
+                    continue
+                best_fps = max(f for f, _ in cand)
+                tied = sorted([c for f, c in cand if f == best_fps], key=lambda c: (len(factors_of(c)), c.id))
+                keep = []
+                for c in tied:
+                    simpler = [k for k in keep if factors_of(k) < factors_of(c)]
+                    if simpler:
+                        log(out, '-- %s %s: %s ruled out, %s reached the same fps without %s (no difference)' % (
+                            label, m[0], c.id, simpler[0].id, ','.join(sorted(factors_of(c) - factors_of(simpler[0])))))
+                        continue
+                    keep.append(c)
+                for c in keep[:topn]:
+                    if any(r['cfg_id'] == c.id and r.get('variant') == label and r['outcome'].startswith('pass') for r in rows_all):
+                        continue
+                    fps = float(best_fps)
+                    log(out, '== %s %s: %s from %d fps, %s' % (label, m[0], c.id, fps, '%d s' % secs if secs else '30 min / drive full'))
+                    while fps >= FPS_FLOOR and not stop['now']:
+                        clear_media(out)
+                        row = take(c, fps, max_seconds=secs, variant=label)
+                        if stop['now'] or row.get('outcome', '').startswith('pass'):
+                            break
+                        if row.get('outcome') == 'stopped_externally' and dropped_none(row):
+                            continue
+                        fps -= 1
+
     try:
         if '1' in a.stages:
             for c in cfgs[:n_base]:
@@ -975,6 +1173,8 @@ def main():
             for c in cfgs[n_base + n_d1:]:
                 if stop['now']: break
                 walk_config(c)
+        if 'c' in a.stages and not stop['now']:
+            tier_stage()
     finally:
         try:
             set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on

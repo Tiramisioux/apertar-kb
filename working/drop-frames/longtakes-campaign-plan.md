@@ -11,6 +11,8 @@ The first run (Kingston NVMe, CM5 Lite: 64 configs at 16-bit, 12-bit started; no
 request; the Pi has a different CPU type now. The run and its findings page remain in git history (`242c0be`) only.
 The runner (`working/tools/longtakes.py`, `webui_remote.py`) is unchanged.
 
+The test structure (modes, ruling out, duration ladder, A/B, logging) is in `longtakes-test-structure.md`.
+
 ## Decisions (User, 2026-11-06)
 
 - Staged vs full grid: just run it, see how far it gets. Order: baseline first, then by number of factors changed.
