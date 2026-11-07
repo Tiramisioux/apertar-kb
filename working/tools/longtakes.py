@@ -251,10 +251,11 @@ def smart_next_fps(row, fps):
         peak = int(str(st.get('peak_queue', '0')).split('/')[0])
     except (ValueError, TypeError):
         return None
-    if enq < 60 or enq / float(fps) < 4.0 or peak <= 0:     # too short a take to say anything
+    t_rec = enq / float(fps)
+    if enq < 60 or t_rec < 1.5 or peak <= 0:     # too short a take to say anything
         return None
     est = fps * max(enq - peak, 0) / enq
-    nxt = int(est * 1.10)
+    nxt = int(est * (1.35 if t_rec < 4.0 else 1.15))     # the writers' start-up makes a short take's estimate low
     return max(FPS_FLOOR, min(int(fps) - 1, nxt)), est
 
 
