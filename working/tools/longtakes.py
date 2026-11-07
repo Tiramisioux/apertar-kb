@@ -1137,7 +1137,7 @@ def main():
             stop['now'] = True
         return row
 
-    def walk_config(c, force=False):
+    def walk_config(c, force=False, start=None):
         """Step fps down from the mode's storage cap until a take passes (30 min or drive full)."""
         rows = [r for r in load_rows(out) if r['cfg_id'] == c.id and not r.get('variant')]
         if force:
@@ -1162,6 +1162,7 @@ def main():
         # User, 2026-11-07: options that cannot survive 5 min even in theory are ruled out; only 25 fps and above count.
         # Theory = the drive's measured sustained speed; --start-at-mode-max tries the mode's own maximum anyway.
         fps = float(int(fmax if a.start_at_mode_max else min(fmax, mode_cap_fps(c.mode))))
+        if start: fps = min(fps, float(start))
         if a.fps_start: fps = a.fps_start
         rows = [r for r in rows if r['outcome'] != 'stopped_externally']
         if rows:
@@ -1296,45 +1297,68 @@ def main():
             log(out, '== %s %s: clean at %d fps%s' % (label, c.id, lo, '' if hi is None else ' (fails at %d)' % hi))
 
     def follow_log_stage():
-        """Log on top of each mode's winning config (User, 2026-11-07: "log also applies to SDR modes"). Core decides: Log
-        stores 16 -> 12 bit in Clear HDR 16-bit and 12 -> 10 bit in 12-bit modes; where Core reports it unavailable the runner
-        makes a 4 s probe take and keeps Core's own reason from the journal. The winner is the config with the highest fps that passed the 30-minute round
-        (the simplest on a tie). With no winner (4K Clear HDR 12-bit was ruled out earlier) lossless, lossless + Log and Log
-        are tried. Each Log config gets its own ladder: 5 min walk from the mode's top fps, then 10, 20, 30 minutes."""
+        """Log wherever a smaller file can matter (User, 2026-11-07: "try it on all relevant settings, where a 25 % decrease in
+        file size might actually make a difference", and "log also applies to SDR modes"). Core decides per mode whether Log
+        applies (16 -> 12 bit, 12 -> 10 bit); where it says no, a 4 s probe take keeps Core's reason.
+        Parents = every config of the mode that hit the storage limit (a take ended in buffer full or a full queue) plus the
+        winner (highest fps that passed 30 min, simplest on a tie). Each parent gets a Log twin (same switches, Log on): a 5 min
+        walk starting at 1.4 x the parent's 5 min fps (25 % fewer bytes cannot give more than ~1.33 x), then 10, 20, 30 min if
+        the twin gained at 5 min or is the winner's twin. With no parent at all (a mode ruled out before it ran): lossless,
+        lossless + Log and Log."""
         rows_all = load_rows(out)
+        bad = ('exhausted', 'pruned', 'stopped_externally', 'skipped_unavailable')
         for m in inc:
             mine = [c for c in cfgs if c.mode == m]
-            best = {}
-            for r in rows_all:
-                if r.get('variant') == 'tier30' and r['outcome'].startswith('pass'):
-                    best[r['cfg_id']] = max(best.get(r['cfg_id'], 0), float(r['fps']))
             by_id = {c.id: c for c in mine}
-            win = None
-            if best:
-                win = by_id[sorted(best, key=lambda k: (-best[k], len(factors_of(by_id[k])), k))[0]]
-            def cfg_like(comp, log, base):
+            rows_m = [r for r in rows_all if r['mode'] == m[0] and not r.get('variant')]
+            best30 = {}
+            for r in rows_all:
+                if r['mode'] == m[0] and r.get('variant') == 'tier30' and r['outcome'].startswith('pass'):
+                    best30[r['cfg_id']] = max(best30.get(r['cfg_id'], 0), float(r['fps']))
+            win = by_id[sorted(best30, key=lambda k: (-best30[k], len(factors_of(by_id[k])), k))[0]] if best30 else None
+            f5 = {}
+            for c in mine:
+                if c.log:
+                    continue
+                rs = [r for r in rows_m if r['cfg_id'] == c.id and r['outcome'] not in bad]
+                if not rs:
+                    continue
+                storage = any(r['outcome'] == 'buffer_full' or 'queue-full' in (r.get('drop_kinds') or '') for r in rows_all
+                              if r['cfg_id'] == c.id)
+                if storage or c is win:
+                    ps = [float(r['fps']) for r in rs if r['outcome'].startswith('pass')]
+                    f5[c.id] = max(ps) if ps else 0.0
+            parents = sorted(f5, key=lambda k: (by_id[k] is not win, -f5[k], k))
+
+            def twin(p):
                 for x in mine:
-                    if (x.comp, x.log, x.tdn, x.lock, x.trim, x.web) == (comp, log, base.tdn, base.lock, base.trim, base.web):
+                    if (x.comp, x.log, x.tdn, x.lock, x.trim, x.web) == (p.comp, True, p.tdn, p.lock, p.trim, p.web):
                         return x
-            base0 = mine[0]
-            if win:
-                targets = [cfg_like(win.comp, True, win)]
-                log(out, '== follow-up Log %s: winner %s (%d fps at 30 min), testing %s' % (m[0], win.id, best[win.id], targets[0].id))
-            else:
-                targets = [cfg_like('lossless_jpeg', False, base0), cfg_like('lossless_jpeg', True, base0), cfg_like('none', True, base0)]
-                log(out, '== follow-up Log %s: no 30-minute winner, testing %s' % (m[0], [t.id for t in targets]))
-            for c in targets:
+            todo = [(by_id[k], twin(by_id[k])) for k in parents]
+            if not todo:
+                base0 = mine[0]
+                for comp, lg in (('lossless_jpeg', False), ('lossless_jpeg', True), ('none', True)):
+                    for x in mine:
+                        if (x.comp, x.log, x.tdn, x.lock, x.trim, x.web) == (comp, lg, base0.tdn, base0.lock, base0.trim, base0.web):
+                            todo.append((None, x))
+            log(out, '== follow-up Log %s: winner %s; %d Log twin(s): %s' % (
+                m[0], win.id if win else 'none', len(todo), [t.id.split('_', 1)[1][:24] for _, t in todo]))
+            for par, c in todo:
                 if stop['now']: return
-                walk_config(c, force=True)
+                pf5 = f5.get(par.id, 0.0) if par else 0.0
+                start = min(int(pf5 * 1.4) + 1, 200) if pf5 else None
+                walk_config(c, force=True, start=start)
                 prow = [r for r in load_rows(out) if r['cfg_id'] == c.id and not r.get('variant') and r['outcome'].startswith('pass')]
                 if not prow:
                     log(out, '-- follow-up Log %s: no pass in the 5-minute walk, stops here' % c.id)
                     continue
                 f0 = max(float(r['fps']) for r in prow)
+                if par is not None and par is not win and f0 <= pf5:
+                    log(out, '-- follow-up Log %s: %d fps, no gain over its parent (%d fps) at 5 min: no long ladder' % (c.id, f0, pf5))
+                    continue
                 for label, secs in (('logt10', a.tier10_seconds), ('logt20', a.tier2_seconds), ('logt30', a.tier3_seconds)):
                     if stop['now']: return
-                    rows_now = load_rows(out)
-                    bracket(c, f0, secs, label, rows_now)
+                    bracket(c, f0, secs, label, load_rows(out))
                     ps = [float(r['fps']) for r in load_rows(out)
                           if r['cfg_id'] == c.id and r.get('variant') == label and r['outcome'].startswith('pass')]
                     if not ps:
