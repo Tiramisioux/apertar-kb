@@ -1307,7 +1307,8 @@ def main():
         lossless + Log and Log."""
         rows_all = load_rows(out)
         bad = ('exhausted', 'pruned', 'stopped_externally', 'skipped_unavailable')
-        for m in inc:
+        first = {'4kHDR12': 0, '4kSDR10': 1, '4kSDR12': 2}      # the 4K question (can Log make 4K work?) goes first
+        for m in sorted(inc, key=lambda x: first.get(x[0], 3)):
             mine = [c for c in cfgs if c.mode == m]
             by_id = {c.id: c for c in mine}
             rows_m = [r for r in rows_all if r['mode'] == m[0] and not r.get('variant')]
