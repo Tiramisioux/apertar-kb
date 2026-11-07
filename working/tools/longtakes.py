@@ -97,6 +97,13 @@ def mode_possible(m):
     return mode_size_mb(m) * FPS_FLOOR <= DISK_MBPS * DISK_MARGIN
 
 
+MODE_MAX = {}     # mode key -> the fps the mode itself allows, learned when its walk starts
+
+
+def mode_top_fps(m):
+    return MODE_MAX.get(m[0], mode_cap_fps(m))
+
+
 def mode_cap_fps(m):
     """Highest fps the storage can carry at all for this mode."""
     return int(DISK_MBPS * DISK_MARGIN / mode_size_mb(m))
@@ -215,7 +222,7 @@ def beneficial_factors(rows, mode_cfgs):
 def prune_reason(c, rows, mode_cfgs):
     """None if the config is worth testing, else why it cannot add information."""
     base_rows = [r for r in rows if r['cfg_id'] == mode_cfgs[0].id]
-    lim = limiter_of(base_rows, mode_cap_fps(c.mode))
+    lim = limiter_of(base_rows, mode_top_fps(c.mode))
     fs = factors_of(c)
     if not fs:
         return None
@@ -1014,7 +1021,8 @@ def main():
         counter['n'] += 1
         apply_cfg(c, 25)
         fmax = float(state().get('fps_take_max') or state().get('fps_max') or 30)
-        fps = float(int(min(fmax, mode_cap_fps(c.mode))))
+        MODE_MAX[c.key] = int(fmax)
+        fps = float(int(fmax))        # User, 2026-11-07: start at the mode's own maximum, not at what the storage should carry
         if a.fps_start: fps = a.fps_start
         rows = [r for r in rows if r['outcome'] != 'stopped_externally']
         if rows:
@@ -1034,7 +1042,7 @@ def main():
                                  'started': time.strftime('%F %T')})
                 log(out, '-- pruned %s: the drive cannot carry this data rate (frontier %.0f MB/s)' % (c.id, fr))
                 return
-        log(out, '== config %s: stepping down from %s fps (storage cap %d, mode max %.0f)' % (c.id, fps, mode_cap_fps(c.mode), fmax))
+        log(out, '== config %s: stepping down from %s fps (mode max %.0f; the storage should carry %d)' % (c.id, fps, fmax, mode_cap_fps(c.mode)))
         while fps >= FPS_FLOOR and not stop['now']:
             clear_media(out)
             if os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < 20 * 2**30:
@@ -1067,7 +1075,7 @@ def main():
         rows_all = load_rows(out)
         for m in inc:
             mine = [c for c in cfgs if c.mode == m]
-            lim = limiter_of([r for r in rows_all if r['cfg_id'] == mine[0].id], mode_cap_fps(m))
+            lim = limiter_of([r for r in rows_all if r['cfg_id'] == mine[0].id], mode_top_fps(m))
             if 'storage' not in lim and not a.no_prune:
                 log(out, 'A/B %s: skipped, the baseline was not limited by the storage (%s)' % (
                     m[0], '/'.join(sorted(lim)) or 'clean at the highest fps'))
@@ -1083,7 +1091,7 @@ def main():
                 if stop['now']: return
                 base_rows = [r for r in rows_all if r['cfg_id'] == c.id and not r.get('variant')]
                 passes = sorted(int(float(r['fps'])) for r in base_rows if r['outcome'].startswith('pass'))
-                cap = mode_cap_fps(m)
+                cap = mode_top_fps(m)
                 ab_fps = (passes[-1] + 1 if passes[-1] + 1 <= cap else passes[-1]) if passes else FPS_FLOOR
                 util = mode_size_mb(m) * ab_fps / DISK_MBPS
                 if util < 0.70:
