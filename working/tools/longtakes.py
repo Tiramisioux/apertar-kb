@@ -937,7 +937,12 @@ def main():
                         if done.get(vname, 0) > rep: continue
                         clear_media(out)
                         note = set_variant(out, vname, settings)
-                        row = take(c, ab_fps, max_seconds=a.ab_seconds, stop_on_drop=False, variant=vname, tune_note=note)
+                        for attempt in range(3):      # a take stopped by someone else is not a result: run it again
+                            row = take(c, ab_fps, max_seconds=a.ab_seconds, stop_on_drop=False, variant=vname, tune_note=note)
+                            if stop['now'] or not (row.get('outcome') == 'stopped_externally' and dropped_none(row)):
+                                break
+                            log(out, 'A/B take stopped by someone else (%ss): repeating (%d/2)' % (row.get('seconds'), attempt + 1))
+                            clear_media(out)
                         log(out, 'A/B %s rep %d %s: %s dropped=%s' % (c.id, rep + 1, vname, row.get('outcome'), row.get('dropped')))
                 set_variant(out, 'base', {})
 
