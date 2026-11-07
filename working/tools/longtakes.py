@@ -12,7 +12,7 @@ full with no dropped frame ("pass_drive_full"). A take stops at the FIRST droppe
 Only clip folders this script created under /media/RAW are ever deleted. Audio settings are never changed.
 Resume: run it again with the same --out; finished configs are skipped.
 """
-import argparse, csv, glob, itertools, json, os, re, shutil, signal, socket, sqlite3, subprocess, sys, threading, time
+import argparse, collections, csv, glob, itertools, json, os, re, shutil, signal, socket, sqlite3, subprocess, sys, threading, time
 
 SOCK = '/tmp/apertar-core.sock'
 MEDIA = '/media/RAW'
@@ -314,8 +314,50 @@ class Sampler(threading.Thread):
         self.f = open(csv_path, 'w', newline='')
         self.w = csv.writer(self.f)
         self.w.writerow(['t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb',
-                         'throttled', 'dropped', 'state'])
+                         'throttled', 'dropped', 'state', 'core_cpu_pct', 'core_top_thread'])
         self.prev = self.cpu_times()
+        self.core_pid = self.find_core()
+        self.prev_core = None
+
+    @staticmethod
+    def find_core():
+        for d in os.listdir('/proc'):
+            if d.isdigit():
+                try:
+                    if b'apertar-core' in open('/proc/%s/cmdline' % d, 'rb').read() and b'--socket' in open('/proc/%s/cmdline' % d, 'rb').read():
+                        return int(d)
+                except OSError:
+                    pass
+        return None
+
+    def core_cpu(self):
+        """Core's CPU use, in % of one core, summed over its threads, and the busiest thread (name:%). None if unreadable."""
+        if not self.core_pid:
+            return None, ''
+        now = time.monotonic()
+        cur = {}
+        try:
+            for t in os.listdir('/proc/%d/task' % self.core_pid):
+                try:
+                    st = open('/proc/%d/task/%s/stat' % (self.core_pid, t)).read()
+                    comm = st[st.index('(') + 1:st.rindex(')')]
+                    f = st[st.rindex(')') + 2:].split()
+                    cur[t] = (comm, int(f[11]) + int(f[12]))
+                except (OSError, ValueError, IndexError):
+                    pass
+        except OSError:
+            return None, ''
+        prev, self.prev_core = self.prev_core, (now, cur)
+        if not prev:
+            return None, ''
+        dt = max(now - prev[0], 0.05) * os.sysconf('SC_CLK_TCK')
+        tot, top = 0.0, ('', 0.0)
+        for t, (comm, ticks) in cur.items():
+            d = (ticks - prev[1].get(t, (comm, ticks))[1]) / dt * 100
+            tot += d
+            if d > top[1]:
+                top = (comm, d)
+        return round(tot, 1), '%s:%.0f' % (top[0], top[1])
 
     @staticmethod
     def cpu_times():
@@ -335,19 +377,21 @@ class Sampler(threading.Thread):
         total, free = sv.f_blocks * sv.f_frsize, sv.f_bavail * sv.f_frsize
         thr = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip().split('=')[-1]
         st = state()
+        ccpu, ctop = self.core_cpu()
         pi = int(rd(PI_TEMP, '0')) / 1000
         nv = int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else None
         return {'t_s': round(time.monotonic() - self.t0, 1), 'pi_c': pi, 'nvme_c': nv, 'cpu_pct': round(cpu, 1),
                 'load1': os.getloadavg()[0], 'mem_avail_mb': mem, 'fill_pct': round(100 * (1 - free / total), 1),
                 'free_gb': round(free / 2**30, 1), 'throttled': thr, 'dropped': st.get('recording_dropped_frames', -1),
-                'state': 'rec' if st.get('recording') else str(st.get('state')), '_st': st}
+                'state': 'rec' if st.get('recording') else str(st.get('state')), '_st': st,
+                'core_cpu_pct': ccpu, 'core_top_thread': ctop}
 
     def run(self):
         while not self.stop_ev.is_set():
             r = self.sample()
             self.rows.append(r)
             self.w.writerow([r[k] for k in ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct',
-                                              'free_gb', 'throttled', 'dropped', 'state')])
+                                              'free_gb', 'throttled', 'dropped', 'state', 'core_cpu_pct', 'core_top_thread')])
             self.f.flush()
             self.stop_ev.wait(0.5)
 
@@ -474,6 +518,27 @@ def ui_audio():
         return {'error': str(e)}
 
 
+def log_probe(out):
+    """Core says Log is not applied: make a 4 s take and read what Core logs about CineMate Log (its reason, or the plan)."""
+    before = clip_dirs()
+    t_wall = time.time()
+    r = core('record_start')
+    if not r.get('ok'):
+        return 'probe take failed: %s' % r.get('error')
+    time.sleep(4)
+    core('record_stop')
+    for _ in range(60):
+        s2 = state()
+        if s2 and not s2.get('recording') and not s2.get('media_writes_pending'):
+            break
+        time.sleep(1)
+    time.sleep(2)
+    lines = [re.sub(r'^\S+ \S+ \S+: ', '', l) for l in journal(t_wall) if 'CineMate Log' in l]
+    for d in clip_dirs() - before:
+        shutil.rmtree(os.path.join(MEDIA, d), ignore_errors=True)
+    return ' | '.join(lines)[:300] or 'probe take made, Core logged nothing about Log'
+
+
 def journal(t_wall):
     r = subprocess.run(['journalctl', '-u', 'apertar-core', '--since', '@%d' % int(t_wall), '-o', 'short-unix',
                         '--no-pager'], capture_output=True, text=True)
@@ -539,9 +604,10 @@ CREATE TABLE IF NOT EXISTS takes(take_id TEXT PRIMARY KEY, cfg_id TEXT, mode TEX
   mem_avail_mb REAL, fill_pct REAL, throttled TEXT, files INT, missing INT, audio TEXT, gb_written REAL,
   trim_events INT, drive_full TEXT, drive_full_at_s REAL, start_pi_c REAL, start_nvme_c REAL, clip TEXT,
   started TEXT, mismatch TEXT, variant TEXT, media_class TEXT, buffer_setting TEXT, buffer_safety_stop TEXT,
-  buffer_flush_discarded TEXT, tune_readback TEXT);
+  buffer_flush_discarded TEXT, tune_readback TEXT, core_cpu_avg REAL, core_cpu_max REAL, core_top_thread TEXT);
 CREATE TABLE IF NOT EXISTS samples(take_id TEXT, t_s REAL, pi_c REAL, nvme_c REAL, cpu_pct REAL, load1 REAL,
-  mem_avail_mb REAL, fill_pct REAL, free_gb REAL, throttled TEXT, dropped INT, state TEXT);
+  mem_avail_mb REAL, fill_pct REAL, free_gb REAL, throttled TEXT, dropped INT, state TEXT, core_cpu_pct REAL,
+  core_top_thread TEXT);
 CREATE INDEX IF NOT EXISTS samples_take ON samples(take_id);
 CREATE TABLE IF NOT EXISTS drop_events(take_id TEXT, t_unix REAL, t_rel_s REAL, kind TEXT, frames INT, dt_us INT,
   nominal_us INT);
@@ -576,10 +642,14 @@ def db_ingest(out, row, payload):
     con = sqlite3.connect(out + '/longtakes.db', timeout=60)
     try:
         con.executescript(DB_SCHEMA)
+        for table, col, typ in (('takes', 'core_cpu_avg', 'REAL'), ('takes', 'core_cpu_max', 'REAL'), ('takes', 'core_top_thread', 'TEXT'),
+                                ('samples', 'core_cpu_pct', 'REAL'), ('samples', 'core_top_thread', 'TEXT')):
+            if col not in [c[1] for c in con.execute('PRAGMA table_info(%s)' % table)]:
+                con.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table, col, typ))
         for t in ('takes', 'samples', 'drop_events', 'stats', 'journal'):
             con.execute('DELETE FROM %s WHERE take_id=?' % t, (tid,))
         r = row
-        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 44), (
+        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 47), (
             tid, r.get('cfg_id'), r.get('mode'), int(r.get('bits') or 0), r.get('comp'), _flag(r.get('log')), _flag(r.get('tdn')),
             _flag(r.get('lock')), _flag(r.get('trim')), _flag(r.get('web')), _num(r.get('fps')), r.get('outcome'),
             _num(r.get('seconds')), int(_num(r.get('dropped')) or 0), _num(r.get('first_drop_s')), r.get('drop_kinds'),
@@ -589,10 +659,12 @@ def db_ingest(out, row, payload):
             r.get('audio'), _num(r.get('gb_written')), int(_num(r.get('trim_events')) or 0), r.get('drive_full'),
             _num(r.get('drive_full_at_s')), _num(r.get('start_pi_c')), _num(r.get('start_nvme_c')), r.get('clip'),
             r.get('started'), r.get('mismatch'), r.get('variant'), r.get('media_class'), r.get('buffer_setting'),
-            r.get('buffer_safety_stop'), r.get('buffer_flush_discarded'), r.get('tune_readback')))
-        con.executemany('INSERT INTO samples VALUES (?,?,?,?,?,?,?,?,?,?,?,?)', [
+            r.get('buffer_safety_stop'), r.get('buffer_flush_discarded'), r.get('tune_readback'),
+            _num(r.get('core_cpu_avg')), _num(r.get('core_cpu_max')), r.get('core_top_thread')))
+        con.executemany('INSERT INTO samples VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [
             (tid, x.get('t_s'), x.get('pi_c'), x.get('nvme_c'), x.get('cpu_pct'), x.get('load1'), x.get('mem_avail_mb'),
-             x.get('fill_pct'), x.get('free_gb'), x.get('throttled'), x.get('dropped'), x.get('state'))
+             x.get('fill_pct'), x.get('free_gb'), x.get('throttled'), x.get('dropped'), x.get('state'),
+             x.get('core_cpu_pct') if x.get('core_cpu_pct') not in ('', None) else None, x.get('core_top_thread'))
             for x in payload.get('samples', [])])
         lines = payload.get('journal', [])
         t_rec = payload.get('t_rec_wall')
@@ -682,7 +754,8 @@ FIELDS = ['take_id', 'cfg_id', 'mode', 'bits', 'comp', 'log', 'tdn', 'lock', 'tr
           'first_drop_s', 'drop_kinds', 'cause_estimate', 'pi_c', 'nvme_c', 'pi_c_max', 'nvme_c_max', 'cpu_pct',
           'load1', 'mem_avail_mb', 'fill_pct', 'throttled', 'files', 'missing', 'audio', 'gb_written', 'trim_events',
           'drive_full', 'drive_full_at_s', 'start_pi_c', 'start_nvme_c', 'clip', 'stats', 'mismatch', 'started', 'variant', 'media_class', 'buffer_setting',
-          'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback', 'buffer_peak_pct']
+          'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback', 'buffer_peak_pct', 'core_cpu_avg', 'core_cpu_max',
+          'core_top_thread']
 
 
 def append_row(out, row):
@@ -781,7 +854,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     row['mismatch'] = mism
     if mism:
         row['outcome'] = 'skipped_unavailable' if 'log_applied' in mism and c.log else 'setup_mismatch'
-        log(out, '%s fps=%s: %s (%s)' % (c.id, fps, row['outcome'], mism))
+        if row['outcome'] == 'skipped_unavailable':
+            row['cause_estimate'] = 'Core: ' + log_probe(out)
+        log(out, '%s fps=%s: %s (%s) %s' % (c.id, fps, row['outcome'], mism, row.get('cause_estimate', '')))
         return row
     if st.get('media_state') != 'mounted':
         row['outcome'] = 'media_not_mounted'
@@ -909,6 +984,11 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         names = [n for n in os.listdir(clip) if n.endswith('.dng')][:20]
         if names:
             gb = files * (sum(os.path.getsize(os.path.join(clip, n)) for n in names) / len(names)) / 1e9
+    cc = [x['core_cpu_pct'] for x in sam.rows if x.get('core_cpu_pct') is not None]
+    row['core_cpu_avg'] = round(sum(cc) / len(cc), 1) if cc else ''
+    row['core_cpu_max'] = max(cc) if cc else ''
+    tt = collections.Counter(x.get('core_top_thread', '').split(':')[0] for x in sam.rows if x.get('core_top_thread'))
+    row['core_top_thread'] = tt.most_common(1)[0][0] if tt else ''
     if not stop_on_drop and outcome.startswith('pass'):
         outcome = 'ab_clean' if dropped == 0 else 'ab_dropped'
     pis = [x['pi_c'] for x in sam.rows]; nvs = [x['nvme_c'] for x in sam.rows if x['nvme_c']]
@@ -1216,15 +1296,13 @@ def main():
             log(out, '== %s %s: clean at %d fps%s' % (label, c.id, lo, '' if hi is None else ' (fails at %d)' % hi))
 
     def follow_log_stage():
-        """Log on top of each Clear HDR mode's winning config (User, 2026-11-07). Log only applies where the raw stream is
-        unpacked 16-bit containers (Clear HDR; the SDR streams are PISP-packed and Core records them linear): 16 -> 12 bit,
-        and 12 -> 10 bit in Clear HDR 12-bit. The winner is the config with the highest fps that passed the 30-minute round
+        """Log on top of each mode's winning config (User, 2026-11-07: "log also applies to SDR modes"). Core decides: Log
+        stores 16 -> 12 bit in Clear HDR 16-bit and 12 -> 10 bit in 12-bit modes; where Core reports it unavailable the runner
+        makes a 4 s probe take and keeps Core's own reason from the journal. The winner is the config with the highest fps that passed the 30-minute round
         (the simplest on a tie). With no winner (4K Clear HDR 12-bit was ruled out earlier) lossless, lossless + Log and Log
         are tried. Each Log config gets its own ladder: 5 min walk from the mode's top fps, then 10, 20, 30 minutes."""
         rows_all = load_rows(out)
         for m in inc:
-            if not m[4]:
-                continue
             mine = [c for c in cfgs if c.mode == m]
             best = {}
             for r in rows_all:
