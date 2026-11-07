@@ -922,6 +922,7 @@ def main():
     ap.add_argument('--disk-mbps', type=float, default=DISK_MBPS, help='sustained write speed of the drive, MB/s')
     ap.add_argument('--stages', default='1d2rc', help='1 = baseline of every mode, d = configs one factor away, 2 = storage A/B on the best configs, r = the rest')
     ap.add_argument('--ab-seconds', type=int, default=120, help='length of one A/B take')
+    ap.add_argument('--start-at-mode-max', action='store_true', help='start every walk at the mode\'s own maximum fps, not at what the storage can carry')
     ap.add_argument('--tier1-seconds', type=int, default=SCREEN['s'], help='round 0: length of the take of every config (default 300 = 5 min)')
     ap.add_argument('--tier10-seconds', type=int, default=600)
     ap.add_argument('--tier2-seconds', type=int, default=1200)
@@ -1040,7 +1041,9 @@ def main():
         apply_cfg(c, 25)
         fmax = float(state().get('fps_take_max') or state().get('fps_max') or 30)
         MODE_MAX[c.key] = int(fmax)
-        fps = float(int(fmax))        # User, 2026-11-07: start at the mode's own maximum, not at what the storage should carry
+        # User, 2026-11-07: options that cannot survive 5 min even in theory are ruled out; only 25 fps and above count.
+        # Theory = the drive's measured sustained speed; --start-at-mode-max tries the mode's own maximum anyway.
+        fps = float(int(fmax if a.start_at_mode_max else min(fmax, mode_cap_fps(c.mode))))
         if a.fps_start: fps = a.fps_start
         rows = [r for r in rows if r['outcome'] != 'stopped_externally']
         if rows:
@@ -1060,6 +1063,7 @@ def main():
                                  'started': time.strftime('%F %T')})
                 log(out, '-- pruned %s: the drive cannot carry this data rate (frontier %.0f MB/s)' % (c.id, fr))
                 return
+        ruled_out = False
         log(out, '== config %s: stepping down from %s fps (mode max %.0f; the storage should carry %d)' % (c.id, fps, fmax, mode_cap_fps(c.mode)))
         while fps >= FPS_FLOOR and not stop['now']:
             clear_media(out)
@@ -1080,6 +1084,16 @@ def main():
             if o.startswith('pass'): break
             if o == 'buffer_full' and not a.no_prune:
                 jump = smart_next_fps(row, fps)
+                if jump and jump[1] < FPS_FLOOR * 0.8:
+                    est = jump[1]
+                    why = ('ruled out in theory: in that take the drive wrote the equivalent of %.1f fps, well below the %d fps '
+                           'floor, so no take of this config can survive 5 min' % (est, FPS_FLOOR))
+                    log(out, '-- %s %s' % (c.id, why))
+                    append_row(out, {'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn,
+                                     'lock': c.lock, 'trim': c.trim, 'web': c.web, 'outcome': 'pruned', 'cause_estimate': why,
+                                     'started': time.strftime('%F %T')})
+                    ruled_out = True
+                    break
                 if jump:
                     nxt, est = jump
                     if nxt < fps - 1:
