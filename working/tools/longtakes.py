@@ -213,6 +213,44 @@ def clear_media(out):
         time.sleep(8)   # Core's own trim (if on) runs after a big delete; we do not wait for cooling
 
 
+WEB_REMOTE = False
+
+
+def web_peers():
+    """Remote clients holding a connection to Core's WebUI port (loopback ones do not count)."""
+    r = subprocess.run(['ss', '-tnH', 'state', 'established', '( sport = :8000 )'], capture_output=True, text=True)
+    n = 0
+    for l in r.stdout.splitlines():
+        f = l.split()
+        if len(f) >= 4 and not f[3].startswith(('127.', '[::1]', '::1')):
+            n += 1
+    return n
+
+
+def web_flag(out, v):
+    with open(out + '/web_flag', 'a') as f:
+        f.write('%d\n' % v)
+
+
+def wait_peers(want, timeout):
+    t = time.monotonic()
+    while time.monotonic() - t < timeout:
+        if (web_peers() > 0) == want:
+            return True
+        time.sleep(1)
+    return False
+
+
+def ui_audio():
+    import urllib.request
+    try:
+        u = json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/state', timeout=10)).get('ui', {})
+        return {k: u.get(k) for k in ('audio_sample_format', 'audio_sample_rate', 'audio_channels', 'record_audio_enabled',
+                                      'audio_input_device')}
+    except Exception as e:
+        return {'error': str(e)}
+
+
 def journal(t_wall):
     r = subprocess.run(['journalctl', '-u', 'apertar-core', '--since', '@%d' % int(t_wall), '-o', 'short-unix',
                         '--no-pager'], capture_output=True, text=True)
@@ -329,7 +367,14 @@ def run_take(out, c, fps, max_seconds, written):
     row['start_nvme_c'] = int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else ''
     before = clip_dirs()
     web = None
-    if c.web:
+    web_remote_ok = None
+    if c.web and WEB_REMOTE:
+        web_flag(out, 1)
+        web_remote_ok = wait_peers(True, 30)
+        if not web_remote_ok:
+            log(out, 'WARNING: the Mac WebUI client did not connect within 30 s; this take runs without a client')
+            row['mismatch'] = 'web_client_not_connected'
+    elif c.web:
         web = subprocess.Popen([sys.executable, '-I', os.path.join(os.path.dirname(os.path.abspath(__file__)), 'webui_client.py'),
                                 '--host', '127.0.0.1', '--port', '8000', '--log', out + '/webui/%s.log' % tid],
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -365,6 +410,9 @@ def run_take(out, c, fps, max_seconds, written):
     ctx_end = dict(sam.last())
     core('record_stop')
     if web: web.terminate()
+    if c.web and WEB_REMOTE:
+        web_flag(out, 0)
+        wait_peers(False, 15)
     # let Core finish the tail and write the stats line
     t = time.monotonic()
     while time.monotonic() - t < 180:
@@ -393,7 +441,11 @@ def run_take(out, c, fps, max_seconds, written):
         files = len(nums)
         missing = (nums[-1] + 1 - len(nums)) if nums else 0
         audio = ' '.join(af) if af else 'NONE'
-    kinds, first, stats, trims = parse_journal(journal(t_wall), t_rec_wall)
+    jl = journal(t_wall)
+    os.makedirs(out + '/journal', exist_ok=True)
+    with open(out + '/journal/%s.log' % tid, 'w') as jf:   # raw Core journal for the take, to re-check a cause later
+        jf.write('\n'.join(jl) + '\n')
+    kinds, first, stats, trims = parse_journal(jl, t_rec_wall)
     st_end = state()
     dropped = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0), missing)
     gb = (files * (16.9 if c.bits == 16 else 12.7) / 1000) if files else 0
@@ -432,9 +484,13 @@ def main():
     ap.add_argument('--dry-run', action='store_true')
     ap.add_argument('--max-seconds', type=int, default=0, help='cap every take (smoke test)')
     ap.add_argument('--only', type=int, default=0, help='run only the first N unfinished configs')
+    ap.add_argument('--web-remote', action='store_true',
+                    help='WebUI-on takes use a real client on another machine (webui_remote.py on the Mac) instead of a local stand-in')
     ap.add_argument('--fps-start', type=float, default=0, help='override the starting fps (smoke test)')
     a = ap.parse_args()
     out = os.path.expanduser(a.out)
+    global WEB_REMOTE
+    WEB_REMOTE = a.web_remote
     os.makedirs(out + '/webui', exist_ok=True)
     cfgs = all_configs()
     if a.dry_run:
@@ -462,6 +518,16 @@ def main():
     orig = json.load(open(out + '/session.json'))['original_settings']
     log(out, 'campaign start: %d configs, out=%s' % (len(cfgs), out))
     core('set_fps_speed_ramp', enabled=False)
+    # The configured USB PnP Sound Device only does S16_LE mono 44.1/48 kHz; a fixed s24 format makes record_start
+    # fail. Use Auto format (the device picks), keep rate and channels. The original is restored at the end.
+    aud = ui_audio()
+    sess = json.load(open(out + '/session.json'))
+    sess.setdefault('audio_original', aud)
+    sess['audio_used'] = dict(aud, audio_sample_format='auto')
+    json.dump(sess, open(out + '/session.json', 'w'), indent=1)
+    if aud.get('audio_sample_format') not in (None, 'auto'):
+        log(out, 'audio: format %s -> auto (device is S16-only)' % aud.get('audio_sample_format'))
+        core('set_audio_capture_options', format='auto')
     stop = {'now': False}
     signal.signal(signal.SIGTERM, lambda *_: stop.update(now=True))
     written = {'gb': 0}
@@ -491,6 +557,9 @@ def main():
                 o = row.get('outcome', '')
                 if o in ('media_not_mounted',):
                     log(out, 'media not mounted: campaign needs a human'); stop['now'] = True; break
+                if o in ('record_start_failed', 'setup_mismatch', 'media_not_mounted'):
+                    log(out, 'setup problem (%s): %s - campaign needs a human' % (o, row.get('cause_estimate') or row.get('mismatch')))
+                    stop['now'] = True; break
                 if o == 'skipped_unavailable': break
                 if o.startswith('pass'): break
                 fps -= 1
@@ -508,6 +577,9 @@ def main():
                         ('set_fps_speed_ramp', {'enabled': bool(orig.get('fps_speed_ramp'))}),
                         ('set_fps', {'value': float(orig.get('fps') or 25)})):
             core(cmd, **kw)
+        orig_fmt = (json.load(open(out + '/session.json')).get('audio_original') or {}).get('audio_sample_format')
+        if orig_fmt and orig_fmt != 'auto':
+            core('set_audio_capture_options', format=orig_fmt)
         log(out, 'campaign ended (settings restored except Log, which stays as last set)')
 
 
