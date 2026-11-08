@@ -182,7 +182,7 @@ folder mid-take) not built: the audio session builds its WAV only at stop from o
 | --- | --- | --- |
 | `d7dd337` | `[storage] frames_per_folder` (env `APERTAR_CDNG_FRAMES_PER_FOLDER`): frames in `<clip>/part_NNN/`, `.parts` marker, part-folder fsync; `src/cdng/FramePath.hpp` + `tools/frame_path_test.cpp`; `listFrames` and the facts cache read parts; `set_frames_per_folder`, state `frames_per_folder`, Performance-card field; branch `clip-split` | fork-only; Pi only |
 | `9ec37b5` | `tools/flatten_clip.py` (dry run default, `--apply`, `--unflatten N`); README note for Resolve/Premiere; branch `clip-split` | fork-only; Pi only |
-| `8874374` | Merge worker: flattens split clips while idle (trim-worker pattern, `src/cdng/ClipMerge.hpp` + `tools/clip_merge_test.cpp`), `[storage] clip_merge` (default on), `APERTAR_CLIP_MERGE=0`, `set_clip_merge`, state `clip_merge_*`, Performance-card switch; branch `clip-split` | fork-only; Pi only |
+| `ba0658d` | Merge worker: flattens split clips while idle (trim-worker pattern, `src/cdng/ClipMerge.hpp` + `tools/clip_merge_test.cpp`), `[storage] clip_merge` (default on), `APERTAR_CLIP_MERGE=0`, `set_clip_merge`, state `clip_merge_*`, Performance-card switch; branch `clip-split` | fork-only; Pi only |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
