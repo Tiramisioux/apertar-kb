@@ -47,12 +47,12 @@ shooting card is his decision (§11.1).
 ## 2. What the plan rests on (labelled; detail in `nvme-campaign/research/`)
 
 - **The drive is the record's drive.** Every earlier drive fact was measured on a Corsair MP600 Mini 1 TB (serial `A936B442006AC2`, firmware
-  ERFM11.1): 733 MB/s direct writes for 5 s in the pSLC cache, 415 MB/s for 10 min by Core (measured); 525 MB/s for 60 s (derived from a 2026-10-28 crop take on an old build and an untrimmed, 78-82 %
+  ERFM11.1): 733 MB/s direct writes (measured; "<= 5 s" and "in the pSLC cache" are R3's derived reading), 415 MB/s for 10 min by Core (measured); 525 MB/s for 60 s (derived from a 2026-10-28 crop take on an old build and an untrimmed, 78-82 %
   full card); no Core-pattern datum of 600 MB/s or more longer than 5 s exists on this card, so SDR12 at 42 fps and above is unmeasured
   drive territory and the meter take is its instrument; stalls
   for seconds after ~0.9 TB written without a trim, cured by a trim (measured, synthetic, 2026-10-30); Core trims at mount and after deletes
   >= 1 GiB per poll (confirmed; the trigger can miss slow small-file deletes, derived); 34 -> 54 C in 10 min at 415 MB/s, 72 C after 10 min
-  of SDR at 410 MB/s (measured); 25.3 TB written at 3 % used on 2026-11-02, 29.0 TB after evening 3 (measured). Its own SMART thresholds: 82.9 C warning, 85 C critical (measured); 72 C was reached twice with 0 drops. Web: pSLC ~50 GB, post-cache
+  of SDR at 410 MB/s (measured); 25.3 TB written at 3 % used on 2026-11-02, 29.0 TB after evening 3 (measured). Its own SMART thresholds: 82.9 C warning, 85 C critical (measured); 72 C was reached twice with 0 drops (measured). Web: pSLC ~50 GB, post-cache
   ~800 MB/s, throttle ~80 C, 0-65 C spec, 600 TBW; two variants share the name (E21T 2023, E27T R2 2024; the CORE Mini is QLC with 250 TBW):
   the test card's firmware ERFM11.1 points at the E27T R2 (probable); Patrik runs `nvme id-ctrl` once in S0 (model, firmware, `sgls`) and types the part number from the label into the session; the runner
   reads `firmware_rev` from sysfs (no helper word for id-ctrl). Whether the record's temperatures were measured with the card in this same
@@ -61,9 +61,9 @@ shooting card is his decision (§11.1).
 - **Capture side, 4K Clear HDR 16-bit uncompressed** (recipe.md rows 1-8; take ledger R1): 25 fps clean for 10 min in 4 of 7 takes, all with
   TDN on and the WebUI closed; O1 (owner, 10 min, WebUI open, TDN on) lost 1 by Core's count; TDN off removes the back-end bottleneck (37 ->
   6 ms per frame, measured, p = 1/6); FE Config depth 4 removes the single-frame losses at 28 fps (probable, n = 1 + 1); 30 fps lost ~3
-  frames in 2 min even so on the EARLIER board (evening 4's t1; the C0 board's one 30-fps datum is a clean 135 s; a second limit, memory
+  frames in 2 min even so on the EARLIER board (evening 4's t1; the C0 board's one 30-fps datum is a clean 135 s, measured, n = 1, its drive and build unrecorded on its page; a second limit, memory
   bandwidth suspected, unconfirmed; the revision code `c041a0` was read on both boards and cannot tell them apart, so the runner records the
-  CPU serial per evening). **No 4K take longer than 602 s exists on the NVMe** (the SSD run's 7-28-min failures and 30-min passes were 2K and 4K on the T7), and
+  CPU serial per evening). **No 4K take longer than 602 s exists on the NVMe** (derived from the take ledger R1; the SSD run's 7-28-min failures and 30-min passes were 2K and 4K on the T7), and
   none of the clean 10-min takes ran with TDN off or depth 4.
   The 10-min takes are older builds: on the current code line (`f4a1393` and its split/merge successors) the longest 4K take is the SSD
   run's 5-min 4K SDR10 lossless pass (7,505 frames, on the T7, with audio) and the longest 4K take on the NVMe is 3 min (the 11-08
@@ -71,7 +71,7 @@ shooting card is his decision (§11.1).
 - **4K SDR 12-bit**: 33 fps clean for 10 min, lossless and uncompressed (measured); ~42 fps clean once (owner, unscored). Not every 4K
   drop on this drive was a capture gap: the 77-81 %-full and the never-trimmed takes lost to a full write queue (measured), so the
   campaign reads the counter, never assumes the regime. 4K Clear HDR 12-bit:
-  no long take on record (the SSD run's 4K HDR12 takes ran at 5.8-12.6 fps into slow buffer_full on the T7; none on the NVMe).
+  no long take on record (measured: the SSD run's 4K HDR12 takes ran at 5.8-12.6 fps into slow buffer_full on the T7; none on the NVMe).
 - **Encoders**: HDR16 lossless 17.6-18.5 fps (measured): out above 17 fps; SDR12 lossless 48 fps capacity at 33 fps, 2.8 cores (measured,
   pre-roll): probably CPU-bound near 50 fps. Log on HDR16 = 12.45 MB per frame (measured, one DNG); Log on HDR12 did not shrink files on the
   SSD and Log + lossless made larger files than lossless alone (measured): no HDR16 Log + lossless arm is assumed.
@@ -138,11 +138,13 @@ plus 1 fps; their 30-min status is "predicted, untested beyond 5 min" unless a 3
 ## 5. Levers: fixed state, screened levers, conditional tests
 
 Fixed for every take (the recipe and the owner's real use): `dontneed=sync`, writeback on, `sync_ms` 1000, 8 raw buffers, FE Config depth 4
-(the pipeline YAML copy via `LIBCAMERA_RPI_CONFIG_FILE`: the campaign drop-in's one standing line, armed once per boot by the root helper with a Core
+(the pipeline YAML copy: `/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml`, `num_cfe_config_queue` 4, md5 `88929ca3...` as R2 §2g
+records it, the full value read in S0 and written on the pre-registration page, copied by the runner to `/run/apertar-media/pisp-pipeline.yaml`
+and selected via `LIBCAMERA_RPI_CONFIG_FILE`: the campaign drop-in's one standing line, armed once per boot by the root helper with a Core
 restart and an environ read-back; the audio-ring line `APERTAR_AUDIO_BUFFER_MS` joins it only while that lever is in use; no libcamera
 debug log, unlike the evening-4 helper), `buffer=ram`
 at the record's keys (`buffer_ram_fraction 0.6`, `buffer_ram_floor_mb 512`): on this board that gave 250-1,283 MiB, median 635 (the SSD
-run, measured; the 1,424 MiB of 2026-11-01 needed ~3.2 GB available), so expect 0.7-1.3 GB = 1.7-3 s of HDR16 input; the budget is logged
+run, measured; the 1,424 MiB of 2026-11-01 needed ~3.2 GB available), so expect 0.7-1.3 GB = 1.7-3 s of HDR16 input (derived); the budget is logged
 per take and every buffer_full is read in seconds of input; a fixed-MiB Core key (`buffer_ram_mb`, small) is the one change that would
 make it constant (build list E), trim on, the pre-roll ON as in real use (it runs once per Core start, not per take; the unscored warm-up follows it), the merge worker OFF
 (`set_clip_merge enabled=false` over the socket, read back per take, restored after; one mechanism, not the env variable as well), the ladder switched off by the runner at session start and restored in its `finally` (the gate stops on a ladder that is on), TDN off
@@ -156,10 +158,10 @@ card's model and serial checked per evening, the Pi's CPU serial (`/proc/cpuinfo
 | --- | --- | --- | --- | --- |
 | fps | the record's bracket per mode (HDR16 25-30 starting at 28: the C0 board's only 4K HDR16 datum is a clean 135 s at 30 fps, n = 1, so 30 stays in; SDR12 from a meter take 5-10 % above the record's clean 42 fps, i.e. 44-46 fps, then capacity -1 / -2; HDR12 from 30), step 1 | S2 | HDR16: 27-28 clean at 3 min (measured); 30 dropped on the earlier board and ran clean for 135 s on the C0 board (n = 1 each), so 30 is in the walk, not pre-judged | the walk |
 | Log | off vs on at HDR16 only (16 -> 12 stored). Not an arm for HDR12: Log does not change HDR12's bytes (the LUT is composed with the CCMP expansion: 2K 3.12 MB with and without Log, measured on the SSD run, n = 11 + 8; at 4K only with-Log takes exist, 12.2-12.9 MB at 0.1 GB resolution, so the 4K equality is derived from the code path, not measured) | S2 (ABBA at the edge fps, plus ONE stop-on-drop 3-min Log take at 30 fps in the HDR16 block: the untried byte-reducing lever against the 30-fps limit, <= 67 GB; carried to S4 only if it beats the pooled 28-fps controls or is the only clean arm at 30) | fewer bytes vs copy-worker CPU; untried on the NVMe beyond 5 s (R1) | 5 |
-| WebUI client | on (fixed) vs off | S2 (ABBA) | ~2 % more losses with it open under page-cache pressure (2026-11-01); O1 clean with it open | 4 |
-| TDN | off (fixed); ONE unlogged TDN-on 3-min take at 25 fps | S2 | tests O1's instrumentation hypothesis: 0-2 lost supports it, >= 10 confirms TDN off for real use | 1 |
+| WebUI client | on (fixed) vs off | S2 (ABBA) | ~2 % more losses with it open under page-cache pressure (measured, one night, 2026-11-01); O1 clean with it open | 4 |
+| TDN | off (fixed); ONE TDN-on 3-min take at 25 fps in the HDR16 block after the walk ("unlogged" = no libcamera debug log and no tracefs, as every campaign take; the 1 Hz sampler and stop-on-drop stay on) | S2 | tests O1's instrumentation hypothesis: 0-2 lost supports it, >= 10 confirms TDN off for real use | 1 |
 | phase lock | off (fixed); at most one 60-s probe of the {d, d+1} fix | S2 | drops + flicker on the old build (measured); no bearing on elimination | 0-1 |
-| compression | per arm a runner-taken `storage_preroll` reading first (encoder capacity, ~1 GB); a 3-min walk only for arms whose capacity exceeds the uncompressed edge (SDR12 lossless; HDR16 lossless + Log only if its pre-roll says > 25 fps) | S2 | HDR16 lossless out (17.6 fps); SDR12 lossless 48 fps capacity | 2-4 |
+| compression | per arm a runner-taken `storage_preroll` reading first (encoder capacity, ~1 GB); a 3-min walk only for arms whose capacity exceeds the uncompressed edge (SDR12 lossless; HDR16 lossless + Log only if its pre-roll says > 25 fps) | S2 | HDR16 lossless out (17.6-18.5 fps, measured); SDR12 lossless 48 fps capacity (measured) | 2-4 |
 | storage knobs as one group | base vs {workers 1, queue 24, sync_ms 2000}; `kernel_tune on` joins the group only if Patrik installs the `apertar-media-tune` helper in S0 (it is not installed, so today the knob does nothing and the group would silently be three knobs) | only if a 4K arm ends in buffer_full | no effect on the SSD (measured) | 2 meter takes |
 | frames_per_folder | 0 vs 5,000 (the probe's N: <= 25,000 entries per folder) | S5 (30 min): unsplit first below the 60 % create share, split first above it; S6 soak as the split variant | 35-51 % of the period at the HDR targets, 100-110 % at the SDR12 targets of 42-44 fps (§3; derived from the measured fit) | the pair |
 | FE depth | 4 (fixed); optional control block: two 3-min depth-2 takes at 28 fps HDR16 against the walk's pooled depth-4 controls (AABB in two Core processes, not ABBA: depth is a restart lever, a true ABBA would need four restarts), up to 167 GB for the pair if both run clean (41-72 GB per take at the record's drop times), two Core restarts with Patrik present, after the warm-up and a control, never at the start of an evening; depth 6 only if late Config buffers appear at the edge | S2, optional | depth 4 removed the 28-fps losses (probable, n = 1 + 1) | 2 (optional) |
@@ -169,7 +171,7 @@ card's model and serial checked per evening, the Pi's CPU serial (`/proc/cpuinfo
 
 Facts: Core captures through a 100 ms ALSA ring with a 10 ms period (`audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10`
 in every SSD-run take that carried audio, 72 of 182; `APERTAR_AUDIO_BUFFER_MS` 100-4000); the T30 writer thread sits between capture and the raw file, which is fsynced
-once a second; in the SSD run the writer's backlog peaked at 30-2,764 KB per take (up to ~9.6 s of audio at 288 KB/s: the raw-file writes stall for
+once a second (code reading); in the SSD run the writer's backlog peaked at 30-2,764 KB per take (up to ~9.6 s of audio at 288 KB/s, derived from 48 kHz x 2 ch x 3 B: the raw-file writes stall for
 seconds under DNG pressure on the T7, measured; on this card the two recorded peaks were 9 and 16 KB); the KB's old reading says xruns are handled with `snd_pcm_recover`, yet a 3-min take on 2026-11-08
 ended after 32 s with `ALSA capture: Broken pipe` (all frames written, merge off). Cinemate's history treats this class with a real-time
 capture thread, a 2-s ring and silence fill on an xrun. Candidate causes: **the part boundary first**: the fault take (C0005 of `clip-split-verify.md`) ran with `frames_per_folder` 200 at 25 fps,
@@ -190,7 +192,8 @@ is bounded; a USB device hiccup.
   `measured_drift_ppm` is a whole-take ratio that would hide it).
 - **The Core fix is a prerequisite of the long tiers** (S4-S6, Part B): a real shoot with audio must not lose a take to a 100 ms gap. S2 may
   run at the 100 ms ring to measure the fault rate; if the fix is not in by night 2, the long tiers run with `APERTAR_AUDIO_BUFFER_MS=1000`
-  as a recorded deviation. Two audio faults on one arm = the arm is "out with audio" (reported apart from video eliminations); a faulted
+  as a recorded deviation (a second drop-in line: Patrik runs the interactive helper's `arm 1000` and the Core restart before night 2; the
+  runner reads it back from Core's environ, else "WAITING: re-arm"). Two audio faults on one arm = the arm is "out with audio" (reported apart from video eliminations); a faulted
   long take is not repeated automatically.
 - **Desk task first**: the Opus thread records the frame index at the fault against the part boundaries (799 files written = indices 0-798, within one frame of the part_003/part_004 boundary at index 800 with N = 200, i.e. 32.0 s: a live candidate, not an exact hit), then pulls that take's journal window (the error line, the stop reason, `peak_backlog_kb`) and reads
   `AudioRecordingSession.cpp` / `TimestampedAudioCapture.cpp` at `01f170c` (the audio files are unchanged since `ba0658d`): if an xrun ends a take today, the Core fix (recover, pad the gap
@@ -205,8 +208,10 @@ is bounded; a USB device hiccup.
 card is his shooting medium; the runner deletes only folders in its database and treats any other folder on the card as "WAITING:
 foreign folder" until Patrik moves it, never as something to delete);
 `fsck.exfat -n` on the card (the 2026-11-08 mount reported "Volume was not properly unmounted"; the record holds 1,535 unsafe shutdowns
-and three controller deaths) and again after any unclean shutdown; the systemd timers that could run during a take masked for the
-campaign (`fstrim.timer`, `apt-daily*`, `man-db`, `logrotate`; the helper does it and restores them); status check (binary `01f170c` or later; `get_state` shows `frames_per_folder`,
+and three controller deaths) and again after any unclean shutdown (whether `fsck.exfat -n` runs on a mounted volume is unconfirmed: S0 records it; if it refuses, the resume guard's
+fsck condition becomes Patrik's unmount-and-check and nothing resumes unattended until he has done it); the systemd timers that could run during a take masked for the
+campaign (`fstrim.timer`, `apt-daily*`, `man-db`, `logrotate`; the helper masks them with `systemctl mask --runtime`, which a reboot clears, and
+unmasks them at the end); status check (binary `01f170c` or later; `get_state` shows `frames_per_folder`,
 `clip_merge_enabled`, `cdng_log`, `buffer_setting`, `recording_dropped_frames`; the mounted card's model, serial, size and part number;
 helpers; cmdline; media tune file; ladder); the crop probe (`list_sensor_modes` and one `set_resolution` read-back per planned crop and
 bit depth; the raw heights go into the runner's MODES table, H17); the tuning set back to automatic with Patrik if a manual tuning file is
@@ -227,7 +232,7 @@ files; Core idle, not stopped: stopping it needs sudo; trimmed card): on the Pi'
 pSLC rate and the post-cache floor of this card (~800 MB/s, web) sit above the link, so no knee is expected; the probe confirms the
 link-limited rate and starts the temperature record of the card inside its CFe-B shell (the real thermal curve comes from the long
 takes, with smart-log's thermal counters read between takes); the write-pattern matrix at 4K size (`exfat_write_probe.py`: default, workers 1, prealloc, fsync none, direct, subdir 5000; ~30 GB);
-a 60-s full-speed write after the trim, and the same write once more at the END of the first long night, on the card as the last take
+a 60-s full-speed write after the trim, and the same write once more at the END of night 2 (S4/S5, the first long night), on the card as the last take
 left it (no delete for it; if less than 60 GB is free the write is skipped and recorded; never between takes; the same H24 stage, started
 by the lead over ssh): the drive-state comparison. Optional (owner's call,
 ~150 GB, 1 h): the paced small-file probe (`exfat_write_probe.py`, 1 MB files at 42 files/s for 30 min, flat vs `--subdir 5000`; the
@@ -238,7 +243,7 @@ effect at the real create rate without the camera and would make the SDR12 unspl
 after every Core restart or mode switch; the fps walk inside the record's bracket, step 1, two concordant takes per decision (2 drops = out; a 3-min clean
 take is confirmed by its 5-min take in S3 rather than by a second 3-min take; 1-1 = a third 3-min take decides, which for a single late frame is the repeat of §7); the limiter per failure (capture gap / buffer_full / drive event / audio_fault);
 controls at the start and end of each mode block at the edge fps; the lever variants paired ABBA at the edge fps, both in the HDR16 block only (Log, 4 takes; WebUI off, 4 takes; §5); one stop-on-drop
-3-min Log take at 30 fps in the HDR16 block (§5); the single TDN-on take at 25 fps; the phase-lock probe if wanted; the compression arms via the pre-roll reading first. Output per mode: the clean 3-min
+3-min Log take at 30 fps in the HDR16 block (§5); the single TDN-on take at 25 fps; the phase-lock probe if Patrik buys it (§11.4); the compression arms via the pre-roll reading first. Output per mode, on `nvme-campaign/prognosis-S2.md`: the clean 3-min
 fps, the limiter, the lever verdicts, the prognosis table (§7).
 
 **S3 Confirmation at 5 min** (inside S2's mode block, right after a cell's first clean 3-min take; ~0.7 TB in all, the two crops included): the 5-min take IS
@@ -265,7 +270,8 @@ split clip of >= 45,000 files (an S5/S6 split take's folder, left unmerged), the
 merges it (the verification measured the pause at 33 ms and 0 lost frames once, n = 1; this repeats it at the campaign's settings) (the A/B in the conservative order at no extra bytes: heat and process age work against the split); the storage plan's Core patches
 only where S1/S5 showed a storage limit at 4K; a 30-min crop take if the owner buys it.
 
-**Part B, the other Corsair card(s)** (one evening per card, Patrik swaps the card): Patrik's footage offloaded; part number (a QLC
+**Part B, the other Corsair card(s)** (one evening per card; Patrik powers the Pi off through the helper's `poweroff` before the swap, never pulls a mounted card, and the
+runner records the swap boot): Patrik's footage offloaded; part number (a QLC
 CORE Mini is refused), serial and size recorded; `fsck.exfat -n`; the trim at mount seen in the journal; the adapter noted per card; the runner's
 card detection recomputes §3; by default the 60-GB knee probe, one 30-min take of the winning HDR16 arm (the question that matters per card) and one 15-min take of
 the heaviest SDR12 arm (~1.4 TB and ~2 h per card); the other modes' 30-min takes as Patrik's option (0.67-0.94 TB each: HDR12 672 GB, SDR12 739-941 GB at 33-42 fps); labelled
@@ -274,7 +280,9 @@ card, which is what this check sees. ~1.4 TB per card by default.
 
 **Fill gate (every stage)**: free >= planned x 1.03 + 10 GB, else delete the OLDEST campaign clips (from the database, keyed by card serial, clip name, mtime
 and take id, since clip names repeat after every format; never the owner's folders) through Core's media-delete route (`POST /api/media/delete` by exact name: it pauses a running merge, deletes and trims in
-~0.5 s, measured in the clip-split verification), never by `rm`; re-read df. Clips are deleted in the boot
+~0.5 s, measured in the clip-split verification), never by `rm` and with no `rmtree` fallback (a failed delete = "WAITING: delete failed", Patrik decides); before each delete the runner
+re-stats the folder and refuses unless its mtime and frame count match the database record (a mismatch = "WAITING: foreign folder");
+re-read df. Clips are deleted in the boot
 that wrote them (5 us per file); a delete after a reboot is budgeted at ~4.5 min per flat 30-min clip (measured slope, derived total) and
 never started within 10 min of a planned take. A 30-min take that fails the gate even on an empty card (SDR12 uncompressed at >= 43 fps plans 963-985 GB and
 needs 1,002-1,025 GB with the margin) is shortened to (free - 10 GB) / (1.03 x rate) and recorded as "fit-limited"; the margin is never waived. At the end of each
@@ -283,8 +291,9 @@ part every campaign clip is deleted and one `fstrim` runs.
 ## 7. Rules, pre-registered before the first take
 
 The pre-registration page `nvme-campaign/preregistration.md` is written before the first scored take from the runner's `--plan-only`
-output (H21) plus the die rolls: one roll per ABBA pair set decides whether its first member is the baseline or the lever (odd = baseline
-first), one roll per long evening decides the mode-order rotation; roll and mapping are written on the page.
+output (H21) plus the die rolls: a d6; one roll per ABBA pair set decides whether its first member is the baseline or the lever (odd = baseline
+first); one roll per long evening and per Part B card decides the mode order as the (roll - 1) mod 6 -th permutation of (HDR16, SDR12,
+HDR12) in lexicographic order; rolls and mapping are written on the page.
 
 - **A take ends** at its first dropped frame (any Core counter), at Core's safety stop (`buffer_full`, a result), at an audio fault
   (`audio_fault`, a result of its own), at the tier length, or at the capacity guard (6 GiB free: `pass_drive_full`). Recorded: time to the
@@ -317,10 +326,13 @@ first), one roll per long evening decides the mode-order rotation; roll and mapp
   stepped-down cell REPEATS the current tier (S4's runner-up); a 30-min take goes only to a cell that passed 15 min; after a LATE drop
   (after minute 10) with signature (a) the fps stays, the arm runs S5 split first at that fps and its unsplit 30-min control is the
   owner's option; a late drop with another signature keeps the fps, the attribution and the order of §6 S5.
-- **Split verdict**: a late drop is attributed by pre-registered signatures, read in this order: (a) Core's CPU slope consistent with 63-133 ns per directory entry (the probe's 63.3 ns, the walk
-  alone, is the floor; the SSD run's 17 long takes gave 77-133 ns all-in, median 99) + the buffer rising only in the last minutes + flat device
-  latency -> directory; device write ticks per write rising with fill -> drive state; temperature rising with latency
-  -> heat; dirty/writeback KB rising -> page cache; none -> capture side. Four readings of the pair: unsplit drops late with signature (a) and split
+- **Split verdict**: a late drop is attributed by pre-registered signatures, read in this order: (a) Core's CPU slope (a least-squares fit over the take's second half, in ns per directory entry)
+  whose 95 % interval overlaps 63-133 ns (the probe's 63.3 ns, the walk alone, is the floor; the SSD run's 17 long takes gave 77-133 ns
+  all-in, median 99) + the buffer rising only in the last 5 min (buffer slope > 50 MiB/min there, < 10 MiB/min before) + flat device
+  latency (ticks per write in the last third within 15 % of the first third) -> directory; ticks per write in the last third > 1.3 x the
+  first third, tracking fill -> drive state; temperature and ticks per write correlated over 1-min bins (r > 0.7) -> heat; dirty +
+  writeback KB in the last third > 2 x the first third -> page cache; none -> capture side. These thresholds are pre-registered choices,
+  not measurements, and stand on the pre-registration page. Four readings of the pair: unsplit drops late with signature (a) and split
   holds -> *consistent with* the directory mattering at that length (effect = the time difference and the CPU slope; one pair cannot
   prove it, the strong statement is the probe's c plus the in-take slope); both hold -> no effect seen at that length; both drop at
   similar times -> not the directory; split drops and unsplit holds -> recorded with its heat and age confound, no claim. Split second
@@ -329,37 +341,46 @@ first), one roll per long evening decides the mode-order rotation; roll and mapp
   the directory arithmetic's prediction, not evidence on its own; the attribution signatures still apply to its drop.
 - **Position and drift**: a 60-s unscored warm-up after every Core restart, reboot and mode switch; a lever pair never starts a block; `takes_since_restart`, `uptime_s`,
   MemFree, the buddyinfo order-8 count on every record, `storage_preroll_last` (the pre-roll's result) once per Core restart; if a block's end control differs from its start control by more than the pooled
-  spread (the min-max range of time-to-first-drop among the pooled controls at that fps; clean/clean = no drift), the block's lever
+  spread (the min-max range of time-to-first-drop among the pooled controls at that fps OTHER than the block's own pair: the walk's
+  concordant takes and other blocks' controls; fewer than two of them = 20 % of the tier length; clean/clean = no drift), the block's lever
   verdicts are flagged "drift".
 - **Void** (decided from the checks before any analysis): the mode line differs from the request; `fps_speed_ramp` true; a client lost
-  mid-take; a build or another session active; the card serial wrong; the FE YAML's md5 wrong; `clip_merge` on when it should be off;
+  mid-take; a build (`pgrep` make/cmake/ninja) or another pty login session (`who`) active, the stand-in's non-pty `tail -F web_flag`
+  ssh whitelisted by name; the card serial wrong; the FE YAML's md5 wrong; `clip_merge` on when it should be off;
   `frames_per_folder` not as the arm says; Core's PID changed under the runner; the card not mounted read-write; any read-back of the
   fixed state wrong (the environ line, `tuning_file`, `preview_tdn`, `storage_preroll_auto`, `ladder_enabled`, the UI drawing); a take
   without an `audio capture` line (`audio_missing`). The runner repeats a void once.
 - **WAITING** (the runner holds, retries every 2 min, and ends the night cleanly after 30 min): a missing client BEFORE a take (the Mac
   stand-in); a folder on the card that is not in the database; the drop-in absent ("WAITING: re-arm", no timeout: Patrik must act). A
   `GO-<stage>` wait (`GO-S4`, `GO-S5`, `GO-S6`, `GO-PARTB`) longer than 8 h ends the night cleanly; a GO file may be placed in advance
-  only together with the pass condition it is conditioned on (e.g. "GO-S5 if every S4 take passed"), written on the status page.
+  only with its pass condition as its one line: `unconditional`, `if all_passed S4` or `if passed <mode> S4`; an unparseable or false
+  condition keeps the runner WAITING and writes why, never a GO; the condition is echoed on the status page.
 - **Stop the night**: `critical_warning` != 0, a kernel `nvme` / `pcie` / exFAT error, Core `error`, `media_alive` false, a runner crash, a
   second void, an under-voltage event, a second audio fault in one night (whatever the arms; two on one arm also put the arm "out with
-  audio"), the write budget reached, and any kernel move to 6.18.y before its NVMe
-  silent-corruption fix (web; `nvme.sgl_threshold=0` is the workaround). Restore, write the status, leave the Pi on, Patrik decides. A Pi reset ends the night: the `/run` drop-in (the FE depth 4 line) is gone with it,
-  and the merge is on again (it is switched off over the socket, so the runner re-sends `set_clip_merge enabled=false` after any Core
-  restart), so the runner resumes only after the helper's status shows the drop-in re-armed, `fsck.exfat -n` clean and the last status
+  audio"), the write budget reached, and a kernel at or above 6.18 (`uname -r`) without `nvme.sgl_threshold=0` in
+  /proc/cmdline (the 6.18.y NVMe silent-corruption bug, web: the runner refuses to start on it and a running night stops). Restore, write the status, leave the Pi on, Patrik decides. A Pi reset ends the night: the `/run` drop-in (the FE depth 4 line) is gone with it,
+  and the merge is probably on again (switched off over the socket; whether that survives a Core restart is unconfirmed, so the runner
+  re-sends `set_clip_merge enabled=false` after any Core restart and reads it back), so the runner resumes only after the helper's status shows the drop-in re-armed, `fsck.exfat -n` clean and the last status
   clean, and writes
   "WAITING: re-arm" to the status until then (mechanism: a resume sentinel plus an `@reboot` line for pi that starts the runner once in
   WAITING mode; it reads `get_throttled` bits 16-19 for the under-voltage history of the boot).
-- **Runner liveness**: the runner writes a heartbeat file (`~/longtakes/<run>/heartbeat`, the epoch second) every 60 s; an independent watcher (a second detached script) sends
-  `record_stop` and writes the status when the heartbeat is older than 180 s while Core records, so a dead runner cannot leave Core
-  recording until the card is full; the status carries a liveness line.
+- **Runner liveness**: the runner writes a heartbeat file (`~/longtakes/<run>/heartbeat`, the epoch second) every 60 s, and an `ACTIVE` marker it creates at start and removes in `finally`; an
+  independent watcher (`longtakes_watch.py`, relaunched by an every-minute crontab line while `ACTIVE` exists) reads only the heartbeat
+  file, opens Core's socket only once the heartbeat is older than 180 s while `ACTIVE` exists and the status names a campaign take in
+  progress, then sends `record_stop` and writes the status; it exits when `ACTIVE` is gone and never touches a clip that is not the
+  database's current take, so Patrik's own daytime recording is safe from it. A dead runner therefore cannot leave Core recording until the
+  card is full unless runner, watcher and cron die together (the full card is the last backstop: Core checks no free space); the status
+  carries a liveness line.
 - **Temperature and heat de-aliasing**: logged every second, reported per take (start, end, max), never gated; smart-log (temperature,
   thermal transition counters, critical warning) read through the helper between every take, not only at the evening's ends; the mode
   order is rotated between S5 and S6 and per Part B card (pre-registered) so heat is not aliased with mode; a take that ends with the card above 75 C is flagged
   (the MP600 Mini throttles near 80 C, web; its spec range ends at 65 C; the test card's own SMART thresholds read 82.9 C warning and 85 C
   critical, measured, so 75 C sits below both).
-- **Restore list** (read back at the end of every night and after any stop): ladder on, merge on, TDN as the owner's default, tuning
-  automatic, the drop-in disarmed (Patrik), the timers unmasked, `APERTAR_AUDIO_BUFFER_MS` removed, fps / mode / compression / Log and
-  the audio format as found at the start, the owner's clips untouched (count and names from the start-of-night listing).
+- **Restore list** (read back at the end of every night and after any stop): ladder on, merge on, `frames_per_folder` 0, the storage knobs at their defaults, TDN as the
+  owner's default, tuning automatic, the drop-in left armed for the campaign's duration (FE depth 4 in Patrik's daytime use is a named
+  deviation; he disarms it at the campaign's end), the timers unmasked, `APERTAR_AUDIO_BUFFER_MS` removed, fps / mode / compression / Log and
+  the audio format as found at the start, the owner's clips untouched (count and names from the start-of-night listing); at the campaign's end also the `@reboot` and watcher
+  crontab lines removed, the watcher stopped, the sudoers file and the helper removed by Patrik, all read back.
 - **Claims table** (what the campaign can say at the end): one clean 30-min take = "recorded once at these settings; loss rate < 6.7e-5 per
   frame (95 %), up to 3 losses per 30 min still compatible"; S5 + S6 clean = "1 unsplit + 1 split clean at these settings" (two takes of
   different variants, not 2 of 2 of one recipe; the pooled exposure bound < 3.3e-5 applies only if the variants are read as one arm, and
@@ -379,7 +400,7 @@ first), one roll per long evening decides the mode-order rotation; roll and mapp
 | S4 | 1,250 / 1,500 | one 15-min take per mode at the likely edges (HDR16 28 fps 418 GB, SDR12 42 fps 470, HDR12 30 fps 336) |
 | S5 | 2,450 / 3,200 | one 30-min take per mode at the likely edges (HDR16 28 fps 836 + SDR12 42 fps 941 + HDR12 30 fps 672 GB); the split member only on a late drop |
 | S6 | 2,450 / 3,200 | the soak as the split variant (same figures); patches conditional |
-| **Campaign card** | **~9.3 / ~12.1 TB; ~14 TB with MLV and the second takes; ~17 TB with every option (the crops' long takes, the SDR12 unsplit control, the paced probe, the depth-2 block)** | cap 10 TB (~1.7 % of 600 TBW, web); the card held 29.0 TB on 2026-11-04 and ~30-31 TB now (evening 4 unrecorded, plus the 11-08 verification's ~0.33 TB; the erased 11-07 run was on the Kingston; derived), so about 570 shooting days of 1 TB remain by the rating now, ~560 after the campaign |
+| **Campaign card** | **~9.3 / ~12.1 TB; ~14 TB with MLV and the second takes; ~17 TB with every option (the crops' long takes, the SDR12 unsplit control, the paced probe, the depth-2 block)** | cap 10 TB (~1.7 % of 600 TBW, web), enforced on smart-log `data_units_written` minus the per-card S0 baseline persisted in the database (the file sum and `dev_w_sectors` as cross-checks; S1's probe bytes count); the card held 29.0 TB on 2026-11-04 and ~30-31 TB now (evening 4 unrecorded, plus the 11-08 verification's ~0.33 TB; the erased 11-07 run was on the Kingston; derived), so about 570 shooting days of 1 TB remain by the rating now, ~560 after the campaign |
 | Part B, per other card | 1,400 / 3,000 | knee probe + one 30-min HDR16 + one 15-min SDR12 by default; the other 30-min takes on request |
 
 If the 10 TB cap binds, the cuts in this one order: the bought options first (second 30-min takes, the paced probe, the crops' long
@@ -398,13 +419,28 @@ already carries the fit gate, the kernel-log watchdog, `--budget-gb` with a proj
 `nvme-campaign/research/R10-longtakes-runner.md` (anchored to main) and the rig critique's build-list review
 (`nvme-campaign/critique/C2-rig-engineering.md` §3). The build list (`nvme-campaign/build-list.md`) is the work before the first scored
 take: its section H (the re-anchored list) supersedes the item numbers above it where they conflict.
+
+The campaign invocation, written once (the flags are the build list's H12 and H21, the detach is the owner's standing form; the runner's
+default `--stages 1d2rc` is the SSD run's 64-config design and is never used here):
+
+```bash
+setsid nohup python3 -I ~/longtakes/bin/longtakes.py --out ~/longtakes/<run> --stages N \
+  --modes 4kHDR16,4kSDR12,4kHDR12 --tiers 180,300,900,1800 --start-fps 4kHDR16=28,4kSDR12=meter,4kHDR12=30 \
+  --disk-mbps <S1 result> --web-remote --budget-gb 10000 </dev/null >/run/apertar-media/<run>.out 2>&1 &
+setsid nohup python3 -I ~/longtakes/bin/longtakes_watch.py ~/longtakes/<run> </dev/null >/run/apertar-media/<run>-watch.out 2>&1 &
+```
+
+Pages the campaign writes in the KB: `nvme-campaign/preregistration.md` (before the first scored take), `nvme-campaign/prognosis-S2.md`
+(after S2; `prognosis-S4.md` and `prognosis-S5.md` with each GO decision), `nvme-campaign/findings.md` (the recipe per mode and the
+duration-vs-fps table), and entries in `lessons/hardware-log.md` after Patrik confirms each reading.
 Between takes the runner appends one record per take to `~/longtakes/<run>/longtakes.db` on the SD card (never /run, never the card) (takes; 1 Hz samples incl. the buffer level, device counters,
 dirty pages, trim state, temperatures, Core CPU; drop events; Core counters; the audio lines; journal lines) and rewrites `status.md` /
 `status.json` atomically with: the decision ahead on its first line ("pass -> 29 fps; drop -> confirm at 28") and the night's expected
 end, the liveness line (heartbeat age), the current or next take (arm, fps, planned length and GB, expected end), the stage, progress (takes and GB
 done and remaining, hours), the survivors and eliminated arms with their reasons, the prognosis table, the fill, the last temperatures,
 the smart-log readings, the audio trend, the last 10 rows, and the tail of `decisions.log`. From ssh: `cat ~/longtakes/<run>/status.md`
-(one small read; written only between takes). Never during a take: `journalctl`, `top`/`htop` or any process listing, `ls /media/RAW`, builds, a second Core client, a second
+(one small read; written only between takes; its first line says "safe to read until HH:MM", the next take's planned start; the session
+check runs at `record_start` only and ignores an idle ssh shell with no child process). Never during a take: `journalctl`, `top`/`htop` or any process listing, `ls /media/RAW`, builds, a second Core client, a second
 WebUI.
 
 ## 10. Time frame and the Opus thread's job
@@ -412,8 +448,8 @@ WebUI.
 Build and verify (one to two evenings of desk work, ~1,600 lines; Patrik present ~2 h at the end for S0) -> S0 and S1 (that evening) -> night 1: S2 and S3 -> night 2: S4 and S5 -> night 3:
 S6 -> one evening per other card. About 20 hours of Pi time in all; Patrik is needed for the first hour of night 1 (to watch the first fill-gate delete and the first stop-on-drop,
 the two code paths the offline tests cannot exercise; the S0 steps belong to the build evening), after any reboot (re-arm), for the card swaps, and for the go/no-go between tiers (asynchronous through the
-status file and the `GO-<stage>` sentinel); the drop-in survives Core restarts within a boot, so later nights need no sudo unless the Pi
-rebooted. Before night 2 Patrik (or the lead with his word) places `GO-S5` with its pass condition ("if every S4 take passed"), and
+status file and the `GO-<stage>` sentinel); the drop-in stays armed for the campaign's duration and survives Core restarts within a boot, so later nights need no sudo unless the Pi
+rebooted (Patrik disarms it at the campaign's end). Before night 2 Patrik (or the lead with his word) places `GO-S5` with its pass condition ("if every S4 take passed"), and
 `GO-S6` before night 3; without it the runner idles after S4 and the night is lost. The handoff is `handoff-nvme-campaign.md`.
 
 ## 11. Open points for Patrik
@@ -424,10 +460,12 @@ same adapter and slot.
 2. Which 4K crops (default 1.85:1 and 2.39:1); per crop, confirmation at the winner's fps + 1 (default: a 3-min and a 5-min take) or a
 short ceiling search (down from the full-frame fps + 3, n = 2 at the final fps); a 30-min crop take, yes or no.
 3. MLV as a diagnostic take (yes/no). 4. The optional depth-2 control block at 28 fps (two Core restarts with you present) and the paced
-small-file probe (~150 GB, the 42 files/s pair), yes or no. 5. The 10 TB cap, and whether a second 30-min take per winning arm (672-941 GB each, ~2.4 TB for all three) is bought.
-6. The campaign sudoers helper in two parts: an unattended alias the detached runner may call (read-only or reversible: `smartlog`,
-`status`, `fsck-ro`, `audio-usb`, `fstrim`, `timers-mask`, `timers-unmask`) and an interactive-only helper that refuses without a tty
-(`arm`/`disarm` the drop-in, `restart-core`, `compact0`/`compact-restore`, `reboot`, `poweroff`).
+small-file probe (~150 GB, the 42 files/s pair) and the 60-s phase-lock probe, yes or no. 5. The 10 TB cap, and whether a second 30-min take per winning arm (672-941 GB each, ~2.4 TB for all three) is bought.
+6. The campaign sudoers helper in two parts: an unattended alias the detached runner may call (read-only, reversible, or `fstrim`, which is
+irreversible on freed blocks and safe only because deletes are database-keyed: `smartlog`, `status`, `fsck-ro`, `audio-usb`, `fstrim`,
+`timers-mask` with `--runtime`, `timers-unmask`; NOPASSWD) and an interactive-only helper that refuses without a tty and asks for your
+password (not NOPASSWD, so the runner's `sudo -n` fails closed: `arm`/`disarm` the drop-in, `restart-core`, `compact0`/`compact-restore`,
+`reboot`, `poweroff`).
 7. The audio fix in Core before the long tiers if §5a's desk read shows an xrun ends a take.
 8. The R4 deviation: a 3-min cell is eliminated only after two concordant drops (a failing cell costs its time to the drop twice, up to
 90 GB at HDR16) rather than at one drop; confirm, or revert to "one drop = out" and accept the position-artifact risk.
