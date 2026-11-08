@@ -172,6 +172,18 @@ Pi **`cinemate-port`** = `drop-frames-campaign` `9b5ea14` + the four rows below;
 | `c810f85` | `a344376` (phase lock on the Performance card); branch `cinemate-port` | fork-only; Pi only |
 | `f4a1393` | `69a700e` (phase lock `{d, d+1}`); branch `cinemate-port` | fork-only; Pi only |
 
+2026-11-08 (User): local branch **`clip-split`** on the Pi, from `cinemate-port` `f4a1393` (the binary the camera runs; the
+brief's "drop-frames = cinemate-port at a344376" no longer held, User chose this base). For the NVMe campaign's one-folder
+vs split A/B (`working/drop-frames/nvme-campaign/probe-exfat-dir.md`). Deliverable 2 (`clip_split_minutes`, a new clip
+folder mid-take) not built: the audio session builds its WAV only at stop from one raw file and owns the ALSA capture
+(`AudioRecordingSession.cpp:248-251`, `:392-430` @`f4a1393`), so no gap-free hand-over without a new mechanism.
+
+| Commit | Change | Status |
+| --- | --- | --- |
+| `d7dd337` | `[storage] frames_per_folder` (env `APERTAR_CDNG_FRAMES_PER_FOLDER`): frames in `<clip>/part_NNN/`, `.parts` marker, part-folder fsync; `src/cdng/FramePath.hpp` + `tools/frame_path_test.cpp`; `listFrames` and the facts cache read parts; `set_frames_per_folder`, state `frames_per_folder`, Performance-card field; branch `clip-split` | fork-only; Pi only |
+| `9ec37b5` | `tools/flatten_clip.py` (dry run default, `--apply`, `--unflatten N`); README note for Resolve/Premiere; branch `clip-split` | fork-only; Pi only |
+| `8874374` | Merge worker: flattens split clips while idle (trim-worker pattern, `src/cdng/ClipMerge.hpp` + `tools/clip_merge_test.cpp`), `[storage] clip_merge` (default on), `APERTAR_CLIP_MERGE=0`, `set_clip_merge`, state `clip_merge_*`, Performance-card switch; branch `clip-split` | fork-only; Pi only |
+
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
