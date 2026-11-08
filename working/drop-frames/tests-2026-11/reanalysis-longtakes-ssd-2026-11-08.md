@@ -66,19 +66,28 @@ The derivation: on this kernel every file create walks every entry of its folder
 `exfat_find_dir_entry`, rpi-6.12.y; confirmed in `working/dng-chain/F/V-F4.md` row 16), and Core's 33-character frame names take
 5 entries each (row 17). If the whole CPU slope is that walk, extra CPU(t) = fps x c x 5 x N(t) with N(t) = fps x t, so
 **c = slope / (fps^2 x 5)**. The 17 takes give 77-133 ns, median **99 ns per entry** (derived; it assumes no other cost grows with the
-file count; the zero-wear directory probe measures c directly and supersedes this number). The KB's estimate was 80-250 ns (V-F4 row 18,
-never measured) with an upper bound of about 450 ns from A0/A1.
+file count). The KB's estimate was 80-250 ns (V-F4 row 18, never measured) with an upper bound of about 450 ns from A0/A1.
 
-What c = 99 ns means for one folder (derived, 5 entries per file):
+**Measured the same day** by the zero-wear directory probe on the NVMe test card (`../nvme-campaign/probe-exfat-dir.md`): **c = 63.3 ns per
+entry** (60,000 empty files, idle machine, warm cache, pure CPU, linear). The CPU slope of a real take is therefore about 1.6 times the walk
+alone: the rest is another cost that grows with the folder during a take (probable: the walk misses the cache more often under 100 MB/s of
+DNG data than on an idle machine; or futex spinning of the writers that wait for the lock; unconfirmed). Read the 99 ns as the all-in
+per-entry cost of a take and the 63 ns as the walk alone.
+
+What the two constants mean for one folder (derived, 5 entries per file; the first figure uses the take's all-in 99 ns, the figure in
+brackets the probe's 63.3 ns):
 
 | Files in the folder | Create cost | Share of the frame period at 25 / 30 / 33 / 50 fps |
 | --- | --- | --- |
-| 15,000 (10 min at 25 fps) | 7.4 ms | 19 / 22 / 25 / 37 % |
-| 22,500 | 11.1 ms | 28 / 33 / 37 / 56 % |
-| 45,000 (30 min at 25 fps) | 22.3 ms | 56 / 67 / 74 / 111 % |
-| 54,000 (30 min at 30 fps) | 26.7 ms | 67 / 80 / 88 / 134 % |
-| 59,400 (30 min at 33 fps) | 29.4 ms | 74 / 88 / 97 / 147 % |
-| 90,000 (30 min at 50 fps) | 44.6 ms | 111 / 134 / 147 / 223 % |
+| 15,000 (10 min at 25 fps) | 7.4 ms (4.6) | 19 / 22 / 25 / 37 % (11 / 14 / 15 / 23) |
+| 22,500 | 11.1 ms (6.9) | 28 / 33 / 37 / 56 % (17 / 21 / 23 / 35) |
+| 45,000 (30 min at 25 fps) | 22.3 ms (14.1) | 56 / 67 / 74 / 111 % (35 / 42 / 46 / 70) |
+| 54,000 (30 min at 30 fps) | 26.7 ms (16.9) | 67 / 80 / 88 / 134 % (42 / 51 / 56 / 85) |
+| 59,400 (30 min at 33 fps) | 29.4 ms (18.6) | 74 / 88 / 97 / 147 % (47 / 56 / 61 / 93) |
+| 90,000 (30 min at 50 fps) | 44.6 ms (28.3) | 111 / 134 / 147 / 223 % (71 / 85 / 93 / 142) |
+
+By the probe prompt's pre-registered rule (a create of at most 25 % of the frame period keeps one folder), every 30-minute target is above
+the line with either constant, so `[storage] frames_per_folder` is a prerequisite of the long stages (the probe page says the same).
 
 Against the run: the 38 fps lossless failures came at 61,000 files, where the walk alone (30 ms) exceeds the 26.3 ms frame period; the
 2K Clear HDR failures at 29-30 fps came at 34,000-35,000 files (walk 17 ms, about half the period) in modes that already needed 85 % of
@@ -114,10 +123,11 @@ carries the loss is not measured; `working/tools/exfat_write_probe.py` switches 
 `trim_events` is 0 in every row and no `media: trim` line exists in any take's journal window. The windows start at `record_start`, so a
 trim after the runner's delete would fall outside them, and the sampler read Core's `media_trim_last_*` fields every second but did not
 store them. The running build asks for a trim after a delete made outside Core only when the medium gains **1 GiB or more between two
-polls** while idle (`ApertarCoreApp.cpp:10863-10869@f4a1393`); unlinking 45,000-62,000 small files frees space slowly (each unlink walks
-the folder too), so the long 2K clips may never have crossed that per-poll threshold (derived, unconfirmed). Whether the T7 accepts a
-trim at all over its USB bridge (`/sys/block/sda/queue/discard_max_bytes`, checked by `scripts/apertar-media-trim:67-69`) was never
-read. The run therefore cannot say anything about trim; the drive may have been written through 12.7 times without one.
+polls** while idle (`ApertarCoreApp.cpp:10863-10869@f4a1393`). The directory probe measured a warm-cache unlink at 5 us per file (60,000
+files in 0.5 s), so the runner's deletes freed their 50-150 GB within a second or two and the trigger very probably fired after every
+take (probable). What the trim then did is unrecorded: whether the T7 accepts one at all over its USB bridge
+(`/sys/block/sda/queue/discard_max_bytes`, checked by `scripts/apertar-media-trim:67-69`) was never read, and `media_trim_last_result`
+was never stored. The run cannot say anything about trim either way; the runner now records the trim state per take.
 
 ## 8. The RAM budget varied five-fold between takes (measured)
 
@@ -133,11 +143,11 @@ of 3 s ended some takes that a 17 s budget would have absorbed. The budget shoul
 | "Long takes slow down ... looks like the drive slowing over time (heat or cache)" (unconfirmed) | the drain did not slow; a per-file cost grew with the folder (section 4). Heat and cache stay unmeasured on the T7 |
 | "The SSD's limit is per frame, not per MB/s ... fixed cost per file (one DNG per frame on exFAT over USB)" (probable) | holds for the steady state (section 6) with the cost named: fsync+FLUSH per file, per-cluster allocation under the lock; and it is not fixed: the create walk adds 0.5 us per file already in the folder |
 | "Every stop was buffer full; no take stopped on a dropped frame" | holds; eight of them were then marked `media_removed` by the stop path (section 5) |
-| "Trim off: 2 takes, no visible effect" | no take can speak for trim: the state of the drive was never recorded (section 7) |
+| "Trim off: 2 takes, no visible effect" | no take can speak for trim: whether Core's trims after the deletes succeeded on the T7 was never recorded (section 7) |
 
 ## 10. What this data cannot tell
 
 The writers' progress is known to 0.1 GiB per second, the buffer level never (the runner now samples `buffer_used`); the drive's own
 completion latency never (`/sys/block/<disk>/stat` is now sampled); which Core thread grew (Core sets no thread names); dirty pages at
-the stop (now sampled); the drive's temperature and trim support (`storage_facts.sh`). The directory-walk constant c is derived here and
-measured by the zero-wear probe (`working/drop-frames/nvme-campaign/probe-exfat-dir.md`, in progress).
+the stop (now sampled); the drive's temperature and trim support (`storage_facts.sh`). The directory-walk constant is derived here (all-in,
+99 ns) and measured by the zero-wear probe (63.3 ns, `working/drop-frames/nvme-campaign/probe-exfat-dir.md`).

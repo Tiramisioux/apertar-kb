@@ -18,9 +18,9 @@ changes (untrimmed free space, temperature, the free-block pool the controller h
 about 0.9 TB without a trim) and unmeasured on the T7, whose trim state during the run is unknown. **Within a take**, the writers' progress
 stayed equal to the sensor's rate to within 1-3 % for 20-27 minutes and then the buffer filled in under a minute, while Core's CPU rose
 from about half a core to more than one core at a constant frame rate: a cost that grows with the number of files in the clip folder.
-The mechanism that fits is the exFAT directory walk every file create pays under the filesystem lock (confirmed in the driver; the
-per-entry constant derived from the CPU slope is about 99 ns, which puts a 45,000-file folder at 22 ms per create, 56 % of a 25 fps
-frame period). Steady-state, Core's write pattern reaches about a third of the T7's raw speed (fsync+FLUSH per file, per-cluster
+The mechanism that fits is the exFAT directory walk every file create pays under the filesystem lock (confirmed in the driver; measured
+by the zero-wear probe at 63.3 ns per entry, which puts a 45,000-file folder at 14 ms per create, 35 % of a 25 fps frame period; the
+CPU slope of a real take implies an all-in cost of about 99 ns per entry, 22 ms and 56 %). Steady-state, Core's write pattern reaches about a third of the T7's raw speed (fsync+FLUSH per file, per-cluster
 allocation under the lock by four interleaved writers). The smarter campaign measures these three things separately, with the camera
 only where the camera is needed, and uses the write buffer's level as a meter instead of searching for the highest clean fps.
 
@@ -29,25 +29,25 @@ only where the camera is needed, and uses the write buffer's level as a meter in
 1. 118 buffer_full takes: 78 the writers never kept up (4K), 32 kept up for 7-28 min and then filled the buffer in under a minute, 8 carry
    a stop-path message. (measured)
 2. No gradual slowing of the drain in any take; failures end with a sudden fill. (measured)
-3. Core's CPU grows linearly with the files written, in all 17 takes that sampled it; derived c = 77-133 ns per directory entry, median 99.
-   (measured / derived)
+3. Core's CPU grows linearly with the files written, in all 17 takes that sampled it; derived all-in c = 77-133 ns per directory entry,
+   median 99; the directory probe measured the walk alone at 63.3 ns (`nvme-campaign/probe-exfat-dir.md`). (measured / derived)
 4. Failing file counts: 33,500-35,200 for 2K Clear HDR at 29-30 fps (modes at 85 % of the drive's pattern capacity), 60,800-61,800 for 2K
    SDR 12-bit lossless at 37-38 fps (small files, far from the throughput ceiling). Passes reached 59,412. (measured)
 5. "Media stopped responding ... 5 s" came only after the safety stop, with every frame written: the sync thread ends before the drain,
    the stop's stall detector fires. (measured; mechanism from code)
 6. The 4K drains were 77-120 MB/s against 354 MB/s raw: the pattern, not the medium. (measured)
-7. Trim: never observed, never recorded; the free-space trigger (1 GiB between two polls) may never fire after a slow delete of 50,000
-   small files. (measured absence; derived)
+7. Trim: never observed, never recorded. The free-space trigger (1 GiB between two polls) very probably fired after every delete (a
+   warm-cache unlink is 5 us per file, probe), so what is unknown is the result on the T7. (measured absence; probable)
 8. The RAM budget varied 250-1283 MiB (1.6-17 s of input) with MemAvailable. (measured)
 
 ## 3. Mechanisms, each with the test that settles it and the lever it points at
 
 | # | Mechanism | Time scale | Evidence today | Status | Settles it | Lever |
 | --- | --- | --- | --- | --- | --- | --- |
-| M1 | exFAT create walks every entry of the folder under `s_lock` (`exfat_lookup` -> `exfat_find_dir_entry`); 5 entries per frame file | within a take, grows with N | V-F4 rows 16-17 (source); Core CPU slope in 17 takes; failing file counts | confirmed mechanism; share **probable** | the zero-wear probe (c directly; in progress); `perf top -p <core>` in minute 25 of a take; 3 x 10 min back to back against 1 x 30 min at the same fps | `[storage] frames_per_folder` (in progress); fewer files (MLV, Log, lower fps); shorter names (a 16-char clip prefix saves one entry) |
+| M1 | exFAT create walks every entry of the folder under `s_lock` (`exfat_lookup` -> `exfat_find_dir_entry`); 5 entries per frame file | within a take, grows with N | V-F4 rows 16-17 (source); **c = 63.3 ns per entry measured** by the directory probe (idle); the CPU slope of 17 takes gives 99 ns all-in; failing file counts | **measured** (the walk); its share of a take's failures **probable** | `perf top -p <core>` in minute 25 of a take; 3 x 10 min back to back against 1 x 30 min at the same fps; the `frames_per_folder` A/B | `[storage] frames_per_folder` (built on the Pi, branch clip-split); fewer files (MLV, Log, lower fps); shorter names (a 16-char clip prefix saves one entry) |
 | M2 | one `fsync` per DNG on the sync thread = `__generic_file_fsync` + `sync_blockdev` + FLUSH, 25-60 per second | steady | `fs/exfat/file.c:518-535`; A1 on the NVMe: no cost at 415 MB/s; on USB unmeasured | confirmed mechanism; cost **unconfirmed** | `exfat_write_probe.py --fsync none` against `tick` at the same size and rate; `sync_ms=0` in the tune override for one take | Core: one FLUSH per tick (per-file `sync_file_range(WAIT_BEFORE\|WRITE\|WAIT_AFTER)`, then one folder `fsync`, which on exFAT flushes the whole device) instead of one per file; the pull-safety stays 1 s |
 | M3 | four writers allocate clusters one at a time under `s_lock`; interleaved allocation turns every file into a FAT chain (`exfat_map_cluster`: 1 cluster per step; `exfat_chain_cont_cluster` on the first gap); FAT-chain files write FAT entries per cluster and read FAT sectors synchronously (the 2026-10-30 NVMe stall stack `exfat_alloc_cluster > exfat_ent_set > __bread_gfp`) | steady; stalls when the FAT read waits behind a slow drive | driver source; the stall stack; dng-chain R2 §2.3 | mechanism confirmed; fragmentation **unconfirmed** (never looked) | `sudo filefrag -v` on three DNGs of a fresh take (extents > 1 = chained); `exfat_write_probe.py --workers 1` and `--prealloc` against the default | Core: `ftruncate(fd, final size)` right after open: `exfat_cont_expand` allocates all clusters in one call without zeroing (`file.c:19-82`), so the file is contiguous and the FAT untouched; `workers=1` as the no-code test; one `write()` per file (cinepi-raw's way) |
-| M4 | drive state: untrimmed free space, controller GC | between takes, hours | NVMe: stalls after ~0.9 TB (hardware-log 2026-10-30); T7: unknown, never trimmed on record | measured on the NVMe; **unconfirmed** on the T7 | `storage_facts.sh` (discard support), `sudo fstrim -v` timing; `exfat_write_probe.py` 60 s at full speed: trimmed vs after 2 volume passes | Core trims after deletes (fix the 1 GiB-per-poll trigger: accumulate freed bytes since the last trim); the runner records `media_trim_last_*` per take (done); format = full trim |
+| M4 | drive state: untrimmed free space, controller GC | between takes, hours | NVMe: stalls after ~0.9 TB (hardware-log 2026-10-30); T7: trims were requested after every delete (probable) but their result was never recorded | measured on the NVMe; **unconfirmed** on the T7 | `storage_facts.sh` (discard support), Core's `media_trim_last_*` 30 s after a delete; `exfat_write_probe.py` 60 s at full speed: trimmed vs after 2 volume passes | Core trims after deletes (the 1 GiB-per-poll trigger is fine for a fast delete; accumulate freed bytes anyway); the runner records `media_trim_last_*` per take (done); format = full trim |
 | M5 | drive temperature | within and between takes | T7 none (no sensor read); NVMe to 72 C with no effect seen (evening 3) | **unconfirmed** | `sudo smartctl -a /dev/sda` once a minute (sudoers line); the fan A/B (a fan on the drive, same take twice) | airflow; idle gaps |
 | M6 | USB SSD SLC cache cliff (cinemate's "~90 s") | within a take | 354 MB/s held over 60 GiB of direct writes: not seen | low prior | the probe at full speed for 10 min shows it or not | none needed |
 | M7 | page cache and memory: `dontneed=sync` keeps the cache low during a take; at the stop the sync thread ends and the drain runs without fsync | at the stop | section 5 of the re-analysis; MemAvailable flat during takes | **probable** | `dirty_kb`/`writeback_kb` per second (sampled now) across a safety stop | Core: keep the sync pass running until the queue is empty; raise `APERTAR_WRITE_STALL_MS` while draining a full buffer so a healthy drive is not declared gone |
@@ -93,9 +93,9 @@ without a sensor in the loop.
 1. **Split test**: at the fps that failed at 25-27 min, three 10-minute takes back to back (no idle, same folder count reset each time)
    against one 30-minute take. Three passes and one failure = a per-folder cost (M1); three failures = drive or memory state carried
    across takes (M4/M5/M7). One hour per mode.
-2. **The knob A/B** when `frames_per_folder` exists: the same 30-minute take with 0 and with the probe's N (the other prompt's rule:
-   N = 0.25 x frame period / (5 x c); c = 99 ns gives 20,000 at 25 fps and 15,000 at 33 fps; the suggested 5,000 is well inside), the
-   merge worker off. Instrumented as below; the buffer curve and the CPU slope are the readings, not only pass/fail.
+2. **The knob A/B** (`frames_per_folder` is built, Core branch `clip-split`): the same 30-minute take with 0 and with the probe's N (the
+   probe page's rule: N = 0.25 x frame period / (5 x c); c = 63.3 ns gives 31,600 at 25 fps and 23,900 at 33 fps; the suggested 5,000 is
+   well inside), the merge worker off. Instrumented as below; the buffer curve and the CPU slope are the readings, not only pass/fail.
 3. **MLV control**: one 30-minute MLV take at the same fps (one file per clip, no per-file create, no per-file fsync). It passes where
    cDNG fails if, and only if, the per-file costs are the cause. A diagnostic, not a recipe.
 4. **One fully instrumented long take per mode at 90 % of the measured capacity**, 30 min: the curves (buffer, Core CPU, device latency,
@@ -134,7 +134,7 @@ until then `core_top_thread` reads `apertar-core` for all of them), and a fixed-
 | `ftruncate` to the final size after `open` in `writeDngFile` (`CdngEncoder.cpp:1871`, before `:1876`) | M3 | about 10 lines; the total is known before the first write (header + payload + pad + IFD); lossless: truncate down at the end | proposed; `filefrag` decides whether it is needed |
 | one FLUSH per sync tick instead of one per file (`syncLoop`, `CameraController.cpp:4711`) | M2 | `sync_file_range(WAIT_BEFORE\|WRITE\|WAIT_AFTER)` per file, one `fsync(dirFd)`; exFAT's directory fsync flushes the device (`fs/exfat/dir.c:311-319`) | proposed; the write probe decides whether M2 costs anything on USB |
 | keep the sync pass through the drain; stall limit while draining | M7 | `syncLoop` ends on `stopping_` (`:4714`); the stop waits with the 5 s detector (`:4446`, `:4810`) | proposed |
-| trim trigger after an outside delete | M4 | `ApertarCoreApp.cpp:10863-10869`: 1 GiB between two polls; accumulate freed bytes since the last trim instead | proposed |
+| trim trigger after an outside delete | M4 | `ApertarCoreApp.cpp:10863-10869`: 1 GiB between two polls (fine for a fast delete; the probe measured 5 us per unlink); accumulate freed bytes since the last trim to be safe | proposed, low priority |
 | fixed RAM budget | M8 | `[storage] buffer_ram_fraction` / `floor_mb` today (`BufferBudget.hpp:31-33`); a `buffer_ram_mb` key is small | conf today; key proposed |
 | thread names | diagnosis | `pthread_setname_np` on the recorder's threads | proposed |
 | `sync_ms` 0 / `writeback` off / `dontneed` (`~/apertar-media-tune.conf`, override file) | M2, M7 | exist; `sync_ms=0` also switches the page-cache drop off (`:4339`) | A/B instruments |
@@ -221,7 +221,7 @@ allowed.
 3. Interleaved cluster allocation by four writers (M3) was never checked with `filefrag`; "sub-folders, preallocation, writer count made
    no difference" (2026-10-30) was measured for the NVMe stall, not for this, and the preallocation tried then was `fallocate`, which
    exFAT does not implement (glibc writes zeros instead), so "worse" says nothing about `ftruncate`.
-4. Trim on the T7 was assumed, not checked; the trigger for outside deletes needs 1 GiB between two polls.
+4. Trim on the T7 was assumed, not checked: the trims were requested, their result never read.
 5. The RAM budget was treated as constant; it varied five-fold.
 6. The "stopped responding" takes were read as drive stalls; they are the stop path.
 7. `workers=1` was not in the A/B (2 and 6 were); MLV was never used as a control.
