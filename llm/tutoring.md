@@ -109,7 +109,7 @@ Locations come from [flows.md](flows.md) section C research (2026-10-25, desk): 
 | T55 | Intermediate | A steady 4K 16-bit Clear HDR preview: find the stage that flickers, then calm it (`clearhdr16-steady-preview`) | M6, M7, M5 | Core `CC:7222-7224`, `:7247`, `:11374`, `DefaultTuningSelection.hpp:65`, `:186`, `WebControlPage.cpp:13002`, `:13178`; UI `PreviewWindowRenderer.cpp:858`, `:896`, `:904`, `qml/ExternalMonitorWindow.qml:49`; tuning `~/Tuning-Files/defaults-pisp/imx585_clearHDR.json` (not in git) | settings, then `set_tuning_file` (undo `""`); 4.5 edits a file outside git (backup in 4.1) | 1-1.5 h | written |
 
 Numbers held by projects that keep their own step lists: T36-T45 controls (`../working/controls/`), T46-T54 playback
-(`../working/playback/`), T56-T70 dual sensor (`../working/dual-sensor/`). A new tutorial takes the next free number
+(`../working/playback/`), T56-T71 dual sensor (`../working/dual-sensor/`). A new tutorial takes the next free number
 above them.
 
 Good follow-ups from known bugs (each is a real fix, see `../lessons/upstream-issues.md`): #18 GUI
