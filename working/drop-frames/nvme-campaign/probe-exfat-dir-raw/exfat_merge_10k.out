@@ -1,0 +1,21 @@
+dst /media/RAW/probe_exfat_dir_123143 (10000 files)  src /media/RAW/probe_exfat_dir_123201 (10000 files)  offset 10000
+renamed 2000  elapsed 14.0 s
+renamed 4000  elapsed 30.7 s
+renamed 6000  elapsed 50.0 s
+renamed 8000  elapsed 71.8 s
+renamed 10000  elapsed 96.2 s
+fsync both folders 6.4 ms; rename total 96.2 s; dst now 20000 files, src 0
+rename: files  median_ms  p90_ms  max_ms   (per block of 1000)
+rename:    1000      3.266   3.638    4.351
+rename:    2000      3.592   4.014    4.657
+rename:    3000      3.915   4.459    5.009
+rename:    4000      4.234   4.724    5.327
+rename:    5000      4.561   5.085    5.705
+rename:    6000      4.873   5.565    6.650
+rename:    7000      5.188   5.812    6.271
+rename:    8000      5.512   6.159    6.593
+rename:    9000      5.821   6.508    6.920
+rename:   10000      6.141   6.851    7.616
+rename: fit median_ns = 2955754 + 319.03 * files   (slope / entries-per-file = c per entry)
+csv written /run/apertar-media/exfat_merge_123408.csv
+cleanup: both folders removed in 0.3 s

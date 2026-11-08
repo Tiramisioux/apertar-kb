@@ -172,11 +172,27 @@ Pi **`cinemate-port`** = `drop-frames-campaign` `9b5ea14` + the four rows below;
 | `c810f85` | `a344376` (phase lock on the Performance card); branch `cinemate-port` | fork-only; Pi only |
 | `f4a1393` | `69a700e` (phase lock `{d, d+1}`); branch `cinemate-port` | fork-only; Pi only |
 
+2026-11-08 (User): local branch **`clip-split`** on the Pi, from `cinemate-port` `f4a1393` (the binary the camera runs; the
+brief's "drop-frames = cinemate-port at a344376" no longer held, User chose this base). For the NVMe campaign's one-folder
+vs split A/B (`working/drop-frames/nvme-campaign/probe-exfat-dir.md`). Deliverable 2 (`clip_split_minutes`, a new clip
+folder mid-take) not built: the audio session builds its WAV only at stop from one raw file and owns the ALSA capture
+(`AudioRecordingSession.cpp:248-251`, `:392-430` @`f4a1393`), so no gap-free hand-over without a new mechanism.
+2026-11-08 later (User chose "fold into cinemate-port"): GitHub, Mac and Pi `cinemate-port` fast-forwarded to `clip-split`,
+Core `f4a1393..ba0658d`, UI `7029db1..7ea9afc`; no force push. The camera runs this Core build since the 13:00 boot
+(`frames_per_folder=0`, merge on).
+
+| Commit | Change | Status |
+| --- | --- | --- |
+| `d7dd337` | `[storage] frames_per_folder` (env `APERTAR_CDNG_FRAMES_PER_FOLDER`): frames in `<clip>/part_NNN/`, `.parts` marker, part-folder fsync; `src/cdng/FramePath.hpp` + `tools/frame_path_test.cpp`; `listFrames` and the facts cache read parts; `set_frames_per_folder`, state `frames_per_folder`, Performance-card field; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
+| `9ec37b5` | `tools/flatten_clip.py` (dry run default, `--apply`, `--unflatten N`); README note for Resolve/Premiere; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
+| `ba0658d` | Merge worker: flattens split clips while idle (trim-worker pattern, `src/cdng/ClipMerge.hpp` + `tools/clip_merge_test.cpp`), `[storage] clip_merge` (default on), `APERTAR_CLIP_MERGE=0`, `set_clip_merge`, state `clip_merge_*`, Performance-card switch; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
+
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
 | Commit | Change | Status |
 | --- | --- | --- |
 | `7029db1` | Touch UI: Settings > Timecode has UI timecode and File timecode (bridge `fileTimecodeMode` from Core's state); the tap on the camera screen toggles the UI timecode only | fork-only, Pi only; building 2026-10-29, not tested |
+| `7ea9afc` | Clip browser, player and image prefetch read split clips (`part_NNN/`, Core `d7dd337`) via `src/ClipFrameFiles.hpp`; local branch `clip-split` from `drop-frames` `c153c33`; GitHub `cinemate-port` fast-forwarded `7029db1..7ea9afc` (22 commits: the Pi's drop-frames UI line + this) on 2026-11-08 | fork-only; on GitHub `cinemate-port`; built, not tried on a touch screen |
 | `c9d841f` | T38 part 4: the touch UI no longer writes a default `apertar-hardware.conf` when it is missing (both bridges); local branch `controls` | fork-only |
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `08cefcf` | timecode modes named Time of Day and Clip | fork-only |

@@ -1,0 +1,154 @@
+folder /media/RAW/probe_exfat_dir_121950  entries/file 5  used_bytes_before 3615752192  csv /run/apertar-media/exfat_probe_121950.csv
+created 5000  last-5000 median 0.785 ms  elapsed 4.0 s
+created 10000  last-5000 median 2.355 ms  elapsed 15.9 s
+created 15000  last-5000 median 3.952 ms  elapsed 35.7 s
+created 20000  last-5000 median 5.591 ms  elapsed 63.7 s
+created 25000  last-5000 median 7.224 ms  elapsed 100.1 s
+created 30000  last-5000 median 8.841 ms  elapsed 144.4 s
+created 35000  last-5000 median 10.446 ms  elapsed 196.8 s
+created 40000  last-5000 median 12.044 ms  elapsed 257.2 s
+created 45000  last-5000 median 13.617 ms  elapsed 326.0 s
+created 50000  last-5000 median 15.111 ms  elapsed 401.6 s
+created 55000  last-5000 median 16.705 ms  elapsed 485.2 s
+created 60000  last-5000 median 18.282 ms  elapsed 576.8 s
+folder fsync 2.6 ms; create total 576.8 s
+check: st_size 0 st_blocks 0 (both must be 0)
+create: files  median_ms  p90_ms  max_ms   (per block of 1000)
+create:    1000      0.159   0.290    0.533
+create:    2000      0.474   0.599    0.845
+create:    3000      0.784   0.910    1.278
+create:    4000      1.087   1.229    1.633
+create:    5000      1.399   1.559    2.055
+create:    6000      1.715   1.891    3.118
+create:    7000      2.019   2.219    2.875
+create:    8000      2.329   2.563    3.476
+create:    9000      2.640   2.889    3.572
+create:   10000      2.961   3.276    3.961
+create:   11000      3.269   3.610    4.319
+create:   12000      3.578   3.970    4.557
+create:   13000      3.894   4.337    5.083
+create:   14000      4.216   4.679    5.284
+create:   15000      4.529   5.050    5.581
+create:   16000      4.851   5.404    6.203
+create:   17000      5.185   5.790    6.894
+create:   18000      5.513   6.128    7.255
+create:   19000      5.793   6.455    6.821
+create:   20000      6.123   6.785    7.707
+create:   21000      6.539   7.222    8.579
+create:   22000      6.805   7.551    8.052
+create:   23000      7.112   7.873    8.520
+create:   24000      7.431   8.191    8.601
+create:   25000      7.762   8.522    9.308
+create:   26000      8.070   8.859    9.363
+create:   27000      8.385   9.188    9.572
+create:   28000      8.702   9.507    9.862
+create:   29000      9.020   9.835   11.196
+create:   30000      9.325  10.140   10.591
+create:   31000      9.660  10.452   11.068
+create:   32000      9.968  10.787   11.437
+create:   33000     10.299  11.083   11.532
+create:   34000     10.612  11.423   11.934
+create:   35000     10.930  11.741   12.891
+create:   36000     11.247  12.026   12.644
+create:   37000     11.580  12.391   13.459
+create:   38000     11.880  12.694   13.474
+create:   39000     12.207  13.023   13.991
+create:   40000     12.530  13.333   14.136
+create:   41000     12.862  13.641   14.430
+create:   42000     13.170  14.000   17.797
+create:   43000     13.502  14.315   68.114
+create:   44000     13.701  14.502   18.016
+create:   45000     14.006  14.756   15.346
+create:   46000     14.296  15.076   15.589
+create:   47000     14.637  15.384   15.840
+create:   48000     14.933  15.711   16.573
+create:   49000     15.272  16.029   17.110
+create:   50000     15.587  16.335   16.589
+create:   51000     15.894  16.649   16.959
+create:   52000     16.227  16.948   17.298
+create:   53000     16.550  17.285   18.154
+create:   54000     16.914  17.605   17.893
+create:   55000     17.223  17.923   18.231
+create:   56000     17.541  18.238   18.933
+create:   57000     17.869  18.528   18.858
+create:   58000     18.202  18.866   19.339
+create:   59000     18.546  19.180   19.480
+create:   60000     18.911  19.504   20.641
+create: fit median_ns = -183673 + 316.64 * files   (slope / entries-per-file = c per entry)
+used_bytes_after_create 3625451520  delta 9699328 (expect ~9600000 B of directory, rounded up to 128 KiB clusters)
+unlinked 5000  last-5000 median 0.005 ms  elapsed 0.0 s
+unlinked 10000  last-5000 median 0.005 ms  elapsed 0.1 s
+unlinked 15000  last-5000 median 0.005 ms  elapsed 0.1 s
+unlinked 20000  last-5000 median 0.005 ms  elapsed 0.1 s
+unlinked 25000  last-5000 median 0.005 ms  elapsed 0.2 s
+unlinked 30000  last-5000 median 0.005 ms  elapsed 0.2 s
+unlinked 35000  last-5000 median 0.005 ms  elapsed 0.2 s
+unlinked 40000  last-5000 median 0.005 ms  elapsed 0.3 s
+unlinked 45000  last-5000 median 0.005 ms  elapsed 0.3 s
+unlinked 50000  last-5000 median 0.005 ms  elapsed 0.3 s
+unlinked 55000  last-5000 median 0.005 ms  elapsed 0.3 s
+unlinked 60000  last-5000 median 0.005 ms  elapsed 0.4 s
+unlink total 0.5 s; folder removed
+unlink: files  median_ms  p90_ms  max_ms   (per block of 1000)
+unlink:    1000      0.005   0.009    0.200
+unlink:    2000      0.005   0.006    0.026
+unlink:    3000      0.005   0.006    0.015
+unlink:    4000      0.005   0.006    0.021
+unlink:    5000      0.005   0.006    0.063
+unlink:    6000      0.005   0.005    0.013
+unlink:    7000      0.005   0.009    0.873
+unlink:    8000      0.005   0.005    0.030
+unlink:    9000      0.005   0.005    0.611
+unlink:   10000      0.005   0.006    0.009
+unlink:   11000      0.005   0.006    0.020
+unlink:   12000      0.005   0.006    0.012
+unlink:   13000      0.006   0.010    0.395
+unlink:   14000      0.005   0.006    0.424
+unlink:   15000      0.005   0.005    0.016
+unlink:   16000      0.005   0.005    0.016
+unlink:   17000      0.005   0.006    0.016
+unlink:   18000      0.005   0.005    0.008
+unlink:   19000      0.005   0.009    0.268
+unlink:   20000      0.005   0.009    0.029
+unlink:   21000      0.005   0.005    0.758
+unlink:   22000      0.005   0.005    0.491
+unlink:   23000      0.005   0.006    0.017
+unlink:   24000      0.005   0.006    0.030
+unlink:   25000      0.005   0.005    0.352
+unlink:   26000      0.005   0.010    0.846
+unlink:   27000      0.005   0.006    0.027
+unlink:   28000      0.005   0.005    0.608
+unlink:   29000      0.005   0.006    0.014
+unlink:   30000      0.005   0.006    0.271
+unlink:   31000      0.005   0.005    0.370
+unlink:   32000      0.005   0.009    1.207
+unlink:   33000      0.005   0.006    0.024
+unlink:   34000      0.005   0.005    0.040
+unlink:   35000      0.005   0.005    0.277
+unlink:   36000      0.005   0.006    0.301
+unlink:   37000      0.005   0.006    0.502
+unlink:   38000      0.005   0.008    0.037
+unlink:   39000      0.005   0.009    0.256
+unlink:   40000      0.005   0.005    0.018
+unlink:   41000      0.005   0.005    0.340
+unlink:   42000      0.005   0.006    0.017
+unlink:   43000      0.005   0.006    0.391
+unlink:   44000      0.005   0.005    0.010
+unlink:   45000      0.006   0.009    0.046
+unlink:   46000      0.005   0.006    0.029
+unlink:   47000      0.005   0.005    0.017
+unlink:   48000      0.005   0.006    0.517
+unlink:   49000      0.005   0.006    0.017
+unlink:   50000      0.005   0.006    0.013
+unlink:   51000      0.005   0.009    0.524
+unlink:   52000      0.005   0.006    0.028
+unlink:   53000      0.005   0.005    0.017
+unlink:   54000      0.005   0.005    0.008
+unlink:   55000      0.005   0.006    0.579
+unlink:   56000      0.005   0.006    0.017
+unlink:   57000      0.005   0.005    0.008
+unlink:   58000      0.005   0.009    0.996
+unlink:   59000      0.005   0.006    0.023
+unlink:   60000      0.005   0.005    0.013
+unlink: fit median_ns = 5164 + -0.00 * files   (slope / entries-per-file = c per entry)
+used_bytes_end 3615752192  csv written /run/apertar-media/exfat_probe_121950.csv

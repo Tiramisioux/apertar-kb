@@ -1272,12 +1272,14 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     audio, size = '', 0
     if clip and os.path.isdir(clip):
         nums, af = [], []
-        for root_dir, _dirs, fnames in os.walk(clip):     # recursive: a clip split into part_*/ folders counts the same
-            for n in fnames:
-                fp = os.path.join(root_dir, n)
+        # A split clip ([storage] frames_per_folder) keeps its DNGs in part_NNN/ folders: count them recursively; the
+        # WAV and the other sidecars stay in the clip root.
+        for dp, _dirs, names in os.walk(clip):
+            for n in names:
+                fp = os.path.join(dp, n)
                 m = re.search(r'_(\d{9})\.dng$', n)
                 if m: nums.append(int(m.group(1)))
-                elif not n.endswith('.dng') and root_dir == clip: af.append('%s:%d' % (n, os.path.getsize(fp)))
+                elif not n.endswith('.dng') and dp == clip: af.append('%s:%d' % (n, os.path.getsize(fp)))
         nums.sort()
         files = len(nums)
         missing = (nums[-1] + 1 - len(nums)) if nums else 0

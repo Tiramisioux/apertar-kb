@@ -54,7 +54,9 @@ def band_mean(path, layout, row0=1040, rows=64, step=4):
 
 
 for clip in sys.argv[1:]:
-    all_dngs = sorted(f for f in os.listdir(clip) if f.endswith('.dng'))
+    # Paths inside the clip: a split clip ([storage] frames_per_folder) keeps its DNGs in part_NNN/; frame order either way.
+    all_dngs = sorted((os.path.relpath(os.path.join(dp, f), clip) for dp, _d, fs in os.walk(clip) for f in fs if f.endswith('.dng')),
+                      key=lambda p: (int(m.group(1)) if (m := re.search(r'_(\d{6,})\.dng$', p)) else -1, p))
     # A pulled take can leave empty entries for its last frames; count them, measure the rest.
     empty = [f for f in all_dngs if os.path.getsize(os.path.join(clip, f)) == 0]
     files = [f for f in all_dngs if f not in set(empty)]
