@@ -19,7 +19,7 @@ READ FIRST (Mac ~/Documents/Apertar/apertar-kb/):
 2. working/drop-frames/nvme-campaign/build-list.md, SECTION H (the consolidated list; it supersedes the numbered items above it): the
    runner's base is the unmerged branch claude/practical-johnson-he481b (49c6f46), which already has the fit gate, the watchdog, the
    budget cap, the lock and the sampler columns the plan reads; H0 is to merge it or build on it; never use its --fix-budget (0.9/256).
-   H0-H4, H6 and H18 block the smoke test (S0); H5, H7-H15, H17 and H21-H25 block S2; H16 the long tiers; D is the root helper in two parts, E the Core items. Then working/drop-frames/nvme-campaign/research/R10-longtakes-runner.md (how
+   H0-H4, H6 and H18 block the smoke test (S0); H24 blocks S1; H5, H7-H15, H17, H21, H23 and H26 block S2; H22 S5; H25 S6; H16 the long tiers; D is the root helper in two parts, E the Core items. Then working/drop-frames/nvme-campaign/research/R10-longtakes-runner.md (how
    longtakes.py works today and its risks) and working/tools/longtakes.py itself.
 3. working/drop-frames/nvme-4k-recipe-plan.md (the capture-side ruling-out rules you inherit), working/drop-frames/storage-slowdown-plan.md
    (the storage mechanisms and the buffer-as-a-meter method), working/drop-frames/nvme-campaign/probe-exfat-dir.md (the measured directory
@@ -68,7 +68,10 @@ Phase 3, S2 (one night, unsupervised): start the runner detached for the screeni
   placed in advance only with its pass condition, and an 8-h wait ends the night cleanly).
 Phase 4, S4-S6 (two to three nights): the 15-min unsplit takes ordered HDR16 -> heaviest SDR12 -> HDR12 so the second ends near 80-92 % full; the 30-min tier (the gate empties the card only
   when a take does not fit), unsplit first for arms below the 60 % create share and SPLIT FIRST above it (SDR12 at >= 33-42 fps: plan section 3); the soak as
-  the split variant; the conditional work. Patrik's OK per tier, asynchronous through the status file and your message.
+  the split variant; the conditional work. Patrik's OK per tier is a GO file placed BEFORE the night with its pass condition (GO-S5
+  before night 2: "if every S4 take passed"; GO-S6 before night 3), else the runner idles after S4 and the night is lost; the survival
+  table per cell from status.md goes with each GO decision; on a smaller card a take that does not fit is shortened to
+  (free - 10 GB) / (1.03 x rate) and recorded fit-limited.
 Phase 5, Part B (one evening per other Corsair card, Patrik swaps the card and has offloaded its footage): the card's part number (a QLC
   CORE Mini is refused), serial, fsck and trim-at-mount recorded; the 60 GB knee probe; one 30-min take of the winning HDR16 arm and one
   15-min take of the heaviest SDR12 arm by default; the other 30-min takes only if Patrik asks.
@@ -78,7 +81,7 @@ Phase 6, desk: the findings page, the recipe per mode, the duration-vs-fps table
 RULES (the plan's section 7, and R2 section 5 except its items 1, 6, 17 and 20, which the plan supersedes: the binary is 01f170c, S1
 writes probes to the card, there is no 75 % ceiling, a stopped night leaves the Pi on; the ones that bite):
 - Patrik runs or installs every sudo command; the helper allows only the exact words he reviewed. Never widen sudoers; never run sudo yourself.
-- Never record while a build runs; never build while a take runs; nothing else on the Pi during a take (no journalctl, no ls /media/RAW,
+- Never record while a build runs; never build while a take runs; nothing else on the Pi during a take (no journalctl, no top or htop, no ls /media/RAW,
   no second WebUI: the Mac stand-in is the only client); status.md and decisions.log are written between takes and read between takes.
 - Never delete with a glob; the runner deletes only folders in its own database, never Patrik's clips; deletes happen in the boot that
   wrote them; never format without Patrik.
@@ -87,7 +90,8 @@ writes probes to the card, there is no 75 % ceiling, a stopped night leaves the 
 - The take stops at its first dropped frame (any counter), at Core's safety stop or at an audio fault; a cell is eliminated after two
   concordant drops (a deviation from "one drop = out" that Patrik confirms or reverts); the 5-min take is the second concordant take of a clean cell;
   a single late frame is repeated once; "better" needs the pooled controls, the pre-registered direction and an ABBA replicate; an audio
-  fault is its own outcome and never eliminates an arm alone.
+  fault is its own outcome and never eliminates an arm alone; a take without an audio capture line is void (audio_missing); if the Core
+  audio fix is not in by the long tiers, they run with APERTAR_AUDIO_BUFFER_MS=1000 as a recorded deviation.
 - Unsplit first at the 30-min tier for arms below the 60 % create share (the split member only on a late drop with the directory signature,
   or as the soak); split first above it.
 - A Pi reset ends the night: the runner resumes only when the helper's status shows the drop-in re-armed and fsck clean (WAITING: re-arm).

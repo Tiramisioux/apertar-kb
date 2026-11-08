@@ -16,7 +16,7 @@ Everything runs on the media Patrik shoots with: Corsair MP600 Mini 1 TB cards i
 and SMART history are in the KB); the other card(s) get a short check at the end. A detached runner on the Pi (`longtakes.py`,
 extended by the build list) records every take, fills a database and rewrites a status page between takes; the Opus thread plans,
 installs with Patrik, reads the status and decides between tiers (a `GO-<stage>` sentinel file the runner waits for before each long tier). The ladder is 3 -> 5 -> 15 -> 30 minutes with stop-on-drop at every
-tier, two concordant takes per screening decision, capture-side levers screened at 3 minutes, the folder split tested at 30 minutes (unsplit first below
+tier, two concordant takes per screening decision (a deviation from one-drop-out, to confirm: §11.8), capture-side levers screened at 3 minutes, the folder split tested at 30 minutes (unsplit first below
 the 60 % create share, split first above it), no cool-down, no fill rule (only "does it fit"), clips deleted only when the next take needs the space. Audio is
 watched on every take after the "ALSA capture: Broken pipe" stop of 2026-11-08. Budget: 10 TB on the campaign card, about 1.7 % of its
 600 TBW rating (web); with the ~30-31 TB the card already carries (29.0 TB read on 2026-11-04, plus the unrecorded evening 4 and the 11-08 verification's ~0.33 TB; the erased 11-07 run was on the Kingston; derived), about 570 full-card shooting days remain by that rating (the drive's
@@ -38,9 +38,9 @@ shooting card is his decision (§11.1).
 | R8 | Monitoring from ssh between takes: what, why, progress | §9 |
 | R9 | Folder split examined | §2 (the probe), §6 S5/S6 |
 | R10 | The 75 % rule removed | §3, §6 |
-| R11 | Make the best of the card in use (the runner adapts to any size) | §3 |
+| R11 | Make the best of the card in use (the runner adapts to any size) | §3, §6 fill gate (fit-limited takes) |
 | R12 | All tests on the Corsair cards, as in real life; a check on the other card(s) | §6 Part B |
-| R13 | Does splitting matter for long recordings | §6 S5/S6, §7 signatures |
+| R13 | Does splitting matter for long recordings | §6 S5/S6, §7 signatures, §11.10; **deviation to confirm**: no split pair at 15 min (S4 is unsplit only, read as the directory meter); the 30-min pair is S5 unsplit / S6 split on different nights in a fixed order, not alternated back to back; the split-first SDR12 arms get no unsplit control unless bought |
 | R14 | 30 min drop-free in all 4K modes; executed by an Opus thread in VS Code | §7 claims, §10 |
 | R15 | Keep an eye on audio (the Broken-pipe stop) | §5a |
 
@@ -82,7 +82,7 @@ shooting card is his decision (§11.1).
 - **The directory walk, measured** (probe, 2026-11-08, on this card): c = 63.3 ns per directory entry; create cost = -0.18 ms + 316.6 ns x
   files (5 entries per frame file): 14.1 ms at 45,000 files (35 % of a 25 fps period), 16.9 ms at 54,000 (51 % at 30 fps), 18.6 ms at
   59,400 (61 % at 33 fps); a merge's rename costs what a create costs at the target's size (verified live: 0.10-0.45 ms per file at 500-1,503 files, 0.72 ms at
-  4,503); warm unlink 5 us per file; **the cold-cache unlink is measured** (probe step 4): linear in the files already deleted, 52.8 ns per
+  4,503); warm unlink 5 us per file; **the cold-cache unlink is measured** (probe step 4, on this card): linear in the files already deleted, 52.8 ns per
   entry, 13.6 s for 10,000 files; a flat 45,000-frame clip deleted after a boot costs ~4.5 min (derived), a clip split in parts of 1,000 ~6 s. The probe's pre-registered rule made the knob a prerequisite of the 15- and 30-min stages and the split A/B mandatory; this plan
   deviates knowingly: the 15-min tier runs unsplit only (the walk is 17 % of the period there, a predicted small effect; the statistics
   critique F4) and the mandatory A/B lives in the 30-min tier and the soak. The SSD
@@ -131,8 +131,8 @@ whichever the installed driver probes; 3840x1608 for 2.39:1; the others 2024, 19
 height crops exist (31.9-42.4 fps) but their heights are not in the KB: S0 probes every crop with `list_sensor_modes` and a `set_resolution`
 read-back per bit depth, a refused crop is `skipped_unavailable` (never a campaign stop), and the owner chooses per crop between a
 confirmation at the winner's fps + 1 and a short ceiling search (down from the full-frame fps + 3, n = 2 at the final fps). Crops are
-predicted from the full-frame result (fewer bytes, a lighter back end) and confirmed with two 3-min takes each at the winner's settings
-plus 1 fps; their 30-min status is "predicted, untested beyond 3 min" unless a 30-min crop take is bought (one per crop: 540 GB at 25 fps, 730-970 GB at the SDR12 winner's fps + 1, i.e. 34-45 fps).
+predicted from the full-frame result (fewer bytes, a lighter back end) and confirmed as every other cell (a 3-min take and its 5-min take, the S2/S3 rule) at the winner's settings
+plus 1 fps; their 30-min status is "predicted, untested beyond 5 min" unless a 30-min crop take is bought (one per crop: 540 GB at 25 fps, 730-970 GB at the SDR12 winner's fps + 1, i.e. 34-45 fps).
 
 ## 5. Levers: fixed state, screened levers, conditional tests
 
@@ -158,7 +158,7 @@ card's model and serial checked per evening, the Pi's CPU serial (`/proc/cpuinfo
 | WebUI client | on (fixed) vs off | S2 (ABBA) | ~2 % more losses with it open under page-cache pressure (2026-11-01); O1 clean with it open | 4 |
 | TDN | off (fixed); ONE unlogged TDN-on 3-min take at 25 fps | S2 | tests O1's instrumentation hypothesis: 0-2 lost supports it, >= 10 confirms TDN off for real use | 1 |
 | phase lock | off (fixed); at most one 60-s probe of the {d, d+1} fix | S2 | drops + flicker on the old build (measured); no bearing on elimination | 0-1 |
-| compression | per arm a manual `storage_preroll` reading first (encoder capacity, ~1 GB); a 3-min walk only for arms whose capacity exceeds the uncompressed edge (SDR12 lossless; HDR16 lossless + Log only if its pre-roll says > 25 fps) | S2 | HDR16 lossless out (17.6 fps); SDR12 lossless 48 fps capacity | 2-4 |
+| compression | per arm a runner-taken `storage_preroll` reading first (encoder capacity, ~1 GB); a 3-min walk only for arms whose capacity exceeds the uncompressed edge (SDR12 lossless; HDR16 lossless + Log only if its pre-roll says > 25 fps) | S2 | HDR16 lossless out (17.6 fps); SDR12 lossless 48 fps capacity | 2-4 |
 | storage knobs as one group | base vs {workers 1, queue 24, sync_ms 2000}; `kernel_tune on` joins the group only if Patrik installs the `apertar-media-tune` helper in S0 (it is not installed, so today the knob does nothing and the group would silently be three knobs) | only if a 4K arm ends in buffer_full | no effect on the SSD (measured) | 2 meter takes |
 | frames_per_folder | 0 vs 5,000 (the probe's N: <= 25,000 entries per folder) | S5 (30 min): unsplit first below the 60 % create share, split first above it; S6 soak as the split variant | 35-51 % of the period at the HDR targets, 100-110 % at the SDR12 targets of 42-44 fps (§3; derived from the measured fit) | the pair |
 | FE depth | 4 (fixed); optional control block: two 3-min depth-2 takes at 28 fps HDR16 against the walk's pooled depth-4 controls (AABB in two Core processes, not ABBA: depth is a restart lever, a true ABBA would need four restarts), 41-72 GB, two Core restarts with Patrik present, after the warm-up and a control, never at the start of an evening; depth 6 only if late Config buffers appear at the edge | S2, optional | depth 4 removed the 28-fps losses (probable, n = 1 + 1) | 2 (optional) |
@@ -226,8 +226,9 @@ files; Core idle, not stopped: stopping it needs sudo; trimmed card): on the Pi'
 pSLC rate and the post-cache floor of this card (~800 MB/s, web) sit above the link, so no knee is expected; the probe confirms the
 link-limited rate and starts the temperature record of the card inside its CFe-B shell (the real thermal curve comes from the long
 takes, with smart-log's thermal counters read between takes); the write-pattern matrix at 4K size (`exfat_write_probe.py`: default, workers 1, prealloc, fsync none, direct, subdir 5000; ~30 GB);
-a 60-s full-speed write after the trim, and the same write once more at the END of the first long night (after the last take and its
-delete, never between takes; the same H24 stage, started by the lead over ssh): the drive-state comparison. Optional (owner's call,
+a 60-s full-speed write after the trim, and the same write once more at the END of the first long night, on the card as the last take
+left it (no delete for it; if less than 60 GB is free the write is skipped and recorded; never between takes; the same H24 stage, started
+by the lead over ssh): the drive-state comparison. Optional (owner's call,
 ~150 GB, 1 h): the paced small-file probe (`exfat_write_probe.py`, 1 MB files at 42 files/s for 30 min, flat vs `--subdir 5000`; the
 25 files/s pair is predicted to pass at a 35 % share and is not bought; all four runs would be ~240 GB and 2 h), which shows the directory
 effect at the real create rate without the camera and would make the SDR12 unsplit control skippable.
@@ -243,11 +244,12 @@ fps, the limiter, the lever verdicts, the prognosis table (§7).
 the second concordant take of that cell (the owner's tier, the challenger's economy): 3-min clean + 5-min clean = "clean at 3 and 5 min",
 the cell is carried; a 5-min drop = "1 clean, 1 drop", a third 3-min take decides and the runner-up fps gets its own 5-min take.
 
-**S4 15 min** (~1.5 h, ~1.1 TB): one UNSPLIT take per mode of the best arm, ordered HDR16 first, then the heaviest SDR12 arm, then HDR12, so
+**S4 15 min** (~1.5 h, ~1.25 TB): one UNSPLIT take per mode of the best arm, ordered HDR16 first, then the heaviest SDR12 arm, then HDR12, so
 that the second take starts on the card the first one filled (no delete between them while they fit: HDR16 at 28 fps 418 GB + SDR12 at
-33 fps 370 GB ends near 80 % full, at 42-44 fps 492 GB near 92 %, on a trimmed card; the gate passes at every step of that order and
+33 fps 370 GB ends near 80 % full, at 42 fps 470 GB near 90 %, at 44 fps 492 GB near 92 %, on a trimmed card; the gate passes at every step of that order and
 deletes before the third take in either case; fill as a deliberate covariate); Core's CPU slope and the buffer curve are read as the directory
-meter; the runner-up only if the best drops.
+meter; the runner-up only if the best drops (the stepped-down cell repeats the 15-min tier, §7). The survival table per cell from
+status.md goes to Patrik with each GO decision (S5, S6, Part B).
 
 **S5 30 min** (~2 h, ~2.4 TB): per mode; the gate empties the card only when the take does not fit (the HDR16 take needs the whole
 card; an HDR12 take at 672 GB or a lossless SDR12 take may follow on a partly filled card); the card ends 56-94 % full. Arms below the 60 % create share run
@@ -286,7 +288,7 @@ first), one roll per long evening decides the mode-order rotation; roll and mapp
 - **A take ends** at its first dropped frame (any Core counter), at Core's safety stop (`buffer_full`, a result), at an audio fault
   (`audio_fault`, a result of its own), at the tier length, or at the capacity guard (6 GiB free: `pass_drive_full`). Recorded: time to the
   first drop (read from the 1 Hz samples of `recording_dropped_frames`, not from journal lines this binary may not print), the limiter
-  (from the stats line and the buffer flags), the file count at the stop, the buffer level and Core CPU series, the device's write latency series, the audio lines,
+  (from the stats line and the buffer flags), the file count at the stop, the buffer level and Core CPU series, the device's write latency series, the csi2 error counters before and after the take, the audio lines,
   temperatures, fill.
 - **Decisions need two concordant takes** at the screening tier (a deviation from "one drop = out", see R4); a confirmation take costs its time
   to the drop, which for the single-frame losses of the record came in minute 2-3, i.e. up to a full 3-min take (25-75 GB at HDR16).
@@ -310,8 +312,10 @@ first), one roll per long evening decides the mode-order rotation; roll and mapp
   so the runner computes it from the logged budget before each meter take and prefers the 5 % overshoot; 50 fps only if 46 does not fill
   the buffer), the integral identity (fps minus drain summed
   = final buffer level) and the device cross-check part of the record; capacity reported with its window and spread.
-- **Long tiers**: after an EARLY drop (before minute 10, capture gaps, no time-growing signature) the arm steps down 1 fps for the next
-  tier; after a LATE drop (after minute 10) with a signature the fps stays and the attribution plus the split rule apply.
+- **Long tiers**: after an EARLY drop (before minute 10, capture gaps, no time-growing signature) the arm steps down 1 fps and the
+  stepped-down cell REPEATS the current tier (S4's runner-up); a 30-min take goes only to a cell that passed 15 min; after a LATE drop
+  (after minute 10) with signature (a) the fps stays, the arm runs S5 split first at that fps and its unsplit 30-min control is the
+  owner's option; a late drop with another signature keeps the fps, the attribution and the order of §6 S5.
 - **Split verdict**: a late drop is attributed by pre-registered signatures, read in this order: (a) Core's CPU slope consistent with 63-133 ns per directory entry (the probe's 63.3 ns, the walk
   alone, is the floor; the SSD run's 17 long takes gave 77-133 ns all-in, median 99) + the buffer rising only in the last minutes + flat device
   latency -> directory; device write ticks per write rising with fill -> drive state; temperature rising with latency
@@ -361,7 +365,7 @@ first), one roll per long evening decides the mode-order rotation; roll and mapp
   the claim says so); a bought second take of the same variant = "2 of 2". Every tier above 5 min is a first for this code line (§2), and the claim says so; every recipe is reported with its audio fault count
   per hour of recording. Every claim carries the campaign's fixed state and its named
   deviations from real use: the merge worker off, the Mac stand-in instead of a browser, the ladder off, FE depth 4, no debug log. Never "30 min drop-free in all 4K modes" as a
-  property. Crops: "predicted, untested beyond 3 min" unless bought. Other cards: "one take per card". Eliminations carry a graded strength:
+  property. Crops: "predicted, untested beyond 5 min" unless bought. Other cards: "one take per card". Eliminations carry a graded strength:
   a steady deficit within seconds is strong; a single frame at minute 2 of one take is weak until repeated.
 
 ## 8. Wear budget (expected / worst, GB, on the campaign card)
@@ -393,13 +397,13 @@ already carries the fit gate, the kernel-log watchdog, `--budget-gb` with a proj
 `nvme-campaign/research/R10-longtakes-runner.md` (anchored to main) and the rig critique's build-list review
 (`nvme-campaign/critique/C2-rig-engineering.md` §3). The build list (`nvme-campaign/build-list.md`) is the work before the first scored
 take: its section H (the re-anchored list) supersedes the item numbers above it where they conflict.
-Between takes the runner appends one record per take to `longtakes.db` (takes; 1 Hz samples incl. the buffer level, device counters,
+Between takes the runner appends one record per take to `~/longtakes/<run>/longtakes.db` on the SD card (never /run, never the card) (takes; 1 Hz samples incl. the buffer level, device counters,
 dirty pages, trim state, temperatures, Core CPU; drop events; Core counters; the audio lines; journal lines) and rewrites `status.md` /
 `status.json` atomically with: the decision ahead on its first line ("pass -> 29 fps; drop -> confirm at 28") and the night's expected
 end, the liveness line (heartbeat age), the current or next take (arm, fps, planned length and GB, expected end), the stage, progress (takes and GB
 done and remaining, hours), the survivors and eliminated arms with their reasons, the prognosis table, the fill, the last temperatures,
 the smart-log readings, the audio trend, the last 10 rows, and the tail of `decisions.log`. From ssh: `cat ~/longtakes/<run>/status.md`
-(one small read; written only between takes). Never during a take: `journalctl`, `ls /media/RAW`, builds, a second Core client, a second
+(one small read; written only between takes). Never during a take: `journalctl`, `top`/`htop` or any process listing, `ls /media/RAW`, builds, a second Core client, a second
 WebUI.
 
 ## 10. Time frame and the Opus thread's job
@@ -408,14 +412,16 @@ Build and verify (one evening, Patrik present ~2 h) -> S0 and S1 (the same eveni
 S6 -> one evening per other card. About 20 hours of Pi time in all; Patrik is needed for the first hour of night 1 (to watch the first fill-gate delete and the first stop-on-drop,
 the two code paths the offline tests cannot exercise; the S0 steps belong to the build evening), after any reboot (re-arm), for the card swaps, and for the go/no-go between tiers (asynchronous through the
 status file and the `GO-<stage>` sentinel); the drop-in survives Core restarts within a boot, so later nights need no sudo unless the Pi
-rebooted. The handoff is `handoff-nvme-campaign.md`.
+rebooted. Before night 2 Patrik (or the lead with his word) places `GO-S5` with its pass condition ("if every S4 take passed"), and
+`GO-S6` before night 3; without it the runner idles after S4 and the night is lost. The handoff is `handoff-nvme-campaign.md`.
 
 ## 11. Open points for Patrik
 
 1. Which card is the campaign card (default: the record's `A936B442006AC2`) and the part numbers of all cards (MN / MNR2 / CMN); the
 acceptance that ~10 TB go through the exFAT volume you shoot on (§0); whether the record's temperatures were taken with the card in this
 same adapter and slot.
-2. Which 4K crops (default 1.85:1 and 2.39:1); a 30-min crop take, yes or no.
+2. Which 4K crops (default 1.85:1 and 2.39:1); per crop, confirmation at the winner's fps + 1 (default: a 3-min and a 5-min take) or a
+short ceiling search (down from the full-frame fps + 3, n = 2 at the final fps); a 30-min crop take, yes or no.
 3. MLV as a diagnostic take (yes/no). 4. The optional depth-2 control block at 28 fps (two Core restarts with you present) and the paced
 small-file probe (~150 GB, the 42 files/s pair), yes or no. 5. The 10 TB cap, and whether a second 30-min take per winning arm (~750 GB each) is bought.
 6. The campaign sudoers helper in two parts: an unattended alias the detached runner may call (read-only or reversible: `smartlog`,
@@ -426,3 +432,6 @@ small-file probe (~150 GB, the 42 files/s pair), yes or no. 5. The 10 TB cap, an
 75 GB at HDR16) rather than at one drop; confirm, or revert to "one drop = out" and accept the position-artifact risk.
 9. Part B's default per other card is one 30-min HDR16 take plus one 15-min SDR12 take (~1.4 TB), not your earlier transfer set of one
 15-min and one max-length take per mode (~2.4 TB): confirm or revert.
+10. The R13 deviation: no split pair at the 15-min tier (S4 is unsplit only and read as the directory meter); the 30-min pair is S5
+unsplit / S6 split on different nights in a fixed order (unsplit first below the 60 % share, split first above it), not alternated back
+to back; the split-first SDR12 arms get no unsplit control unless you buy it (~0.94 TB): confirm or revert.

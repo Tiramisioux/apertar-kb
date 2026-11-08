@@ -87,7 +87,7 @@ Superseded by section H's row D (two parts, one env line). First form: `apertar-
 state). Merge it to main or build on it: every size below assumes it. Never use its `--fix-budget` (0.9 / 256): the plan keeps Core's
 defaults 0.6 / 512. R10 (anchored to main) and C2 §3 (anchored to the branch) are the two maps.
 
-Critical path: H0 -> H1-H4, H6, H18 (smoke test, S0) -> H5, H7-H15, H17, H21-H25 (S2) -> H16 (the long tiers) -> H6's per-card sessions (Part B). About 1,100-1,250 lines of Python plus a
+Critical path: H0 -> H1-H4, H6, H18 (smoke test, S0) -> H24 (S1) -> H5, H7-H15, H17, H21, H23, H26 (S2) -> H22 (S5), H25 (S6) -> H16 (the long tiers) -> H6's per-card sessions (Part B). About 1,100-1,250 lines of Python plus a
 150-line helper and a 12-line sudoers file (C2's estimate).
 
 | # | Item | Size | Blocks | From |
