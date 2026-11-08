@@ -47,6 +47,7 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | Why the 4K 16-bit Clear HDR preview flickers (and Cinemate's does not), and how to find the stage | `working/clearhdr16-preview.md`, then tutorial T55 |
 | An unsupervised 4K recording campaign on the Corsair CFe cards: the plan, its rules, the runner build list, the Opus handoff, the research and critiques behind it | `working/drop-frames/nvme-campaign/plan.md`, then `working/handoff-nvme-campaign.md` |
 | Two IMX585 on one Apertar (Cinemate's dual-sensor feature): two Cores, the preview and record modes, frame sync by the phase lock | `working/dual-sensor/README.md`, then its `plan-summary.md` |
+| Why long takes fail after 20-27 minutes on exFAT (the directory walk, not the drive), what the SSD run's samples show, and the revised storage campaign with its camera-free probes | `working/drop-frames/storage-slowdown-plan.md`, then `working/drop-frames/tests-2026-11/reanalysis-longtakes-ssd-2026-11-08.md` |
 
 ## Writing rules
 
