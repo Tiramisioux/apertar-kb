@@ -186,6 +186,8 @@ Core `f4a1393..ba0658d`, UI `7029db1..7ea9afc`; no force push. The camera runs t
 | `d7dd337` | `[storage] frames_per_folder` (env `APERTAR_CDNG_FRAMES_PER_FOLDER`): frames in `<clip>/part_NNN/`, `.parts` marker, part-folder fsync; `src/cdng/FramePath.hpp` + `tools/frame_path_test.cpp`; `listFrames` and the facts cache read parts; `set_frames_per_folder`, state `frames_per_folder`, Performance-card field; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 | `9ec37b5` | `tools/flatten_clip.py` (dry run default, `--apply`, `--unflatten N`); README note for Resolve/Premiere; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 | `ba0658d` | Merge worker: flattens split clips while idle (trim-worker pattern, `src/cdng/ClipMerge.hpp` + `tools/clip_merge_test.cpp`), `[storage] clip_merge` (default on), `APERTAR_CLIP_MERGE=0`, `set_clip_merge`, state `clip_merge_*`, Performance-card switch; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
+| `68516f1` | Merge worker: a pause asks for one more scan ("after pause"), so a take recorded while a merge is paused gets merged too (found in verify step 6); branch `clip-split` | fork-only; Pi only |
+| `01f170c` | Merge worker: `refreshBufferRequest()` before the worker starts, so `clip_merge=off` holds at Core's start (the atomic started true); branch `clip-split` | fork-only; Pi only |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
