@@ -178,7 +178,7 @@ vs split A/B (`working/drop-frames/nvme-campaign/probe-exfat-dir.md`). Deliverab
 folder mid-take) not built: the audio session builds its WAV only at stop from one raw file and owns the ALSA capture
 (`AudioRecordingSession.cpp:248-251`, `:392-430` @`f4a1393`), so no gap-free hand-over without a new mechanism.
 2026-11-08 later (User chose "fold into cinemate-port"): GitHub, Mac and Pi `cinemate-port` fast-forwarded to `clip-split`,
-Core `f4a1393..ba0658d`, UI `7029db1..7ea9afc`; no force push. The camera runs this Core build since the 13:00 boot
+Core `f4a1393..ba0658d` (then `..01f170c`, the two verify fixes), UI `7029db1..7ea9afc`; no force push. The camera runs this Core build since the 13:00 boot
 (`frames_per_folder=0`, merge on).
 
 | Commit | Change | Status |
@@ -186,8 +186,8 @@ Core `f4a1393..ba0658d`, UI `7029db1..7ea9afc`; no force push. The camera runs t
 | `d7dd337` | `[storage] frames_per_folder` (env `APERTAR_CDNG_FRAMES_PER_FOLDER`): frames in `<clip>/part_NNN/`, `.parts` marker, part-folder fsync; `src/cdng/FramePath.hpp` + `tools/frame_path_test.cpp`; `listFrames` and the facts cache read parts; `set_frames_per_folder`, state `frames_per_folder`, Performance-card field; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 | `9ec37b5` | `tools/flatten_clip.py` (dry run default, `--apply`, `--unflatten N`); README note for Resolve/Premiere; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 | `ba0658d` | Merge worker: flattens split clips while idle (trim-worker pattern, `src/cdng/ClipMerge.hpp` + `tools/clip_merge_test.cpp`), `[storage] clip_merge` (default on), `APERTAR_CLIP_MERGE=0`, `set_clip_merge`, state `clip_merge_*`, Performance-card switch; branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
-| `68516f1` | Merge worker: a pause asks for one more scan ("after pause"), so a take recorded while a merge is paused gets merged too (found in verify step 6); branch `clip-split` | fork-only; Pi only |
-| `01f170c` | Merge worker: `refreshBufferRequest()` before the worker starts, so `clip_merge=off` holds at Core's start (the atomic started true); branch `clip-split` | fork-only; Pi only |
+| `68516f1` | Merge worker: a pause asks for one more scan ("after pause"), so a take recorded while a merge is paused gets merged too (found in verify step 6); branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
+| `01f170c` | Merge worker: `refreshBufferRequest()` before the worker starts, so `clip_merge=off` holds at Core's start (the atomic started true); branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
