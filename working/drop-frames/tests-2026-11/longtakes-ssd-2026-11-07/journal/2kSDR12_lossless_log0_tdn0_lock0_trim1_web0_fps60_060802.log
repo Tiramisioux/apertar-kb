@@ -1,0 +1,10 @@
+1794028101.136338 apertar start-apertar-core.sh[823]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794028101.136697 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 700 MiB (MemAvailable 2020 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 2.0 MiB = 354 frames) source=conf
+1794028101.141452 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=lossless_jpeg media_class=usb-storage media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1794028101.167113 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=13792120367
+1794028693.303771 apertar start-apertar-core.sh[823]: ApertarCore buffer: safety stop at 90 % (630/700 MiB)
+1794028698.977629 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=35529 written=35529 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=319/24 queue_bytes_peak=661478400 queue_budget=734239129
+1794028698.977629 apertar start-apertar-core.sh[823]: ApertarCore lossless timing: jobs=35529 avg_wall_ms=54.22 avg_thread_cpu_ms=26.43 avg_wait_or_preempt_ms=27.79 max_wall_ms=534.53 estimated_capacity_fps=92.22
+1794028698.978026 apertar start-apertar-core.sh[823]: ApertarCore lossless phases: jobs=35529 avg_encode_ms=17.40 avg_payload_write_ms=23.84 avg_container_ms=12.27 avg_payload_mib=1.16 tile_writes_per_frame=9.00
+1794028698.978026 apertar start-apertar-core.sh[823]: ApertarCore recorder stop time: 5.674s format=cdng discarded_on_stop=0
+1794028699.006609 apertar start-apertar-core.sh[823]: ApertarCore recording stop: synced to the medium in 28 ms

@@ -1,0 +1,12 @@
+1794020205.067562 apertar start-apertar-core.sh[823]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794020205.088558 apertar start-apertar-core.sh[823]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1794020205.088679 apertar start-apertar-core.sh[823]: ApertarCore audio capture: format=s24 rate=48000 channels=2 first_channel=1
+1794020205.089041 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 704 MiB (MemAvailable 2027 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 4.0 MiB = 178 frames) source=conf
+1794020205.096584 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=none media_class=usb-storage media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794020205.173181 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=5896105298
+1794020505.918025 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=8102 written=8102 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=20/12 queue_bytes_peak=82944000 queue_budget=738721792
+1794020505.918025 apertar start-apertar-core.sh[823]: ApertarCore recorder stop time: 0.680s format=cdng discarded_on_stop=0
+1794020505.939787 apertar start-apertar-core.sh[823]: ApertarCore audio writer: peak_backlog_kb=550
+1794020505.940627 apertar start-apertar-core.sh[823]: ApertarCore audio clock: measured_drift_ppm=-13.006 points=29809 endpoint_ppm=-12.966 correction=none
+1794020505.940627 apertar start-apertar-core.sh[823]: ApertarCore audio sync: video_boot_us=5896105298 audio_boot_us=5896062133 trim_samples=2072 pad_samples=0 output_samples=14403556 sample_rate=48000
+1794020506.831282 apertar start-apertar-core.sh[823]: ApertarCore recording stop: synced to the medium in 589 ms

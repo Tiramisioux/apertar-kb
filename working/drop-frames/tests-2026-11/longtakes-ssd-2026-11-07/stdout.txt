@@ -1,0 +1,879 @@
+2026-11-07 03:29:24 preserving 0 pre-existing clip folder(s)
+2026-11-07 03:29:24 campaign start: modes ['4kSDR12', '4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12']; excluded (storage too slow at 25 fps): ['4kHDR16']; 448 configs; drive 354 MB/s; out=/home/pi/longtakes/run-20261107-ssd4
+2026-11-07 03:29:43 == config 4kSDR12_unc_log0_tdn0_lock0_trim1_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 27)
+2026-11-07 03:30:27 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=60.0 -> buffer_full after 17s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:31:10 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=59.0 -> buffer_full after 17s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:31:54 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=58.0 -> buffer_full after 17s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:31:55 campaign ended (settings restored except Log, which stays as last set)
+2026-11-07 03:32:05 preserving 0 pre-existing clip folder(s)
+2026-11-07 03:32:05 campaign start: modes ['4kSDR12', '4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12']; excluded (storage too slow at 25 fps): ['4kHDR16']; 448 configs; drive 354 MB/s; out=/home/pi/longtakes/run-20261107-ssd4
+2026-11-07 03:32:24 -- 4kSDR12_unc_log0_tdn0_lock0_trim1_web0: starting at 56 fps instead of 57 (the drive already filled its buffer at 722 MB/s)
+2026-11-07 03:32:24 == config 4kSDR12_unc_log0_tdn0_lock0_trim1_web0: stepping down from 56.0 fps (mode max 60; the storage should carry 27)
+2026-11-07 03:33:06 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=56.0 -> buffer_full after 15s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:33:48 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=55.0 -> buffer_full after 16s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:34:28 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=54.0 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:34:30 campaign ended (settings restored except Log, which stays as last set)
+2026-11-07 03:34:42 preserving 0 pre-existing clip folder(s)
+2026-11-07 03:34:42 campaign start: modes ['4kSDR12', '4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12']; excluded (storage too slow at 25 fps): ['4kHDR16']; 448 configs; drive 354 MB/s; out=/home/pi/longtakes/run-20261107-ssd4
+2026-11-07 03:35:01 -- 4kSDR12_unc_log0_tdn0_lock0_trim1_web0: starting at 52 fps instead of 53 (the drive already filled its buffer at 672 MB/s)
+2026-11-07 03:35:01 == config 4kSDR12_unc_log0_tdn0_lock0_trim1_web0: stepping down from 52.0 fps (mode max 60; the storage should carry 27)
+2026-11-07 03:35:43 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=52.0 -> buffer_full after 15s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:35:43 -- smart step: the drive wrote the equivalent of 14.2 fps in that take; trying 25 fps next (instead of 51)
+2026-11-07 03:36:29 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 19s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 03:37:14 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 19s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 03:37:16 campaign ended (settings restored except Log, which stays as last set)
+2026-11-07 03:37:32 preserving 0 pre-existing clip folder(s)
+2026-11-07 03:37:32 campaign start: modes ['4kSDR12', '4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12']; excluded (storage too slow at 25 fps): ['4kHDR16']; 448 configs; drive 354 MB/s; out=/home/pi/longtakes/run-20261107-ssd4
+2026-11-07 03:37:51 -- pruned 4kSDR12_unc_log0_tdn0_lock0_trim1_web0: the drive cannot carry this data rate (frontier 311 MB/s)
+2026-11-07 03:38:06 -- 4kSDR10_unc_log0_tdn0_lock0_trim1_web0: starting at 29 fps instead of 33 (the drive already filled its buffer at 311 MB/s)
+2026-11-07 03:38:06 == config 4kSDR10_unc_log0_tdn0_lock0_trim1_web0: stepping down from 29.0 fps (mode max 60; the storage should carry 33)
+2026-11-07 03:38:50 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=29.0 -> buffer_full after 17s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 03:38:50 -- 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 ruled out in theory: in that take the drive wrote the equivalent of 14.2 fps, well below the 25 fps floor, so no take of this config can survive 5 min
+2026-11-07 03:39:09 == config 2kSDR12_unc_log0_tdn0_lock0_trim1_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 111)
+2026-11-07 03:40:19 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=60.0 -> buffer_full after 43s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 03:40:19 -- smart step: the drive wrote the equivalent of 41.3 fps in that take; trying 47 fps next (instead of 59)
+2026-11-07 03:42:00 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=47.0 -> buffer_full after 74s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 03:42:00 -- smart step: the drive wrote the equivalent of 38.3 fps in that take; trying 44 fps next (instead of 46)
+2026-11-07 03:43:12 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=44.0 -> buffer_full after 46s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 03:43:12 -- smart step: the drive wrote the equivalent of 33.5 fps in that take; trying 38 fps next (instead of 43)
+2026-11-07 03:44:53 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=38.0 -> buffer_full after 74s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 03:44:53 -- smart step: the drive wrote the equivalent of 31.2 fps in that take; trying 35 fps next (instead of 37)
+2026-11-07 03:50:22 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=35.0 -> pass_5min after 300s dropped=0 kinds= pi=53C nvme=None
+2026-11-07 03:50:37 -- 2kSDR10_unc_log0_tdn0_lock0_trim1_web0: starting at 44 fps instead of 60 (the drive already filled its buffer at 118 MB/s)
+2026-11-07 03:50:37 == config 2kSDR10_unc_log0_tdn0_lock0_trim1_web0: stepping down from 44.0 fps (mode max 60; the storage should carry 133)
+2026-11-07 03:56:10 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=44.0 -> pass_5min after 300s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 03:56:29 -- 2kHDR16_unc_log0_tdn0_lock0_trim1_web0: starting at 27 fps instead of 30 (the drive already filled its buffer at 118 MB/s)
+2026-11-07 03:56:29 == config 2kHDR16_unc_log0_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 30; the storage should carry 82)
+2026-11-07 04:01:58 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 fps=27.0 -> pass_5min after 300s dropped=0 kinds= pi=54C nvme=None
+2026-11-07 04:02:13 == config 2kHDR12_unc_log0_tdn0_lock0_trim1_web0: stepping down from 30.0 fps (mode max 30; the storage should carry 111)
+2026-11-07 04:07:41 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=30.0 -> pass_5min after 300s dropped=0 kinds= pi=54C nvme=None
+2026-11-07 04:08:00 -- 4kHDR12_unc_log0_tdn0_lock0_trim1_web0: starting at 9 fps instead of 27 (the drive already filled its buffer at 118 MB/s)
+2026-11-07 04:08:00 -- pruned 4kHDR12_unc_log0_tdn0_lock0_trim1_web0: the drive cannot carry this data rate (frontier 118 MB/s)
+2026-11-07 04:08:20 == config 4kSDR12_lossless_log0_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 60; the storage should carry 27)
+2026-11-07 04:08:59 4kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=27.0 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 04:08:59 -- 4kSDR12_lossless_log0_tdn0_lock0_trim1_web0 ruled out in theory: in that take the drive wrote the equivalent of 15.6 fps, well below the 25 fps floor, so no take of this config can survive 5 min
+2026-11-07 04:09:14 -- 4kSDR12_unc_log0_tdn0_lock0_trim0_web0: starting at 9 fps instead of 27 (the drive already filled its buffer at 118 MB/s)
+2026-11-07 04:09:14 -- pruned 4kSDR12_unc_log0_tdn0_lock0_trim0_web0: the drive cannot carry this data rate (frontier 118 MB/s)
+2026-11-07 04:09:14 -- pruned 4kSDR12_unc_log0_tdn0_lock0_trim1_web1: cannot affect a storage limit (baseline stopped by): web
+2026-11-07 04:09:14 -- pruned 4kSDR12_unc_log0_tdn0_lock1_trim1_web0: cannot affect a storage limit (baseline stopped by): lock
+2026-11-07 04:09:14 -- pruned 4kSDR12_unc_log0_tdn1_lock0_trim1_web0: cannot affect a storage limit (baseline stopped by): tdn
+2026-11-07 04:09:30 == config 4kSDR12_unc_log1_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 60; the storage should carry 27)
+2026-11-07 04:09:45 4kSDR12_unc_log1_tdn0_lock0_trim1_web0 fps=27.0: skipped_unavailable (log_applied=False)
+2026-11-07 04:10:00 == config 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0: stepping down from 33.0 fps (mode max 60; the storage should carry 33)
+2026-11-07 04:10:29 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=33.0 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=54C nvme=None
+2026-11-07 04:10:29 -- smart step: the drive wrote the equivalent of 21.2 fps in that take; trying 25 fps next (instead of 32)
+2026-11-07 04:15:56 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=25.0 -> pass_5min after 300s dropped=0 kinds= pi=55C nvme=None
+2026-11-07 04:16:12 -- 4kSDR10_unc_log0_tdn0_lock0_trim0_web0: starting at 11 fps instead of 33 (the drive already filled its buffer at 118 MB/s)
+2026-11-07 04:16:12 -- pruned 4kSDR10_unc_log0_tdn0_lock0_trim0_web0: the drive cannot carry this data rate (frontier 118 MB/s)
+2026-11-07 04:16:12 -- pruned 4kSDR10_unc_log0_tdn0_lock0_trim1_web1: cannot affect a storage limit (baseline stopped by): web
+2026-11-07 04:16:12 -- pruned 4kSDR10_unc_log0_tdn0_lock1_trim1_web0: cannot affect a storage limit (baseline stopped by): lock
+2026-11-07 04:16:12 -- pruned 4kSDR10_unc_log0_tdn1_lock0_trim1_web0: cannot affect a storage limit (baseline stopped by): tdn
+2026-11-07 04:16:27 == config 4kSDR10_unc_log1_tdn0_lock0_trim1_web0: stepping down from 33.0 fps (mode max 60; the storage should carry 33)
+2026-11-07 04:16:42 4kSDR10_unc_log1_tdn0_lock0_trim1_web0 fps=33.0: skipped_unavailable (log_applied=False)
+2026-11-07 04:17:01 == config 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 111)
+2026-11-07 04:22:29 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=60.0 -> pass_5min after 300s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 04:22:44 -- 2kSDR12_unc_log0_tdn0_lock0_trim0_web0: starting at 37 fps instead of 60 (the drive already filled its buffer at 118 MB/s)
+2026-11-07 04:22:44 == config 2kSDR12_unc_log0_tdn0_lock0_trim0_web0: stepping down from 37.0 fps (mode max 60; the storage should carry 111)
+2026-11-07 04:28:07 2kSDR12_unc_log0_tdn0_lock0_trim0_web0 fps=37.0 -> pass_5min after 300s dropped=0 kinds= pi=55C nvme=None
+2026-11-07 04:28:07 -- pruned 2kSDR12_unc_log0_tdn0_lock0_trim1_web1: cannot affect a storage limit (baseline stopped by): web
+2026-11-07 04:28:07 -- pruned 2kSDR12_unc_log0_tdn0_lock1_trim1_web0: cannot affect a storage limit (baseline stopped by): lock
+2026-11-07 04:28:07 -- pruned 2kSDR12_unc_log0_tdn1_lock0_trim1_web0: cannot affect a storage limit (baseline stopped by): tdn
+2026-11-07 04:28:22 == config 2kSDR12_unc_log1_tdn0_lock0_trim1_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 111)
+2026-11-07 04:28:37 2kSDR12_unc_log1_tdn0_lock0_trim1_web0 fps=60.0: skipped_unavailable (log_applied=False)
+2026-11-07 04:28:37 -- pruned 2kSDR10_lossless_log0_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kSDR10_unc_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kSDR10_unc_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kSDR10_unc_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kSDR10_unc_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kSDR10_unc_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR16_lossless_log0_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR16_unc_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR16_unc_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR16_unc_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR16_unc_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR16_unc_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR12_lossless_log0_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR12_unc_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR12_unc_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR12_unc_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR12_unc_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 2kHDR12_unc_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 4kHDR12_lossless_log0_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 4kHDR12_unc_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 4kHDR12_unc_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 4kHDR12_unc_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 4kHDR12_unc_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 -- pruned 4kHDR12_unc_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 04:28:37 == A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 (best) at 25 fps (88% of the disk speed): 8 variants x 3 reps, 120 s each
+2026-11-07 04:29:27 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 20s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 04:29:27 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 base: buffer_full dropped=0
+2026-11-07 04:30:06 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 12s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 04:30:06 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 workers2: buffer_full dropped=0
+2026-11-07 04:30:48 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 16s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:30:48 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 workers6: buffer_full dropped=0
+2026-11-07 04:31:34 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 19s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 04:31:34 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 queue24: buffer_full dropped=0
+2026-11-07 04:32:19 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 18s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:32:19 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 queue48: buffer_full dropped=0
+2026-11-07 04:33:02 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 16s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:33:02 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 sync500: buffer_full dropped=0
+2026-11-07 04:33:44 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 16s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 04:33:44 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 sync2000: buffer_full dropped=0
+2026-11-07 04:33:44 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 04:34:22 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:34:22 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 1 kerneltune: buffer_full dropped=0
+2026-11-07 04:34:22 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 04:35:01 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 12s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:35:01 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 base: buffer_full dropped=0
+2026-11-07 04:35:41 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:35:41 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 workers2: buffer_full dropped=0
+2026-11-07 04:36:21 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 14s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:36:21 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 workers6: buffer_full dropped=0
+2026-11-07 04:37:02 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 15s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:37:02 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 queue24: buffer_full dropped=0
+2026-11-07 04:37:42 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 04:37:42 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 queue48: buffer_full dropped=0
+2026-11-07 04:38:21 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 04:38:21 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 sync500: buffer_full dropped=0
+2026-11-07 04:38:57 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:38:57 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 sync2000: buffer_full dropped=0
+2026-11-07 04:38:57 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 04:39:25 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 04:39:25 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 2 kerneltune: buffer_full dropped=0
+2026-11-07 04:39:25 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 04:40:02 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 04:40:02 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 base: buffer_full dropped=0
+2026-11-07 04:40:39 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:40:39 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 workers2: buffer_full dropped=0
+2026-11-07 04:41:15 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:41:15 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 workers6: buffer_full dropped=0
+2026-11-07 04:41:52 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:41:52 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 queue24: buffer_full dropped=0
+2026-11-07 04:42:28 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 04:42:28 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 queue48: buffer_full dropped=0
+2026-11-07 04:43:07 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:43:07 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 sync500: buffer_full dropped=0
+2026-11-07 04:43:40 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 7s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 04:43:40 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 sync2000: buffer_full dropped=0
+2026-11-07 04:43:41 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 04:44:18 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 04:44:18 A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 rep 3 kerneltune: buffer_full dropped=0
+2026-11-07 04:44:18 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 04:44:18 == A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 (best) at 26 fps (76% of the disk speed): 8 variants x 3 reps, 120 s each
+2026-11-07 04:46:45 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 04:46:45 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 base: ab_clean dropped=0
+2026-11-07 04:49:11 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 04:49:11 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 workers2: ab_clean dropped=0
+2026-11-07 04:51:38 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 04:51:38 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 workers6: ab_clean dropped=0
+2026-11-07 04:54:05 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 04:54:05 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 queue24: ab_clean dropped=0
+2026-11-07 04:56:31 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 04:56:31 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 queue48: ab_clean dropped=0
+2026-11-07 04:58:58 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 04:58:58 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 sync500: ab_clean dropped=0
+2026-11-07 05:01:24 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 05:01:24 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 sync2000: ab_clean dropped=0
+2026-11-07 05:01:25 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 05:03:51 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:03:51 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 1 kerneltune: ab_clean dropped=0
+2026-11-07 05:03:51 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 05:06:18 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=55C nvme=None
+2026-11-07 05:06:18 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 base: ab_clean dropped=0
+2026-11-07 05:08:45 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=60C nvme=None
+2026-11-07 05:08:45 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 workers2: ab_clean dropped=0
+2026-11-07 05:11:11 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:11:11 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 workers6: ab_clean dropped=0
+2026-11-07 05:13:38 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:13:38 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 queue24: ab_clean dropped=0
+2026-11-07 05:16:04 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:16:04 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 queue48: ab_clean dropped=0
+2026-11-07 05:18:31 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:18:31 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 sync500: ab_clean dropped=0
+2026-11-07 05:20:58 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 05:20:58 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 sync2000: ab_clean dropped=0
+2026-11-07 05:20:58 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 05:23:24 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 05:23:24 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 2 kerneltune: ab_clean dropped=0
+2026-11-07 05:23:25 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 05:25:51 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:25:51 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 base: ab_clean dropped=0
+2026-11-07 05:28:18 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 05:28:18 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 workers2: ab_clean dropped=0
+2026-11-07 05:30:44 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:30:44 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 workers6: ab_clean dropped=0
+2026-11-07 05:33:11 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 05:33:11 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 queue24: ab_clean dropped=0
+2026-11-07 05:35:38 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 05:35:38 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 queue48: ab_clean dropped=0
+2026-11-07 05:38:04 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:38:04 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 sync500: ab_clean dropped=0
+2026-11-07 05:40:31 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=59C nvme=None
+2026-11-07 05:40:31 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 sync2000: ab_clean dropped=0
+2026-11-07 05:40:31 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 05:42:58 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=26 -> ab_clean after 120s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 05:42:58 A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 rep 3 kerneltune: ab_clean dropped=0
+2026-11-07 05:42:58 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 05:42:58 == A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 (baseline) at 25 fps (73% of the disk speed): 8 variants x 3 reps, 120 s each
+2026-11-07 05:43:38 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 14s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 05:43:38 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 base: buffer_full dropped=0
+2026-11-07 05:44:17 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 05:44:17 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 workers2: buffer_full dropped=0
+2026-11-07 05:44:54 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 05:44:54 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 workers6: buffer_full dropped=0
+2026-11-07 05:45:35 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 14s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 05:45:35 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 queue24: buffer_full dropped=0
+2026-11-07 05:46:11 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 05:46:11 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 queue48: buffer_full dropped=0
+2026-11-07 05:46:38 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 05:46:38 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 sync500: buffer_full dropped=0
+2026-11-07 05:47:06 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 05:47:06 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 sync2000: buffer_full dropped=0
+2026-11-07 05:47:06 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 05:47:42 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 05:47:42 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 1 kerneltune: buffer_full dropped=0
+2026-11-07 05:47:42 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 05:48:20 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 05:48:20 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 base: buffer_full dropped=0
+2026-11-07 05:48:47 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 05:48:47 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 workers2: buffer_full dropped=0
+2026-11-07 05:49:14 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:49:14 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 workers6: buffer_full dropped=0
+2026-11-07 05:49:54 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 05:49:54 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 queue24: buffer_full dropped=0
+2026-11-07 05:50:34 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 14s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:50:34 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 queue48: buffer_full dropped=0
+2026-11-07 05:51:13 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:51:13 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 sync500: buffer_full dropped=0
+2026-11-07 05:51:51 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 05:51:51 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 sync2000: buffer_full dropped=0
+2026-11-07 05:51:51 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 05:52:29 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:52:29 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 2 kerneltune: buffer_full dropped=0
+2026-11-07 05:52:29 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 05:53:06 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:53:06 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 base: buffer_full dropped=0
+2026-11-07 05:53:41 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 05:53:41 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 workers2: buffer_full dropped=0
+2026-11-07 05:54:20 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=48C nvme=None
+2026-11-07 05:54:20 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 workers6: buffer_full dropped=0
+2026-11-07 05:54:58 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:54:58 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 queue24: buffer_full dropped=0
+2026-11-07 05:55:36 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 12s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 05:55:36 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 queue48: buffer_full dropped=0
+2026-11-07 05:56:13 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:56:13 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 sync500: buffer_full dropped=0
+2026-11-07 05:56:51 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 12s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-07 05:56:51 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 sync2000: buffer_full dropped=0
+2026-11-07 05:56:51 variant kerneltune: kernel tuning applied (usb-storage class) rc=0: apertar-media-tune: apply root=sda class=usb-storage fs=exfat | apertar-media-tune: /sys/block/sda/queue/scheduler = none | apertar-media-tune: cannot set /sys/block/sda/queue/nr_requests to 256 | apertar-media-tune: /sys/block/sda/queue/rq
+2026-11-07 05:57:28 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=25 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=50C nvme=None
+2026-11-07 05:57:28 A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 rep 3 kerneltune: buffer_full dropped=0
+2026-11-07 05:57:28 variant base: kernel tuning restored (usb-storage class) rc=0: apertar-media-tune: restore root=sda | apertar-media-tune: /sys/block/sda/queue/scheduler = mq-deadline | apertar-media-tune: /sys/block/sda/queue/nr_requests = 60 | apertar-media-tune: /sys/block/sda/queue/rq_affinity = 1 | apertar-media-t
+2026-11-07 05:57:28 A/B 2kSDR12 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0: skipped, 53% of the disk speed at 60 fps (not storage-limited)
+2026-11-07 05:57:28 A/B 2kSDR12 2kSDR12_unc_log0_tdn0_lock0_trim1_web0: skipped, 32% of the disk speed at 36 fps (not storage-limited)
+2026-11-07 05:57:28 A/B 2kSDR10: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 05:57:28 A/B 2kHDR16: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 05:57:28 A/B 2kHDR12: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 05:57:28 A/B 4kHDR12: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 05:57:28 -- pruned 4kSDR12_lossless_log0_tdn0_lock0_trim0_web0: combination skipped: comp,trim did not help on its own
+2026-11-07 05:57:28 -- pruned 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1: combination skipped: comp,web did not help on its own
+2026-11-07 05:57:28 -- pruned 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0: combination skipped: comp,lock did not help on its own
+2026-11-07 05:57:28 -- pruned 4kSDR12_lossless_log0_tdn1_lock0_trim1_web0: combination skipped: comp,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock0_trim1_web0: combination skipped: comp,log did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn0_lock0_trim0_web1: combination skipped: trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn0_lock1_trim0_web0: combination skipped: lock,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn0_lock1_trim1_web1: combination skipped: lock,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock0_trim0_web0: combination skipped: tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock0_trim1_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock1_trim1_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock0_trim0_web0: combination skipped: log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock0_trim1_web1: combination skipped: log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock1_trim1_web0: combination skipped: lock,log did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock0_trim1_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn0_lock0_trim0_web1: combination skipped: comp,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn0_lock1_trim0_web0: combination skipped: comp,lock,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn0_lock1_trim1_web1: combination skipped: comp,lock,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock0_trim0_web0: combination skipped: comp,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock0_trim1_web1: combination skipped: comp,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock1_trim1_web0: combination skipped: comp,lock,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock0_trim0_web0: combination skipped: comp,log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock0_trim1_web1: combination skipped: comp,log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock1_trim1_web0: combination skipped: comp,lock,log did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock0_trim1_web0: combination skipped: comp,log,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn0_lock1_trim0_web1: combination skipped: lock,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock0_trim0_web1: combination skipped: tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock1_trim0_web0: combination skipped: lock,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock1_trim1_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock0_trim0_web1: combination skipped: log,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock1_trim0_web0: combination skipped: lock,log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock1_trim1_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock0_trim0_web0: combination skipped: log,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock0_trim1_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock1_trim1_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn0_lock1_trim0_web1: combination skipped: comp,lock,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock0_trim0_web1: combination skipped: comp,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock1_trim0_web0: combination skipped: comp,lock,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock1_trim1_web1: combination skipped: comp,lock,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock0_trim0_web1: combination skipped: comp,log,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock1_trim0_web0: combination skipped: comp,lock,log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock1_trim1_web1: combination skipped: comp,lock,log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock0_trim0_web0: combination skipped: comp,log,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock0_trim1_web1: combination skipped: comp,log,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock1_trim1_web0: combination skipped: comp,lock,log,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log0_tdn1_lock1_trim0_web1: combination skipped: lock,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn0_lock1_trim0_web1: combination skipped: lock,log,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock0_trim0_web1: combination skipped: log,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock1_trim0_web0: combination skipped: lock,log,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock1_trim1_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log0_tdn1_lock1_trim0_web1: combination skipped: comp,lock,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn0_lock1_trim0_web1: combination skipped: comp,lock,log,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock0_trim0_web1: combination skipped: comp,log,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock1_trim0_web0: combination skipped: comp,lock,log,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock1_trim1_web1: combination skipped: comp,lock,log,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_unc_log1_tdn1_lock1_trim0_web1: combination skipped: lock,log,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR12_lossless_log1_tdn1_lock1_trim0_web1: combination skipped: comp,lock,log,tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn0_lock0_trim0_web0: combination skipped: trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn0_lock0_trim1_web1: combination skipped: web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn0_lock1_trim1_web0: combination skipped: lock did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn1_lock0_trim1_web0: combination skipped: tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log1_tdn0_lock0_trim1_web0: combination skipped: log did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn0_lock0_trim0_web1: combination skipped: trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn0_lock1_trim0_web0: combination skipped: lock,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn0_lock1_trim1_web1: combination skipped: lock,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn1_lock0_trim0_web0: combination skipped: tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn1_lock0_trim1_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn1_lock1_trim1_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn0_lock0_trim0_web0: combination skipped: log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn0_lock0_trim1_web1: combination skipped: log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn0_lock1_trim1_web0: combination skipped: lock,log did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn1_lock0_trim1_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn0_lock0_trim0_web1: combination skipped: trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn0_lock1_trim0_web0: combination skipped: lock,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn0_lock1_trim1_web1: combination skipped: lock,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn1_lock0_trim0_web0: combination skipped: tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn1_lock0_trim1_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log0_tdn1_lock1_trim1_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log1_tdn0_lock0_trim0_web0: combination skipped: log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log1_tdn0_lock0_trim1_web1: combination skipped: log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log1_tdn0_lock1_trim1_web0: combination skipped: lock,log did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_lossless_log1_tdn1_lock0_trim1_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn0_lock1_trim0_web1: combination skipped: lock,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn1_lock0_trim0_web1: combination skipped: tdn,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn1_lock1_trim0_web0: combination skipped: lock,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log0_tdn1_lock1_trim1_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn0_lock0_trim0_web1: combination skipped: log,trim,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn0_lock1_trim0_web0: combination skipped: lock,log,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn0_lock1_trim1_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn1_lock0_trim0_web0: combination skipped: log,tdn,trim did not help on its own
+2026-11-07 05:57:29 -- pruned 4kSDR10_unc_log1_tdn1_lock0_trim1_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log1_tdn1_lock1_trim1_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log0_tdn0_lock1_trim0_web1: combination skipped: lock,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log0_tdn1_lock0_trim0_web1: combination skipped: tdn,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log0_tdn1_lock1_trim0_web0: combination skipped: lock,tdn,trim did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log0_tdn1_lock1_trim1_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn0_lock0_trim0_web1: combination skipped: log,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn0_lock1_trim0_web0: combination skipped: lock,log,trim did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn0_lock1_trim1_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock0_trim0_web0: combination skipped: log,tdn,trim did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock0_trim1_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock1_trim1_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log0_tdn1_lock1_trim0_web1: combination skipped: lock,tdn,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log1_tdn0_lock1_trim0_web1: combination skipped: lock,log,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log1_tdn1_lock0_trim0_web1: combination skipped: log,tdn,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log1_tdn1_lock1_trim0_web0: combination skipped: lock,log,tdn,trim did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log1_tdn1_lock1_trim1_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log0_tdn1_lock1_trim0_web1: combination skipped: lock,tdn,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn0_lock1_trim0_web1: combination skipped: lock,log,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock0_trim0_web1: combination skipped: log,tdn,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock1_trim0_web0: combination skipped: lock,log,tdn,trim did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock1_trim1_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_unc_log1_tdn1_lock1_trim0_web1: combination skipped: lock,log,tdn,trim,web did not help on its own
+2026-11-07 05:57:30 -- pruned 4kSDR10_lossless_log1_tdn1_lock1_trim0_web1: combination skipped: lock,log,tdn,trim,web did not help on its own
+2026-11-07 05:57:49 == config 2kSDR12_lossless_log0_tdn0_lock0_trim0_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 111)
+2026-11-07 06:03:08 2kSDR12_lossless_log0_tdn0_lock0_trim0_web0 fps=60.0 -> pass_5min after 300s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1: combination skipped: web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn0_lock1_trim1_web0: combination skipped: lock did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock0_trim1_web0: combination skipped: tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock0_trim1_web0: combination skipped: log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn0_lock0_trim0_web1: combination skipped: web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn0_lock1_trim0_web0: combination skipped: lock did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn0_lock1_trim1_web1: combination skipped: lock,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock0_trim0_web0: combination skipped: tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock0_trim1_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock1_trim1_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock0_trim0_web0: combination skipped: log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock0_trim1_web1: combination skipped: log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock1_trim1_web0: combination skipped: lock,log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn1_lock0_trim1_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn0_lock0_trim0_web1: combination skipped: web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn0_lock1_trim0_web0: combination skipped: lock did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn0_lock1_trim1_web1: combination skipped: lock,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock0_trim0_web0: combination skipped: tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock0_trim1_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock1_trim1_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock0_trim0_web0: combination skipped: log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock0_trim1_web1: combination skipped: log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock1_trim1_web0: combination skipped: lock,log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn1_lock0_trim1_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn0_lock1_trim0_web1: combination skipped: lock,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock0_trim0_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock1_trim0_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock1_trim1_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock0_trim0_web1: combination skipped: log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock1_trim0_web0: combination skipped: lock,log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock1_trim1_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn1_lock0_trim0_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn1_lock0_trim1_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn1_lock1_trim1_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn0_lock1_trim0_web1: combination skipped: lock,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock0_trim0_web1: combination skipped: tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock1_trim0_web0: combination skipped: lock,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log0_tdn1_lock1_trim1_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock0_trim0_web1: combination skipped: log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock1_trim0_web0: combination skipped: lock,log did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn0_lock1_trim1_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn1_lock0_trim0_web0: combination skipped: log,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn1_lock0_trim1_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_lossless_log1_tdn1_lock1_trim1_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log0_tdn1_lock1_trim0_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn0_lock1_trim0_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn1_lock0_trim0_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 06:03:08 -- pruned 2kSDR12_unc_log1_tdn1_lock1_trim0_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_unc_log1_tdn1_lock1_trim1_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_lossless_log0_tdn1_lock1_trim0_web1: combination skipped: lock,tdn,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_lossless_log1_tdn0_lock1_trim0_web1: combination skipped: lock,log,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_lossless_log1_tdn1_lock0_trim0_web1: combination skipped: log,tdn,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_lossless_log1_tdn1_lock1_trim0_web0: combination skipped: lock,log,tdn did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_lossless_log1_tdn1_lock1_trim1_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_unc_log1_tdn1_lock1_trim0_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR12_lossless_log1_tdn1_lock1_trim0_web1: combination skipped: lock,log,tdn,web did not help on its own
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_unc_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kSDR10_lossless_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_lossless_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_lossless_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_lossless_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_lossless_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_lossless_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_unc_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_unc_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_unc_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_unc_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:09 -- pruned 2kHDR16_unc_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_unc_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR16_lossless_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_unc_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:10 -- pruned 2kHDR12_lossless_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_unc_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 2kHDR12_lossless_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log1_tdn0_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_unc_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:11 -- pruned 4kHDR12_lossless_log0_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log0_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock0_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log0_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log0_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log0_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log0_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock0_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock0_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock1_trim1_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log0_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn0_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock0_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock1_trim0_web0: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock1_trim1_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_unc_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 -- pruned 4kHDR12_lossless_log1_tdn1_lock1_trim0_web1: baseline already clean at the highest fps the storage allows: nothing to improve
+2026-11-07 06:03:12 tier10 4kSDR12: nothing passed the previous round, ruled out
+2026-11-07 06:03:12 == tier10 4kSDR10: 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 from 25 fps, 600 s
+2026-11-07 06:08:01 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 259s dropped=0 kinds=buffer_full:1 pi=58C nvme=None
+2026-11-07 06:08:01 -- tier10 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim0_web0 ruled out, 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 reached the same fps without trim (no difference)
+2026-11-07 06:08:02 == tier10 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 from 60 fps, 600 s
+2026-11-07 06:18:31 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=60.0 -> buffer_full after 598s dropped=0 kinds=buffer_full:1 pi=58C nvme=None
+2026-11-07 06:28:52 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=59.0 -> buffer_full after 593s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 06:36:53 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=58.0 -> buffer_full after 437s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 06:43:01 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=57.0 -> buffer_full after 333s dropped=0 kinds=buffer_full:1 pi=57C nvme=None
+2026-11-07 06:51:18 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=56.0 -> buffer_full after 426s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 06:58:26 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=55.0 -> buffer_full after 382s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 07:04:10 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=54.0 -> buffer_full after 315s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 07:11:08 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=53.0 -> buffer_full after 379s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 07:12:13 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=52.0 -> buffer_full after 39s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 07:13:15 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=51.0 -> buffer_full after 35s dropped=0 kinds=buffer_full:1 pi=54C nvme=None
+2026-11-07 07:23:01 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=50.0 -> buffer_full after 506s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 07:30:45 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=49.0 -> buffer_full after 422s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 07:39:54 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=48.0 -> buffer_full after 480s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 07:43:16 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=47.0 -> buffer_full after 175s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 07:52:43 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=46.0 -> buffer_full after 497s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 08:02:46 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=45.0 -> buffer_full after 548s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 08:04:27 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=44.0 -> buffer_full after 75s dropped=0 kinds=buffer_full:1 pi=54C nvme=None
+2026-11-07 08:05:36 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=43.0 -> buffer_full after 42s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 08:06:35 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=42.0 -> buffer_full after 33s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 08:07:48 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=41.0 -> buffer_full after 47s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 08:08:55 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=40.0 -> buffer_full after 41s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 08:09:55 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=39.0 -> buffer_full after 34s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 08:20:33 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=38.0 -> pass_10min after 600s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 08:20:33 == tier10 2kSDR10: 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 from 44 fps, 600 s
+2026-11-07 08:21:20 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=44.0 -> buffer_full after 21s dropped=0 kinds=buffer_full:1 pi=54C nvme=None
+2026-11-07 08:22:30 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=43.0 -> buffer_full after 44s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 08:24:15 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=42.0 -> buffer_full after 78s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 08:26:49 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=41.0 -> buffer_full after 127s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 08:28:45 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=40.0 -> buffer_full after 90s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 08:36:47 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=39.0 -> buffer_full after 428s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 08:48:00 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=38.0 -> pass_10min after 600s dropped=0 kinds= pi=55C nvme=None
+2026-11-07 08:48:01 == tier10 2kHDR16: 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 from 27 fps, 600 s
+2026-11-07 08:49:30 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 fps=27.0 -> buffer_full after 59s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 09:00:12 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 fps=26.0 -> pass_10min after 600s dropped=0 kinds= pi=55C nvme=None
+2026-11-07 09:00:12 == tier10 2kHDR12: 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 from 30 fps, 600 s
+2026-11-07 09:10:51 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=30.0 -> pass_10min after 600s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 09:10:52 tier10 4kHDR12: nothing passed the previous round, ruled out
+2026-11-07 09:10:52 tier20 4kSDR12: nothing passed the previous round, ruled out
+2026-11-07 09:10:52 tier20 4kSDR10: nothing passed the previous round, ruled out
+2026-11-07 09:10:52 == tier20 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 from 38 fps, 1200 s
+2026-11-07 09:31:24 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=38.0 -> pass_20min after 1200s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 09:31:24 == tier20 2kSDR10: 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 from 38 fps, 1200 s
+2026-11-07 09:50:43 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=38.0 -> buffer_full after 972s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 10:14:42 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=37.0 -> pass_20min after 1200s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 10:14:42 == tier20 2kHDR16: 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 from 26 fps, 1200 s
+2026-11-07 10:36:14 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 fps=26.0 -> pass_20min after 1200s dropped=0 kinds= pi=53C nvme=None
+2026-11-07 10:36:14 == tier20 2kHDR12: 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 from 30 fps, 1200 s
+2026-11-07 10:58:24 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=30.0 -> buffer_full after 1182s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 11:20:58 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=29.0 -> pass_20min after 1200s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 11:20:58 tier20 4kHDR12: nothing passed the previous round, ruled out
+2026-11-07 11:20:58 tier30 4kSDR12: nothing passed the previous round, ruled out
+2026-11-07 11:20:59 tier30 4kSDR10: nothing passed the previous round, ruled out
+2026-11-07 11:20:59 == tier30 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 from 38 fps, 30 min / drive full
+2026-11-07 11:48:50 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=38.0 -> buffer_full after 1637s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 12:18:07 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=37.0 -> buffer_full after 1652s dropped=0 kinds=buffer_full:1 pi=57C nvme=None
+2026-11-07 12:41:01 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=36.0 -> buffer_full after 1259s dropped=0 kinds=buffer_full:1 pi=54C nvme=None
+2026-11-07 12:41:02 campaign ended (settings restored except Log, which stays as last set)
+Traceback (most recent call last):
+  File "/home/pi/longtakes/bin/longtakes.py", line 1305, in <module>
+    main()
+    ~~~~^^
+  File "/home/pi/longtakes/bin/longtakes.py", line 1022, in main
+    backfill(out)
+    ~~~~~~~~^^^^^
+  File "/home/pi/longtakes/bin/longtakes.py", line 661, in backfill
+    g = sorted(glob.glob('%s/samples/%s_fps%d_*.csv' % (out, r['cfg_id'], int(float(r['fps'])))))
+                                                                              ~~~~~^^^^^^^^^^
+ValueError: could not convert string to float: ''
+2026-11-07 12:41:57 preserving 0 pre-existing clip folder(s)
+2026-11-07 12:41:57 campaign start: modes ['4kSDR12', '4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12']; excluded (storage too slow at 25 fps): ['4kHDR16']; 448 configs; drive 354 MB/s; out=/home/pi/longtakes/run-20261107-ssd4
+2026-11-07 12:41:57 == A/B 4kSDR12_unc_log0_tdn0_lock0_trim1_web0 (best) at 25 fps (88% of the disk speed): 8 variants x 3 reps, 120 s each
+2026-11-07 12:41:57 == A/B 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 (best) at 26 fps (76% of the disk speed): 8 variants x 3 reps, 120 s each
+2026-11-07 12:41:57 == A/B 4kSDR10_unc_log0_tdn0_lock0_trim1_web0 (baseline) at 25 fps (73% of the disk speed): 8 variants x 3 reps, 120 s each
+2026-11-07 12:41:57 A/B 2kSDR12 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0: skipped, 54% of the disk speed at 61 fps (not storage-limited)
+2026-11-07 12:41:57 A/B 2kSDR12 2kSDR12_unc_log0_tdn0_lock0_trim1_web0: skipped, 32% of the disk speed at 36 fps (not storage-limited)
+2026-11-07 12:41:57 A/B 2kSDR10: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 12:41:57 A/B 2kHDR16: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 12:41:57 A/B 2kHDR12: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 12:41:57 A/B 4kHDR12: skipped, the baseline was not limited by the storage (clean at the highest fps)
+2026-11-07 12:42:00 tier10 4kSDR12: nothing passed the previous round, ruled out
+2026-11-07 12:42:00 == tier10 4kSDR10: 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 from 25 fps, 600 s
+2026-11-07 12:42:34 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 12s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-07 12:42:34 -- tier10 4kSDR10_lossless_log0_tdn0_lock0_trim1_web0: no pass down to 25 fps at this length
+2026-11-07 12:42:34 -- tier10 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim0_web0 ruled out, 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 reached the same fps without trim (no difference)
+2026-11-07 12:42:34 == tier10 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 from 60 fps, 600 s
+2026-11-07 12:42:34 == tier10 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0: clean at 38 fps (fails at 39)
+2026-11-07 12:42:34 == tier10 2kSDR10: 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 from 44 fps, 600 s
+2026-11-07 12:42:34 == tier10 2kSDR10_unc_log0_tdn0_lock0_trim1_web0: clean at 38 fps (fails at 39)
+2026-11-07 12:42:34 == tier10 2kHDR16: 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 from 27 fps, 600 s
+2026-11-07 12:42:34 == tier10 2kHDR16_unc_log0_tdn0_lock0_trim1_web0: clean at 26 fps (fails at 27)
+2026-11-07 12:42:35 == tier10 2kHDR12: 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 from 30 fps, 600 s
+2026-11-07 12:42:35 == tier10 2kHDR12_unc_log0_tdn0_lock0_trim1_web0: clean at 30 fps
+2026-11-07 12:42:35 tier10 4kHDR12: nothing passed the previous round, ruled out
+2026-11-07 12:42:35 tier20 4kSDR12: nothing passed the previous round, ruled out
+2026-11-07 12:42:35 tier20 4kSDR10: nothing passed the previous round, ruled out
+2026-11-07 12:42:35 == tier20 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 from 38 fps, 1200 s
+2026-11-07 12:42:35 == tier20 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0: clean at 38 fps
+2026-11-07 12:42:35 == tier20 2kSDR10: 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 from 38 fps, 1200 s
+2026-11-07 12:42:35 == tier20 2kSDR10_unc_log0_tdn0_lock0_trim1_web0: clean at 37 fps (fails at 38)
+2026-11-07 12:42:35 == tier20 2kHDR16: 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 from 26 fps, 1200 s
+2026-11-07 12:42:35 == tier20 2kHDR16_unc_log0_tdn0_lock0_trim1_web0: clean at 26 fps
+2026-11-07 12:42:35 == tier20 2kHDR12: 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 from 30 fps, 1200 s
+2026-11-07 12:42:35 == tier20 2kHDR12_unc_log0_tdn0_lock0_trim1_web0: clean at 29 fps (fails at 30)
+2026-11-07 12:42:35 tier20 4kHDR12: nothing passed the previous round, ruled out
+2026-11-07 12:42:35 tier30 4kSDR12: nothing passed the previous round, ruled out
+2026-11-07 12:42:35 tier30 4kSDR10: nothing passed the previous round, ruled out
+2026-11-07 12:42:35 == tier30 2kSDR12: 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 from 38 fps, 30 min / drive full
+2026-11-07 12:46:03 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=33.0 -> buffer_full after 178s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 13:20:28 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=27.0 -> pass_30min after 1800s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 13:56:12 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=30.0 -> pass_30min after 1800s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 14:30:31 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=31.0 -> buffer_full after 1701s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-07 14:30:31 == tier30 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0: clean at 30 fps (fails at 31)
+2026-11-07 14:30:31 == tier30 2kSDR10: 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 from 37 fps, 30 min / drive full
+2026-11-07 14:31:17 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=37.0 -> buffer_full after 20s dropped=0 kinds=buffer_full:1 pi=51C nvme=None
+2026-11-07 15:06:49 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=31.0 -> pass_30min after 1800s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 15:36:09 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=34.0 -> buffer_full after 1464s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 16:12:33 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> pass_30min after 1800s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 16:49:19 2kSDR10_unc_log0_tdn0_lock0_trim1_web0 fps=33.0 -> pass_30min after 1800s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 16:49:19 == tier30 2kSDR10_unc_log0_tdn0_lock0_trim1_web0: clean at 33 fps (fails at 34)
+2026-11-07 16:49:19 == tier30 2kHDR16: 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 from 26 fps, 30 min / drive full
+2026-11-07 17:24:19 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 fps=26.0 -> pass_30min after 1800s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 17:24:19 == tier30 2kHDR16_unc_log0_tdn0_lock0_trim1_web0: clean at 26 fps
+2026-11-07 17:24:19 == tier30 2kHDR12: 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 from 29 fps, 30 min / drive full
+2026-11-07 17:50:39 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=29.0 -> buffer_full after 1410s dropped=0 kinds=buffer_full:1 pi=57C nvme=None
+2026-11-07 18:21:19 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=25.0 -> pass_30min after 1800s dropped=1 kinds= pi=57C nvme=None
+2026-11-07 18:55:34 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=27.0 -> pass_30min after 1800s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 19:29:59 2kHDR12_unc_log0_tdn0_lock0_trim1_web0 fps=28.0 -> pass_30min after 1800s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 19:29:59 == tier30 2kHDR12_unc_log0_tdn0_lock0_trim1_web0: clean at 28 fps (fails at 29)
+2026-11-07 19:29:59 tier30 4kHDR12: nothing passed the previous round, ruled out
+2026-11-07 19:30:00 campaign ended (settings restored except Log, which stays as last set)
+2026-11-07 19:30:10 preserving 0 pre-existing clip folder(s)
+2026-11-07 19:30:10 campaign start: modes ['4kSDR12', '4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12']; excluded (storage too slow at 25 fps): ['4kHDR16']; 448 configs; drive 354 MB/s; out=/home/pi/longtakes/run-20261107-ssd4
+2026-11-07 19:30:10 == follow-up Log 4kHDR12: winner none; 3 Log twin(s): ['lossless_log0_tdn0_lock0', 'lossless_log1_tdn0_lock0', 'unc_log1_tdn0_lock0_trim']
+2026-11-07 19:30:25 == config 4kHDR12_lossless_log0_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 30; the storage should carry 27)
+2026-11-07 19:30:52 4kHDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=27.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=58C nvme=None
+2026-11-07 19:31:16 4kHDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=26.0 -> buffer_full after 6s dropped=0 kinds=buffer_full:1 pi=58C nvme=None
+2026-11-07 19:31:41 4kHDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 7s dropped=0 kinds=buffer_full:1 pi=58C nvme=None
+2026-11-07 19:31:41 -- follow-up Log 4kHDR12_lossless_log0_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:31:56 == config 4kHDR12_lossless_log1_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 30; the storage should carry 27)
+2026-11-07 19:32:22 4kHDR12_lossless_log1_tdn0_lock0_trim1_web0 fps=27.0 -> buffer_full after 7s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 19:32:47 4kHDR12_lossless_log1_tdn0_lock0_trim1_web0 fps=26.0 -> buffer_full after 6s dropped=0 kinds=buffer_full:1 pi=58C nvme=None
+2026-11-07 19:33:13 4kHDR12_lossless_log1_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 19:33:13 -- follow-up Log 4kHDR12_lossless_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:33:28 == config 4kHDR12_unc_log1_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 30; the storage should carry 27)
+2026-11-07 19:34:02 4kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=27.0 -> buffer_full after 7s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 19:34:26 4kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=26.0 -> buffer_full after 6s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 19:35:01 4kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=25.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 19:35:01 -- follow-up Log 4kHDR12_unc_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:35:01 == follow-up Log 4kSDR10: winner none; 2 Log twin(s): ['lossless_log1_tdn0_lock0', 'unc_log1_tdn0_lock0_trim']
+2026-11-07 19:35:20 == config 4kSDR10_lossless_log1_tdn0_lock0_trim1_web0: stepping down from 33.0 fps (mode max 60; the storage should carry 33)
+2026-11-07 19:35:43 4kSDR10_lossless_log1_tdn0_lock0_trim1_web0 fps=33.0: skipped_unavailable (log_applied=False) Core: ApertarCore CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear
+2026-11-07 19:35:43 -- follow-up Log 4kSDR10_lossless_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:35:43 -- follow-up Log 4kSDR10_unc_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:35:43 == follow-up Log 4kSDR12: winner none; 2 Log twin(s): ['lossless_log1_tdn0_lock0', 'unc_log1_tdn0_lock0_trim']
+2026-11-07 19:35:58 == config 4kSDR12_lossless_log1_tdn0_lock0_trim1_web0: stepping down from 27.0 fps (mode max 60; the storage should carry 27)
+2026-11-07 19:36:23 4kSDR12_lossless_log1_tdn0_lock0_trim1_web0 fps=27.0: skipped_unavailable (log_applied=False) Core: ApertarCore CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear
+2026-11-07 19:36:23 -- follow-up Log 4kSDR12_lossless_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:36:23 -- follow-up Log 4kSDR12_unc_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:36:23 == follow-up Log 2kSDR12: winner 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0; 2 Log twin(s): ['lossless_log1_tdn0_lock0', 'unc_log1_tdn0_lock0_trim']
+2026-11-07 19:36:42 == config 2kSDR12_lossless_log1_tdn0_lock0_trim1_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 111)
+2026-11-07 19:37:04 2kSDR12_lossless_log1_tdn0_lock0_trim1_web0 fps=60.0: skipped_unavailable (log_applied=False) Core: ApertarCore CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear
+2026-11-07 19:37:04 -- follow-up Log 2kSDR12_lossless_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:37:04 -- follow-up Log 2kSDR12_unc_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:37:04 == follow-up Log 2kSDR10: winner 2kSDR10_unc_log0_tdn0_lock0_trim1_web0; 1 Log twin(s): ['unc_log1_tdn0_lock0_trim']
+2026-11-07 19:37:20 == config 2kSDR10_unc_log1_tdn0_lock0_trim1_web0: stepping down from 60.0 fps (mode max 60; the storage should carry 133)
+2026-11-07 19:37:43 2kSDR10_unc_log1_tdn0_lock0_trim1_web0 fps=60.0: skipped_unavailable (log_applied=False) Core: ApertarCore CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear
+2026-11-07 19:37:43 -- follow-up Log 2kSDR10_unc_log1_tdn0_lock0_trim1_web0: no pass in the 5-minute walk, stops here
+2026-11-07 19:37:43 == follow-up Log 2kHDR16: winner 2kHDR16_unc_log0_tdn0_lock0_trim1_web0; 1 Log twin(s): ['unc_log1_tdn0_lock0_trim']
+2026-11-07 19:38:02 == config 2kHDR16_unc_log1_tdn0_lock0_trim1_web0: stepping down from 30.0 fps (mode max 30; the storage should carry 82)
+2026-11-07 19:43:31 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> pass_5min after 300s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 19:53:59 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> pass_10min after 600s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 19:53:59 == logt10 2kHDR16_unc_log1_tdn0_lock0_trim1_web0: clean at 30 fps
+2026-11-07 20:16:26 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> pass_20min after 1200s dropped=0 kinds= pi=56C nvme=None
+2026-11-07 20:16:26 == logt20 2kHDR16_unc_log1_tdn0_lock0_trim1_web0: clean at 30 fps
+2026-11-07 20:37:43 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> buffer_full after 1141s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-07 21:09:37 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=25.0 -> pass_30min after 1800s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 21:44:15 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=27.0 -> pass_30min after 1800s dropped=0 kinds= pi=57C nvme=None
+2026-11-07 22:20:00 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=28.0 -> pass_30min after 1800s dropped=0 kinds= pi=59C nvme=None
+2026-11-07 22:42:33 2kHDR16_unc_log1_tdn0_lock0_trim1_web0 fps=29.0 -> buffer_full after 1168s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 22:42:33 == logt30 2kHDR16_unc_log1_tdn0_lock0_trim1_web0: clean at 28 fps (fails at 29)
+2026-11-07 22:42:33 == follow-up Log 2kHDR12: winner 2kHDR12_unc_log0_tdn0_lock0_trim1_web0; 1 Log twin(s): ['unc_log1_tdn0_lock0_trim']
+2026-11-07 22:42:48 == config 2kHDR12_unc_log1_tdn0_lock0_trim1_web0: stepping down from 30.0 fps (mode max 30; the storage should carry 111)
+2026-11-07 22:48:20 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> pass_5min after 300s dropped=0 kinds= pi=55C nvme=None
+2026-11-07 22:59:23 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> pass_10min after 600s dropped=0 kinds= pi=58C nvme=None
+2026-11-07 22:59:23 == logt10 2kHDR12_unc_log1_tdn0_lock0_trim1_web0: clean at 30 fps
+2026-11-07 23:21:04 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=30.0 -> buffer_full after 1129s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-07 23:41:39 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=25.0 -> pass_20min after 1200s dropped=1 kinds= pi=56C nvme=None
+2026-11-08 00:03:34 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=27.0 -> pass_20min after 1200s dropped=0 kinds= pi=56C nvme=None
+2026-11-08 00:26:00 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=28.0 -> pass_20min after 1200s dropped=0 kinds= pi=57C nvme=None
+2026-11-08 00:48:30 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=29.0 -> pass_20min after 1200s dropped=0 kinds= pi=57C nvme=None
+2026-11-08 00:48:30 == logt20 2kHDR12_unc_log1_tdn0_lock0_trim1_web0: clean at 29 fps (fails at 30)
+2026-11-08 01:18:35 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=29.0 -> buffer_full after 1667s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-08 01:49:04 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=25.0 -> pass_30min after 1800s dropped=0 kinds= pi=58C nvme=None
+2026-11-08 02:23:15 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=27.0 -> pass_30min after 1800s dropped=0 kinds= pi=58C nvme=None
+2026-11-08 02:58:09 2kHDR12_unc_log1_tdn0_lock0_trim1_web0 fps=28.0 -> pass_30min after 1800s dropped=0 kinds= pi=58C nvme=None
+2026-11-08 02:58:09 == logt30 2kHDR12_unc_log1_tdn0_lock0_trim1_web0: clean at 28 fps (fails at 29)
+2026-11-08 02:58:10 campaign ended (settings restored except Log, which stays as last set)

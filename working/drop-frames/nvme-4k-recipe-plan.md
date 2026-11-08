@@ -122,6 +122,18 @@ is asked for about 6-8 restarts in total, not one per take. Group C comes last a
 0. **Calibrate** (after the SSD campaign ends and the drive is swapped back): identify the NVMe, PCIe link and class, temperature, free
    space, a 60 s direct-write test (~45 GB), media tune values in effect. **Log probe:** for each of the three modes switch Log on and, if
    Core reports it as not applied, make a 4 s take and keep Core's own reason from the journal (already built into the runner).
+0b. **Encoder or drive? (open hypothesis from the SSD run, not proven).** On the SSD, lossless 4K Clear HDR 12-bit made 6.1 MB files,
+   which the file-size model says the drive can write at ~27 fps, yet the drive wrote only 11-17 fps. That points at the lossless
+   encoder (CPU), not the drive. Test: 60 s takes at 25 fps on the NVMe (about twice the SSD's bandwidth) of lossless 4K Clear HDR
+   12-bit and lossless 4K SDR 12-bit, each next to an uncompressed control of the same mode and fps, 2 repeats, interleaved (~60 GB).
+   Read the drain (frames written per second, from the stats line) and Core's CPU per second and per thread. **Encoder-limited
+   (confirmed)** if the lossless drain stays at ~11-17 fps on the faster drive while the uncompressed control, with twice the bytes,
+   drains more frames, and a thread (`CameraManager` or the encoder workers) sits near 100% of a core or Core near 400% in total.
+   **Drive-limited** if the lossless drain rises with the faster drive. Anything else is recorded as unresolved. If it is the encoder,
+   lossless at 4K skips the long tiers, and a Core change (encoder worker count, `workers=5` in the record line) is a separate topic.
+   Note from the finished SSD run: the 30-minute limits of the 2K modes sit below the bandwidth model too (2K SDR 12-bit lossless, 1.3 MB,
+   held 30 fps, only ~40 MB/s), so a fixed cost per frame of ~25-35 ms, not the MB/s, may also be part of the story. The uncompressed
+   control tells these two apart.
 1. **Edge finding per mode:** probe round (60 s), then the 5-min bracket. Output: the highest fps with 60 s and 5 min clean, and the
    limiter (capture or storage).
 2. **Screening at the edge** (group A, then B in batches), paired and interleaved, with control takes.

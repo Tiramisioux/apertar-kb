@@ -1,0 +1,12 @@
+1794019508.818523 apertar start-apertar-core.sh[823]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794019508.832592 apertar start-apertar-core.sh[823]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1794019508.832592 apertar start-apertar-core.sh[823]: ApertarCore audio capture: format=s24 rate=48000 channels=2 first_channel=1
+1794019508.833101 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 444 MiB (MemAvailable 1594 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 2.0 MiB = 224 frames) source=conf
+1794019508.836599 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=none media_class=usb-storage media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794019508.875171 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=5199827409
+1794019809.943198 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=10505 written=10505 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=69/12 queue_bytes_peak=143078400 queue_budget=466301747
+1794019809.943198 apertar start-apertar-core.sh[823]: ApertarCore recorder stop time: 0.960s format=cdng discarded_on_stop=0
+1794019809.971606 apertar start-apertar-core.sh[823]: ApertarCore audio writer: peak_backlog_kb=483
+1794019809.971606 apertar start-apertar-core.sh[823]: ApertarCore audio clock: measured_drift_ppm=-12.706 points=29861 endpoint_ppm=-12.634 correction=none
+1794019809.971606 apertar start-apertar-core.sh[823]: ApertarCore audio sync: video_boot_us=5199827409 audio_boot_us=5199806166 trim_samples=1020 pad_samples=0 output_samples=14406857 sample_rate=48000
+1794019810.969635 apertar start-apertar-core.sh[823]: ApertarCore recording stop: synced to the medium in 710 ms

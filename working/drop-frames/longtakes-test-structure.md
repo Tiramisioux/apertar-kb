@@ -86,6 +86,8 @@ second; the USB SSD has no temperature sensor Core can read (column empty).
 
 ## 8. Results so far (2026-11-07, run `run-20261107-ssd4`, 9 hours in, 30-minute round running)
 
+**Final results: `tests-2026-11/findings-longtakes-ssd-2026-11-07.md`** (run finished 2026-11-08 02:58; the table below is the 9-hour snapshot).
+
 | Mode | Best config | 5 min | 10 min | 20 min | 30 min |
 | --- | --- | --- | --- | --- | --- |
 | 4K SDR 12-bit | none | no clean fps, buffer full even at 25 | | | |

@@ -1,0 +1,8 @@
+1794036166.031416 apertar start-apertar-core.sh[823]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794036166.031952 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 671 MiB (MemAvailable 1972 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 2.0 MiB = 339 frames) source=conf
+1794036166.033951 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/cDNG_26-11-07_C0001 format=cdng compression=none media_class=usb-storage media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794036166.055512 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=21857008407
+1794036235.911027 apertar start-apertar-core.sh[823]: ApertarCore buffer: safety stop at 90 % (605/671 MiB)
+1794036243.634907 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=2935 written=2935 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault= peak_queue=306/12 queue_bytes_peak=634521600 queue_budget=704413696
+1794036243.635229 apertar start-apertar-core.sh[823]: ApertarCore recorder stop time: 7.724s format=cdng discarded_on_stop=0
+1794036243.642976 apertar start-apertar-core.sh[823]: ApertarCore recording stop: synced to the medium in 8 ms

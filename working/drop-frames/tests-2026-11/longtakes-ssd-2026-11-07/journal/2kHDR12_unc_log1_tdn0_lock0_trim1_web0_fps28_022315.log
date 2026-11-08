@@ -1,0 +1,8 @@
+1794101010.498038 apertar start-apertar-core.sh[823]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794101010.498873 apertar start-apertar-core.sh[823]: ApertarCore CineMate Log 16->12 mu=10000 black=3200 white=65520 footroom=32/487 composed with the CCMP expansion
+1794101010.499042 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 944 MiB (MemAvailable 2427 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 4.0 MiB = 238 frames) source=conf
+1794101010.503345 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/cDNG_26-11-08_C0001 format=cdng compression=none media_class=usb-storage media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no
+1794101010.559677 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=86701490610
+1794102818.938300 apertar start-apertar-core.sh[823]: ApertarCore recording stop: no frame written for 5113 ms, treating the medium as gone
+1794102818.949880 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=50411 written=50411 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 fault=media_removed peak_queue=79/12 queue_bytes_peak=327628800 queue_budget=990222745
+1794102818.950061 apertar start-apertar-core.sh[823]: ApertarCore recorder stop time: 8.017s format=cdng discarded_on_stop=0
