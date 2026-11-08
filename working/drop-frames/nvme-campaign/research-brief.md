@@ -2,7 +2,10 @@
 
 > Read with its date: sections 1-10 were written before the readers reported and before the owner's later decisions; sections 11-15
 > carry the corrections (the HDR16 file is 16.59 MB, not 16.90; the campaign runs on the Corsair cards, not on a Kingston; the 75 %
-> rule is removed; the audio watch). The plan itself is `plan.md`; this file is the trail of how it was derived.
+> rule is removed; the audio watch). The plan itself is `plan.md`; this file is the trail of how it was derived. Where this note and
+> `plan.md` differ, `plan.md` is right: in particular section 15's "the split code is unlikely" was reversed by the red team (the fault
+> take ran with `frames_per_folder` 200 and stopped exactly at a part boundary, frame 800), and the Kingston rows of sections 11-14 are
+> superseded by the owner's decision to run everything on the Corsair cards.
 
 
 Labels: measured / derived / probable / unconfirmed, as in the KB.
