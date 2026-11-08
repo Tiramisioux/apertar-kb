@@ -1,0 +1,19 @@
+folder /media/RAW/probe_exfat_dir_123143  entries/file 5  used_bytes_before 3615752192  csv /run/apertar-media/exfat_probe_123143.csv
+created 5000  last-5000 median 0.777 ms  elapsed 3.9 s
+created 10000  last-5000 median 2.343 ms  elapsed 15.7 s
+folder fsync 3.8 ms; create total 15.7 s
+check: st_size 0 st_blocks 0 (both must be 0)
+create: files  median_ms  p90_ms  max_ms   (per block of 1000)
+create:    1000      0.163   0.283    0.551
+create:    2000      0.468   0.592    0.882
+create:    3000      0.775   0.899    1.201
+create:    4000      1.081   1.209    1.577
+create:    5000      1.383   1.537    2.004
+create:    6000      1.692   1.884    2.336
+create:    7000      2.008   2.233    2.800
+create:    8000      2.318   2.574    3.207
+create:    9000      2.632   2.916    3.553
+create:   10000      2.943   3.287    3.902
+create: fit median_ns = -152425 + 308.88 * files   (slope / entries-per-file = c per entry)
+used_bytes_after_create 3617456128  delta 1703936 (expect ~1600000 B of directory, rounded up to 128 KiB clusters)
+used_bytes_end 3617456128  csv written /run/apertar-media/exfat_probe_123143.csv

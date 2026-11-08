@@ -1,0 +1,58 @@
+folder /media/RAW/probe_exfat_dir_123040  entries/file 4  used_bytes_before 3615752192  csv /run/apertar-media/exfat_probe_123040.csv
+created 5000  last-5000 median 0.625 ms  elapsed 3.2 s
+created 10000  last-5000 median 1.881 ms  elapsed 12.6 s
+created 15000  last-5000 median 3.155 ms  elapsed 28.5 s
+created 20000  last-5000 median 4.439 ms  elapsed 50.9 s
+folder fsync 2.3 ms; create total 50.9 s
+check: st_size 0 st_blocks 0 (both must be 0)
+create: files  median_ms  p90_ms  max_ms   (per block of 1000)
+create:    1000      0.131   0.229    0.775
+create:    2000      0.379   0.476    0.672
+create:    3000      0.623   0.722    1.429
+create:    4000      0.864   0.972    1.322
+create:    5000      1.109   1.223    1.694
+create:    6000      1.353   1.500    2.047
+create:    7000      1.602   1.746    2.822
+create:    8000      1.857   2.040    2.661
+create:    9000      2.100   2.371    2.949
+create:   10000      2.347   2.626    3.344
+create:   11000      2.598   2.961    3.661
+create:   12000      2.851   3.220    4.143
+create:   13000      3.103   3.514    4.197
+create:   14000      3.356   3.781    4.432
+create:   15000      3.608   4.083    4.757
+create:   16000      3.855   4.343    5.069
+create:   17000      4.119   4.653    5.248
+create:   18000      4.372   4.942    5.635
+create:   19000      4.633   5.186    5.784
+create:   20000      4.882   5.574    6.171
+create: fit median_ns = -138911 + 250.10 * files   (slope / entries-per-file = c per entry)
+used_bytes_after_create 3618373632  delta 2621440 (expect ~2560000 B of directory, rounded up to 128 KiB clusters)
+unlinked 5000  last-5000 median 0.005 ms  elapsed 0.0 s
+unlinked 10000  last-5000 median 0.005 ms  elapsed 0.1 s
+unlinked 15000  last-5000 median 0.005 ms  elapsed 0.1 s
+unlinked 20000  last-5000 median 0.005 ms  elapsed 0.1 s
+unlink total 0.2 s; folder removed
+unlink: files  median_ms  p90_ms  max_ms   (per block of 1000)
+unlink:    1000      0.005   0.005    0.061
+unlink:    2000      0.005   0.005    0.021
+unlink:    3000      0.005   0.005    0.016
+unlink:    4000      0.005   0.005    0.234
+unlink:    5000      0.005   0.009    0.027
+unlink:    6000      0.005   0.006    0.374
+unlink:    7000      0.005   0.005    0.025
+unlink:    8000      0.005   0.005    0.188
+unlink:    9000      0.005   0.005    0.017
+unlink:   10000      0.005   0.005    0.016
+unlink:   11000      0.005   0.005    0.017
+unlink:   12000      0.005   0.010    0.066
+unlink:   13000      0.005   0.005    0.569
+unlink:   14000      0.005   0.005    0.503
+unlink:   15000      0.005   0.005    0.027
+unlink:   16000      0.005   0.006    0.568
+unlink:   17000      0.005   0.005    0.008
+unlink:   18000      0.005   0.005    0.012
+unlink:   19000      0.005   0.010    0.961
+unlink:   20000      0.005   0.005    0.023
+unlink: fit median_ns = 4800 + 0.01 * files   (slope / entries-per-file = c per entry)
+used_bytes_end 3615752192  csv written /run/apertar-media/exfat_probe_123040.csv
