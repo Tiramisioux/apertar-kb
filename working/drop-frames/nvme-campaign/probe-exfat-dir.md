@@ -102,11 +102,16 @@ afterwards, in the same boot.
   short source walk (≤ 1.6 ms per rename at the start of a part) (derived, unmeasured). Wall time of this run was 96 s for
   48 s inside the renames: the script's own `lexists` check before each rename is a second walk of the target.
 
-## Step 4 (cold-cache delete): not run
+## Step 4 (cold-cache delete): prepared, not measured
 
-It needs the owner's `sudo` for `drop_caches`. The warm-cache unlink is 5 µs per file. The cold-cache figure (a delete after
-a reboot, which re-walks the directory per file) is still **unconfirmed**. Folder names to use if it is run:
-`--n 10000 --keep`, then `sync && echo 3 | sudo tee /proc/sys/vm/drop_caches`, then `--delete-only --dir <folder>`.
+The warm-cache unlink is 5 µs per file; the cold-cache figure (a delete after a reboot) is still **unconfirmed**.
+`probe_exfat_dir_125428` (10,000 empty files, create fit 309.0 ns per file) was made on the test card at 12:54 and kept.
+The owner's `drop_caches` ran after a reboot at about 13:00 that changed the drive: the NVMe was out and the Samsung T7
+(`/dev/sda1`) was on `/media/RAW` for the SSD campaign, so the `--delete-only` run found no folder and did nothing.
+**The folder is still on the NVMe test card.** The first mount of that card after a boot is a cold cache by itself: run
+`python3 -I ~/exfat_dir_probe.py --delete-only --dir /media/RAW/probe_exfat_dir_125428` then, before anything lists the
+folder (WebUI Media page closed; Core's merge scan only checks for `.parts`, and the touch UI's clip browser stays shut),
+and record the result here. It also removes the folder (zero wear: empty files).
 
 ## Step 5: afterwards (measured)
 
