@@ -189,6 +189,7 @@ folder mid-take) not built: the audio session builds its WAV only at stop from o
 | Commit | Change | Status |
 | --- | --- | --- |
 | `7029db1` | Touch UI: Settings > Timecode has UI timecode and File timecode (bridge `fileTimecodeMode` from Core's state); the tap on the camera screen toggles the UI timecode only | fork-only, Pi only; building 2026-10-29, not tested |
+| `7ea9afc` | Clip browser, player and image prefetch read split clips (`part_NNN/`, Core `d7dd337`) via `src/ClipFrameFiles.hpp`; local branch `clip-split` from `drop-frames` `c153c33` | fork-only; Pi only; built, not tried on a touch screen |
 | `c9d841f` | T38 part 4: the touch UI no longer writes a default `apertar-hardware.conf` when it is missing (both bridges); local branch `controls` | fork-only |
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `08cefcf` | timecode modes named Time of Day and Clip | fork-only |
