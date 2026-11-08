@@ -11,6 +11,13 @@ starting at the sensor's max fps and steps fps down by 1 until a take is clean f
 full with no dropped frame ("pass_drive_full"). A take stops at the FIRST dropped frame. No cooldown waits.
 Only clip folders this script created under /media/RAW are ever deleted. Audio settings are never changed.
 Resume: run it again with the same --out; finished configs are skipped.
+
+Added 2026-11-08 (storage-slowdown plan): every 1 Hz sample also carries Core's write-buffer level (buffer_used/capacity),
+the recording disk's /sys/block stat counters (writes, sectors, write ticks, in flight: the device's own latency), Dirty and
+Writeback from /proc/meminfo and Core's trim state; every take carries the RAM budget in MiB and in seconds of input, the
+recorder's stop time and whether Core logged "nothing was written" at the stop, the idle gap since the previous take, the
+slope of Core's CPU over the take (the directory-walk signature) and whether a trim finished since the previous take. DNGs
+are counted recursively (a clip split into part_*/ folders counts the same). Analysis: longtakes_fill.py.
 """
 import argparse, collections, csv, glob, itertools, json, os, re, shutil, signal, socket, sqlite3, subprocess, sys, threading, time
 
@@ -306,15 +313,44 @@ def storage_frontier(rows, size_mb):
     return min(rates) if rates else None
 
 
+SAMPLE_COLS = ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'throttled', 'dropped',
+               'state', 'core_cpu_pct', 'core_top_thread', 'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors',
+               'dev_w_ticks', 'dev_inflight', 'dirty_kb', 'writeback_kb', 'trim_running', 'trim_last_unix')
+DEV = {'disk': ''}      # the recording drive's whole-disk name (sda, nvme0n1) for /sys/block/<disk>/stat; set in main()
+LAST_END = {'t': None}  # wall time the previous take ended (idle gap, trim-since-last-take)
+
+
+def dev_stat(disk):
+    """/sys/block/<disk>/stat: writes completed, sectors written, write ticks (ms), in flight. Cumulative; differentiate later."""
+    try:
+        f = open('/sys/block/%s/stat' % disk).read().split()
+        return int(f[4]), int(f[6]), int(f[7]), int(f[8])
+    except (OSError, IndexError, ValueError):
+        return None, None, None, None
+
+
+def buffer_level(st):
+    """Core's write-buffer level: from get_state when it carries it, else from the lock-free GET /api/buffer."""
+    used, cap = st.get('buffer_used'), st.get('buffer_capacity')
+    if used is None or cap is None:
+        import urllib.request
+        try:
+            b = json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/buffer', timeout=0.5))
+            used, cap = b.get('buffer_used'), b.get('buffer_capacity')
+        except Exception:
+            pass
+    return used, cap
+
+
 class Sampler(threading.Thread):
-    """1 Hz: temps, cpu, ram, drive fill, throttle flags, Core drop counter. Keeps every sample for the take."""
+    """1 Hz: temps, cpu, ram, drive fill, throttle flags, Core drop counter, Core's buffer level, the disk's own counters,
+    dirty pages and the trim state. Keeps every sample for the take."""
     def __init__(self, t0, csv_path):
         super().__init__(daemon=True)
         self.t0, self.stop_ev, self.rows = t0, threading.Event(), []
         self.f = open(csv_path, 'w', newline='')
         self.w = csv.writer(self.f)
-        self.w.writerow(['t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb',
-                         'throttled', 'dropped', 'state', 'core_cpu_pct', 'core_top_thread'])
+        self.w.writerow(list(SAMPLE_COLS))
         self.prev = self.cpu_times()
         self.core_pid = self.find_core()
         self.prev_core = None
@@ -369,10 +405,14 @@ class Sampler(threading.Thread):
         pt, pi_ = self.prev
         cpu = 100.0 * (1 - (idle - pi_) / max(1, tot - pt))
         self.prev = (tot, idle)
-        mem = 0
+        mem, dirty, wb = 0, None, None
         for l in open('/proc/meminfo'):
             if l.startswith('MemAvailable'):
                 mem = int(l.split()[1]) // 1024
+            elif l.startswith('Dirty:'):
+                dirty = int(l.split()[1])
+            elif l.startswith('Writeback:'):
+                wb = int(l.split()[1])
         sv = os.statvfs(MEDIA)
         total, free = sv.f_blocks * sv.f_frsize, sv.f_bavail * sv.f_frsize
         thr = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip().split('=')[-1]
@@ -380,18 +420,22 @@ class Sampler(threading.Thread):
         ccpu, ctop = self.core_cpu()
         pi = int(rd(PI_TEMP, '0')) / 1000
         nv = int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else None
+        used, cap = buffer_level(st)
+        w_ios, w_sect, w_ticks, inflight = dev_stat(DEV['disk']) if DEV['disk'] else (None, None, None, None)
         return {'t_s': round(time.monotonic() - self.t0, 1), 'pi_c': pi, 'nvme_c': nv, 'cpu_pct': round(cpu, 1),
                 'load1': os.getloadavg()[0], 'mem_avail_mb': mem, 'fill_pct': round(100 * (1 - free / total), 1),
                 'free_gb': round(free / 2**30, 1), 'throttled': thr, 'dropped': st.get('recording_dropped_frames', -1),
                 'state': 'rec' if st.get('recording') else str(st.get('state')), '_st': st,
-                'core_cpu_pct': ccpu, 'core_top_thread': ctop}
+                'core_cpu_pct': ccpu, 'core_top_thread': ctop,
+                'buffer_used': used, 'buffer_capacity': cap, 'dev_w_ios': w_ios, 'dev_w_sectors': w_sect,
+                'dev_w_ticks': w_ticks, 'dev_inflight': inflight, 'dirty_kb': dirty, 'writeback_kb': wb,
+                'trim_running': st.get('media_trim_running'), 'trim_last_unix': st.get('media_trim_last_unix')}
 
     def run(self):
         while not self.stop_ev.is_set():
             r = self.sample()
             self.rows.append(r)
-            self.w.writerow([r[k] for k in ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct',
-                                              'free_gb', 'throttled', 'dropped', 'state', 'core_cpu_pct', 'core_top_thread')])
+            self.w.writerow([r.get(k) for k in SAMPLE_COLS])
             self.f.flush()
             self.stop_ev.wait(0.5)
 
@@ -604,10 +648,13 @@ CREATE TABLE IF NOT EXISTS takes(take_id TEXT PRIMARY KEY, cfg_id TEXT, mode TEX
   mem_avail_mb REAL, fill_pct REAL, throttled TEXT, files INT, missing INT, audio TEXT, gb_written REAL,
   trim_events INT, drive_full TEXT, drive_full_at_s REAL, start_pi_c REAL, start_nvme_c REAL, clip TEXT,
   started TEXT, mismatch TEXT, variant TEXT, media_class TEXT, buffer_setting TEXT, buffer_safety_stop TEXT,
-  buffer_flush_discarded TEXT, tune_readback TEXT, core_cpu_avg REAL, core_cpu_max REAL, core_top_thread TEXT);
+  buffer_flush_discarded TEXT, tune_readback TEXT, core_cpu_avg REAL, core_cpu_max REAL, core_top_thread TEXT,
+  queue_budget_mib REAL, budget_seconds REAL, recorder_stop_s REAL, stall_msg INT, idle_gap_s REAL, core_cpu_slope REAL,
+  trim_before TEXT);
 CREATE TABLE IF NOT EXISTS samples(take_id TEXT, t_s REAL, pi_c REAL, nvme_c REAL, cpu_pct REAL, load1 REAL,
   mem_avail_mb REAL, fill_pct REAL, free_gb REAL, throttled TEXT, dropped INT, state TEXT, core_cpu_pct REAL,
-  core_top_thread TEXT);
+  core_top_thread TEXT, buffer_used REAL, buffer_capacity REAL, dev_w_ios INT, dev_w_sectors INT, dev_w_ticks INT,
+  dev_inflight INT, dirty_kb INT, writeback_kb INT, trim_running TEXT, trim_last_unix INT);
 CREATE INDEX IF NOT EXISTS samples_take ON samples(take_id);
 CREATE TABLE IF NOT EXISTS drop_events(take_id TEXT, t_unix REAL, t_rel_s REAL, kind TEXT, frames INT, dt_us INT,
   nominal_us INT);
@@ -643,13 +690,20 @@ def db_ingest(out, row, payload):
     try:
         con.executescript(DB_SCHEMA)
         for table, col, typ in (('takes', 'core_cpu_avg', 'REAL'), ('takes', 'core_cpu_max', 'REAL'), ('takes', 'core_top_thread', 'TEXT'),
-                                ('samples', 'core_cpu_pct', 'REAL'), ('samples', 'core_top_thread', 'TEXT')):
+                                ('takes', 'queue_budget_mib', 'REAL'), ('takes', 'budget_seconds', 'REAL'), ('takes', 'recorder_stop_s', 'REAL'),
+                                ('takes', 'stall_msg', 'INT'), ('takes', 'idle_gap_s', 'REAL'), ('takes', 'core_cpu_slope', 'REAL'),
+                                ('takes', 'trim_before', 'TEXT'),
+                                ('samples', 'core_cpu_pct', 'REAL'), ('samples', 'core_top_thread', 'TEXT'),
+                                ('samples', 'buffer_used', 'REAL'), ('samples', 'buffer_capacity', 'REAL'), ('samples', 'dev_w_ios', 'INT'),
+                                ('samples', 'dev_w_sectors', 'INT'), ('samples', 'dev_w_ticks', 'INT'), ('samples', 'dev_inflight', 'INT'),
+                                ('samples', 'dirty_kb', 'INT'), ('samples', 'writeback_kb', 'INT'), ('samples', 'trim_running', 'TEXT'),
+                                ('samples', 'trim_last_unix', 'INT')):
             if col not in [c[1] for c in con.execute('PRAGMA table_info(%s)' % table)]:
                 con.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table, col, typ))
         for t in ('takes', 'samples', 'drop_events', 'stats', 'journal'):
             con.execute('DELETE FROM %s WHERE take_id=?' % t, (tid,))
         r = row
-        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 47), (
+        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 54), (
             tid, r.get('cfg_id'), r.get('mode'), int(r.get('bits') or 0), r.get('comp'), _flag(r.get('log')), _flag(r.get('tdn')),
             _flag(r.get('lock')), _flag(r.get('trim')), _flag(r.get('web')), _num(r.get('fps')), r.get('outcome'),
             _num(r.get('seconds')), int(_num(r.get('dropped')) or 0), _num(r.get('first_drop_s')), r.get('drop_kinds'),
@@ -660,11 +714,14 @@ def db_ingest(out, row, payload):
             _num(r.get('drive_full_at_s')), _num(r.get('start_pi_c')), _num(r.get('start_nvme_c')), r.get('clip'),
             r.get('started'), r.get('mismatch'), r.get('variant'), r.get('media_class'), r.get('buffer_setting'),
             r.get('buffer_safety_stop'), r.get('buffer_flush_discarded'), r.get('tune_readback'),
-            _num(r.get('core_cpu_avg')), _num(r.get('core_cpu_max')), r.get('core_top_thread')))
-        con.executemany('INSERT INTO samples VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [
-            (tid, x.get('t_s'), x.get('pi_c'), x.get('nvme_c'), x.get('cpu_pct'), x.get('load1'), x.get('mem_avail_mb'),
-             x.get('fill_pct'), x.get('free_gb'), x.get('throttled'), x.get('dropped'), x.get('state'),
-             x.get('core_cpu_pct') if x.get('core_cpu_pct') not in ('', None) else None, x.get('core_top_thread'))
+            _num(r.get('core_cpu_avg')), _num(r.get('core_cpu_max')), r.get('core_top_thread'),
+            _num(r.get('queue_budget_mib')), _num(r.get('budget_seconds')), _num(r.get('recorder_stop_s')),
+            int(_num(r.get('stall_msg')) or 0), _num(r.get('idle_gap_s')), _num(r.get('core_cpu_slope')), r.get('trim_before')))
+        numeric = {'t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'dropped', 'core_cpu_pct',
+                   'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors', 'dev_w_ticks', 'dev_inflight', 'dirty_kb',
+                   'writeback_kb', 'trim_last_unix'}
+        con.executemany('INSERT INTO samples(take_id, %s) VALUES (?, %s)' % (','.join(SAMPLE_COLS), ','.join('?' * len(SAMPLE_COLS))), [
+            (tid,) + tuple((_num(x.get(k)) if k in numeric else x.get(k)) if x.get(k) not in ('', None) else None for k in SAMPLE_COLS)
             for x in payload.get('samples', [])])
         lines = payload.get('journal', [])
         t_rec = payload.get('t_rec_wall')
@@ -755,7 +812,8 @@ FIELDS = ['take_id', 'cfg_id', 'mode', 'bits', 'comp', 'log', 'tdn', 'lock', 'tr
           'load1', 'mem_avail_mb', 'fill_pct', 'throttled', 'files', 'missing', 'audio', 'gb_written', 'trim_events',
           'drive_full', 'drive_full_at_s', 'start_pi_c', 'start_nvme_c', 'clip', 'stats', 'mismatch', 'started', 'variant', 'media_class', 'buffer_setting',
           'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback', 'buffer_peak_pct', 'core_cpu_avg', 'core_cpu_max',
-          'core_top_thread']
+          'core_top_thread', 'queue_budget_mib', 'budget_seconds', 'recorder_stop_s', 'stall_msg', 'idle_gap_s', 'core_cpu_slope',
+          'trim_before']
 
 
 def append_row(out, row):
@@ -849,9 +907,16 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     row = {'take_id': tid, 'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn, 'lock': c.lock,
            'trim': c.trim, 'web': c.web, 'fps': fps, 'started': time.strftime('%F %T'), 'variant': variant,
            'tune_readback': tune_note}
+    row['idle_gap_s'] = round(time.time() - LAST_END['t'], 1) if LAST_END['t'] else ''
     st = apply_cfg(c, fps)
     mism = verify(c, fps, st)
     row['mismatch'] = mism
+    # Did a trim finish between the previous take's end and this one's start? (Core trims after a delete made outside it
+    # since cinemate-port f4a1393; the result is only visible in its state, never in a take's journal window.)
+    tl = _num(st.get('media_trim_last_unix'))
+    row['trim_before'] = ('%s %s' % (st.get('media_trim_last_result') or '?',
+                                     'since-last-take' if (tl and LAST_END['t'] and tl >= LAST_END['t'] - 1) else 'older')
+                          if st.get('media_trim_last_result') is not None else '')
     if mism:
         row['outcome'] = 'skipped_unavailable' if 'log_applied' in mism and c.log else 'setup_mismatch'
         if row['outcome'] == 'skipped_unavailable':
@@ -946,11 +1011,12 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     audio, size = '', 0
     if clip and os.path.isdir(clip):
         nums, af = [], []
-        for n in os.listdir(clip):
-            fp = os.path.join(clip, n)
-            m = re.search(r'_(\d{9})\.dng$', n)
-            if m: nums.append(int(m.group(1)))
-            elif not n.endswith('.dng'): af.append('%s:%d' % (n, os.path.getsize(fp)))
+        for root_dir, _dirs, fnames in os.walk(clip):     # recursive: a clip split into part_*/ folders counts the same
+            for n in fnames:
+                fp = os.path.join(root_dir, n)
+                m = re.search(r'_(\d{9})\.dng$', n)
+                if m: nums.append(int(m.group(1)))
+                elif not n.endswith('.dng') and root_dir == clip: af.append('%s:%d' % (n, os.path.getsize(fp)))
         nums.sort()
         files = len(nums)
         missing = (nums[-1] + 1 - len(nums)) if nums else 0
@@ -981,14 +1047,37 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     dropped = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0), missing)
     gb = 0
     if clip and os.path.isdir(clip) and files:
-        names = [n for n in os.listdir(clip) if n.endswith('.dng')][:20]
+        names = []
+        for root_dir, _dirs, fnames in os.walk(clip):
+            names += [os.path.join(root_dir, n) for n in fnames if n.endswith('.dng')][:20 - len(names)]
+            if len(names) >= 20: break
         if names:
-            gb = files * (sum(os.path.getsize(os.path.join(clip, n)) for n in names) / len(names)) / 1e9
+            gb = files * (sum(os.path.getsize(n) for n in names) / len(names)) / 1e9
     cc = [x['core_cpu_pct'] for x in sam.rows if x.get('core_cpu_pct') is not None]
     row['core_cpu_avg'] = round(sum(cc) / len(cc), 1) if cc else ''
     row['core_cpu_max'] = max(cc) if cc else ''
     tt = collections.Counter(x.get('core_top_thread', '').split(':')[0] for x in sam.rows if x.get('core_top_thread'))
     row['core_top_thread'] = tt.most_common(1)[0][0] if tt else ''
+    # The RAM budget in seconds of input, the stop time, the stop-path stall message, and the slope of Core's CPU over
+    # the take (fraction of one core per second; with 5 directory entries per frame file, c = slope / (fps^2 x 5)).
+    budget_b = float(stats.get('queue_budget', 0) or 0)
+    frame_b = (gb * 1e9 / files) if files else 0
+    row['queue_budget_mib'] = round(budget_b / 2**20, 1) if budget_b else ''
+    row['budget_seconds'] = round(budget_b / (fps * frame_b), 1) if budget_b and frame_b else ''
+    stop_s = ''
+    for l in jl:
+        m = re.search(r'recorder stop time: ([\d.]+)s', l)
+        if m: stop_s = float(m.group(1))
+    row['recorder_stop_s'] = stop_s
+    row['stall_msg'] = 1 if any('no frame written' in l or 'stopped responding' in l for l in jl) else 0
+    pts = [(x['t_s'], x['core_cpu_pct'] / 100.0) for x in sam.rows
+           if x.get('core_cpu_pct') is not None and x.get('state') == 'rec' and x['t_s'] > 20]
+    if len(pts) >= 60:
+        mx = sum(p[0] for p in pts) / len(pts); my = sum(p[1] for p in pts) / len(pts)
+        sxx = sum((p[0] - mx) ** 2 for p in pts)
+        row['core_cpu_slope'] = '%.3e' % (sum((p[0] - mx) * (p[1] - my) for p in pts) / sxx) if sxx else ''
+    else:
+        row['core_cpu_slope'] = ''
     if not stop_on_drop and outcome.startswith('pass'):
         outcome = 'ab_clean' if dropped == 0 else 'ab_dropped'
     pis = [x['pi_c'] for x in sam.rows]; nvs = [x['nvme_c'] for x in sam.rows if x['nvme_c']]
@@ -1020,6 +1109,7 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         c.id, fps, outcome, seconds, dropped, row['drop_kinds'], ctx.get('pi_c', 0), ctx.get('nvme_c')))
     row['_payload'] = {'samples': [{k: v for k, v in x.items() if k != '_st'} for x in sam.rows], 'journal': jl,
                        't_rec_wall': t_rec_wall}
+    LAST_END['t'] = time.time()
     return row
 
 
@@ -1077,6 +1167,7 @@ def main():
     KT['dev'] = src or KT['dev']
     parent = subprocess.run(['lsblk', '-no', 'pkname', src], capture_output=True, text=True).stdout.strip().splitlines()
     parent = '/dev/' + parent[0] if parent else src
+    DEV['disk'] = os.path.basename(parent)
     if not os.path.exists(out + '/session.json'):
         sess = {'started': time.strftime('%F %T'), 'pi_model': rd('/proc/device-tree/model', '').strip('\0'),
                 'kernel': subprocess.run(['uname', '-r'], capture_output=True, text=True).stdout.strip(),
