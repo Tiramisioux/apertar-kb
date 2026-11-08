@@ -45,6 +45,7 @@ The human manual (conventions, how to update GitHub) is the Obsidian note
 | How the two DNG write chains compare, why 4K Clear HDR 16-bit and 4K 50 fps still drop, what the drop-frames work changed, whether the pre-roll matters | `working/dng-chain-answer.md`, then `working/dng-chain/STATUS.md` |
 | Can Apertar record drop-free at 4K SDR 50 fps and Clear HDR 16-bit 25 fps, under which conditions, and which measurement decides it | `working/dng-chain-feasibility.md`, then `working/dng-chain/F/` |
 | Why the 4K 16-bit Clear HDR preview flickers (and Cinemate's does not), and how to find the stage | `working/clearhdr16-preview.md`, then tutorial T55 |
+| An unsupervised 4K recording campaign on the Corsair CFe cards: the plan, its rules, the runner build list, the Opus handoff, the research and critiques behind it | `working/drop-frames/nvme-campaign/plan.md`, then `working/handoff-nvme-campaign.md` |
 | Two IMX585 on one Apertar (Cinemate's dual-sensor feature): two Cores, the preview and record modes, frame sync by the phase lock | `working/dual-sensor/README.md`, then its `plan-summary.md` |
 
 ## Writing rules
