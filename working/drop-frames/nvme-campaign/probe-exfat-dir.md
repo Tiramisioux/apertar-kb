@@ -102,16 +102,28 @@ afterwards, in the same boot.
   short source walk (≤ 1.6 ms per rename at the start of a part) (derived, unmeasured). Wall time of this run was 96 s for
   48 s inside the renames: the script's own `lexists` check before each rename is a second walk of the target.
 
-## Step 4 (cold-cache delete): prepared, not measured
+## Step 4 (cold-cache delete): measured 2026-11-08 13:16
 
-The warm-cache unlink is 5 µs per file; the cold-cache figure (a delete after a reboot) is still **unconfirmed**.
-`probe_exfat_dir_125428` (10,000 empty files, create fit 309.0 ns per file) was made on the test card at 12:54 and kept.
-The owner's `drop_caches` ran after a reboot at about 13:00 that changed the drive: the NVMe was out and the Samsung T7
-(`/dev/sda1`) was on `/media/RAW` for the SSD campaign, so the `--delete-only` run found no folder and did nothing.
-**The folder is still on the NVMe test card.** The first mount of that card after a boot is a cold cache by itself: run
-`python3 -I ~/exfat_dir_probe.py --delete-only --dir /media/RAW/probe_exfat_dir_125428` then, before anything lists the
-folder (WebUI Media page closed; Core's merge scan only checks for `.parts`, and the touch UI's clip browser stays shut),
-and record the result here. It also removes the folder (zero wear: empty files).
+`probe_exfat_dir_125428` (10,000 empty files, made at 12:54 and kept) was deleted 27 s after a boot with the NVMe test card
+A936B442006AC2 on `/media/RAW`, before anything had listed the folder. The boot was the cold cache (no `drop_caches`).
+The earlier `drop_caches` attempt found the Samsung T7 mounted instead and did nothing. The kernel said at mount:
+"Volume was not properly unmounted" (the shutdown before was not clean). Raw output: `probe-exfat-dir-raw/step4-cold-delete.out`, `.csv.gz`.
+
+| files deleted so far | median ms per unlink | p90 ms | max ms |
+| ---: | ---: | ---: | ---: |
+| 1,000 | 0.143 | 0.248 | 0.467 |
+| 5,000 | 1.194 | 1.319 | 2.542 |
+| 10,000 | 2.519 | 2.861 | 3.850 |
+
+- **measured:** the cold unlink grows linearly with the number of files already deleted: median_ns = -124,414 + 263.80 x files.
+  That is 52.8 ns per directory entry (5 per file), close to c = 63.3 ns for a create. Total 13.6 s for 10,000 files,
+  against 5 µs per file flat with a warm cache.
+- **probable:** each cold lookup walks the directory from its start past the entries already freed, which are still in
+  the directory stream. With a warm cache the walk is skipped.
+- **derived (extrapolated, not measured):** a flat 45,000-frame clip deleted after a boot costs about
+  0.2638 µs x 45,000² / 2 ≈ 267 s (4.5 min). A clip split into folders of N frames costs about 0.13 µs x N x frames:
+  N = 1,000 gives about 6 s for 45,000 frames. So splitting also bounds the cold delete, not only the create.
+- The folder is gone; used bytes went from 3,617,456,128 to 3,615,752,192.
 
 ## Step 5: afterwards (measured)
 
