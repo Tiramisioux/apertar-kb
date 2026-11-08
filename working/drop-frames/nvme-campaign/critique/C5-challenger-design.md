@@ -314,3 +314,153 @@ into the confirmation take (~0.4 TB, 1 h), the camera-free paced directory probe
 a cheaper per-card check. v2 beats mine on: the build list (A15 forced-drop check, the helper, Core prerequisites), the audio watch,
 currency (cold delete measured, clip-split verified), the write-pattern matrix, Part B's 30-min fidelity, pre-roll off, the stricter
 "one lever variant per mode" wear rule. Hybrid: v2 plus the seven changes of section 13, ~8-9 TB.
+
+## Verification (skeptic)
+
+Skeptic pass, 2026-11-08 ~13:35. Scope: every KB-citing claim and number in sections 1-11 (sections 12-14 were appended by the author at
+13:19 and are used here only where 12.4 corrects 1-11). Opened: KB at origin/main `6e0df02` (hardware-log, findings-2026-11-04,
+observations-2026-11-04, preregistration, recipe, nvme-4k-recipe-plan, inspection-2026-11-02, media-tune-file, probe-exfat-dir with step 4,
+clip-split-verify, findings-longtakes-ssd, longtakes-test-structure, fork-log), the two branch pages and the branch's `longtakes.py` /
+`exfat_write_probe.py` via `git show`, R1, R2, R3, R8, R10, C1 with its skeptic verdicts, constraints §10-15, `plan-v2.md` as of 13:26 and
+`handoff-nvme-campaign.md` 13:25. Nothing ran on the camera or the network. Arithmetic recomputed from R3's frame sizes (16.59 / 12.45 /
+12.44 / 5.98 MB; crops 11.95 / 9.26) and the probe fit `median_ns = -183,673 + 316.64 x files`.
+
+### 1. Claims and numbers in sections 1-11
+
+**CONFIRMED** (the source says what C5 says): §1 drops at 27-30 fps within 4-170 s (findings:42 is the s28 row; R1 row 206 puts its five
+drops at s 4, 38, 137, 168, 170; t2 4 s, t1 119 s); TDN 37 ms vs 35.7 ms, p = 1/6 (R2 §2d); phase lock 10 holes per 60 s (R2 §4);
+HDR16 lossless ~17.5 fps; #25 safety stop at ~22 s, ~550 MB/s derived (R1 row 99); `drain_fps` (slowdown plan §4.1); pre-roll 16.84 /
+48.13 / 62.9 (findings-11-03:47, R1 row 207, drop-frames README:185); reanalysis §4 c = 77-133 ns from 17 takes. §2 every frame size, file
+count and GB figure within 1 GB (747 / 836 / 896; 628 / 672; 739 / 941 / 985; 452; 672; 947 / 700; 1,076); the shares 35 / 44 / 51 / 61 /
+100 % (14.07 / 15.77 / 16.91 / 18.62 / 23.75 ms); the fit at probe:60; 10 min clean 4 of 7, all TDN on, WebUI closed (R1 §3); d4 180 s /
+5,055 with the stand-in; depth 2 lost 1-5 (d3 1, d2 2, s28 5); t1 3 lost at 119 s, queue 11/12; 29 never run; the Log take 117 / 10
+(hardware-log:779-796); +0.62 GB/s DRAM, sign unknown (R2 §2c); t2b 601 s / 19,857 / 72 C; t2a 19,851 / 2.81 cores; O3 unconfirmed;
+#23 554 lost; ~4.2 cores derived; the crop take 12 % lost at 50 fps on an untrimmed 78-82 % card (R1 rows 44-45); 3-min TDN-off 1+0 and
+2+0, instrumented TDN-on 39-116 (R2 line 109; R1 rows 193, 201); O1 1 lost, the only 10-min take with the WebUI open. §3-4 the fixed storage
+state sync / on / 1000 / 4 / 12 (media-tune-file:38-39); `kernel_tune` helper not installed (R2 §4); nvme-4k-recipe-plan:15; recipe:68-70;
+preregistration:750-752; observations:58-61; fork-log 69a700e and 175-195; depth-2 stop-on-drop takes failed at 44 and 77 s (d2, d3);
+`exfat_dir_probe.py --delete-only` exists; `exfat_write_probe.py` has `--fps --size-mb --workers --subdir --direct --chunk-kb` and
+`longtakes.py` has `--max-seconds` (both on the unmerged branch only, not on main); the SSD storage A/B = 4 knobs x 3 repeats x 2 modes =
+24 (nvme-4k-recipe-plan). §5 the 25 % line 32,161 / 28,777 / 26,898 / 24,505; the walk-alone slope 5 c fps^2 = 2.48e-4 per s = 0.25 cores
+per 1,000 s at 28 fps; SSD passes at 56-97 % shares, failures at 33,566-61,806 files (reanalysis §2, §4); 3.3e-5 and 1.5 losses (C1 §0);
+inspection:523; the HDR arms' 30-min shares 35-51 %; the "minute ~20" failure of a single-folder SDR12 take at 42 fps holds on a better
+basis than C5 gives: the reanalysis' all-in 99 ns per entry crosses the 23.8 ms period at ~48,100 files = minute 19 (probable). §6 the
+rewritten S4 order (HDR16 -> SDR12 unc 0 -> 42 -> 91 %; then HDR12 -> lossless -> Log 0 -> 34 -> 57 -> 88 %) passes the gate at every step.
+§7 the R10 facts (`DISK_MBPS` 354, resume by `--out`, the audio-format restore, `log_probe`, the stage letters); the branch columns
+`buffer_used`, `dev_w_ticks`, `dirty_kb`, `writeback_kb`, `media_trim_last_*`, `core_cpu_slope`; `<run>/longtakes.db`. §9 the SSD ladder
+5.9 TB (R3 §5); the shares of 600 TBW (0.04 / 0.45 / 0.30 / 0.52 / 0.35; total 1.66 %); S4 1,786 GB; S6 1,960 (+941) GB; S7 1,010 GB.
+§10 MN / MNR2 / CORE Mini, pSLC ~50 GB, ~800 MB/s, 600 TBW (R8 §2).
+
+**CORRECTED**:
+1. §1(3), §5(2), §8 rule 5(a): the attribution window "Core CPU slope within 50 % of 5 x c x fps^2 (c = 63.3 ns)" excludes the only
+   measured in-take directory signature. The SSD's 17 slopes were 2.9-6.0e-4 per s = 77-133 ns per entry, 1.2-2.1x the walk alone (1.56x at
+   the median 99 ns; reanalysis §4). A directory-driven drop at the SSD's slope would be read as "not the directory". The window must be
+   c = 63-133 ns; `plan-v2.md` §7 already uses 77-133 ns.
+2. §5(1): "25 % ceiling ... 18,500 at 42" -> 19,379 (18,524 is the 44 fps figure). C5 §12.4(a) already says 19,400.
+3. §5(1): "the 15-min tier is under the line for every HDR arm (22,500-27,000 files, 17-27 %)" -> 17-25 %: HDR12 at 30 fps (27,000 files,
+   8.37 ms) is 25.1 %, on the line, not under; nothing in the tier gives 27 %.
+4. §3 S4: "22,500-37,800 files = 17-57 %" -> the arms listed give 22,500-39,600 files = 17-54 % (37,800 at 42 fps is 49.5 %; 57 % needs
+   40,500 files at 45 fps).
+5. §3 S4 row vs §6: the S4 row still says HDR16 -> SDR12 lossless -> HDR12 "-> 99 %"; that third take fails C5's own gate by 0.1 GB
+   (free 355.8 GB against 335.9 x 1.03 + 10 = 356.0) and would trigger a delete. §6 was rewritten at 13:19 to HDR16 -> SDR12 unc (0 -> 42 ->
+   91 %, which passes: 582 GB free against 517 needed); the S4 row was not.
+6. §3 S0 and §11(1): the probe's step 4 (cold delete) was measured at 13:16 (probe-exfat-dir.md step 4: 52.8 ns per entry, 13.6 s per 10,000
+   files; KB commit `4548e71`): not an S0 item, and "the last unconfirmed number of the probe" no longer exists. C5 §12.4(c) acknowledges.
+7. §3 S1 bytes and hours: S1(b) as described is four 30-min runs (25/s and 42/s, each flat and `--subdir 5000`) = 45 + 45 + 75.6 + 75.6 =
+   ~240 GB and 2 h. So S1 is ~350 GB (100 + 240 + the smoke test), not "~250 GB"; §11(2) "(1 h)" and §12.1 item 3 "120 GB in all" halve it.
+   `plan-v2.md` §6 S1 carries the same "~120 GB".
+8. §3 "about 17 h of runner time" vs §9 "~19": the stage hours sum to 19 (0.5 + 2.5 + 3 + 2 + 1 + 2 + 2.5 + 3 + 2.5).
+9. §3 S2 SDR12 meter "safety stop in ~13-18 s at a 1.4 GB budget": the record's budget on this board at 0.6 / 512 was 250-1,283 MiB, median
+   635 (reanalysis §8), so at 50 fps (surplus 72-97 MB/s against #25's 525-550 MB/s) the window is ~6-8 s, too short for a capacity
+   reading. The 13-18 s needs the 1.4 GB of 2026-11-01, which needed ~3.2 GB available.
+10. §2 HDR12 row "(the SSD run skipped it)": the SSD run ran 4K Clear HDR 12-bit (findings-longtakes-ssd row "4K SDR 10/12-bit, 4K Clear
+    HDR 12-bit ... 5.8-12.6 fps", slow buffer_full). "No NVMe take at all" stands (no HDR12 row in R1).
+11. §9 "the four drop-frames evenings wrote 0.84-1.55 TB each (R3 §5, measured)": three evenings are measured (+1.34, +0.84, +1.55);
+    evening 4 has no data-units figure (R3 §5 "not recorded").
+12. §2 crops row "75,600-79,200; 100-115 %": 79,200 files at 44 fps = 24.89 ms / 22.73 ms = 110 %; 115 % is 45 fps.
+13. §3 S2 HDR16 "~1.1 TB" is the low case: the listed takes run to length (warm-up 28, the 28 pair 84 + 139, 29 x 2, Log ABBA 2 x 63 + 2 x 84,
+    WebUI ABBA 4 x 84, TDN-on 75, phase lock 25, Log at 30 67, end control 84) sum to ~1.3-1.4 TB; early drops are what bring it to 1.1.
+14. §1(3) label: the probe's c = 63.3 ns is derived (316.64 / 5); the fit is the measured quantity (probe:60-62).
+15. §4 FE depth "~40 GB" for two depth-2 takes is the low end: 44-77 s at 28 fps x 16.59 MB = 20-36 GB each, 41-72 GB for the pair.
+16. §5(5) and §8 rule 2: the two-concordant-take screening rule is a deviation from the owner's R4 ("eliminate at its first dropped frame");
+    C5 does not flag it as one (`plan-v2.md` §1 R4 does).
+
+**UNSUPPORTED**:
+1. §3 S1(a) "`exfat_write_probe.py --direct --chunk-kb 0`: one direct-write run, 100 GB, O_DIRECT 16 MiB blocks": the tool writes many files
+   of `--size-mb` (default 1.3 MB; `--direct` pads each to 4 KiB), so the flags as written do not produce a 100 GB single-stream direct
+   write. The nearest form is `--size-mb 16 --files 6250 --chunk-kb 0 --direct --workers 1` (6,250 files, one write each). The tool exists
+   only on the unmerged branch.
+2. §5(1b) "when 5cN plus the mapping share reaches the period": the mapping share is an estimate, never measured (R3 §2: 4.9-9.7 ms at
+   25 fps, F4; C1 F6: 3.6-7.3 ms per 12.4 MB file). The conclusion (minute ~20) stands on the reanalysis' all-in 99 ns instead (CONFIRMED
+   above); the mechanism as stated is an estimate.
+3. §10 and §3 S7 "No 30-min take on a shooting card unless the owner asks": contradicts the owner's own transfer-set wording (constraints
+   §7: per CFe card "one 15-min take and one max-length take") and R12 "as in real life"; the owner chose the Corsair cards as the test
+   media. C5 §13 item 6 reverses it.
+
+### 2. Ideas in C5 that `plan-v2.md` (13:26) has not adopted
+
+Already in v2 since the 13:00 draft, not re-judged: split first above the 60 % create share (§0, §3, §5, §6 S5); the 5-min take as the
+second concordant take inside the mode block (S3); the paced probe as an owner's option (S1, §11.4); the crops' ceiling search as the
+owner's choice per crop (§4); S4 ordered for fill (§6 S4); Part B with one 30-min HDR16 take per card (~1.4 TB); pre-roll ON; the depth-2
+block as an owner's option (§5, §11.4); the attribution window at 77-133 ns (§7); the early/late step-down rule; the four-case split
+verdict; the voids and stop conditions; the part-boundary reading of the audio fault (§5a).
+
+**ADOPT**:
+- A1. Log at 30 fps, one stop-on-drop 3-min HDR16 take after the Log ABBA at 28 (C5 §3 S2, §4) -> v2 §5 Log row and §6 S2. Recipe.md:68-70
+  names Log the untried byte-reducing lever against the 30-fps limit, R2 §2c says its sign is unknown, and v2 keeps 30 in the bracket;
+  cost <= 67 GB (a t1-length failure ~45 GB). Rule: carried to S4 only if it beats the pooled 28-fps controls or is the only clean arm at 30.
+- A2. The storage group without `kernel_tune` (C5 §4) unless the owner installs `apertar-media-tune` in S0 -> v2 §5 storage-knobs row: the
+  helper is not installed (R2 §4, config.md:459), so `kernel_tune on` does nothing and the "group" silently tests three knobs, not four.
+- A3. Name S4's order and its fill (C5 §6 current) -> v2 §6 S4: "the second ends near 75 %" is HDR16 -> HDR12 (418 + 336 = 754 GB = 76 %);
+  HDR16 -> the heaviest SDR12 (418 + 492 = 910 GB = 92 %) is the stronger datum for #78's open question and passes the gate (582 GB free
+  against 517 needed). Say which.
+- A4. If the paced probe is bought, the 42 files/s pair only (C5 §3 S1(b), §5(3)) -> v2 §6 S1: the 25/s pair is predicted to pass (35 %
+  share) and adds 90 GB for nothing; 42/s flat vs `--subdir 5000` is ~150 GB and 1 h and is the one camera-free result that can make the
+  SDR12 unsplit control skippable. Correct v2's "~120 GB" (the four-run form is ~240 GB, 2 h).
+- A5. HDR12's S6 split soak (-0.67 TB) into v2 §8's cut list (C5 §9): HDR12 is the owner's third mode (R1 names HDR16 and SDR12 first) and
+  its soak buys only the n = 2 datum.
+- A6. If the depth-2 block is bought, C5's form (two 3-min depth-2 takes; the D4 member is the walk's pooled 28-fps controls; 41-72 GB)
+  instead of v2 §5's "one ABBA pair ... two Core restarts": depth is a restart lever, so a true ABBA needs four restarts; with two it is
+  AABB in two processes either way. Keep it optional and call it AABB.
+
+**REJECT**:
+- R1. C5 §3 S2 HDR16 "30 fps: not run (ruled out 11-04)": v2 keeps 30 in the bracket on the C0 board's clean 135 s at 30 fps
+  (longtakes-test-structure.md:140; the 11-04 t1 board is unrecorded, C4 item 7); under stop-on-drop a failing 30-fps take costs <= 50 GB.
+- R2. The SDR12 meter take at 50 fps (C5 §3 S2 SDR12): at the record's 250-1,283 MiB budgets the buffer fills in 6-8 s; v2's 44-46 fps with
+  a 5-10 % overshoot (C1 F8 and its skeptic note 5) gives a 15-30 s window. Step up to 50 only if 46 does not fill the buffer.
+- R3. Five arms in the long tiers (C5 §3 S4/S5, §6: HDR16, Log, SDR12 unc, SDR12 lossless, HDR12): v2's "at most one lever variant per mode
+  goes forward (best + runner-up)" (C1 F3) is the wear rule; C5 §12.2 item 7 concedes. (The cheap extra, if the owner wants both SDR12
+  compressions at 30 min, is the lossless take: 452 GB.)
+- R4. The depth-2 block "at the START of evening 2" (C5 §4, §11): the first scored takes after a restart are the position artifact C1 F2
+  warns of; v2 §7 "a lever pair never starts a block". After the warm-up and a control, if at all.
+- R5. C5 §10's principle "no 30-min take on a shooting card unless the owner asks": contradicts constraints §7 and R12; v2's default (one
+  30-min HDR16 take per card) stands.
+- R6. C5 §3 S0 cold-delete step 4 as an S0 item: done (CORRECTED 6).
+- R7. The 100 GB knee probe (C5 §3 S1(a), §10): v2's 60 GB is enough; both the pSLC rate and the ~800 MB/s floor (web) sit above the Pi's
+  Gen 3 x1 link (~760 MB/s), so no knee is expected; the probe confirms the link rate and starts the temperature record.
+
+**OWNER'S CALL** (v2 already asks; nothing to add): the paced probe itself (in A4's form; v2 §11.4), the crops' ceiling search vs
+confirmation at winner + 1 (v2 §4), the depth-2 block (v2 §11.4), the SDR12 unsplit 30-min control as a recorded prediction check (941 GB;
+v2 §6 S5).
+
+### 3. Misreadings in `plan-v2.md` (13:26) of what it took from C5
+
+- M1. §3 split-first rule: "SDR12 or HDR12 uncompressed at >= 33 fps": HDR12's mode maximum is 30 fps (hardware-log:830), so that arm does
+  not exist. "A predicted failure in minute 20-25 from the directory alone" overstates: at 42 fps the walk alone reaches 100 % only at
+  minute 30; minute 19-25 follows from the all-in 99 ns per entry (reanalysis §4) or the estimated mapping share. Write "from the
+  directory's all-in in-take cost".
+- M2. §5 frames_per_folder row: "35-61 % of the period at the 30-min targets" is stale for the SDR12 targets (42-44 fps: 100-110 %; §3
+  has the right numbers).
+- M3. §6 S1: the paced probe "(~120 GB)" is the two-run count; the four runs described are ~240 GB and 2 h (C5's own undercount, CORRECTED 7).
+- M4. §6 S4: "the second ends near 75 % full" holds for HDR16 -> HDR12; with the heaviest SDR12 second it is ~92 % (A3).
+- M5. §7 split verdict: "Split second is the conservative order" and the four readings now apply only to the arms below 60 %. For the SDR12
+  arms (split first) an unsplit control run second is hot and older, so "unsplit drops late, split held" cannot be read as "consistent
+  with the directory mattering"; for them the pair is a prediction check only. Say so.
+- M6. §5 FE depth row: "one ABBA pair ... two Core restarts" is inconsistent (A6).
+- M7. §5a: "stopped with 799 frames written, i.e. exactly at frame 800, the start of `part_004`": 799 files are indices 0-798 and parts of
+  200 end at index 799, so the stop sits within one frame of the part_003 / part_004 boundary, not exactly on it. The suspect stands;
+  the word "exactly" does not.
+- Checked and not misread: the 5-min take as the second concordant take with the 1-1 rule (S2 and S3 now agree); the early/late step-down
+  rule; signature (a) at 77-133 ns (v2 corrected C5's window, CORRECTED 1); the four-case split verdict; the voids and stop conditions;
+  Part B's default; 19,400 at 42 fps; the 100 / 142 % shares at 42 / 50 fps; pre-roll ON; the handoff (13:25) agrees with v2 (13:26)
+  on all of these.

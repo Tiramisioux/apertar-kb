@@ -131,3 +131,44 @@ findings-evening4-supervised-2026-11-04,findings-2026-11-04,observations-2026-11
 `session.json` and 182 journal windows, `working/drop-frames/night-2026-11-01.md`, `working/handoff-drop-frames-tier1.md`,
 `working/drop-frames/inspection-raw/cofactors.md`; branch pages `storage-slowdown-plan.md`, `reanalysis-longtakes-ssd-2026-11-08.md`;
 research R1, R2 (§2c, §5), R3, R8, R10; critique C1.
+
+## Verification (skeptic)
+
+Re-read 2026-11-08 against the KB at `e2d2499` and the branch page; every count below was redone from `results.csv` (629 rows, 182 real
+takes) and the 182 journal windows with `grep`/`csv` only. Nothing ran against the camera or the network. Default on missing evidence: REFUTED.
+
+### The ten corrections
+
+| # | Verdict | Why |
+| --- | --- | --- |
+| 1 | **HOLDS** | `fork-log.md:181-182`: Core `f4a1393..ba0658d` "(then `..01f170c`, the two verify fixes)", "the camera runs this Core build since the 13:00 boot"; `:189-190` the two rows; `clip-split-verify.md` step 7: merge=off did not hold at start on `ba0658d`, "re-checked after `01f170c`". The fixes were built inside that boot (Core restarts, not a reboot) |
+| 2 | **HOLDS** (one-frame nit) | Page `:4-5` 4K HDR16 25 fps, WebUI closed; `frames_per_folder` 200 in force from step 6 to step 9 (C0008 = 4,502 frames in 23 parts); step 7 merges C0005's 799 files, so it was split; note `:23-24` merge off. 200 / 25 = 8 s per part; frames are 0-indexed (step 2: `…000`-`…502`), so part_004 starts at index 800 = 32.0 s. 799 written = indices 0-798: one short of filling part_003, two short of the first part_004 write (40-80 ms); the coincidence stands as a live candidate |
+| 3 | **HOLDS** for 2K, **OVERSTATED** for 4K | `results.csv`: 2kHDR12 uncompressed 3.12 MB/frame with Log (n = 11) and without (n = 8); 11 of 11 log1 journals: `CineMate Log 16->12 … composed with the CCMP expansion`; `findings-longtakes-ssd:35-36`. But the run has **no** 4K HDR12 uncompressed take without Log; the three with Log read 12.24 / 12.90 / 12.50 MB from `gb_written` at 0.1 GB resolution (±5 %): "12.50 (n = 1)" is a rounding artefact, not a measurement |
+| 4 | **HOLDS** | `probe-exfat-dir.md:105-126` as quoted (263.80 ns x files, 52.8 ns per entry, 13.6 s, 267 s, ~6 s at N = 1,000) |
+| 5 | **HOLDS** | `hardware-log.md:871-874`: 1289 of 1424 MiB once (01:00:35, 4K lossless). Budget = 0.6 x MemAvailable − 512 MiB (`R5.md:296`; the journal lines fit it exactly), so 1424 needs ≈ 3,227 MiB available. 182 `buffer: ram budget` lines: 250-1,283 MiB, median **628** (the reanalysis says 635). No per-take Corsair budget is transcribed anywhere (`grep "ram budget"`: only the 1424 at `S3.md:355`, `R5.md:296`) |
+| 6 | **OVERSTATED** | The facts hold (`config.md:125` Core start / card insert / after a format; `hardware-log.md:842-855` 0.7 GB; `cofactors.md:60`, `hardware-log.md:909-910` trim after the pre-roll delete; R2 §5 item 16 the 10-min wait). But `plan-v1.md:90` never called it a per-take cost ("it consumes prepared blocks and frames the first take"), and `build-list.md:51` (E3) already dropped the runner's wait. Keeping it ON is a judgement, not a fact correction |
+| 7 | **HOLDS** on the datum, **OVERSTATED** on the record | `longtakes-test-structure.md:31` baseline = uncompressed, Log/TDN/lock off, trim on, no client, at the mode top (30 fps); `:139-140` one take each; evening 4's t1 (3 lost in 119 s at 30) ran on the earlier board. But "no revision recorded before `session.json`" is wrong: `working/dual-sensor/r5-pi-hardware.md:12` (2026-11-03) read **`c041a0`** on the earlier board too. The code is the model code (CM5 Lite, 4 GB) and cannot tell the boards apart; record the CPU serial. The page names neither drive nor build for the 135-s take ("Kingston, f4a1393" is an inference: 498 MB/s cannot be the T7) |
+| 8 | **HOLDS** exactly | 72 of 182 windows carry `audio capture`; `results.csv`: 110 `audio=NONE`, 72 WAVs; 15 thirty-minute passes, 8 with audio, 7 without; windows on 03:29-04:41 and 16:12-00:26; no `ALSA`, `Broken pipe`, `recording failure` or `audio discontinuity` line in any window (0 faults in 72); `findings-longtakes-ssd:4` is wrong; the runner has no audio-missing outcome |
+| 9 | **HOLDS** | `reanalysis §4`: 77-133 ns, median 99, slopes 2.9e-4 to 6.0e-4 core/s; "read the 99 ns as the all-in per-entry cost of a take and the 63 ns as the walk alone". Caveat the red team omits: the 17 takes are 2K on the T7 (USB), so the range transfers to NVMe 4K as an assumption; the 63.3 floor covers it |
+| 10 | **HOLDS** | The rule is at `probe-exfat-dir.md:154-162` (not :142-150): prerequisites of "the 15/30-min stages", the split A/B "mandatory", "the 15-min stage at 25 fps (22,500 files, 17 %) is under the line on its own" |
+
+### The omitted facts
+
+1 HOLDS (= item 1). 2 HOLDS (`clip-split-verify.md`, steps 2-9, `:19` 0.10-0.45 / 0.72 ms). 3 HOLDS (= 4). 4 HOLDS with the one-frame nit (= 2).
+5 HOLDS for 2K, OVERSTATED for 4K (= 3). 6 HOLDS (facts of item 6). 7 HOLDS / OVERSTATED (= 7). 8 HOLDS (= 8).
+9 HOLDS; the cites are off by one: 9 KB is `hardware-log.md:423` ("audio writer peak 9 KB"), 16 KB `:744`.
+10 HOLDS verbatim (`cinemate-lessons.md:84` "Core's `measured_drift_ppm` is the whole-take ratio Cinemate retired … silent under-delivery … would be 'corrected' by stretching"; `:70`; `storage-answer.md:36-38`).
+11 HOLDS; 82.9 C at `:716`, the 85 C critical is `:384` ("NVMe 55 °C (crit 85)", 2026-10-28), not `:383`.
+12 HOLDS as labelled: `S1.md:37` says FW `ERFM…` = MP600 Mini R2 / Phison E27T (R6 d.1; `ELFMB…` = E21T), status **probable (snippet-level sources)**, "settle: `nvme id-ctrl …`"; `M.md:102` repeats it "per S1". Whether `mn` separates MN from MNR2 is not established (R8 §6: check part numbers), so "settles it" is the KB's proposal, not a verified fact.
+13 HOLDS (`dng-chain-feasibility.md:30, 131, 340`). 14 HOLDS (0 of 182 windows have `dropped_gap_estimate` or `capture stats`; `clip-split-verify.md:25`).
+15 HOLDS (R8 `:126, 211, 217`; `session.json` kernel `6.12.75+rpt-rpi-2712`).
+16 OVERSTATED: no 10-min 4K take on `f4a1393` is right (R1 `:347-349`: C0101 `4ab1057`, A0/A1 `a40112a`, #78/#80 `64bbbaa`…), but the binary's longest 4K take is the SSD run's 4K SDR10 lossless **5-min pass** (300.2 s, 7,505 frames, T7, with audio), not the verification's 3 min; "3 min" holds for 4K uncompressed on the NVMe only.
+17 HOLDS (`night-2026-11-01.md:106-108`).
+
+Section 2 slip that matters: "the erased 2026-11-07 **Corsair** run" — that run was on the Kingston (`longtakes-campaign-plan.md:8, 15`; R3 row 8 says "NVMe"). The Corsair's unrecorded writes since 29.01 TB are evening 4 plus the 11-08 verification (19,819 frames x 16.59 MB ≈ 0.33 TB).
+
+### Adoption in `plan-v2.md`
+
+Adopted: 1, 2, 3 (HDR12 Log dropped), 4, 5, 6 (pre-roll ON, a judgement), 8, 9, 10; omitted facts 1-6, 8-15, 17.
+Adopted wrongly: (a) §5 fps row keeps "30 not (measured / probable)" and §2 "30 fps loses ~3 frames in 2 min" without the "earlier board" label the red team asked for (30 is in the walk, so half-adopted); (b) §5 Log row says "4K 12.50 MB **with or without Log, measured** on the SSD run": no 4K HDR12 uncompressed take without Log exists, and the with-Log figure is 12.2-12.9 at 0.1 GB resolution; (c) §5a desk read "at `ba0658d`" (`:180`) should be `01f170c` (the audio files are unchanged between them, so wording only); (d) §0 / §8 "~31-33 TB after the 11-07/08 runs (derived)" inherits the Corsair/Kingston slip above: ~30-31 TB is the better derived figure (evening 4 unrecorded).
+Skipped: omitted fact 16 (the campaign binary's 4K record is 3 min on the NVMe, 5 min on the T7; the 7 clean 10-min takes are older builds) appears nowhere in §2 or the §7 claims; §7's 75 C flag still cites only the web 80 C / 65 C, not the measured 82.9 / 85 C (they are in §2 only); `storage_preroll_last` per restart (item 6's suggestion) is not among the recorded fields (build-list H10 records the setting `storage_preroll_auto`, not the result).

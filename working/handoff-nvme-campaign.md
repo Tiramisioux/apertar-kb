@@ -3,7 +3,7 @@
 For: a Claude Code session in VS Code on the Mac, model Opus, with the `apertar-dev` skill, working with Patrik and driving the Pi over
 `ssh apertar`. Written 2026-11-08 by the cloud session that researched the record and wrote `working/drop-frames/nvme-campaign/plan.md`.
 Before pasting: the KB PR carrying the plan is merged; pull on the Mac and the Pi (`apertar_publish.sh kb`). Paste the block below, or say
-"read `~/Documents/Apertar/apertar-kb/working/drop-frames/handoff-nvme-campaign.md` and start".
+"read `~/Documents/Apertar/apertar-kb/working/handoff-nvme-campaign.md` and start".
 
 ---
 
@@ -19,14 +19,14 @@ READ FIRST (Mac ~/Documents/Apertar/apertar-kb/):
 2. working/drop-frames/nvme-campaign/build-list.md, SECTION H (the consolidated list; it supersedes the numbered items above it): the
    runner's base is the unmerged branch claude/practical-johnson-he481b (49c6f46), which already has the fit gate, the watchdog, the
    budget cap, the lock and the sampler columns the plan reads; H0 is to merge it or build on it; never use its --fix-budget (0.9/256).
-   H1-H4 block the smoke test, H5-H13 block S2, H15-H16 block the long tiers, D is the root helper in two parts, E the Core items. Then working/drop-frames/nvme-campaign/research/R10-longtakes-runner.md (how
+   H0-H4, H6 and H18 block the smoke test (S0); H5, H7-H15, H17 and H21-H25 block S2; H16 the long tiers; D is the root helper in two parts, E the Core items. Then working/drop-frames/nvme-campaign/research/R10-longtakes-runner.md (how
    longtakes.py works today and its risks) and working/tools/longtakes.py itself.
 3. working/drop-frames/nvme-4k-recipe-plan.md (the capture-side ruling-out rules you inherit), working/drop-frames/storage-slowdown-plan.md
    (the storage mechanisms and the buffer-as-a-meter method), working/drop-frames/nvme-campaign/probe-exfat-dir.md (the measured directory
    cost and its pre-registered rule), working/drop-frames/recipe.md (the measures that made 4K Clear HDR 16-bit run clean).
 4. working/drop-frames/nvme-campaign/research/R1-take-ledger.md section 4 (the confounders: position after a restart, instrumentation,
    WebUI, fill, trim, heat, two cards) and R2-lever-inventory.md section 5 (what you must not do; its binary facts are stale: the camera
-   runs cinemate-port ba0658d since 2026-11-08 13:00).
+   runs cinemate-port 01f170c, i.e. ba0658d plus the two merge-worker fixes, since the 2026-11-08 13:00 boot).
 5. working/drop-frames/nvme-campaign/critique/ (the critiques and the skeptic's verdicts): what the plan changed and why.
 Then run ~/.claude/skills/apertar-dev/scripts/apertar_status.sh and report: Core and UI tips on the Pi and GitHub, the running binary
 (expect cinemate-port 01f170c or later; get_state must show frames_per_folder, clip_merge_enabled, cdng_log, buffer_setting, recording_dropped_frames), the mounted card
@@ -37,18 +37,22 @@ main. Stop and say so if anything differs from the plan's section 2.
 THE ORDER OF WORK:
 Phase 0, desk (one evening, nothing on the Pi but reads):
   - The audio fault of 2026-11-08 (plan 5a; the take C0005 of clip-split-verify.md, `recording failure: fault=write_error ... ALSA capture:
-    Broken pipe` at 32 s): it ran with frames_per_folder 200 at 25 fps and stopped with 799 frames written, i.e. at frame 800, the start of
-    part_004 (a part boundary every 8 s), so the boundary path (folder creation and its fsync, in the diff f4a1393..01f170c) is the first
+    Broken pipe` at 32 s): it ran with frames_per_folder 200 at 25 fps and stopped with 799 frames written (indices 0-798), within one frame of the
+    part_003/part_004 boundary at index 800 (a part boundary every 8 s), so the boundary path (folder creation and its fsync, in the diff f4a1393..01f170c) is the first
     suspect; then pull that take's journal window (the failure line, the stop reason,
     "audio writer: peak_backlog_kb", any usb or compaction line at that second) and read src/audio/AudioRecordingSession.cpp and
-    src/audio/TimestampedAudioCapture.cpp at ba0658d: does an xrun end the take? If yes, propose the Core fix to Patrik (snd_pcm_recover,
-    pad the gap with silence, log "audio discontinuity", continue) as the first commit, with a host test where possible.
+    src/audio/TimestampedAudioCapture.cpp at 01f170c (unchanged since ba0658d): does an xrun end the take? If yes, propose the Core fix to Patrik (snd_pcm_recover,
+    pad the gap with silence, log "audio discontinuity", continue) as the first Core commit, before the long tiers, with a host test where
+    possible. Read the request format of POST /api/media/delete in src/.../WebControlPage.cpp at 01f170c before writing H5.
   - The build list's section H on longtakes.py (branch base first), with host tests (tools/longtakes_test.py, H18), reviewed by a Sonnet
     worker against R10's risk list and C2 section 3; the campaign root helper (D: read-only words for the runner, interactive-only words
     for Patrik) drafted for his review; the pre-registration page (nvme-campaign/preregistration.md) from
     the plan's section 7 with the die rolls Patrik gives you for the ABBA orders.
 Phase 1, S0 with Patrik (about 2 h): the clip-split verification is on record (nvme-campaign/clip-split-verify.md), do not repeat it; instead
-  one forced-drop check of which journal lines this binary prints per drop (this base logs no dropped_gap_estimate); the helper and sudoers
+  one forced-drop check of which journal lines this binary prints per drop (no drop line has been seen yet because no verification take
+  dropped; the KB's code reading says they print on a gap); the crop probe (list_sensor_modes and one set_resolution read-back per planned
+  crop and bit depth, heights into H17); the tuning back to automatic with Patrik if a manual file is active; the ladder off and read back;
+  audio-usb once; the Mac stand-in's reconnect checked by pulling the Mac's network for 60 s; the helper and sudoers
   installed by him; the campaign drop-in armed (ONE line, LIBCAMERA_RPI_CONFIG_FILE to the depth-4 YAML the runner copied to /run/apertar-media; no debug
   log) with a Core restart and an environ read-back; the merge switched off over the socket (set_clip_merge enabled=false) and read back;
   the pre-roll stays on as in real use; Patrik's footage offloaded from the card; fsck.exfat -n; the campaign timers masked by the helper;
@@ -58,11 +62,12 @@ Phase 1, S0 with Patrik (about 2 h): the clip-split verification is on record (n
 Phase 2, S1 (about 1 h, no camera, Core idle): storage_facts.sh; the 60 GB direct write with a 1 Hz bandwidth log (link-limited on the Pi,
   no knee expected; it confirms the rate and starts the temperature record); the write-pattern matrix; the drive-state writes; the paced
   small-file probe only if Patrik buys it (plan 6 S1).
-Phase 3, S2 (one night, unsupervised): start the runner detached for the screening (the 5-min confirmation take runs inside each mode block
-  as the second concordant take of a clean cell); read status.md between takes; after S2 write the prognosis page (survival tables per
-  cell, lever verdicts, the audio trend) and send Patrik the go/no-go for the long tiers (the runner waits for the GO-S4 sentinel).
-Phase 4, S4-S6 (two to three nights): the 15-min unsplit takes ordered so the second ends near 75 % full; the 30-min tier on an empty trimmed
-  card, unsplit first for arms below the 60 % create share and SPLIT FIRST above it (SDR12 at >= 33-42 fps: plan section 3); the soak as
+Phase 3, S2 (one night, unsupervised): start the runner detached for the screening (the fps walk, the ABBA lever pairs, the one stop-on-drop Log take at 30 fps HDR16, the
+  TDN-on take; the 5-min confirmation take runs inside each mode block as the second concordant take of a clean cell); read status.md between takes; after S2 write the prognosis page (survival tables per
+  cell, lever verdicts, the audio trend) and send Patrik the go/no-go for the long tiers (the runner waits for the GO-S4 sentinel; GO-S5, GO-S6 and GO-PARTB follow, each
+  placed in advance only with its pass condition, and an 8-h wait ends the night cleanly).
+Phase 4, S4-S6 (two to three nights): the 15-min unsplit takes ordered HDR16 -> heaviest SDR12 -> HDR12 so the second ends near 80-92 % full; the 30-min tier (the gate empties the card only
+  when a take does not fit), unsplit first for arms below the 60 % create share and SPLIT FIRST above it (SDR12 at >= 33-42 fps: plan section 3); the soak as
   the split variant; the conditional work. Patrik's OK per tier, asynchronous through the status file and your message.
 Phase 5, Part B (one evening per other Corsair card, Patrik swaps the card and has offloaded its footage): the card's part number (a QLC
   CORE Mini is refused), serial, fsck and trim-at-mount recorded; the 60 GB knee probe; one 30-min take of the winning HDR16 arm and one
@@ -70,10 +75,11 @@ Phase 5, Part B (one evening per other Corsair card, Patrik swaps the card and h
 Phase 6, desk: the findings page, the recipe per mode, the duration-vs-fps table, hardware-log entries after Patrik confirms each reading,
   the end-of-campaign delete and trim, the restore list read back, the helpers removed by Patrik.
 
-RULES (the plan's section 7 and R2 section 5 in full; the ones that bite):
+RULES (the plan's section 7, and R2 section 5 except its items 1, 6, 17 and 20, which the plan supersedes: the binary is 01f170c, S1
+writes probes to the card, there is no 75 % ceiling, a stopped night leaves the Pi on; the ones that bite):
 - Patrik runs or installs every sudo command; the helper allows only the exact words he reviewed. Never widen sudoers; never run sudo yourself.
 - Never record while a build runs; never build while a take runs; nothing else on the Pi during a take (no journalctl, no ls /media/RAW,
-  no second WebUI: the Mac stand-in is the only client); read only status.md and decisions.log while a take runs.
+  no second WebUI: the Mac stand-in is the only client); status.md and decisions.log are written between takes and read between takes.
 - Never delete with a glob; the runner deletes only folders in its own database, never Patrik's clips; deletes happen in the boot that
   wrote them; never format without Patrik.
 - Never edit defaults-pisp or the installed pipeline YAML; copies only. Never disable_tdn. Never load or save presets. Ladder off for takes.
@@ -92,10 +98,11 @@ RULES (the plan's section 7 and R2 section 5 in full; the ones that bite):
 
 STOP AND ASK PATRIK (or stop the night when unsupervised: restore, write the status, leave the Pi on): the mounted card is not the one you
 expect; get_state lacks a field the runner needs; a set_* command is refused; Core in error; critical_warning != 0; a kernel nvme/pcie/exFAT
-line; an under-voltage event; a second void; a second audio fault in one night; a runner crash; anything outside the plan and the
-pre-registration.
+line; media_alive false; an under-voltage event; a second void; a second audio fault in one night; a runner crash; the write budget
+reached; any kernel move to 6.18.y before its NVMe fix; anything outside the plan and the pre-registration.
 
-START: the status check, then the Phase 0 plan as one message to Patrik with the questions of plan section 11.
+START: the status check, then the Phase 0 plan as one message to Patrik with the questions of plan section 11 (item 8, the two-concordant
+deviation from "one drop = out", asked in so many words).
 ```
 
 ## State to fill in at handoff time

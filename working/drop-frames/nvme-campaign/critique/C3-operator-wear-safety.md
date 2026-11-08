@@ -316,3 +316,81 @@ conditional work; Part B ~2 h per card plus the offload of the owner's footage (
 - The status file and decision log written atomically only between takes; the one small read from ssh; nothing else on the Pi during a
   take.
 - The exact-command sudoers pattern and "Patrik installs every helper from reviewed text" (narrow it per F7, do not drop it).
+
+## Verification (skeptic)
+
+Appended 2026-11-08 by a second reader. Method: every citation above opened with cat/sed/grep in the KB working tree `e2d2499` (branch
+pages via `git show origin/claude/practical-johnson-he481b:`), the plan read as it stood at the time of writing (`plan-v2.md` 358 lines,
+`build-list.md` §H). Nothing ran on the camera or the network. Verdicts: HOLDS / OVERSTATED / REFUTED; default REFUTED where no evidence.
+
+### Per finding
+
+- **F1 HOLDS.** Owner's clips on the card (`probe-exfat-dir.md:26,33`; `preregistration.md:784`), `errors=remount-ro` (probe step 0), the
+  three controller events (`hardware-log.md:123-131` 19:35 idle `CSTS=0xffffffff`, recovered by PCIe re-init; `:295-313` 22:28 `Disabling
+  device after reset failure: -19`, `state=dead`; `:716-720` 2026-10-30 the same, volume read-only, reboot), bad checksums and stray entries
+  in C0030 after the first (`:301-302`), two Pi resets (`longtakes-campaign-plan.md:4-6`), "Volume was not properly unmounted" at the 13:16
+  boot (probe step 4, `:110`): all check. Adopted (v2 §6 S0, §7 void list, H5).
+- **F2 HOLDS.** The `/run` drop-in dies at reboot (`e4-helper.sh:42`); the AUTORESUME `@reboot` line exists only in the branch storage plan
+  (§7, `:206-209`) and was not in the build list. Adopted (v2 §7 "A Pi reset ends the night", H16).
+- **F3 HOLDS in thrust; one detail wrong each way.** "1 in 9" checks: `clip-split-verify.md` has nine takes C0001-C0009 (step 9) and one
+  `ALSA capture: Broken pipe` stop (`:23`). "0 in 189 with audio" is the findings page's claim (`findings-longtakes-ssd-2026-11-07.md:4-5`),
+  but only 72 of the 182 journal windows in `longtakes-ssd-2026-11-07/journal/` contain an `audio capture` line (grep count; none contains
+  ALSA / xrun / Broken pipe): the base is **0 of 72**, on another rig (CM5 + USB T7, mostly 2K). And "32 s is no part boundary" was the
+  constraints' claim that C3 accepted unchecked: at `frames_per_folder` 200 and 25 fps, 799 frames written = a stop at frame 800 = the
+  start of `part_004` (v2 §5a now says so), so the part-boundary path is the first suspect, not the one excluded. Adopted (§5a, H11, E1).
+- **F4 HOLDS.** R10 §7 (`:369-371`): the sampler dies on `statvfs` and the `finally` does not `record_stop`; no Core-side take-length limit
+  is in the KB. Adopted (H15).
+- **F5 HOLDS except (b).** (a) no take > 602 s (v2 §2); (b) 103 T1 transitions / 7,653 s is the 2026-11-02 baseline (`night-2026-11-01.md:108`)
+  and was **unchanged** after evening 1 (`findings-2026-11-02.md:71`); no later T1 reading exists and the card's 334 power-on hours / 2,218
+  power cycles predate the rig, so "has throttled in this rig before" is UNCONFIRMED; (c) A12 start/end confirmed; (d) S5 order was fixed;
+  (e) 100 GB / ~0.7 GB/s = 2.4 min, right. Adopted (H14, H17 rotation, S1 text).
+- **F6 HOLDS.** `POST /api/media/delete` pauses the merge, deletes and trims (`clip-split-verify.md:16`: `paused (media delete)` at 1852/4502,
+  `ok` in 0.1 s, trim 479 ms; n = 1, merge ON, warm cache); the 1 GiB-per-poll trigger is cited consistently (R3 `:236`, storage plan §5
+  `:137`, `ApertarCoreApp.cpp:10863-10869`). Adopted (H5).
+- **F7 HOLDS.** `e4-sudoers:4-14` grants `reboot` and `poweroff` NOPASSWD; A3/A12 called the helper with `sudo -n`. Adopted (D, §11.6).
+- **F8 HOLDS for the plan's rule, wrong about the code.** `longtakes.py:869-874` does not fail the start: it logs a WARNING, sets
+  `mismatch=web_client_not_connected` and runs the take without a client (R10 `:116-117` says the same); the void came from v2 §7's own
+  rule. Adopted (§7 WAIT state, H9).
+- **F9 HOLDS (arithmetic); one point OVERSTATED.** Recomputed at 16.59 / 12.44 / 12.44 MB and 28 / 40 / 30 fps: a 30-min round is 836 + 896 +
+  672 = 2,404 GB (S5 and S6 each), 15-min 1,202 (S4), 5-min 401 (S3); with S0+S1 130-220 and S2 2,200-2,500 (a take-count model) the total
+  is 8.7-9.3 TB, not 8.3; worst +2.4 +2.4 +0.54 = ~14 TB; 600 - 31..33 = ~570 TB = ~570 days at 1 TB; 25.3 / 0.03 = 843 TB implied. The
+  WebUI-off pair "answers a question real use does not ask" ignores that the owner listed WebUI on/off as a lever (constraints §10 R2): a
+  suggestion, not a defect. Adopted: S3 folded, knee probe 60 GB, Part B HDR12 dropped; the claims-table wording is not (gaps).
+- **F10 HOLDS.** Default on (`fork-log.md:188`), pause 33 ms at 4,503 files (`clip-split-verify.md:14`), ~5.2 min of renames at 45,000 (probe
+  §3b). Adopted: the verify() checks (H10); the merge-ON pair is not (gaps).
+- **F11 OVERSTATED.** The KB holds no reading of this image's timers (`systemctl list-timers` appears only as a planned command; enablement
+  "unconfirmed", `R4.md:209`, `V/H6.md:100`), and its settled reading is that `fstrim --listed-in /etc/fstab:/proc/self/mountinfo` stops at
+  the first non-empty file, so the weekly timer never reaches `/media/RAW` (`R4.md:208`, `S1.md:23`, `S3.md` D6, `V/H6.md:102`, `F/F4.md:122`;
+  `STATUS.md:126` still carries the older R6 reading). `apt-daily*`, `man-db`, `logrotate`: UNCONFIRMED for this image (the KB names them
+  only in cinemate's installer, `a2-cinemate-kernel-tuning.md:53`). Masking is cheap and was adopted (S0, helper `timers-mask`); the
+  "exactly the drive-state event M4" rationale is not supported.
+- **F12 HOLDS.** Adopted (GO sentinel §0/§7/H12; liveness line §7).
+- **F13 HOLDS.** Adopted in §1's R4 row ("deviation to confirm"), not in §11 as asked.
+- **F14 HOLDS.** CMN 250 TBW (R8 `:51`), trim at mount (`recipe.md:46`). Adopted (Part B; the second take became a 15-min SDR12, ~1.4 TB per card).
+- **F15 HOLDS.** `hardware-log.md:945-975` measured; `errors=remount-ro`. Adopted (H10/A19) as "`apertar-ui-direct` active", not "active with
+  CPU > 0": a frozen UI (the SIGSTOP case of 2026-11-01) stays "active".
+- **F16 HOLDS, not adopted.** v2 §6 S1 (`:205`) still runs the 60-s full-speed write "again after the first full-card take and delete", i.e.
+  between S5 takes; §10 (`:346`) still needs Patrik "for the sudo steps at the start of each night"; the first hour of night 1 is not asked for.
+- **F17 OVERSTATED.** The pre-roll runs at Core start, card insert, format or by hand (`README.md:72`; R2 `:76`), never before every take, so
+  OFF does not make "every take start cold"; whether it warms anything was never measured (`hardware-log.md:853` "Not yet known"; README step
+  0b never run, R2 `:76`). Right: real use has it on, the old unit loop waited for its line (R2 §5.16 `:255-257`), the branch runner waits on
+  `storage_preroll_active` (branch `longtakes.py:385-386`), ON costs ~0.7-1.0 GB per Core restart. Adopted as ON (v2 §5 `:132`, §6 S0, H4);
+  build-list E.3 still says OFF (superseded by H, but misleading).
+
+### The six checks
+
+(a) all five SMART/history numbers verified at the cited lines; +3 unsafe shutdowns (1,535 -> 1,538) across evenings 1-2
+(`handoff-drop-frames-tests.md:203`). (b) 1 of 9 holds; 0 of 189 does not: 0 of 72. (c) the recount holds (8.7-9.3 TB expected, ~14 worst,
+~570 days). (d) holds, n = 1 with the merge ON. (e) UNCONFIRMED; the fstrim mechanism is contradicted by the KB's own settlement. (f) overstated;
+the plan keeps it ON, harmlessly.
+
+### Adoption gaps in plan-v2 (current text)
+
+1. §8 rows still carry the 25-fps figures (130 + 2,200 + 400 + 1,100 + 2,200 + 2,200 = 8.2 TB expected, 15.3 worst) under a total that says
+   ~9 / ~14 TB: set S4-S6 to ~1,200 / 2,400 / 2,400 or label the rows.
+2. §7 claims table (`:303-304`) says "two = 2 of 2" with no "1 unsplit + 1 split" (S6's soak is the split variant); §8 `:322` repeats "2 of 2".
+3. F16 in full: S1's second 60-s write between S5 takes; §10's per-night sudo; no first-hour presence on night 1.
+4. F10's merge-ON pair (a take started during the merge of a 45,000-file split clip) is absent from S6: untested if the split variant wins.
+5. F15: the UI check is "active", not "drawing".
+6. F13 is not in §11; build-list E.3 ("Pre-roll off") contradicts H4.
+7. The claims table does not state the real-use deviations the campaign measures under (merge worker OFF, stand-in client; C3 §5).
