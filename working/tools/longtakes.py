@@ -946,11 +946,14 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     audio, size = '', 0
     if clip and os.path.isdir(clip):
         nums, af = [], []
-        for n in os.listdir(clip):
-            fp = os.path.join(clip, n)
-            m = re.search(r'_(\d{9})\.dng$', n)
-            if m: nums.append(int(m.group(1)))
-            elif not n.endswith('.dng'): af.append('%s:%d' % (n, os.path.getsize(fp)))
+        # A split clip ([storage] frames_per_folder) keeps its DNGs in part_NNN/ folders: count them recursively; the
+        # WAV and the other sidecars stay in the clip root.
+        for dp, _dirs, names in os.walk(clip):
+            for n in names:
+                fp = os.path.join(dp, n)
+                m = re.search(r'_(\d{9})\.dng$', n)
+                if m: nums.append(int(m.group(1)))
+                elif not n.endswith('.dng') and dp == clip: af.append('%s:%d' % (n, os.path.getsize(fp)))
         nums.sort()
         files = len(nums)
         missing = (nums[-1] + 1 - len(nums)) if nums else 0
@@ -981,9 +984,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     dropped = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0), missing)
     gb = 0
     if clip and os.path.isdir(clip) and files:
-        names = [n for n in os.listdir(clip) if n.endswith('.dng')][:20]
+        names = [os.path.join(dp, n) for dp, _d, ns in os.walk(clip) for n in ns if n.endswith('.dng')][:20]
         if names:
-            gb = files * (sum(os.path.getsize(os.path.join(clip, n)) for n in names) / len(names)) / 1e9
+            gb = files * (sum(os.path.getsize(n) for n in names) / len(names)) / 1e9
     cc = [x['core_cpu_pct'] for x in sam.rows if x.get('core_cpu_pct') is not None]
     row['core_cpu_avg'] = round(sum(cc) / len(cc), 1) if cc else ''
     row['core_cpu_max'] = max(cc) if cc else ''
