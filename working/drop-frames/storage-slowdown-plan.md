@@ -109,6 +109,8 @@ Core, not the drive), `Dirty` and `Writeback`, Core's `media_trim_running` / `me
 `budget_seconds`, `recorder_stop_s`, `stall_msg`, `idle_gap_s`, `core_cpu_slope` (c follows as slope / (fps^2 x 5)), `trim_before`
 (Core's last trim result and whether it finished since the previous take). DNGs are counted recursively (`part_*/`). Untested on the Pi:
 host-tested for syntax, the dry run and the database ingest; the first run should be a smoke test (`--max-seconds 20 --only 1`).
+Per take also `format`, `buffer_unit`, `capacity_fps` (fps minus the buffer's slope), `capacity_how`, `drain_mbps`. New stages:
+`m` meter, `s` split test, `L` long take, `M` MLV control, `k` `frames_per_folder` A/B, `S` soak (section 7.1).
 Analysis: `working/tools/longtakes_fill.py RUN_DIR [--tail 150]`.
 
 Still missing and worth one Core change each: thread names (`pthread_setname_np` on the writers, the copy worker and the sync thread;
@@ -157,21 +159,58 @@ until then `core_top_thread` reads `apertar-core` for all of them), and a fixed-
 | drive choice | a drive that reports UNMAP over USB; NVMe for 4K | cinemate recommends the T7; this run says 2K only on it |
 | fill | keep below ~75 % (hardware-log 2026-10-26) | log `fill_pct` at the start (done) |
 
-## 7. The ladder, with costs
+## 7. The ladder, unattended, with costs
 
-| Stage | What | Camera | Time | Writes | Decides |
-| --- | --- | --- | --- | --- | --- |
-| S0 | `storage_facts.sh`; `fstrim` timing (Patrik) | no | 10 min | 0 | M4 testable at all; M9 |
-| S1 | directory probe (running) | no | 40 min | 10 MB | c; the 25 % rule; the split knob's N |
-| S2 | write-pattern matrix at 4K size: default, `--workers 1`, `--prealloc`, `--fsync none`, `--chunk-kb 0`, `--direct --prealloc`, `--subdir 5000`, cluster-size variant if formatted | no | 1 h | ~30 GB | which of M2/M3 carries the 4K ceiling; the Core patches worth writing |
-| S3 | paced 2K emulation of the 38 fps failure, flat vs `--subdir`; drive-state variants if trim works | no | 2 h | ~200 GB | M1 without the camera; M4/M5 between takes |
-| S4 | capacity meter takes, 90 s each, every mode and recipe | yes | 1 h | ~50 GB | the capacity table (replaces the 5-min ladder) |
-| S5 | split test, knob A/B, MLV control, one instrumented 30-min take per mode | yes | 6-8 h | ~1.5 TB | the time dependence, settled with the camera |
-| S6 | Core patches that S2 justified (`ftruncate`, one FLUSH per tick, drain fix), each A/B'd with the meter | yes | 2 h | ~100 GB | the recipe |
-| S7 | soak: the recipe twice at 30 min per mode | yes | 3 h | ~1 TB | done means |
+Everything below runs without a hand on the Pi once it is started, with these rules built into the runner (section 4.6): a gate that
+waits for a quiet Pi before every take, a watchdog that stops the campaign on hardware trouble, a write budget, a lock file, and a
+resume after a reboot. The three things that still need Patrik are listed under the table.
 
-About 3 TB in all against 5.9 TB for the SSD ladder, and every stage produces a number, not only a pass or a fail. The NVMe 4K plan's
-stages 0-6 stay as written for the capture-side question; its storage group C becomes S2/S3 here.
+| Stage | What | Camera | Time | Writes | Decides | Tool and flags |
+| --- | --- | --- | --- | --- | --- | --- |
+| S0 | drive facts; Core's own trim and direct-write speed test instead of the sudo lines | no | 10 min | 1 GB | M4 testable at all; M9 | `storage_facts.sh`; `run_media_speed_test`; a delete of >= 1 GiB and `media_trim_last_*` 30 s later |
+| S1 | directory probe (other session) | no | 40 min | 10 MB | c; the 25 % rule; the split knob's N | `exfat_dir_probe.py` |
+| S2 | write-pattern matrix at 4K size: default, `--workers 1`, `--prealloc`, `--fsync none`, `--chunk-kb 0`, `--chunk-kb 0 --prealloc --direct`, `--subdir 5000` | no | 1 h | ~26 GB | which of M2/M3 carries the 4K ceiling; the Core patches worth writing | `exfat_write_probe.py --size-mb 12.4 --files 300 ...` |
+| S3 | paced 2K emulation of the 38 fps failure, flat and `--subdir 5000`; then trimmed vs two volume passes if trim works | no | 2-5 h | 180 GB (+930 GB for the passes) | M1 without the camera; M4 between takes | `exfat_write_probe.py --size-mb 1.3 --fps 38 --seconds 1800 --budget-mb 800` |
+| S4 | capacity meter: one 90 s take per mode and variant at the top fps, no stop at the first drop; capacity = fps minus the buffer's slope | yes | 1 h | ~50 GB | the capacity table (`capacity.md`), replaces the 5-min ladder | `longtakes.py --stages m` |
+| S5 | split test (1 x 30 min against 3 x 10 min at 0.95 x capacity), one 30-min take per mode at 0.9 x capacity, the MLV control, the `frames_per_folder` A/B when the knob exists | yes | 6-9 h | ~1.5 TB | the time dependence with the camera | `--stages sLMk` |
+| S6 | Core patches that S2 justified, each as a tune-file key read at take start (`prealloc`, `flush=per_tick`, `drain_sync`) so the A/B needs one build and one restart, not one per arm | yes | 2 h | ~100 GB | the recipe | the A/B through `apertar-tune set`, as the SSD run's storage A/B |
+| S7 | soak: the best 30-min fps per mode twice | yes | 3 h | ~1 TB | done means | `--stages S` |
+
+About 3 TB in all against 5.9 TB for the SSD ladder, and every stage produces a number, not only a pass or a fail. The NVMe 4K
+plan's stages 0-6 stay as written for the capture-side question; its storage group C becomes S2/S3 here.
+
+**What still needs Patrik, and when:** (1) before the run: the Mode Ladder off (the runner cannot switch modes with it on), the
+WebUI closed, the drive mounted, and, if wanted, one read-only sudoers snippet for `smartctl -a`, `filefrag -v` and `nvme id-ctrl`
+(otherwise those facts read "needs root" and the run goes on); (2) between S5 and S6: the Core patches built and `systemctl restart
+apertar-core`; (3) the drive swap between the T7 and the NVMe (the whole ladder runs once per drive). The fan A/B is the one
+measurement that cannot be automated and is left out of the unattended ladder; the temperature itself is read where `smartctl` is
+allowed.
+
+### 7.1 Unattended operation: what the runner does (`longtakes.py`, 2026-11-08)
+
+- **Gate.** Before every take it waits (polling every 2 min, up to `--gate-timeout-h` 6) until: no other `exfat_*_probe` or build
+  (`cc1plus`, `cmake`, `gmake`, `ninja`) runs, no other session's lock sits under `/run/apertar-media/*.lock`, Core answers, is `ready`,
+  not recording, no pre-roll, no trim running, the medium is mounted and alive, `vcgencmd get_throttled` is clean, the medium has the
+  take's projected writes plus 20 GiB free, and no `probe_exfat_*` folder is on it. The Mode Ladder on is the one condition that
+  waits for nobody: the campaign stops with a message. While a take runs it holds `/run/apertar-media/longtakes.lock` (pid, stage,
+  planned end) so the other sessions can see it; they do not know the convention yet, which is why the gate also checks for their
+  processes and folders.
+- **Watchdog.** Before and after every take: the kernel log since the last check (NVMe reset or timeout, PCIe errors, exFAT errors or
+  a remount, I/O errors, UAS or USB resets, under-voltage) and Core's `media_alive`. Anything found stops the campaign with the line
+  in `runner.log`; nothing is retried. The kernel log needs the `systemd-journal` group (pi has it); otherwise `media_alive` alone.
+- **Write budget.** `--budget-gb N`: the projected writes of the next take (uncompressed size x fps x length) are checked against what
+  the run has written; a take that would exceed the budget stops the campaign instead.
+- **RAM budget fixed.** `--fix-budget` sets `[storage] buffer_ram_fraction=0.9` and `buffer_ram_floor_mb=256` in
+  `/home/pi/apertar-hardware.conf` (a backup in the run folder is restored at the end), so every take gets the same buffer in
+  seconds of input, and the budget is logged per take anyway.
+- **Resume after a reset.** The runner skips finished takes when restarted with the same `--out`. A line in pi's own crontab
+  (no sudo) restarts it two minutes after a boot while a sentinel file exists:
+  `@reboot sleep 120 && cd ~/longtakes && [ -f AUTORESUME ] && python3 -I bin/longtakes.py --out ~/longtakes/ladder --stages msLMkS --budget-gb 1500 --fix-budget >> ladder.out 2>&1`.
+  Remove `AUTORESUME` to stop it for good. The watchdog runs first after a reboot, so a drive that came back dead ends the campaign.
+- **Stops that need a human** (the runner says so in `runner.log` and ends): a setup mismatch, the medium not mounted, the gate
+  timeout, the watchdog, the budget, the Mode Ladder on. It never deletes anything but its own clip folders and never uses sudo.
+- **Settings restored at the end:** record format, compression, bit depth, fps, TDN, phase lock, trim on, the hardware conf backup,
+  `frames_per_folder` and the merge worker as they were.
 
 ## 8. What was missed
 
@@ -190,12 +229,13 @@ stages 0-6 stay as written for the capture-side question; its storage group C be
 
 ## 9. Open points for Patrik
 
-1. sudoers lines for `smartctl -a /dev/sda`, `filefrag -v` and `fstrim -v /media/RAW` for the runner's account (read-only except
-   fstrim), or Patrik runs them by hand at the stage boundaries.
-2. Is MLV acceptable as a 30-minute diagnostic take (its clips are not the workflow's)?
-3. A fan on the drive for the temperature A/B.
+1. Before an unattended run: the Mode Ladder off, the WebUI closed, the drive mounted and labelled, Core on the build the campaign
+   should test; optionally the read-only sudoers snippet (`smartctl -a /dev/sda`, `filefrag -v`, `nvme id-ctrl`, `nvme smart-log`) so
+   the facts carry temperature and fragmentation; a yes to the wear budget (`--budget-gb`).
+2. MLV as a 30-minute diagnostic take is pre-approved by starting a run with stage `M`; leave the letter out otherwise.
+3. The fan A/B stays manual.
 4. Formatting the T7 with `-c 1M` for one S2 variant (macOS caveat), yes or no.
-5. The Core patches of section 5, in the order S2 justifies them, after the clip-split branch lands.
+5. The Core patches of section 5 as tune-file keys, built once between S5 and S6, after the clip-split branch lands.
 6. The NVMe test boot without `nvme.max_host_mem_size_mb=0`.
 
 ## 10. Sources
