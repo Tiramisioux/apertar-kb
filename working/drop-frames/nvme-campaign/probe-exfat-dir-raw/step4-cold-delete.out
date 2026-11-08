@@ -1,0 +1,18 @@
+folder /media/RAW/probe_exfat_dir_125428  entries/file 5  used_bytes_before 3617456128  csv /run/apertar-media/exfat_probe_131640.csv
+used_bytes_after_create 3617456128  delta 0 (expect ~9600000 B of directory, rounded up to 128 KiB clusters)
+unlinked 5000  last-5000 median 0.671 ms  elapsed 3.4 s
+unlinked 10000  last-5000 median 2.022 ms  elapsed 13.6 s
+unlink total 13.6 s; folder removed
+unlink: files  median_ms  p90_ms  max_ms   (per block of 1000)
+unlink:    1000      0.143   0.248    0.467
+unlink:    2000      0.408   0.514    0.878
+unlink:    3000      0.664   0.776    1.212
+unlink:    4000      0.928   1.044    1.763
+unlink:    5000      1.194   1.319    2.542
+unlink:    6000      1.455   1.650    2.408
+unlink:    7000      1.717   1.924    3.274
+unlink:    8000      1.985   2.247    3.501
+unlink:    9000      2.252   2.543    3.539
+unlink:   10000      2.519   2.861    3.850
+unlink: fit median_ns = -124414 + 263.80 * files   (slope / entries-per-file = c per entry)
+used_bytes_end 3615752192  csv written /run/apertar-media/exfat_probe_131640.csv
