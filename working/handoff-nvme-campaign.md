@@ -83,8 +83,8 @@ writes probes to the card, there is no 75 % ceiling, a stopped night leaves the 
 - Patrik runs or installs every sudo command; the helper allows only the exact words he reviewed. Never widen sudoers; never run sudo yourself.
 - Never record while a build runs; never build while a take runs; nothing else on the Pi during a take (no journalctl, no top or htop, no ls /media/RAW,
   no second WebUI: the Mac stand-in is the only client); status.md and decisions.log are written between takes and read between takes.
-- Never delete with a glob; the runner deletes only folders in its own database, never Patrik's clips; deletes happen in the boot that
-  wrote them; never format without Patrik.
+- Never delete with a glob; the runner deletes only folders in its own database, never Patrik's clips; deletes normally in the boot that
+  wrote them (a cold delete is budgeted per plan section 6); never format without Patrik.
 - Never edit defaults-pisp or the installed pipeline YAML; copies only. Never disable_tdn. Never load or save presets. Ladder off for takes.
 - Pre-register before the takes; void decisions from the checks alone; never change a rule after seeing data; never upgrade a label.
 - The take stops at its first dropped frame (any counter), at Core's safety stop or at an audio fault; a cell is eliminated after two
@@ -94,7 +94,7 @@ writes probes to the card, there is no 75 % ceiling, a stopped night leaves the 
   audio fix is not in by the long tiers, they run with APERTAR_AUDIO_BUFFER_MS=1000 as a recorded deviation.
 - Unsplit first at the 30-min tier for arms below the 60 % create share (the split member only on a late drop with the directory signature,
   or as the soak); split first above it.
-- A Pi reset ends the night: the runner resumes only when the helper's status shows the drop-in re-armed and fsck clean (WAITING: re-arm).
+- A Pi reset ends the night: the runner resumes only when the helper's status shows the drop-in re-armed, fsck clean and the last status clean (WAITING: re-arm).
 - No cool-down; temperature logged and reported, never gated; a take ending above 75 C is flagged.
 - The budget: 10 TB on the campaign card, projected before every take; a 30-min take is never repeated to make sure unless void.
 - Commits "<area>: <imperative>" with Why / What / Tested and the trailer, "User" not names; KB claims labelled; push only with Patrik's OK;

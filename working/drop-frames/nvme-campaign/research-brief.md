@@ -321,3 +321,8 @@ Plan additions: per-take audio columns (ring, peak_backlog_kb, discontinuities, 
 video drop, never eliminates an arm alone; repeated once; the journal window, vmstat compaction and usb lines at that second kept);
 levers if it recurs: `APERTAR_AUDIO_BUFFER_MS` 1000-2000, `compaction_proactiveness=0` via the helper, the Core fix (recover + pad +
 log, continue); S0 checks the mic's USB controller. First desk task for the Opus thread: that take's journal window and stop reason.
+
+**Correction to §15 (2026-11-08, after the red team's recount; the plan's §5a is authoritative):** 72 of the SSD run's 182 takes carried
+audio (110 recorded none), not 189; the writer's backlog peaked at 30-2,764 KB per take, not 340-1,437; and 32 s at `frames_per_folder`
+200 and 25 fps is within one frame of the part_003/part_004 boundary (index 800), so the split code's boundary path is the first suspect,
+not "unlikely".
