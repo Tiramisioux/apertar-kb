@@ -32,7 +32,7 @@ READ FIRST (Mac ~/Documents/Apertar/apertar-kb/):
 Then run ~/.claude/skills/apertar-dev/scripts/apertar_status.sh and report: Core and UI tips on the Pi and GitHub, the running binary
 (expect cinemate-port 01f170c or later; get_state must show frames_per_folder, clip_merge_enabled, cdng_log, buffer_setting, recording_dropped_frames), the mounted card
 (model, serial, size, part number: expect a Corsair MP600 Mini; refuse to start on anything else without Patrik's word), helpers
-installed, cmdline (FE depth 4 YAML? nvme args?), the media tune file, the ladder, the KB HEAD on the Mac and the Pi against GitHub
+installed, Core's environ (LIBCAMERA_RPI_CONFIG_FILE -> the depth-4 YAML?) and /proc/cmdline (nvme args?), the media tune file, the ladder, the KB HEAD on the Mac and the Pi against GitHub
 main. Stop and say so if anything differs from the plan's section 2.
 
 THE ORDER OF WORK:
@@ -74,8 +74,8 @@ Phase 3, S2 (one night, unsupervised): before leaving the Mac: Ethernet, the sta
   placed in advance only with its pass condition, and an 8-h wait ends the night cleanly).
 Phase 4, S4-S6 (two to three nights): the 15-min unsplit takes ordered HDR16 -> heaviest SDR12 -> HDR12 so the second ends near 80-92 % full; the 30-min tier (the gate empties the card only
   when a take does not fit), unsplit first for arms below the 60 % create share and SPLIT FIRST above it (SDR12 at >= 33-42 fps: plan section 3); the soak as
-  the split variant; the conditional work; at the end of night 2, before any delete, the H24 drive-state write started over ssh. Patrik's OK per tier is a GO file placed BEFORE the night with its pass condition (GO-S5
-  before night 2: "if every S4 take passed"; GO-S6 before night 3), else the runner idles after S4 and the night is lost; the survival
+  the split variant; the conditional work; at the end of night 2, before any delete, the H24 drive-state write started over ssh. Patrik's OK per tier is a GO file in ~/longtakes/<run>/ placed BEFORE the night with its pass condition (GO-S4 after the S2
+  prognosis and GO-S5 with `if all_passed S4` before night 2; GO-S6 before night 3), else the runner idles and the night is lost; the survival
   table per cell from status.md goes with each GO decision; on a smaller card a take that does not fit is shortened to
   (free - 10 GB) / (1.03 x rate) and recorded fit-limited.
 Phase 5, Part B (one evening per other Corsair card, Patrik powers the Pi off through the helper before swapping the card, never pulls a mounted card, and has offloaded its footage): the card's part number (a QLC
@@ -94,7 +94,7 @@ writes probes to the card, there is no 75 % ceiling, a stopped night leaves the 
   no second WebUI: the Mac stand-in is the only client); status.md and decisions.log are written between takes and read between takes.
 - Never delete with a glob; the runner deletes only folders in its own database, never Patrik's clips; deletes normally in the boot that
   wrote them (a cold delete is budgeted per plan section 6); never format without Patrik.
-- Never edit defaults-pisp or the installed pipeline YAML; copies only. Never disable_tdn. Never load or save presets. Ladder off for takes.
+- Never edit defaults-pisp or the installed pipeline YAML; copies only. Never the tuning-file disable_tdn (TDN off only via set_preview_tdn). Never load or save presets. Ladder off for takes.
 - Pre-register before the takes; void decisions from the checks alone; never change a rule after seeing data; never upgrade a label.
 - The take stops at its first dropped frame (any counter), at Core's safety stop or at an audio fault; a cell is eliminated after two
   concordant drops (a deviation from "one drop = out" that Patrik confirms or reverts); the 5-min take is the second concordant take of a clean cell;
