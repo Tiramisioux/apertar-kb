@@ -93,3 +93,10 @@ patches, the NVMe card.
 - Power-off: [night2/poweroff-after-night2.sh](night2/poweroff-after-night2.sh) `<pid>` follows the chain's PID, waits until
   nothing is recording, then calls Core `power_off_system`.
 - Needs first: `longtakes.py` cf0b37e copied to `~/longtakes/bin`, camera idle, WebUI closed, T7 mounted.
+
+**Started 2026-11-09 20:29** (night2.sh pid 6487). Added at 2026-11-09 evening (User): a **merge test** after the chain,
+[night2/merge-test-after-night2.sh](night2/merge-test-after-night2.sh) (pid 54605). It waits for night 2, idles 10 min, then
+records one 30-min split take at 2kSDR12 unc 25 fps (45,000 frames, 9 parts), turns the merge on, logs the `clip_merge_*`
+fields every 10 s (`~/ssd-campaign/merge-test-samples.txt`) and Core's merge lines, deletes that clip through
+`/api/media/delete`, and restores the camera settings. The power-off watcher follows the merge test now (pid 54783), not
+night2.sh. The merge itself was never timed beyond 4,503 frames before this (0.72 ms per file).
