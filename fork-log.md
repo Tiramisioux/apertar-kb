@@ -283,3 +283,5 @@ None yet (checked 2026-10-25: `gh pr list --repo Apertar-Studio/<repo> --author 
 ## Landed upstream
 
 None yet.
+| Core b5e9e68 (Mac) | web: settings for splitting long takes (Off/1000-10000 frames per folder) and merging split clips | fork-only, not built |
+| UI 53fe704 (Mac) | qml: the same two settings in the Media section | fork-only, not built |
