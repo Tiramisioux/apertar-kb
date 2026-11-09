@@ -2,7 +2,11 @@
 
 Goal (User): see the merges happen in real time, so it is clear **when the card can come out**: the current clip and
 all clips still to merge. Playback must keep working on a split clip and on one that is being merged.
-Base: Core clip-split (b5e9e68 on the Mac: the split/merge settings), UI 53fe704. Nothing here is built yet.
+Base: Core clip-split (b5e9e68 on the Mac: the split/merge settings), UI 53fe704.
+
+**Status 2026-11-09:** written as Core `0e94a25` (item 7), `b30cdef` (1–6), `f40658b` (8); UI `745ba74` (10), `6542c9b` (9).
+On the Mac only, checked at the desk (page script, the summary helper with sample values, syntax of the playback
+headers). Not compiled on the Pi, not tried.
 
 ## Where it shows
 
