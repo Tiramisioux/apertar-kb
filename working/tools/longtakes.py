@@ -11,8 +11,30 @@ starting at the sensor's max fps and steps fps down by 1 until a take is clean f
 full with no dropped frame ("pass_drive_full"). A take stops at the FIRST dropped frame. No cooldown waits.
 Only clip folders this script created under /media/RAW are ever deleted. Audio settings are never changed.
 Resume: run it again with the same --out; finished configs are skipped.
+
+Added 2026-11-08 (storage-slowdown plan): every 1 Hz sample also carries Core's write-buffer level (buffer_used/capacity),
+the recording disk's /sys/block stat counters (writes, sectors, write ticks, in flight: the device's own latency), Dirty and
+Writeback from /proc/meminfo and Core's trim state; every take carries the RAM budget in MiB and in seconds of input, the
+recorder's stop time and whether Core logged "nothing was written" at the stop, the idle gap since the previous take, the
+slope of Core's CPU over the take (the directory-walk signature) and whether a trim finished since the previous take. DNGs
+are counted recursively (a clip split into part_*/ folders counts the same). Analysis: longtakes_fill.py.
+
+Unattended ladder (same date, plan section 7 and 7.1): before every take, and before every camera mode switch or clip
+clean-up, the runner waits for a quiet Pi (no other probe or build, Core awake, ready and not recording, medium mounted, no
+under-voltage, enough free space, no other session's lock under /run/apertar-media), checks the kernel log and media_alive
+(watchdog: stops the campaign, never retries) and the write budget (--budget-gb). One runner per --out (an instance lock); a
+DONE marker is written when the campaign ends or stops for a human, so a crontab @reboot resume does not restart it; SIGTERM
+or Ctrl-C stops the running take (record_stop), restores the settings and leaves no DONE marker (a reboot resumes). It deletes
+only the clip folders it made itself (own_clips.txt); other sessions' clips stay. Modes whose metered capacity x factor falls
+below the 25 fps floor are metered only. Stages for --stages: m = capacity meter (90 s per mode and variant at
+min(mode max, 1.25 x the storage cap); capacity = fps minus the buffer's slope, else from Core's stats line, with a second meter
+take at 1.3 x the estimate when the first filled the buffer), s = split test (1 x 30 min against 3 x 10 min at 0.95 x capacity),
+L = one 30-min take per mode at 0.9 x capacity, M = the MLV one-file control, k = frames_per_folder on/off (skipped when Core
+lacks the knob), S = soak (the best clean 30-min fps twice).
+  python3 -I longtakes.py --out ~/longtakes/ladder --stages msLMkS --modes 2kSDR12,2kHDR16 --budget-gb 3500 --fix-budget
+  python3 -I longtakes.py --out ~/longtakes/smoke --stages m --meter-seconds 20 --no-gate --modes 2kSDR12   # smoke test
 """
-import argparse, collections, csv, glob, itertools, json, os, re, shutil, signal, socket, sqlite3, subprocess, sys, threading, time
+import argparse, collections, csv, fcntl, glob, itertools, json, os, re, shutil, signal, socket, sqlite3, subprocess, sys, threading, time
 
 SOCK = '/tmp/apertar-core.sock'
 MEDIA = '/media/RAW'
@@ -141,6 +163,19 @@ def all_configs():
         d1 += [c for c in cs[1:] if c.distance() == 1]
         rest += [c for c in cs[1:] if c.distance() > 1]
     return base + d1 + rest
+
+
+def is_result(o):
+    """An outcome that says something about the take itself (not a gate, watchdog, budget or setup stop): the resume skips
+    only these."""
+    o = o or ''
+    return o.startswith(('pass', 'ab_')) or o in ('buffer_full', 'drop', 'fault', 'drive_full', 'recording_stopped_by_core')
+
+
+def is_clean(o):
+    """Ran its full length with no dropped frame (a take with stop_on_drop=False ends in ab_clean, not pass_*)."""
+    o = o or ''
+    return o.startswith('pass') or o == 'ab_clean'
 
 
 def config_score(rows):
@@ -306,18 +341,399 @@ def storage_frontier(rows, size_mb):
     return min(rates) if rates else None
 
 
+SAMPLE_COLS = ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'throttled', 'dropped',
+               'state', 'core_cpu_pct', 'core_top_thread', 'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors',
+               'dev_w_ticks', 'dev_inflight', 'dirty_kb', 'writeback_kb', 'trim_running', 'trim_last_unix')
+DEV = {'disk': ''}      # the recording drive's whole-disk name (sda, nvme0n1) for /sys/block/<disk>/stat; set in main()
+LAST_END = {'t': None}  # wall time the previous take ended (idle gap, trim-since-last-take)
+
+# ---- unattended operation (2026-11-08, storage-slowdown plan section 4.6): a gate that waits for a quiet Pi before every
+# take, a watchdog that stops the campaign on hardware trouble, a write budget, a lock file other sessions can see.
+GATE = {'on': True, 'timeout_s': 6 * 3600, 'poll_s': 120}
+BUDGET = {'gb': 0.0, 'used': 0.0}        # --budget-gb: the campaign stops before a take that would exceed it
+HALT = {'why': ''}                        # set by the watchdog; the take() wrapper stops the campaign
+RUN_DIR = '/run/apertar-media' if os.path.isdir('/run/apertar-media') else '/tmp'
+LOCK = RUN_DIR + '/longtakes.lock'
+HWCONF = '/home/pi/apertar-hardware.conf'
+# Kernel lines that end the campaign. Boot-time lines never reach the watchdog (its first window starts when the runner
+# starts), so "AER enabled", "Shutdown timeout set" and the USB resets of enumeration do not count; USB and SCSI lines count
+# only for the recording disk itself (hardware_ok builds those patterns from /sys/block/<disk>).
+KERNEL_BAD = re.compile(r'(nvme nvme\d+: (I/O \d+ (QID \d+ )?timeout|controller is down|resetting controller|Device not ready|'
+                        r'disabling|Removing after probe failure)|AER: (Corrected|Uncorrected|Multiple|Fatal|Non-Fatal|device recovery)|'
+                        r'exFAT-fs.*(error|read-only|corrupt|invalid)|I/O error|critical (medium|target) error|under-?voltage)', re.I)
+WATCH = {'since': None}
+STOP = {'sig': ''}          # set by SIGTERM / SIGINT: the running take is stopped, the settings restored, no DONE marker written
+OWN = {'clips': set()}      # clip folders this run made (<out>/own_clips.txt): the only ones clear_media() ever deletes
+NOTES = []                  # one-time messages from quiet_reasons(), logged by wait_for_quiet()
+SAID = {}                   # keys of messages already logged once
+WAKE = {'sent': None}
+
+
+def ps_cmds():
+    r = subprocess.run(['ps', '-eo', 'pid=,cmd='], capture_output=True, text=True)
+    return [l.strip() for l in r.stdout.splitlines() if l.strip()]
+
+
+def foreign_locks():
+    """Lock files of other campaign sessions under /run/apertar-media (ours excluded; a dead owner's lock is ignored)."""
+    out = []
+    for f in glob.glob(RUN_DIR + '/*.lock'):
+        if os.path.abspath(f) == os.path.abspath(LOCK):
+            continue
+        try:
+            text = open(f).read()
+            m = re.search(r'pid=(\d+)', text)
+            if not m:                                   # not a campaign lock (the convention: pid=... what=...)
+                continue
+            if not os.path.exists('/proc/%s' % m.group(1)):
+                continue                                # its owner is gone
+            out.append('%s: %s' % (os.path.basename(f), text.strip()[:80]))
+        except OSError:
+            pass
+    return out
+
+
+def probe_running(cmds, me):
+    """A python process running one of the storage probes (not an editor or a grep that merely names the script)."""
+    pat = re.compile(r'python[0-9.]*(\s+-\S+)*\s+\S*exfat_(dir|write|merge)_probe\.py')
+    return any(pat.search(l) and not l.startswith(me + ' ') for l in cmds)
+
+
+BUILD_TOOLS = re.compile(r'(^|/)(cc1plus|cc1|g\+\+(-\d+)?|gcc(-\d+)?|c\+\+|clang(\+\+)?(-\d+)?|ld|ld\.gold|ld\.lld|collect2|'
+                         r'make|gmake|cmake|ninja|cargo|rustc)( |$)')
+
+
+def quiet_reasons(need_free_gib=20.0):
+    """Why the Pi is not ready for a take right now; [] when it is. Each reason names what to wait for. need_free_gib 0 = do
+    not check the free space (before the runner has cleared its own leftover clips)."""
+    why = []
+    cmds = ps_cmds()
+    me = str(os.getpid())
+    if probe_running(cmds, me):
+        why.append('another storage probe is running')
+    if any(BUILD_TOOLS.search(l.split(' ', 1)[1] if ' ' in l else l) for l in cmds):
+        why.append('a build is running')
+    fl = foreign_locks()
+    if fl:
+        why.append('another session holds a lock (%s)' % '; '.join(fl))
+    st = state()
+    if not st:
+        why.append('Core is not answering')
+    else:
+        if st.get('standby'):
+            # Core went to standby while idle (its sleep mode): wake it and wait; a wake that does not take needs a human.
+            if WAKE['sent'] is None:
+                core('wake')
+                WAKE['sent'] = time.time()
+                why.append('Core was in standby: wake sent')
+            elif time.time() - WAKE['sent'] > 180:
+                why.append('NEEDS A HUMAN: Core stays in standby after a wake command')
+            else:
+                why.append('Core is waking from standby')
+        else:
+            WAKE['sent'] = None
+            if st.get('recording') or st.get('state') != 'ready':
+                why.append('Core is %s' % ('recording' if st.get('recording') else st.get('state')))
+        if st.get('storage_preroll_active'):
+            why.append('a storage pre-roll is running')
+        if st.get('media_state') != 'mounted' or st.get('media_alive') is False:
+            why.append('medium not mounted or not alive (%s)' % st.get('media_state'))
+        if st.get('ladder_enabled'):
+            why.append('NEEDS A HUMAN: the Mode Ladder is on and the campaign cannot switch modes; turn it off (WebUI, Camera > Mode Ladder)')
+        if web_state().get('media_trim_running'):
+            why.append('a trim is running')
+    try:
+        thr = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip().split('=')[-1]
+        if int(thr, 16) & 0xF:
+            why.append('throttled or under-voltage now (%s)' % thr)
+    except (ValueError, OSError):
+        pass
+    try:
+        sv = os.statvfs(MEDIA)
+        free = sv.f_bavail * sv.f_frsize / 2**30
+        if need_free_gib and free < need_free_gib:
+            why.append('only %.0f GiB free, the take needs %.0f' % (free, need_free_gib))
+        stale = []
+        for d in os.listdir(MEDIA):
+            if d.startswith('probe_exfat_'):
+                age = time.time() - os.path.getmtime(os.path.join(MEDIA, d))
+                if 'another storage probe is running' in why or age < 600:
+                    why.append('a probe_exfat_* folder is on the medium (another probe mid-run)')
+                    break
+                stale.append(d)
+        if stale and SAID.get('stale') != set(stale):
+            SAID['stale'] = set(stale)
+            NOTES.append('ignoring %d stale probe folder(s) on %s (no probe runs, older than 10 min; left by a crashed probe, not '
+                         'deleted: not ours): %s' % (len(stale), MEDIA, ', '.join(sorted(stale))[:200]))
+    except OSError:
+        why.append('%s not readable' % MEDIA)
+    return why
+
+
+def wait_for_quiet(out, need_free_gib=20.0):
+    """Wait until quiet_reasons() is empty (polling), up to GATE['timeout_s']. Returns '' when quiet, else why it gave up:
+    'needs_human' (a condition nobody but a human can clear), 'gate_timeout', 'signal' (SIGTERM / Ctrl-C arrived)."""
+    if not GATE['on']:
+        return ''
+    t0 = time.monotonic()
+    last = None
+    while True:
+        why = quiet_reasons(need_free_gib)
+        while NOTES:
+            log(out, 'gate: ' + NOTES.pop(0))
+        if not why:
+            if last is not None:
+                log(out, 'gate: quiet again after %.0f min' % ((time.monotonic() - t0) / 60))
+            return ''
+        if any(w.startswith('NEEDS A HUMAN') for w in why):
+            log(out, 'gate: ' + '; '.join(why))
+            return 'needs_human'
+        if why != last:
+            log(out, 'gate: waiting (%s)' % '; '.join(why))
+            last = why
+        if time.monotonic() - t0 > GATE['timeout_s']:
+            log(out, 'gate: still not quiet after %.1f h, giving up: %s' % (GATE['timeout_s'] / 3600, '; '.join(why)))
+            return 'gate_timeout'
+        slept = 0
+        while slept < GATE['poll_s']:
+            if STOP['sig']:
+                return 'signal'
+            time.sleep(5)
+            slept += 5
+
+
+def hold_lock(what, seconds):
+    try:
+        with open(LOCK, 'w') as f:
+            f.write('pid=%d what=%s started=%s planned_end=%s\n' % (
+                os.getpid(), what, time.strftime('%F %T'), time.strftime('%F %T', time.localtime(time.time() + seconds))))
+    except OSError:
+        pass
+
+
+def release_lock():
+    try:
+        os.unlink(LOCK)
+    except OSError:
+        pass
+
+
+def usb_dev_of(disk):
+    """The USB device (e.g. 1-1) behind a sdX disk, from its sysfs path; None for NVMe or unknown."""
+    try:
+        p = os.path.realpath('/sys/block/%s/device' % disk)
+    except OSError:
+        return None
+    m = re.search(r'/usb\d+/(\d+-[\d.]+)/', p)
+    return m.group(1) if m else None
+
+
+def hardware_ok(out):
+    """Kernel log since the last check (needs the systemd-journal group; else dmesg) and Core's media_alive. (ok, why).
+    The first window starts when the runner started (WATCH['since'] is set in main), never in the boot messages."""
+    since = WATCH['since'] or time.time()
+    WATCH['since'] = time.time()
+    lines = []
+    r = subprocess.run(['journalctl', '-k', '--since', '@%d' % int(since), '-o', 'short-unix', '--no-pager', '-q'],
+                       capture_output=True, text=True)
+    if r.returncode == 0:
+        lines = r.stdout.splitlines()
+    else:
+        r = subprocess.run(['dmesg', '--since', '-%dmin' % max(1, int((time.time() - since) / 60) + 1)], capture_output=True, text=True)
+        if r.returncode == 0:
+            lines = r.stdout.splitlines()
+        elif not WATCH.get('warned'):
+            WATCH['warned'] = True
+            log(out, 'watchdog: the kernel log is not readable from this account; watching media_alive only')
+    pats = [KERNEL_BAD]
+    disk = DEV['disk']
+    if disk:
+        pats.append(re.compile(r'\[%s\].*(error|uas_eh|abort|reset|offline|timed? ?out)' % re.escape(disk), re.I))
+        ud = usb_dev_of(disk)
+        if ud:
+            pats.append(re.compile(r'usb %s(\.\d+)*: (USB disconnect|reset |device descriptor|device not accepting|cannot)' % re.escape(ud), re.I))
+    bad = [l for l in lines if any(p.search(l) for p in pats)]
+    if bad:
+        return False, 'kernel log: ' + ' | '.join(b[-160:] for b in bad[:3])
+    st = state()
+    if st and st.get('media_alive') is False:
+        return False, 'Core reports media_alive=false (media_state=%s)' % st.get('media_state')
+    return True, ''
+
+
+def projected_gb(c, fps, seconds):
+    """Upper bound of a take's writes (uncompressed size; lossless and Log write less)."""
+    return mode_size_mb(c.mode) * fps * max(seconds or 1800, 1) / 1000.0
+
+
+def capacity_from_samples(rows, fps, frame_bytes, unit):
+    """The writers' capacity in fps from the buffer level: fps minus the slope of the buffer (frames per second) once it
+    holds more than two frames. (capacity_fps, how); how = 'fit', 'at least' (the buffer never filled), or '' (no data)."""
+    pts = []
+    for x in rows:
+        if x.get('state') != 'rec' or x.get('buffer_used') in (None, '') or (x.get('t_s') or 0) < 3:
+            continue
+        try:
+            used = float(x['buffer_used'])
+        except (TypeError, ValueError):
+            continue
+        if unit == 'bytes':
+            if not frame_bytes:
+                return None, ''
+            used /= frame_bytes
+        pts.append((float(x['t_s']), used))
+    if len(pts) < 10:
+        return None, ''
+    start = next((i for i, p in enumerate(pts) if p[1] > 2), None)
+    if start is None or len(pts) - start < 8:
+        return float(fps), 'at least'
+    pts = pts[start:]
+    mx = sum(p[0] for p in pts) / len(pts); my = sum(p[1] for p in pts) / len(pts)
+    sxx = sum((p[0] - mx) ** 2 for p in pts)
+    if not sxx:
+        return None, ''
+    slope = sum((p[0] - mx) * (p[1] - my) for p in pts) / sxx
+    return round(max(0.0, fps - slope), 2), 'fit'
+
+
+def edit_storage_keys(path, keys):
+    """Set (value) or remove (None) keys under [storage] in apertar-hardware.conf. A commented copy of a key is replaced by
+    the live key. Returns {key: original line or None} for every key touched (None = the key was absent)."""
+    text = open(path).read()
+    lines = text.split('\n')
+    before = {}
+    i = next((i for i, l in enumerate(lines) if l.strip().lower() == '[storage]'), None)
+    if i is None:
+        before.update({k: None for k in keys})
+        add = ['%s=%s' % (k, v) for k, v in keys.items() if v is not None]
+        if add:
+            while lines and not lines[-1].strip():
+                lines.pop()
+            lines += ['', '[storage]'] + add + ['']
+    else:
+        j = i + 1
+        while j < len(lines) and not lines[j].strip().startswith('['):
+            j += 1
+        section = lines[i + 1:j]
+        for k, v in keys.items():
+            for n, l in enumerate(section):
+                if re.match(r'^[#;]?\s*%s\s*=' % re.escape(k), l.strip()):
+                    before[k] = l
+                    if v is None:
+                        del section[n]
+                    else:
+                        section[n] = '%s=%s' % (k, v)
+                    break
+            else:
+                before[k] = None
+                if v is not None:
+                    last = max((n for n, l in enumerate(section) if l.strip()), default=-1)   # after the last non-blank line
+                    section.insert(last + 1, '%s=%s' % (k, v))
+        lines[i + 1:j] = section
+    tmp = path + '.longtakes-tmp'
+    with open(tmp, 'w') as f:
+        f.write('\n'.join(lines))
+    os.replace(tmp, path)
+    return before
+
+
+def set_storage_keys(path, keys, out):
+    """Set keys under [storage] for the run (Core reads [storage] at each take and writes its own keys there through its
+    store, so only our keys are touched, never the whole file). The original lines are kept in <out>/storage_keys_orig.json
+    on the first call; restore_storage_keys() puts them back and removes the file."""
+    rec = out + '/storage_keys_orig.json'
+    before = edit_storage_keys(path, keys)
+    if not os.path.exists(rec):
+        json.dump(before, open(rec, 'w'))
+    return rec
+
+
+def restore_storage_keys(path, out):
+    """Put the keys set_storage_keys() changed back as they were: the original line (live or commented), or removed."""
+    rec = out + '/storage_keys_orig.json'
+    if not os.path.exists(rec):
+        return False
+    before = json.load(open(rec))
+    edit_storage_keys(path, {k: None for k in before})           # drop our live lines
+    text = open(path).read()
+    lines = text.split('\n')
+    i = next((i for i, l in enumerate(lines) if l.strip().lower() == '[storage]'), None)
+    keep = [l for l in before.values() if l is not None]
+    if keep:
+        if i is None:
+            while lines and not lines[-1].strip():
+                lines.pop()
+            lines += ['', '[storage]'] + keep + ['']
+        else:
+            j = i + 1
+            while j < len(lines) and not lines[j].strip().startswith('['):
+                j += 1
+            last = max((n for n in range(i + 1, j) if lines[n].strip()), default=i)
+            lines[last + 1:last + 1] = keep
+        tmp = path + '.longtakes-tmp'
+        with open(tmp, 'w') as f:
+            f.write('\n'.join(lines))
+        os.replace(tmp, path)
+    os.unlink(rec)
+    return True
+
+
+def dev_stat(disk):
+    """/sys/block/<disk>/stat: writes completed, sectors written, write ticks (ms), in flight. Cumulative; differentiate later."""
+    try:
+        f = open('/sys/block/%s/stat' % disk).read().split()
+        return int(f[4]), int(f[6]), int(f[7]), int(f[8])
+    except (OSError, IndexError, ValueError):
+        return None, None, None, None
+
+
+def resolve_disk():
+    """The whole-disk name (sda, nvme0n1) behind the mount, for /sys/block/<disk>/stat and the watchdog; '' if not mounted."""
+    src_ = subprocess.run(['findmnt', '-no', 'SOURCE', MEDIA], capture_output=True, text=True).stdout.strip()
+    if not src_:
+        return ''
+    KT['dev'] = src_
+    parent = subprocess.run(['lsblk', '-no', 'pkname', src_], capture_output=True, text=True).stdout.strip().splitlines()
+    DEV['disk'] = os.path.basename('/dev/' + parent[0] if parent else src_)
+    DEV['parent'] = '/dev/' + parent[0] if parent else src_
+    return DEV['disk']
+
+
+def buffer_level():
+    """Core's write-buffer level from the lock-free GET /api/buffer (get_state does not carry it): (used, capacity, unit);
+    unit is 'bytes' for the RAM buffer and 'frames' for the frame queue."""
+    import urllib.request
+    try:
+        b = json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/buffer', timeout=0.5))
+        return b.get('buffer_used'), b.get('buffer_capacity'), b.get('buffer_unit')
+    except Exception:
+        return None, None, None
+
+
+def web_state(timeout=1.0):
+    """Core's web state (GET /api/state): the trim fields (media_trim_*), the clip-merge state and the buffer level live here,
+    not in get_state. {} when the WebUI port does not answer."""
+    import urllib.request
+    try:
+        return json.load(urllib.request.urlopen('http://127.0.0.1:8000/api/state', timeout=timeout))
+    except Exception:
+        return {}
+
+
 class Sampler(threading.Thread):
-    """1 Hz: temps, cpu, ram, drive fill, throttle flags, Core drop counter. Keeps every sample for the take."""
+    """1 Hz: temps, cpu, ram, drive fill, throttle flags, Core drop counter, Core's buffer level, the disk's own counters,
+    dirty pages and the trim state. Keeps every sample for the take."""
     def __init__(self, t0, csv_path):
         super().__init__(daemon=True)
         self.t0, self.stop_ev, self.rows = t0, threading.Event(), []
         self.f = open(csv_path, 'w', newline='')
         self.w = csv.writer(self.f)
-        self.w.writerow(['t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb',
-                         'throttled', 'dropped', 'state', 'core_cpu_pct', 'core_top_thread'])
+        self.w.writerow(list(SAMPLE_COLS))
         self.prev = self.cpu_times()
         self.core_pid = self.find_core()
         self.prev_core = None
+        self.n = 0
+        self.trim = (None, None)     # (media_trim_running, media_trim_last_unix) from /api/state, refreshed every 5th sample
 
     @staticmethod
     def find_core():
@@ -369,10 +785,14 @@ class Sampler(threading.Thread):
         pt, pi_ = self.prev
         cpu = 100.0 * (1 - (idle - pi_) / max(1, tot - pt))
         self.prev = (tot, idle)
-        mem = 0
+        mem, dirty, wb = 0, None, None
         for l in open('/proc/meminfo'):
             if l.startswith('MemAvailable'):
                 mem = int(l.split()[1]) // 1024
+            elif l.startswith('Dirty:'):
+                dirty = int(l.split()[1])
+            elif l.startswith('Writeback:'):
+                wb = int(l.split()[1])
         sv = os.statvfs(MEDIA)
         total, free = sv.f_blocks * sv.f_frsize, sv.f_bavail * sv.f_frsize
         thr = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip().split('=')[-1]
@@ -380,18 +800,27 @@ class Sampler(threading.Thread):
         ccpu, ctop = self.core_cpu()
         pi = int(rd(PI_TEMP, '0')) / 1000
         nv = int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else None
+        used, cap, _unit = buffer_level()
+        if self.n % 5 == 0:
+            ws = web_state(0.5)
+            if ws:
+                self.trim = (ws.get('media_trim_running'), ws.get('media_trim_last_unix'))
+        self.n += 1
+        w_ios, w_sect, w_ticks, inflight = dev_stat(DEV['disk'] or resolve_disk()) if (DEV['disk'] or os.path.ismount(MEDIA)) else (None, None, None, None)
         return {'t_s': round(time.monotonic() - self.t0, 1), 'pi_c': pi, 'nvme_c': nv, 'cpu_pct': round(cpu, 1),
                 'load1': os.getloadavg()[0], 'mem_avail_mb': mem, 'fill_pct': round(100 * (1 - free / total), 1),
                 'free_gb': round(free / 2**30, 1), 'throttled': thr, 'dropped': st.get('recording_dropped_frames', -1),
                 'state': 'rec' if st.get('recording') else str(st.get('state')), '_st': st,
-                'core_cpu_pct': ccpu, 'core_top_thread': ctop}
+                'core_cpu_pct': ccpu, 'core_top_thread': ctop,
+                'buffer_used': used, 'buffer_capacity': cap, 'dev_w_ios': w_ios, 'dev_w_sectors': w_sect,
+                'dev_w_ticks': w_ticks, 'dev_inflight': inflight, 'dirty_kb': dirty, 'writeback_kb': wb,
+                'trim_running': self.trim[0], 'trim_last_unix': self.trim[1]}
 
     def run(self):
         while not self.stop_ev.is_set():
             r = self.sample()
             self.rows.append(r)
-            self.w.writerow([r[k] for k in ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct',
-                                              'free_gb', 'throttled', 'dropped', 'state', 'core_cpu_pct', 'core_top_thread')])
+            self.w.writerow([r.get(k) for k in SAMPLE_COLS])
             self.f.flush()
             self.stop_ev.wait(0.5)
 
@@ -416,10 +845,13 @@ def settle(timeout=40):
     return state()
 
 
-def apply_cfg(c, fps):
+def apply_cfg(c, fps, fmt='cdng'):
     # Clear HDR and the resolution first, then a bit-depth round trip so every take starts from a fresh camera config.
-    # (set_clear_hdr takes `enabled`; set_resolution takes width and height.)
+    # (set_clear_hdr takes `enabled`; set_resolution takes width and height.) fmt: 'cdng' (default) or 'mlv' (the one-file
+    # control take of the storage-slowdown plan); the compression and Log commands are cDNG's.
     st = state()
+    if st.get('recording_format') not in (None, fmt):
+        core('set_record_format', value=fmt); time.sleep(3)
     if bool(st.get('clear_hdr')) != c.hdr:
         core('set_clear_hdr', enabled=c.hdr); time.sleep(4)
     if st.get('resolution') != '%dx%d' % (c.w, c.h):
@@ -428,8 +860,9 @@ def apply_cfg(c, fps):
     core('set_raw_bit_depth', value=other); time.sleep(5)
     core('set_raw_bit_depth', value=c.bits); time.sleep(6)
     settle()
-    core('set_cdng_compression', value=c.comp)
-    core('set_cdng_log', value='on' if c.log else 'off')
+    if fmt == 'cdng':
+        core('set_cdng_compression', value=c.comp)
+        core('set_cdng_log', value='on' if c.log else 'off')
     core('set_preview_tdn', enabled=c.tdn)
     core('set_fps_phase_lock', enabled=c.lock)
     core('set_media_trim', enabled=c.trim)
@@ -438,12 +871,15 @@ def apply_cfg(c, fps):
     return settle()
 
 
-def verify(c, fps, st):
-    """Return '' if Core reports what we asked for, else the mismatch."""
+def verify(c, fps, st, fmt='cdng', expect=None):
+    """Return '' if Core reports what we asked for, else the mismatch. expect = {state key: value} a stage demands besides."""
     bad = []
+    for k, v in (expect or {}).items():
+        if str(st.get(k)) != str(v): bad.append('%s=%s' % (k, st.get(k)))
     if st.get('raw_bit_depth') != c.bits: bad.append('bits=%s' % st.get('raw_bit_depth'))
-    if st.get('cdng_compression') != c.comp: bad.append('comp=%s' % st.get('cdng_compression'))
-    if bool(st.get('cdng_log_applied')) != c.log: bad.append('log_applied=%s' % st.get('cdng_log_applied'))
+    if 'recording_format' in st and st.get('recording_format') != fmt: bad.append('format=%s' % st.get('recording_format'))
+    if fmt == 'cdng' and st.get('cdng_compression') != c.comp: bad.append('comp=%s' % st.get('cdng_compression'))
+    if fmt == 'cdng' and bool(st.get('cdng_log_applied')) != c.log: bad.append('log_applied=%s' % st.get('cdng_log_applied'))
     if bool(st.get('preview_tdn')) != c.tdn: bad.append('tdn=%s' % st.get('preview_tdn'))
     if bool(st.get('fps_phase_lock')) != c.lock: bad.append('lock=%s' % st.get('fps_phase_lock'))
     if abs(float(st.get('fps', 0)) - fps) > 0.01: bad.append('fps=%s' % st.get('fps'))
@@ -454,7 +890,7 @@ def verify(c, fps, st):
 
 def clip_dirs():
     try:
-        return {d for d in os.listdir(MEDIA) if os.path.isdir(os.path.join(MEDIA, d)) and d.startswith('cDNG')}
+        return {d for d in os.listdir(MEDIA) if os.path.isdir(os.path.join(MEDIA, d)) and d.startswith(('cDNG', 'MLV'))}
     except OSError:
         return set()
 
@@ -467,13 +903,48 @@ def dropped_none(row):
     return int(_num(row.get('dropped')) or 0) == 0
 
 
+def own_clip_add(out, name):
+    OWN['clips'].add(name)
+    with open(out + '/own_clips.txt', 'a') as f:
+        f.write(name + '\n')
+
+
+def own_clips_load(out):
+    """The clip folders this run made so far; a take the runner did not survive (power cut, SIGKILL) left its clip and the
+    in-progress marker, so the clip that appeared after the marker's start is claimed as ours."""
+    p = out + '/own_clips.txt'
+    OWN['clips'] = {l.strip() for l in open(p) if l.strip()} if os.path.exists(p) else set()
+    m = out + '/take_in_progress.json'
+    if os.path.exists(m):
+        try:
+            info = json.load(open(m))
+            for d in clip_dirs() - set(info.get('before', [])):
+                try:
+                    if os.path.getmtime(os.path.join(MEDIA, d)) >= float(info.get('started', 0)) - 60:
+                        own_clip_add(out, d)
+                        log(out, 'claimed %s: the clip of a take this runner did not survive' % d)
+                except OSError:
+                    pass
+        except (ValueError, OSError):
+            pass
+        os.unlink(m)
+
+
 def clear_media(out):
-    """Remove leftover clip folders so the next take has the room. Folders that were there when the campaign started
-    stay unless --clear-all was given (the 2026-11-07 drive holds 143 GB of older takes)."""
+    """Remove leftover clip folders THIS RUN made (after a crash or a power cut) so the next take has the room. Clips other
+    sessions made during the campaign, and those that were on the drive at the start, stay unless --clear-all was given
+    (the 2026-11-07 drive holds 143 GB of older takes)."""
+    present = clip_dirs()
+    mine = present if CLEAR_ALL else (present & OWN['clips'])
     n = 0
-    for d in sorted(clip_dirs() - (set() if CLEAR_ALL else PRESERVE)):
+    for d in sorted(mine):
         shutil.rmtree(os.path.join(MEDIA, d), ignore_errors=True)
+        OWN['clips'].discard(d)
         n += 1
+    foreign = present - mine - PRESERVE
+    if foreign and SAID.get('foreign') != foreign:
+        SAID['foreign'] = foreign
+        log(out, 'leaving %d clip folder(s) another session made: %s' % (len(foreign), ', '.join(sorted(foreign))[:200]))
     if n:
         log(out, 'cleared %d clip folder(s) from %s; free now %.0f GiB' % (
             n, MEDIA, os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize / 2**30))
@@ -604,10 +1075,13 @@ CREATE TABLE IF NOT EXISTS takes(take_id TEXT PRIMARY KEY, cfg_id TEXT, mode TEX
   mem_avail_mb REAL, fill_pct REAL, throttled TEXT, files INT, missing INT, audio TEXT, gb_written REAL,
   trim_events INT, drive_full TEXT, drive_full_at_s REAL, start_pi_c REAL, start_nvme_c REAL, clip TEXT,
   started TEXT, mismatch TEXT, variant TEXT, media_class TEXT, buffer_setting TEXT, buffer_safety_stop TEXT,
-  buffer_flush_discarded TEXT, tune_readback TEXT, core_cpu_avg REAL, core_cpu_max REAL, core_top_thread TEXT);
+  buffer_flush_discarded TEXT, tune_readback TEXT, core_cpu_avg REAL, core_cpu_max REAL, core_top_thread TEXT,
+  queue_budget_mib REAL, budget_seconds REAL, recorder_stop_s REAL, stall_msg INT, idle_gap_s REAL, core_cpu_slope REAL,
+  trim_before TEXT, format TEXT, buffer_unit TEXT, capacity_fps REAL, capacity_how TEXT, drain_mbps REAL);
 CREATE TABLE IF NOT EXISTS samples(take_id TEXT, t_s REAL, pi_c REAL, nvme_c REAL, cpu_pct REAL, load1 REAL,
   mem_avail_mb REAL, fill_pct REAL, free_gb REAL, throttled TEXT, dropped INT, state TEXT, core_cpu_pct REAL,
-  core_top_thread TEXT);
+  core_top_thread TEXT, buffer_used REAL, buffer_capacity REAL, dev_w_ios INT, dev_w_sectors INT, dev_w_ticks INT,
+  dev_inflight INT, dirty_kb INT, writeback_kb INT, trim_running TEXT, trim_last_unix INT);
 CREATE INDEX IF NOT EXISTS samples_take ON samples(take_id);
 CREATE TABLE IF NOT EXISTS drop_events(take_id TEXT, t_unix REAL, t_rel_s REAL, kind TEXT, frames INT, dt_us INT,
   nominal_us INT);
@@ -643,13 +1117,21 @@ def db_ingest(out, row, payload):
     try:
         con.executescript(DB_SCHEMA)
         for table, col, typ in (('takes', 'core_cpu_avg', 'REAL'), ('takes', 'core_cpu_max', 'REAL'), ('takes', 'core_top_thread', 'TEXT'),
-                                ('samples', 'core_cpu_pct', 'REAL'), ('samples', 'core_top_thread', 'TEXT')):
+                                ('takes', 'queue_budget_mib', 'REAL'), ('takes', 'budget_seconds', 'REAL'), ('takes', 'recorder_stop_s', 'REAL'),
+                                ('takes', 'stall_msg', 'INT'), ('takes', 'idle_gap_s', 'REAL'), ('takes', 'core_cpu_slope', 'REAL'),
+                                ('takes', 'trim_before', 'TEXT'), ('takes', 'format', 'TEXT'), ('takes', 'buffer_unit', 'TEXT'),
+                                ('takes', 'capacity_fps', 'REAL'), ('takes', 'capacity_how', 'TEXT'), ('takes', 'drain_mbps', 'REAL'),
+                                ('samples', 'core_cpu_pct', 'REAL'), ('samples', 'core_top_thread', 'TEXT'),
+                                ('samples', 'buffer_used', 'REAL'), ('samples', 'buffer_capacity', 'REAL'), ('samples', 'dev_w_ios', 'INT'),
+                                ('samples', 'dev_w_sectors', 'INT'), ('samples', 'dev_w_ticks', 'INT'), ('samples', 'dev_inflight', 'INT'),
+                                ('samples', 'dirty_kb', 'INT'), ('samples', 'writeback_kb', 'INT'), ('samples', 'trim_running', 'TEXT'),
+                                ('samples', 'trim_last_unix', 'INT')):
             if col not in [c[1] for c in con.execute('PRAGMA table_info(%s)' % table)]:
                 con.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table, col, typ))
         for t in ('takes', 'samples', 'drop_events', 'stats', 'journal'):
             con.execute('DELETE FROM %s WHERE take_id=?' % t, (tid,))
         r = row
-        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 47), (
+        con.execute('INSERT INTO takes VALUES (%s)' % ','.join('?' * 59), (
             tid, r.get('cfg_id'), r.get('mode'), int(r.get('bits') or 0), r.get('comp'), _flag(r.get('log')), _flag(r.get('tdn')),
             _flag(r.get('lock')), _flag(r.get('trim')), _flag(r.get('web')), _num(r.get('fps')), r.get('outcome'),
             _num(r.get('seconds')), int(_num(r.get('dropped')) or 0), _num(r.get('first_drop_s')), r.get('drop_kinds'),
@@ -660,11 +1142,15 @@ def db_ingest(out, row, payload):
             _num(r.get('drive_full_at_s')), _num(r.get('start_pi_c')), _num(r.get('start_nvme_c')), r.get('clip'),
             r.get('started'), r.get('mismatch'), r.get('variant'), r.get('media_class'), r.get('buffer_setting'),
             r.get('buffer_safety_stop'), r.get('buffer_flush_discarded'), r.get('tune_readback'),
-            _num(r.get('core_cpu_avg')), _num(r.get('core_cpu_max')), r.get('core_top_thread')))
-        con.executemany('INSERT INTO samples VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)', [
-            (tid, x.get('t_s'), x.get('pi_c'), x.get('nvme_c'), x.get('cpu_pct'), x.get('load1'), x.get('mem_avail_mb'),
-             x.get('fill_pct'), x.get('free_gb'), x.get('throttled'), x.get('dropped'), x.get('state'),
-             x.get('core_cpu_pct') if x.get('core_cpu_pct') not in ('', None) else None, x.get('core_top_thread'))
+            _num(r.get('core_cpu_avg')), _num(r.get('core_cpu_max')), r.get('core_top_thread'),
+            _num(r.get('queue_budget_mib')), _num(r.get('budget_seconds')), _num(r.get('recorder_stop_s')),
+            int(_num(r.get('stall_msg')) or 0), _num(r.get('idle_gap_s')), _num(r.get('core_cpu_slope')), r.get('trim_before'),
+            r.get('format'), r.get('buffer_unit'), _num(r.get('capacity_fps')), r.get('capacity_how'), _num(r.get('drain_mbps'))))
+        numeric = {'t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'dropped', 'core_cpu_pct',
+                   'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors', 'dev_w_ticks', 'dev_inflight', 'dirty_kb',
+                   'writeback_kb', 'trim_last_unix'}
+        con.executemany('INSERT INTO samples(take_id, %s) VALUES (?, %s)' % (','.join(SAMPLE_COLS), ','.join('?' * len(SAMPLE_COLS))), [
+            (tid,) + tuple((_num(x.get(k)) if k in numeric else x.get(k)) if x.get(k) not in ('', None) else None for k in SAMPLE_COLS)
             for x in payload.get('samples', [])])
         lines = payload.get('journal', [])
         t_rec = payload.get('t_rec_wall')
@@ -755,11 +1241,22 @@ FIELDS = ['take_id', 'cfg_id', 'mode', 'bits', 'comp', 'log', 'tdn', 'lock', 'tr
           'load1', 'mem_avail_mb', 'fill_pct', 'throttled', 'files', 'missing', 'audio', 'gb_written', 'trim_events',
           'drive_full', 'drive_full_at_s', 'start_pi_c', 'start_nvme_c', 'clip', 'stats', 'mismatch', 'started', 'variant', 'media_class', 'buffer_setting',
           'buffer_safety_stop', 'buffer_flush_discarded', 'tune_readback', 'buffer_peak_pct', 'core_cpu_avg', 'core_cpu_max',
-          'core_top_thread']
+          'core_top_thread', 'queue_budget_mib', 'budget_seconds', 'recorder_stop_s', 'stall_msg', 'idle_gap_s', 'core_cpu_slope',
+          'trim_before', 'format', 'buffer_unit', 'capacity_fps', 'capacity_how', 'drain_mbps']
 
 
 def append_row(out, row):
     p = out + '/results.csv'
+    if os.path.exists(p):
+        with open(p, newline='') as f:
+            head = next(csv.reader(f), None)
+        if head and head != FIELDS:      # a run started by an older runner: grow the header, keep every row
+            rows = load_rows(out)
+            with open(p + '.tmp', 'w', newline='') as f:
+                w = csv.DictWriter(f, FIELDS, extrasaction='ignore')
+                w.writeheader()
+                w.writerows(rows)
+            os.replace(p + '.tmp', p)
     new = not os.path.exists(p)
     with open(p, 'a', newline='') as f:
         w = csv.DictWriter(f, FIELDS, extrasaction='ignore')
@@ -844,22 +1341,79 @@ def set_variant(out, name, settings):
     return kernel_readback()
 
 
-def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', tune_note=''):
+def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', tune_note='', fmt='cdng', before_cmds=(), expect=None):
     tid = '%s_fps%s_%s' % (c.id, int(fps), time.strftime('%H%M%S'))
     row = {'take_id': tid, 'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn, 'lock': c.lock,
            'trim': c.trim, 'web': c.web, 'fps': fps, 'started': time.strftime('%F %T'), 'variant': variant,
-           'tune_readback': tune_note}
-    st = apply_cfg(c, fps)
-    mism = verify(c, fps, st)
+           'tune_readback': tune_note, 'format': fmt}
+    # Unattended operation: wait for a quiet Pi, check the hardware, check the write budget (plan section 7.1). The free
+    # space the gate asks for is the take's projected writes (GiB) plus 10, or what the whole drive can hold: a take the
+    # drive cannot hold ends at drive-full (pass_drive_full), which is a result, not a reason to wait.
+    proj = projected_gb(c, fps, max_seconds)
+    proj_gib = proj / 1.073741824
+    try:
+        sv = os.statvfs(MEDIA)
+        total_gib = sv.f_blocks * sv.f_frsize / 2**30
+    except OSError:
+        total_gib = 0
+    need = min(proj_gib + 10, max(total_gib - 10, 1)) if total_gib else proj_gib + 10
+    if total_gib and proj_gib + 10 > total_gib - 10 and not SAID.get(('fits', c.key, fps)):
+        SAID[('fits', c.key, fps)] = True
+        log(out, '%s: a %d s take at %s fps could write %.0f GB, more than the %.0f GiB drive holds: it will end at drive-full' % (
+            c.id, max_seconds or 1800, fps, proj, total_gib))
+    code = wait_for_quiet(out, need_free_gib=need)
+    if code:
+        row['outcome'] = {'needs_human': 'needs_human', 'gate_timeout': 'gate_timeout', 'signal': 'stopped_by_signal'}[code]
+        row['cause_estimate'] = {'needs_human': 'a condition only a human can clear (see the gate lines in runner.log)',
+                                 'gate_timeout': 'the Pi did not become quiet within the gate timeout',
+                                 'signal': 'stopped by %s while waiting at the gate' % STOP['sig']}[code]
+        return row
+    hold_lock(variant or 'take', (max_seconds or 1800) + 120)   # from here on the other sessions see a take being set up
+    ok, why = hardware_ok(out)
+    if not ok:
+        row['outcome'] = 'watchdog'
+        row['cause_estimate'] = why
+        HALT['why'] = why
+        release_lock()
+        return row
+    if BUDGET['gb'] and BUDGET['used'] + proj > BUDGET['gb']:
+        row['outcome'] = 'budget_exceeded'
+        row['cause_estimate'] = 'this take could write %.0f GB; %.0f of the %.0f GB budget are used' % (proj, BUDGET['used'], BUDGET['gb'])
+        HALT['why'] = row['cause_estimate']
+        release_lock()
+        return row
+    row['idle_gap_s'] = round(time.time() - LAST_END['t'], 1) if LAST_END['t'] else ''
+    st = apply_cfg(c, fps, fmt)
+    for cmd, kw in before_cmds:
+        r0 = core(cmd, **kw)
+        if not r0.get('ok'):
+            # A refused stage command would run the arm as its opposite (the knob A/B "on" arm as "off"): not a result.
+            row['outcome'] = 'before_cmd_refused'
+            row['cause_estimate'] = '%s %s refused: %s' % (cmd, kw, r0.get('error'))
+            log(out, '%s fps=%s: %s' % (c.id, fps, row['cause_estimate']))
+            release_lock()
+            return row
+    if before_cmds:
+        st = settle()
+    mism = verify(c, fps, st, fmt, expect)
     row['mismatch'] = mism
+    # Did a trim finish between the previous take's end and this one's start? (Core trims after a delete made outside it
+    # since cinemate-port f4a1393; the result is only in its web state (/api/state), never in get_state or a journal window.)
+    ws = web_state()
+    tl = _num(ws.get('media_trim_last_unix'))
+    row['trim_before'] = ('%s %s' % (ws.get('media_trim_last_result') or '?',
+                                     'since-last-take' if (tl and LAST_END['t'] and tl >= LAST_END['t'] - 1) else 'older')
+                          if ws.get('media_trim_last_result') is not None else '')
     if mism:
         row['outcome'] = 'skipped_unavailable' if 'log_applied' in mism and c.log else 'setup_mismatch'
         if row['outcome'] == 'skipped_unavailable':
             row['cause_estimate'] = 'Core: ' + log_probe(out)
         log(out, '%s fps=%s: %s (%s) %s' % (c.id, fps, row['outcome'], mism, row.get('cause_estimate', '')))
+        release_lock()
         return row
     if st.get('media_state') != 'mounted':
         row['outcome'] = 'media_not_mounted'
+        release_lock()
         return row
     row['start_pi_c'] = int(rd(PI_TEMP, '0')) / 1000
     row['start_nvme_c'] = int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else ''
@@ -879,7 +1433,10 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         time.sleep(3)
     join_ingest()      # the previous take's logs went into the database while this one was being set up
     os.makedirs(out + '/samples', exist_ok=True)
+    hold_lock(variant or 'take', max_seconds or 1800)
     t_wall = time.time()
+    # If the runner dies during the take (power cut, SIGKILL), the resume reads this marker and claims the clip it left.
+    json.dump({'before': sorted(before), 'started': t_wall, 'take_id': tid}, open(out + '/take_in_progress.json', 'w'))
     t0 = time.monotonic()
     sam = Sampler(t0, out + '/samples/%s.csv' % tid)
     sam.start()
@@ -899,7 +1456,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         el = time.monotonic() - t_rec
         if not last:
             continue
-        if stop_on_drop and last['dropped'] and last['dropped'] > 0:
+        if STOP['sig']:
+            outcome, ctx_drop = 'stopped_by_signal', dict(last)
+        elif stop_on_drop and last['dropped'] and last['dropped'] > 0:
             outcome, ctx_drop = 'drop', dict(last)
         elif os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < CAPACITY_GUARD:
             outcome = 'pass_drive_full'
@@ -942,22 +1501,29 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     row['drive_full_at_s'] = round(seconds, 1) if full else ''
     new = sorted(clip_dirs() - before)
     clip = os.path.join(MEDIA, new[-1]) if new else ''
+    for d in new:
+        own_clip_add(out, d)
+    try:
+        os.unlink(out + '/take_in_progress.json')
+    except OSError:
+        pass
     files = missing = 0
     audio, size = '', 0
     if clip and os.path.isdir(clip):
-        nums, af = [], []
+        nums, af, mlvs = [], [], []
         # A split clip ([storage] frames_per_folder) keeps its DNGs in part_NNN/ folders: count them recursively; the
-        # WAV and the other sidecars stay in the clip root.
+        # WAV and the other sidecars stay in the clip root. An MLV clip is one .mlv file (audio inside it).
         for dp, _dirs, names in os.walk(clip):
             for n in names:
                 fp = os.path.join(dp, n)
                 m = re.search(r'_(\d{9})\.dng$', n)
                 if m: nums.append(int(m.group(1)))
+                elif n.lower().endswith('.mlv'): mlvs.append(n)
                 elif not n.endswith('.dng') and dp == clip: af.append('%s:%d' % (n, os.path.getsize(fp)))
         nums.sort()
         files = len(nums)
         missing = (nums[-1] + 1 - len(nums)) if nums else 0
-        audio = ' '.join(af) if af else 'NONE'
+        audio = ' '.join(af) if af else ('in-mlv' if mlvs else 'NONE')
     jl = journal(t_wall)
     os.makedirs(out + '/journal', exist_ok=True)
     with open(out + '/journal/%s.log' % tid, 'w') as jf:   # raw Core journal for the take, to re-check a cause later
@@ -973,7 +1539,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     if outcome == 'stopped_externally' and fill >= 0.88:
         outcome = 'buffer_full'
         kinds['buffer_full'] = 1
+    release_lock()
     st_end = state()
+    row['buffer_unit'] = buffer_level()[2] or ''
     row['buffer_setting'] = st_end.get('buffer_setting')
     row['buffer_safety_stop'] = st_end.get('buffer_safety_stop')
     row['buffer_flush_discarded'] = st_end.get('buffer_flush_discarded')
@@ -984,16 +1552,60 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     dropped = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0), missing)
     gb = 0
     if clip and os.path.isdir(clip) and files:
-        names = [os.path.join(dp, n) for dp, _d, ns in os.walk(clip) for n in ns if n.endswith('.dng')][:20]
+        names = []
+        for root_dir, _dirs, fnames in os.walk(clip):
+            names += [os.path.join(root_dir, n) for n in fnames if n.endswith('.dng')][:20 - len(names)]
+            if len(names) >= 20: break
         if names:
             gb = files * (sum(os.path.getsize(n) for n in names) / len(names)) / 1e9
+    elif clip and os.path.isdir(clip):      # MLV: one file per clip, count every byte in the folder
+        gb = sum(os.path.getsize(os.path.join(r_, n)) for r_, _d, fn in os.walk(clip) for n in fn) / 1e9
+    # The writers' capacity from the buffer level (fps minus the buffer's slope), and from the free-space drain.
+    frame_b = (gb * 1e9 / files) if files else (mode_size_mb(c.mode) * 1e6)
+    cap, how = capacity_from_samples(sam.rows, fps, frame_b, row.get('buffer_unit') or 'frames')
+    if cap is None:
+        # The buffer filled within seconds (a 4K meter take at the top fps): Core's stats line still says how many frames
+        # the writers took in the take's seconds (enqueued minus the queue's peak, which is the queue at a safety stop).
+        try:
+            enq = int(stats.get('enqueued', 0))
+            peak = int(str(stats.get('peak_queue', '0')).split('/')[0])
+        except (ValueError, TypeError):
+            enq = peak = 0
+        if enq >= 60 and peak > 0 and seconds >= 2:
+            cap, how = round(fps * max(enq - peak, 0) / enq, 2), 'stats'
+    row['capacity_fps'] = cap if cap is not None else ''
+    row['capacity_how'] = how
+    rec = [x for x in sam.rows if x.get('state') == 'rec' and x.get('free_gb') is not None]
+    row['drain_mbps'] = round((rec[0]['free_gb'] - rec[-1]['free_gb']) * 1073.741824 / max(rec[-1]['t_s'] - rec[0]['t_s'], 1), 1) if len(rec) > 5 else ''
     cc = [x['core_cpu_pct'] for x in sam.rows if x.get('core_cpu_pct') is not None]
     row['core_cpu_avg'] = round(sum(cc) / len(cc), 1) if cc else ''
     row['core_cpu_max'] = max(cc) if cc else ''
     tt = collections.Counter(x.get('core_top_thread', '').split(':')[0] for x in sam.rows if x.get('core_top_thread'))
     row['core_top_thread'] = tt.most_common(1)[0][0] if tt else ''
+    # The RAM budget in seconds of input, the stop time, the stop-path stall message, and the slope of Core's CPU over
+    # the take (fraction of one core per second; with 5 directory entries per frame file, c = slope / (fps^2 x 5)).
+    budget_b = float(stats.get('queue_budget', 0) or 0)
+    frame_b = (gb * 1e9 / files) if files else (mode_size_mb(c.mode) * 1e6 if fmt == 'mlv' else 0)
+    row['queue_budget_mib'] = round(budget_b / 2**20, 1) if budget_b else ''
+    row['budget_seconds'] = round(budget_b / (fps * frame_b), 1) if budget_b and frame_b else ''
+    stop_s = ''
+    for l in jl:
+        m = re.search(r'recorder stop time: ([\d.]+)s', l)
+        if m: stop_s = float(m.group(1))
+    row['recorder_stop_s'] = stop_s
+    row['stall_msg'] = 1 if any('no frame written' in l or 'stopped responding' in l for l in jl) else 0
+    pts = [(x['t_s'], x['core_cpu_pct'] / 100.0) for x in sam.rows
+           if x.get('core_cpu_pct') is not None and x.get('state') == 'rec' and x['t_s'] > 20]
+    if len(pts) >= 60:
+        mx = sum(p[0] for p in pts) / len(pts); my = sum(p[1] for p in pts) / len(pts)
+        sxx = sum((p[0] - mx) ** 2 for p in pts)
+        row['core_cpu_slope'] = '%.3e' % (sum((p[0] - mx) * (p[1] - my) for p in pts) / sxx) if sxx else ''
+    else:
+        row['core_cpu_slope'] = ''
     if not stop_on_drop and outcome.startswith('pass'):
         outcome = 'ab_clean' if dropped == 0 else 'ab_dropped'
+    if outcome == 'stopped_by_signal':
+        row['cause_estimate'] = 'stopped by %s after %.0f s: not a result' % (STOP['sig'], seconds)
     pis = [x['pi_c'] for x in sam.rows]; nvs = [x['nvme_c'] for x in sam.rows if x['nvme_c']]
     row.update({
         'outcome': outcome, 'seconds': round(seconds, 1), 'dropped': dropped,
@@ -1004,7 +1616,7 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         'mem_avail_mb': ctx.get('mem_avail_mb'), 'fill_pct': ctx.get('fill_pct'), 'throttled': ctx.get('throttled'),
         'files': files, 'missing': missing, 'audio': audio, 'gb_written': round(gb, 1), 'trim_events': trims,
         'clip': os.path.basename(clip), 'stats': json.dumps(stats)})
-    if outcome != 'record_start_failed':
+    if outcome not in ('record_start_failed', 'stopped_by_signal'):
         if dropped > 0 or outcome in ('fault', 'recording_stopped_by_core', 'drive_full', 'stopped_externally', 'buffer_full'):
             written_total = written['gb'] + gb
             row['outcome'], row['seconds'] = outcome, round(seconds, 1)
@@ -1014,8 +1626,12 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         else:
             row['cause_estimate'] = ''
     # delete only what this take made, then count what was written since the last trim
-    if clip and os.path.isdir(clip) and clip.startswith(MEDIA + '/cDNG'):
+    if clip and os.path.isdir(clip) and clip.startswith((MEDIA + '/cDNG', MEDIA + '/MLV')):
         shutil.rmtree(clip, ignore_errors=True)
+    BUDGET['used'] += gb
+    ok, why = hardware_ok(out)
+    if not ok:
+        HALT['why'] = why
     written['gb'] = 0 if (trims or (c.trim and gb > 1)) else written['gb'] + gb
     if c.trim and gb > 1:
         time.sleep(8)   # Core's delete-batch trim runs on its own; we do not wait for cooling
@@ -1023,6 +1639,7 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         c.id, fps, outcome, seconds, dropped, row['drop_kinds'], ctx.get('pi_c', 0), ctx.get('nvme_c')))
     row['_payload'] = {'samples': [{k: v for k, v in x.items() if k != '_st'} for x in sam.rows], 'journal': jl,
                        't_rec_wall': t_rec_wall}
+    LAST_END['t'] = time.time()
     return row
 
 
@@ -1039,7 +1656,9 @@ def main():
     ap.add_argument('--modes', default='', help='comma list of mode keys to run (default: every mode the storage can carry)')
     ap.add_argument('--fps-start', type=float, default=0, help='override the starting fps (smoke test)')
     ap.add_argument('--disk-mbps', type=float, default=DISK_MBPS, help='sustained write speed of the drive, MB/s')
-    ap.add_argument('--stages', default='1d2rc', help='1 = baseline of every mode, d = configs one factor away, 2 = storage A/B on the best configs, r = the rest')
+    ap.add_argument('--stages', default='1d2rc', help='1 = baseline of every mode, d = configs one factor away, 2 = storage A/B on the best configs, '
+                    'r = the rest, c = 10/20/30-min tiers, F = Log follow-up; unattended ladder: m = capacity meter, s = split test, '
+                    'L = long take, M = MLV control, k = frames_per_folder A/B, S = soak')
     ap.add_argument('--ab-seconds', type=int, default=120, help='length of one A/B take')
     ap.add_argument('--start-at-mode-max', action='store_true', help='start every walk at the mode\'s own maximum fps, not at what the storage can carry')
     ap.add_argument('--tier1-seconds', type=int, default=SCREEN['s'], help='round 0: length of the take of every config (default 300 = 5 min)')
@@ -1050,7 +1669,23 @@ def main():
     ap.add_argument('--no-prune', action='store_true', help='test every config, even those that cannot have an effect')
     ap.add_argument('--ab-variants', default='', help='comma list of A/B variants to run (default: all)')
     ap.add_argument('--ab-reps', type=int, default=3, help='repeats of every A/B variant (interleaved)')
+    # unattended ladder (storage-slowdown plan, 2026-11-08): stages m (meter), s (split test), L (long takes), M (MLV control),
+    # k (frames_per_folder A/B, skipped when the knob is absent), S (soak)
+    ap.add_argument('--budget-gb', type=float, default=0, help='stop before a take that would exceed this many GB written in this run (0 = off)')
+    ap.add_argument('--no-gate', action='store_true', help='do not wait for a quiet Pi before each take (smoke tests only)')
+    ap.add_argument('--gate-timeout-h', type=float, default=6, help='give up after waiting this long for a quiet Pi')
+    ap.add_argument('--fix-budget', action='store_true', help="set [storage] buffer_ram_fraction=0.9, buffer_ram_floor_mb=256 in apertar-hardware.conf for the run (backup restored at the end)")
+    ap.add_argument('--meter-seconds', type=int, default=90, help='length of a capacity meter take (stage m)')
+    ap.add_argument('--meter-fps', type=float, default=0, help='fps of the meter takes (0 = the mode maximum)')
+    ap.add_argument('--meter-log', action='store_true', help='stage m also meters the Log twins')
+    ap.add_argument('--split-fps', type=float, default=0, help='fps of the split test, MLV control and knob A/B (0 = 0.95 x the metered capacity)')
+    ap.add_argument('--split-frames', type=int, default=5000, help='frames_per_folder value for the knob A/B (stage k)')
+    ap.add_argument('--long-fps', type=float, default=0, help='fps of the long instrumented take (0 = 0.9 x the metered capacity)')
+    ap.add_argument('--long-seconds', type=int, default=1800, help='length of the long, split, MLV, knob and soak takes')
     a = ap.parse_args()
+    GATE['on'] = not a.no_gate
+    GATE['timeout_s'] = int(a.gate_timeout_h * 3600)
+    BUDGET['gb'] = a.budget_gb
     out = os.path.expanduser(a.out)
     if a.ab_variants:
         AB_VARIANTS = [v for v in AB_VARIANTS if v[0] in a.ab_variants.split(',')]
@@ -1073,13 +1708,30 @@ def main():
                   n_base, n_d1, len(cfgs) - n_base - n_d1))
         print('A/B variants:', ', '.join(v for v, _ in AB_VARIANTS))
         return
+    if os.path.exists(out + '/DONE'):
+        sys.exit('this campaign already ended (%s): remove %s/DONE to run it again' % (open(out + '/DONE').read().strip()[:200], out))
+    inst = open(out + '/.instance.lock', 'a+')      # one runner per --out: the crontab resume must not start a second one
+    try:
+        fcntl.flock(inst, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        inst.seek(0)
+        sys.exit('another runner already uses %s (%s): not starting a second one' % (out, inst.read().strip()[:80] or 'pid unknown'))
+    inst.seek(0); inst.truncate(); inst.write('pid=%d started=%s\n' % (os.getpid(), time.strftime('%F %T'))); inst.flush()
+    WATCH['since'] = time.time()                     # the watchdog's first window starts here, not in the boot messages
+    # After a reboot (the crontab resume) Core and the mount come up late: wait up to 15 min for both.
+    t_wait = time.monotonic()
     st0 = state()
-    if not st0:
-        sys.exit('Core is not answering on ' + SOCK)
-    src = subprocess.run(['findmnt', '-no', 'SOURCE', MEDIA], capture_output=True, text=True).stdout.strip()
-    KT['dev'] = src or KT['dev']
-    parent = subprocess.run(['lsblk', '-no', 'pkname', src], capture_output=True, text=True).stdout.strip().splitlines()
-    parent = '/dev/' + parent[0] if parent else src
+    while not (st0 and os.path.ismount(MEDIA)):
+        if time.monotonic() - t_wait > 900:
+            sys.exit('after 15 min: Core %s, %s %s' % ('answers' if st0 else 'not answering on ' + SOCK, MEDIA,
+                                                       'mounted' if os.path.ismount(MEDIA) else 'not mounted'))
+        if not SAID.get('startwait'):
+            SAID['startwait'] = True
+            log(out, 'waiting for Core (%s) and the mount (%s)' % ('up' if st0 else 'down', 'up' if os.path.ismount(MEDIA) else 'down'))
+        time.sleep(10)
+        st0 = state()
+    resolve_disk()
+    parent = DEV.get('parent') or KT['dev']
     if not os.path.exists(out + '/session.json'):
         sess = {'started': time.strftime('%F %T'), 'pi_model': rd('/proc/device-tree/model', '').strip('\0'),
                 'kernel': subprocess.run(['uname', '-r'], capture_output=True, text=True).stdout.strip(),
@@ -1095,7 +1747,8 @@ def main():
                 'throttled_at_start': subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip(),
                 'kernel_tune_readback_at_start': kernel_readback(),
                 'original_settings': {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log',
-                                                               'preview_tdn', 'fps_phase_lock', 'fps_speed_ramp', 'clear_hdr', 'resolution')},
+                                                               'preview_tdn', 'fps_phase_lock', 'fps_speed_ramp', 'clear_hdr', 'resolution',
+                                                               'recording_format')},
                 'pi_revision': next((l.split(':')[1].strip() for l in open('/proc/cpuinfo') if l.startswith('Revision')), ''),
                 'pi_mac_eth0': rd('/sys/class/net/eth0/address'),
                 'preexisting_clips': sorted(clip_dirs()),
@@ -1113,7 +1766,12 @@ def main():
     except sqlite3.Error as e:
         log(out, 'WARNING: database session info failed: %s' % e)
     PRESERVE.update(json.load(open(out + '/session.json')).get('preexisting_clips', []))
-    log(out, 'preserving %d pre-existing clip folder(s)%s' % (len(PRESERVE), ' (--clear-all: they WILL be deleted)' if CLEAR_ALL else ''))
+    own_clips_load(out)
+    BUDGET['used'] = sum(float(r.get('gb_written') or 0) for r in load_rows(out))
+    if BUDGET['gb']:
+        log(out, 'write budget %.0f GB, %.0f GB used so far in this run' % (BUDGET['gb'], BUDGET['used']))
+    log(out, 'preserving %d pre-existing clip folder(s)%s; %d clip folder(s) of this run on the drive' % (
+        len(PRESERVE), ' (--clear-all: they WILL be deleted)' if CLEAR_ALL else '', len(OWN['clips'] & clip_dirs())))
     log(out, 'campaign start: modes %s; excluded (storage too slow at %d fps): %s; %d configs; drive %.0f MB/s; out=%s' % (
         [m[0] for m in inc], FPS_FLOOR, [m[0] for m in excl], len(cfgs), DISK_MBPS, out))
     core('set_fps_speed_ramp', enabled=False)
@@ -1121,24 +1779,225 @@ def main():
     sess = json.load(open(out + '/session.json'))
     sess.setdefault('audio_original', aud)
     json.dump(sess, open(out + '/session.json', 'w'), indent=1)
-    stop = {'now': False}
-    signal.signal(signal.SIGTERM, lambda *_: stop.update(now=True))
+    stop = {'now': False, 'why': ''}
+
+    def on_signal(signum, _frame):
+        name = {signal.SIGTERM: 'SIGTERM', signal.SIGINT: 'SIGINT'}.get(signum, str(signum))
+        if STOP['sig'] and signum == signal.SIGINT:
+            raise KeyboardInterrupt          # a second Ctrl-C: leave at once (the finally block still restores the settings)
+        STOP['sig'] = name
+        stop['now'] = True
+    signal.signal(signal.SIGTERM, on_signal)
+    signal.signal(signal.SIGINT, on_signal)
     written = {'gb': 0}
     ext_stops = {}
     counter = {'n': 0}
 
     def take(c, fps, **kw):
-        row = run_take(out, c, fps, kw.pop('max_seconds', a.max_seconds), written, **kw)
+        ms = kw.pop('max_seconds', a.max_seconds)
+        if a.max_seconds and ms:
+            ms = min(ms, a.max_seconds)      # --max-seconds caps every stage's takes (smoke tests)
+        row = run_take(out, c, fps, ms, written, **kw)
         payload = row.pop('_payload', None)
         append_row(out, row)
         start_ingest(out, row, payload)     # runs while the next take is set up
         if row.get('media_class'):
             KT['class'] = row['media_class']
         o = row.get('outcome', '')
-        if o in ('record_start_failed', 'setup_mismatch', 'media_not_mounted'):
+        if o in ('record_start_failed', 'setup_mismatch', 'media_not_mounted', 'gate_timeout', 'needs_human', 'watchdog', 'budget_exceeded'):
+            stop['why'] = '%s: %s' % (o, row.get('cause_estimate') or row.get('mismatch'))
             log(out, 'setup problem (%s): %s - campaign needs a human' % (o, row.get('cause_estimate') or row.get('mismatch')))
             stop['now'] = True
+        elif o == 'stopped_by_signal':
+            stop['now'] = True
+        elif o == 'before_cmd_refused':
+            log(out, 'Core refused a stage command (%s): the rest of this stage is skipped' % row.get('cause_estimate'))
+        if HALT['why']:
+            stop['why'] = stop['why'] or 'watchdog: ' + HALT['why']
+            log(out, 'watchdog: %s - campaign stopped, needs a human' % HALT['why'])
+            stop['now'] = True
         return row
+
+    def pre_take():
+        """Before a camera mode switch or a clip clean-up: the Pi must be quiet (another session's take must not be disturbed),
+        then this run's leftover clips go. False = stop the campaign (the reason is logged)."""
+        if stop['now']:
+            return False
+        code = wait_for_quiet(out, need_free_gib=0)
+        if code:
+            stop['why'] = {'needs_human': 'needs_human: see the gate lines', 'gate_timeout': 'gate_timeout', 'signal': ''}[code]
+            stop['now'] = True
+            return False
+        clear_media(out)
+        return True
+
+    def baseline_of(m):
+        return [x for x in cfgs if x.mode == m][0]
+
+    def mode_max_fps(c):
+        """The fps the mode itself allows (Core's fps_take_max after the mode is applied); a camera switch, so only under the gate."""
+        if c.key in MODE_MAX:
+            return float(MODE_MAX[c.key])
+        apply_cfg(c, 25)
+        fmax = float(state().get('fps_take_max') or state().get('fps_max') or 30)
+        MODE_MAX[c.key] = int(fmax)
+        return fmax
+
+    def metered_capacity(m, comp='none'):
+        """The metered capacity (fps) of a mode's variant from stage m rows: a buffer-slope fit first, then 'at least' (the
+        buffer never filled at that fps), then the estimate from Core's stats line; None without a meter row."""
+        rows = [r for r in load_rows(out) if r['mode'] == m[0] and r.get('variant') == 'meter' and r.get('comp') == comp
+                and r.get('capacity_fps') not in ('', None) and r.get('log') in ('False', '0', False)]
+        for how in ('fit', 'at least', 'stats'):
+            sel = [float(r['capacity_fps']) for r in rows if r.get('capacity_how') == how]
+            if sel:
+                return max(sel)
+        return None
+
+    def pick_fps(m, given, factor, comp='none'):
+        """The fps of a long take: the given one, else factor x the metered capacity; None (skip the mode) when that falls
+        below the 25 fps floor (a 4K mode the drive carries at 12 fps is metered, never run for 30 min at 25)."""
+        if given:
+            return float(given)
+        cap = metered_capacity(m, comp)
+        if cap is None:
+            log(out, '%s: no metered capacity (run stage m first or give the fps): skipped' % m[0])
+            return None
+        f = int(cap * factor)
+        if f < FPS_FLOOR:
+            if not SAID.get(('floor', m[0], factor)):
+                SAID[('floor', m[0], factor)] = True
+                log(out, '%s: metered capacity %.1f fps x %.2f = %d fps is below the %d fps floor: metered only, no long takes' % (
+                    m[0], cap, factor, f, FPS_FLOOR))
+            return None
+        return float(f)
+
+    def meter_stage():
+        """One short take per mode and variant, no stop at the first drop: the buffer's slope is the writers' deficit, so
+        capacity = fps - slope (capacity_fps, how 'fit'). The fps is the mode's maximum or 1.25 x the storage cap, whichever is
+        lower, so the buffer lasts long enough to fit; when it still fills within seconds the capacity comes from Core's stats
+        line ('stats') and a second meter take runs at 1.3 x that estimate. Replaces the fps ladder."""
+        for m in inc:
+            if stop['now']: return
+            base = baseline_of(m)
+            variants = [Cfg(m, 'none', False, base.tdn, base.lock, base.trim, base.web),
+                        Cfg(m, 'lossless_jpeg', False, base.tdn, base.lock, base.trim, base.web)]
+            if a.meter_log:
+                variants += [Cfg(m, 'none', True, base.tdn, base.lock, base.trim, base.web),
+                             Cfg(m, 'lossless_jpeg', True, base.tdn, base.lock, base.trim, base.web)]
+            for c in variants:
+                if stop['now']: return
+                done = [r for r in load_rows(out) if r['cfg_id'] == c.id and r.get('variant') == 'meter' and is_result(r.get('outcome'))]
+                if any(r.get('capacity_how') in ('fit', 'at least') for r in done) or len(done) >= 2:
+                    continue
+                if not pre_take(): return
+                if not done:
+                    fps = a.meter_fps or min(mode_max_fps(c), float(max(5, int(1.25 * mode_cap_fps(m)))))
+                else:
+                    est = _num(done[0].get('capacity_fps'))
+                    if not est or est * 1.3 >= float(done[0]['fps']) - 1:
+                        continue
+                    fps = float(max(5, int(est * 1.3)))
+                row = take(c, float(fps), max_seconds=a.meter_seconds, stop_on_drop=False, variant='meter')
+                log(out, 'meter %s at %s fps: capacity %s fps (%s), drain %s MB/s, %s' % (
+                    c.id, fps, row.get('capacity_fps'), row.get('capacity_how'), row.get('drain_mbps'), row.get('outcome')))
+                est = _num(row.get('capacity_fps'))
+                if not stop['now'] and row.get('capacity_how') == 'stats' and est and est * 1.3 < fps - 1:
+                    fps2 = float(max(5, int(est * 1.3)))
+                    if not pre_take(): return
+                    row = take(c, fps2, max_seconds=a.meter_seconds, stop_on_drop=False, variant='meter')
+                    log(out, 'meter %s again at %s fps: capacity %s fps (%s), drain %s MB/s, %s' % (
+                        c.id, fps2, row.get('capacity_fps'), row.get('capacity_how'), row.get('drain_mbps'), row.get('outcome')))
+        L = ['# Capacity meter', '', '| mode | comp | log | fps run | capacity fps | how | drain MB/s | outcome | s |', '|---|---|---|---|---|---|---|---|---|']
+        for r in load_rows(out):
+            if r.get('variant') == 'meter' and r.get('fps'):
+                L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (r['mode'], r['comp'], r['log'], r['fps'], r.get('capacity_fps'),
+                                                                        r.get('capacity_how'), r.get('drain_mbps'), r['outcome'], r['seconds']))
+        open(out + '/capacity.md', 'w').write('\n'.join(L) + '\n')
+
+    def long_runs(label, fmt='cdng', before=(), fps_arg=0, factor=0.95, repeats=1, seconds=None, expect=None):
+        """One (or more) long takes per mode at the chosen fps, no stop at the first drop (Core's safety stop ends a failing take).
+        A take that ended in a gate, watchdog, budget or setup stop is not a result and runs again on a resume."""
+        for m in inc:
+            if stop['now']: return
+            c = baseline_of(m)
+            fps = pick_fps(m, fps_arg, factor)
+            if fps is None:
+                continue
+            for i in range(repeats):
+                if stop['now']: return
+                lab = label if repeats == 1 else '%s%d' % (label, i + 1)
+                if any(r['cfg_id'] == c.id and r.get('variant') == lab and float(r.get('fps') or 0) == fps and r.get('format', 'cdng') == fmt
+                       and is_result(r.get('outcome')) for r in load_rows(out) if r.get('fps')):
+                    continue
+                if not pre_take(): return
+                row = take(c, fps, max_seconds=(seconds or a.long_seconds), stop_on_drop=False, variant=lab, fmt=fmt, before_cmds=before,
+                           expect=expect)
+                log(out, '%s %s at %s fps: %s after %ss, capacity %s, files %s' % (lab, c.id, fps, row.get('outcome'), row.get('seconds'),
+                                                                                 row.get('capacity_fps'), row.get('files')))
+                if row.get('outcome') == 'before_cmd_refused':
+                    return
+
+    def split_stage():
+        """3 x 10 min back to back against 1 x 30 min at the same fps: a per-folder cost passes the short takes and fails the
+        long one; a drive or memory state carried across takes fails both (plan section 4.3, item 1)."""
+        long_runs('split30', fps_arg=a.split_fps, factor=0.95, seconds=a.long_seconds)
+        long_runs('split10', fps_arg=a.split_fps, factor=0.95, repeats=3, seconds=a.long_seconds // 3)
+
+    def restore_knobs():
+        """Put frames_per_folder and the merge worker back as they were before stage k (kept in knob_orig.json, so a resume
+        after a power cut still knows the originals)."""
+        kp = out + '/knob_orig.json'
+        if not os.path.exists(kp):
+            return
+        o = json.load(open(kp))
+        r1 = core('set_frames_per_folder', value=o.get('frames_per_folder') if o.get('frames_per_folder') is not None else 0)
+        r2 = core('set_clip_merge', enabled=bool(o['clip_merge_enabled'])) if o.get('clip_merge_enabled') is not None else {'ok': True}
+        if r1.get('ok') and r2.get('ok'):
+            os.unlink(kp)
+            log(out, 'restored frames_per_folder=%s and clip_merge=%s' % (o.get('frames_per_folder'), o.get('clip_merge_enabled')))
+        else:
+            log(out, 'WARNING: could not restore the knobs (%s %s); knob_orig.json kept' % (r1.get('error'), r2.get('error')))
+
+    def knob_stage():
+        """frames_per_folder on and off at the split fps, the merge worker off for the run; skipped when Core lacks the knob.
+        Core persists both through its store ([storage] in apertar-hardware.conf), so the originals are kept in knob_orig.json
+        and put back at the end, also on a resume."""
+        st0 = state()
+        if 'frames_per_folder' not in st0:
+            log(out, 'stage k: Core has no frames_per_folder knob (clip-split branch not running): skipped')
+            return
+        kp = out + '/knob_orig.json'
+        if not os.path.exists(kp):
+            json.dump({'frames_per_folder': st0.get('frames_per_folder'), 'clip_merge_enabled': st0.get('clip_merge_enabled')}, open(kp, 'w'))
+        merge_off = (('set_clip_merge', {'enabled': False}),) if st0.get('clip_merge_enabled') is not None else ()
+        try:
+            long_runs('knob%d' % a.split_frames, before=merge_off + (('set_frames_per_folder', {'value': a.split_frames}),),
+                      fps_arg=a.split_fps, factor=0.95, expect={'frames_per_folder': a.split_frames})
+            long_runs('knob0', before=merge_off + (('set_frames_per_folder', {'value': 0}),), fps_arg=a.split_fps, factor=0.95,
+                      expect={'frames_per_folder': 0})
+        finally:
+            restore_knobs()
+
+    def soak_stage():
+        """The best clean 30-min result per mode (split30, long30 or a knob arm; a take with no stop at the first drop ends in
+        ab_clean), twice (repeatability and drift); without one, 0.85 x the metered capacity."""
+        for m in inc:
+            if stop['now']: return
+            passes = [float(r['fps']) for r in load_rows(out)
+                      if r['mode'] == m[0] and r.get('fps') and r.get('format', 'cdng') == 'cdng' and is_clean(r.get('outcome'))
+                      and (r.get('variant', '') in ('split30', 'long30') or r.get('variant', '').startswith('knob'))]
+            fps = max(passes) if passes else pick_fps(m, 0, 0.85)
+            if fps is None:
+                continue
+            c = baseline_of(m)
+            for i in (1, 2):
+                if stop['now']: return
+                if any(r['cfg_id'] == c.id and r.get('variant') == 'soak%d' % i and is_result(r.get('outcome')) for r in load_rows(out)):
+                    continue
+                if not pre_take(): return
+                row = take(c, float(fps), max_seconds=a.long_seconds, stop_on_drop=False, variant='soak%d' % i)
+                log(out, 'soak%d %s at %s fps: %s after %ss' % (i, c.id, fps, row.get('outcome'), row.get('seconds')))
 
     def walk_config(c, force=False, start=None):
         """Step fps down from the mode's storage cap until a take passes (30 min or drive full)."""
@@ -1159,6 +2018,8 @@ def main():
             stop['now'] = True
             return
         counter['n'] += 1
+        if not pre_take():
+            return
         apply_cfg(c, 25)
         fmax = float(state().get('fps_take_max') or state().get('fps_max') or 30)
         MODE_MAX[c.key] = int(fmax)
@@ -1188,7 +2049,7 @@ def main():
         ruled_out = False
         log(out, '== config %s: stepping down from %s fps (mode max %.0f; the storage should carry %d)' % (c.id, fps, fmax, mode_cap_fps(c.mode)))
         while fps >= FPS_FLOOR and not stop['now']:
-            clear_media(out)
+            if not pre_take(): break
             if os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < 20 * 2**30:
                 log(out, 'drive still nearly full after clearing the clips: stopping')
                 stop['now'] = True; break
@@ -1267,14 +2128,14 @@ def main():
                     for vname, settings in AB_VARIANTS:
                         if stop['now']: return
                         if done.get(vname, 0) > rep: continue
-                        clear_media(out)
+                        if not pre_take(): return
                         note = set_variant(out, vname, settings)
                         for attempt in range(3):      # a take stopped by someone else is not a result: run it again
                             row = take(c, ab_fps, max_seconds=a.ab_seconds, stop_on_drop=False, variant=vname, tune_note=note)
                             if stop['now'] or not (row.get('outcome') == 'stopped_externally' and dropped_none(row)):
                                 break
                             log(out, 'A/B take stopped by someone else (%ss): repeating (%d/2)' % (row.get('seconds'), attempt + 1))
-                            clear_media(out)
+                            if not pre_take(): return
                         log(out, 'A/B %s rep %d %s: %s dropped=%s' % (c.id, rep + 1, vname, row.get('outcome'), row.get('dropped')))
                 set_variant(out, 'base', {})
 
@@ -1285,7 +2146,8 @@ def main():
 
         def attempt(f):
             while True:
-                clear_media(out)
+                if not pre_take():
+                    return None
                 row = take(c, float(f), max_seconds=secs, variant=label)
                 if stop['now']:
                     return None
@@ -1411,6 +2273,12 @@ def main():
                     bracket(c, best_fps, secs, label, rows_all)
 
     try:
+        if a.fix_budget:
+            try:
+                rec = set_storage_keys(HWCONF, {'buffer_ram_fraction': '0.9', 'buffer_ram_floor_mb': '256'}, out)
+                log(out, 'set [storage] buffer_ram_fraction=0.9 buffer_ram_floor_mb=256 in %s (originals in %s, put back at the end)' % (HWCONF, rec))
+            except OSError as e:
+                log(out, 'WARNING: could not edit %s: %s' % (HWCONF, e))
         if '1' in a.stages:
             for c in cfgs[:n_base]:
                 if stop['now']: break
@@ -1429,7 +2297,34 @@ def main():
             tier_stage()
         if 'F' in a.stages and not stop['now']:
             follow_log_stage()
+        if 'm' in a.stages and not stop['now']:
+            meter_stage()
+        if 's' in a.stages and not stop['now']:
+            split_stage()
+        if 'L' in a.stages and not stop['now']:
+            long_runs('long30', fps_arg=a.long_fps, factor=0.9)
+        if 'M' in a.stages and not stop['now']:
+            long_runs('mlv30', fmt='mlv', fps_arg=a.split_fps, factor=0.95)
+        if 'k' in a.stages and not stop['now']:
+            knob_stage()
+        if 'S' in a.stages and not stop['now']:
+            soak_stage()
+    except Exception as e:
+        stop['why'] = 'crashed: %r' % e
+        log(out, 'ERROR: the runner crashed: %r' % e)
+        raise
     finally:
+        release_lock()
+        try:
+            if restore_storage_keys(HWCONF, out):
+                log(out, 'put the [storage] keys of %s back as they were' % HWCONF)
+        except (OSError, ValueError) as e:
+            log(out, 'WARNING: could not restore the [storage] keys of %s: %s' % (HWCONF, e))
+        try:
+            restore_knobs()
+        except Exception as e:
+            log(out, 'WARNING: could not restore the knobs: %s' % e)
+        core('set_record_format', value=orig.get('recording_format') or 'cdng')
         try:
             set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on
         except Exception as e:
@@ -1450,6 +2345,13 @@ def main():
         if orig_fmt and orig_fmt != 'auto':
             core('set_audio_capture_options', format=orig_fmt)
         log(out, 'campaign ended (settings restored except Log, which stays as last set)')
+        if STOP['sig']:
+            log(out, 'stopped by %s: no DONE marker, so a crontab @reboot resume continues this run' % STOP['sig'])
+        else:
+            why = stop['why'] or ('all stages done' if not stop['now'] else 'stopped, see runner.log')
+            with open(out + '/DONE', 'w') as f:
+                f.write(time.strftime('%F %T ') + why + '\n')
+            log(out, 'DONE marker written (%s): a resume will not restart this run; remove %s/DONE to run it again' % (why, out))
 
 
 def collections_count(rows, cfg_id):
