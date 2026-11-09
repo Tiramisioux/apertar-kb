@@ -1,0 +1,52 @@
+== mount ==
+/dev/sda1 exfat rw,noatime,uid=1000,gid=1000,fmask=0002,dmask=0002,allow_utime=0020,iocharset=utf8,errors=remount-ro
+device /dev/sda1  disk sda
+== exFAT cluster size (statvfs f_bsize) and free space ==
+cluster_bytes=131072 free_clusters=3815378 total_clusters=3815384
+/dev/sda1      500090011648 786432 500089225216   1% /media/RAW
+== block device ==
+NAME   TRAN MODEL     SIZE ROTA DISC-GRAN DISC-MAX FSTYPE LABEL
+sda    usb  PSSD T7 465.8G    0        0B       0B        
+└─sda1              465.8G    0        0B       0B exfat  USB-RAW
+discard_max_bytes=0  (0 = the drive or its USB bridge cannot be trimmed)
+scheduler=none [mq-deadline] kyber bfq  nr_requests=60 max_sectors_kb=512 write_cache=write back rotational=0
+== driver behind the disk (uas = command queuing; usb-storage = one command at a time) ==
+/sys/devices/platform/axi/1000120000.pcie/1f00300000.usb/xhci-hcd.1/usb5/5-1/5-1:1.0/host0/target0:0:0/0:0:0:0
+  0:0:0:0: driver sd
+  5-1:1.0: driver uas
+  5-1: driver usb
+  usb5: driver usb
+  xhci-hcd.1: driver xhci-hcd
+  1f00300000.usb: driver dwc3
+DRIVER=sd
+USB:     |__ Port 001: Dev 002, If 0, Class=Mass Storage, Driver=uas, 5000M
+  /sys/bus/usb/devices/4-1/power/control = auto
+  /sys/bus/usb/devices/usb1/power/control = auto
+  /sys/bus/usb/devices/usb2/power/control = auto
+  /sys/bus/usb/devices/usb3/power/control = auto
+  /sys/bus/usb/devices/usb4/power/control = auto
+== NVMe ==
+  cmdline: pci=pcie_bus_safe
+  cmdline: nvme.max_host_mem_size_mb=0
+  cmdline: nvme_core.default_ps_max_latency_us=0
+  cmdline: pcie_aspm=off
+  cmdline: psi=1
+== kernel writeback knobs ==
+  dirty_bytes=0  dirty_background_bytes=0  dirty_ratio=20  dirty_background_ratio=10  dirty_writeback_centisecs=500  dirty_expire_centisecs=3000
+== power ==
+throttled=0x0
+     EXT5V_V volt(24)=5.00758000V
+  config.txt: dtparam=pciex1
+  config.txt: dtparam=pciex1_gen=3
+  config.txt: usb_max_current_enable=1
+== Core's view (trim state, media class) ==
+{'state': 'ready', 'recording': False, 'media_state': 'mounted', 'media_trim_last_result': None, 'media_trim_last_bytes': None, 'media_trim_last_ms': None, 'media_trim_last_unix': None, 'media_trim_running': None, 'buffer_setting': 'ram', 'buffer_capacity': None, 'storage_preroll_last': 'ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted'}
+  Nov 09 01:14:27 apertar start-apertar-core.sh[790]: ApertarCore media: trim /media/RAW reason=mount result=unsupported bytes=0 ms=33
+  Nov 09 01:15:23 apertar start-apertar-core.sh[3567]: ApertarCore media tune: file=/home/pi/apertar-media-tune.conf override=absent dontneed=sync writeback=on sync_ms=1000 raw_buffers=8 extra_raw_buffers=0 workers=4 queue=12 kernel_tune=off source: dontneed=file [default],extra_raw_buffers=file [exfat],kernel_tune=file [default],queue=file [exfat],raw_buffers=file [default],sync_ms=file [default],workers=file [exfat],writeback=file [default]
+  Nov 09 01:15:23 apertar start-apertar-core.sh[3567]: ApertarCore media profile: class=usb-storage fs=exfat workers=4 queue=12 raw_buffers=+0
+  Nov 09 01:15:23 apertar start-apertar-core.sh[3567]: ApertarCore media: trim /media/RAW reason=mount result=unsupported bytes=0 ms=17
+== newest clip: fragments of its first and last DNG (needs root for FIBMAP on exFAT) ==
+  no cDNG_* folder
+== to run as root (Patrik) ==
+  sudo fstrim -v /media/RAW                      # how long a trim takes here, and whether it works at all
+  sudo smartctl -a /dev/sda | grep -iE 'temperature|wear|written|power_on|percent'   # drive temperature and wear (USB SSD: try -d sat)
