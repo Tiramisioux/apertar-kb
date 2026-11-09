@@ -14,10 +14,13 @@ The handoff for the Mac session that drives the work is `../handoff-drop-frames.
 
 > **2026-11-08: [storage-slowdown-plan.md](storage-slowdown-plan.md).** The SSD run's per-second samples re-read
 > ([tests-2026-11/reanalysis-longtakes-ssd-2026-11-08.md](tests-2026-11/reanalysis-longtakes-ssd-2026-11-08.md)): the late failures are a cost that grows with the
-> files in the clip folder (Core's CPU doubles over a 30-minute take; the exFAT create walk, c about 99 ns per entry derived), not a drive
-> slowing down; the 4K ceiling on the T7 is the write pattern (a third of the drive's raw speed); trim on the T7 was never recorded. The
-> revised campaign measures with the buffer level and camera-free probes (`working/tools/exfat_write_probe.py`, `storage_facts.sh`,
-> `longtakes_fill.py`); the runner now samples the buffer, the disk's counters, dirty pages and the trim state.
+> files in the clip folder (Core's CPU doubles over a 30-minute take; the exFAT create walk measured at 63.3 ns per entry by the
+> directory probe, [nvme-campaign/probe-exfat-dir.md](nvme-campaign/probe-exfat-dir.md); 99 ns all-in derived from Core's CPU), not a
+> drive slowing down; the 4K ceiling on the T7 is the write pattern (a third of the drive's raw speed); trim on the T7 was never
+> recorded. The revised campaign measures with the buffer level and camera-free probes (`working/tools/exfat_write_probe.py`,
+> `storage_facts.sh`, `longtakes_fill.py`); the runner (`longtakes.py`) samples the buffer, the disk's counters, dirty pages and the
+> trim state and runs the ladder unattended (gate, watchdog, write budget, resume; plan section 7.1). Pi-side handoff prompts:
+> [nvme-campaign/handoff-prompts-2026-11-08.md](nvme-campaign/handoff-prompts-2026-11-08.md).
 
 > **2026-11-01 night (read first): [night-2026-11-01.md](night-2026-11-01.md).** The remaining capture losses at 4K Clear
 > HDR 16-bit 25 fps came from page-cache pressure: Core's per-frame `posix_fadvise(DONTNEED)` on still-dirty pages (the old
