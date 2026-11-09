@@ -45,3 +45,40 @@ safety check refused it), so a reboot ends the night; rerunning the ladder line 
 - Night 1 ran as `night1b.sh` from 01:50 (S2, S3, the ladder; the smoke-2 check replaced by smoke 3's). Power-off watcher
   `poweroff-after-night1b.sh <pid>` (follows the chain's PID; a first version matched by path and would have fired at once: caught and
   killed within a minute).
+
+## Night 1 results (2026-11-09 01:50-06:18; ended "all stages done", Pi powered off by the watcher at 06:18)
+
+Raw: `night1-raw/` (probe outputs, the ladder's `results.md`, `capacity.md`, `runner.log`, per-second `samples/`). Writes: S2 ~26 GB,
+S3 ~180 GB, the ladder ~1.07 TB (device counters; derived).
+
+**1. Inside a long take the slowdown is the exFAT folder, not the SSD (probable, strong).**
+- S3, camera-free, 2K-size files (1.3 MB) paced at 38 files/s for 30 min: one folder, per-file time p50 5.6 ms at 11,400 files ->
+  20.4 ms at 57,000 (~0.32 us per file already in the folder: the directory probe's 317 ns slope, measured on the NVMe); a new folder
+  every 5,000 files: 1.4-3.0 ms all the way. The device's own write time stayed ~2.4 ms in both (measured).
+- Camera, 2kSDR12 uncompressed at 32 fps (99.5 MB/s), drive at 100 MB/s throughout every 30-min take: Core CPU in the flat takes
+  climbs 52-57 % -> 125-131 % over 30 min, and two of the three flat 30-min takes (the soaks) hit the buffer safety stop at 29.5 and
+  29.1 min (buffer 87-88 % in the last 5-min window); the third (`knob0`) passed with the buffer at 17 % at most. Split every 5,000
+  frames (`knob5000`): Core CPU 50-54 % all through, clean, buffer at most 11 % after the first minute. MLV (one file): 38 %, clean
+  (measured; n = 1 split, 3 flat).
+- So **splitting long takes (`frames_per_folder`, e.g. 5000) removes the in-take slowdown on the SSD**; at this drive's limit it is
+  the difference between a clean 30-min take and a stop near the end (probable: one split take; the probe and the CPU trend agree).
+
+**2. Between takes the drive itself slows after heavy writing (probable).** The T7 cannot be trimmed through its bridge (S0). Right
+after S2+S3 wrote ~210 GB, the first five camera takes (03:00-03:27) ran at 84-98 MB/s and filled the buffer in 1-5 min; from 03:28
+the same settings ran at a steady 100 MB/s for 2.5 h. The meter also read lower than the smoke tests before the probes (2kSDR12 unc
+34.5 vs 40.3 fps; 2kHDR16 unc 18.1 vs 23.9). Mechanism unconfirmed (the drive's cache or garbage collection catching up while idle).
+
+**3. Capacity on this T7 (meter, after the probes; measured).** 2kSDR12: uncompressed ~32 fps sustained (34.5 metered), lossless
+53.6 fps metered (clean 90 s at 60). 2kHDR16: uncompressed 18.1 fps (below the 25 fps floor: no long takes), lossless 28.5 fps
+metered (clean 90 s at 30). Sustained drive rate during takes ~100 MB/s against 167 MB/s in Core's direct fio test.
+
+**4. Write pattern (S2, 300 x 12.4 MB each, n = 1; weak).** Throughput 116-139 MB/s across the variants: `--fsync none` 139,
+`--chunk-kb 0` 131, `--prealloc` 131, `--subdir 5000` 129, default and `--workers 1` 122, `--direct` 116. One writer had the
+lowest per-file latency (p50 96 ms against 351) at the same throughput. No variant changes the ceiling by more than ~14 %.
+
+**What to use (probable):** for long takes on the SSD set `frames_per_folder` (5000) with the merge worker on; prefer lossless
+compression (more headroom: 2kSDR12 54 fps, 2kHDR16 28.5 fps); keep 2kSDR12 uncompressed at or below ~30 fps on this T7; give the
+drive idle time after heavy writing before a long take (no trim).
+
+Not yet: a second split 30-min take (n = 1), HDR16 lossless long takes (the runner meters uncompressed for its floor), the S6 Core
+patches, the NVMe card.

@@ -1,0 +1,25 @@
+2026-11-09 01:31:41 night1 start; waiting for smoke test 2
+2026-11-09 01:41:41 STOP: smoke test 2 did not end with all stages done: 2026-11-09 01:41:19 setup_mismatch: res=3840x2160
+2026-11-09 01:50:35 night1b start (smoke 2 stopped at MLV setup_mismatch; runner fixed; smoke 3 MkS passed)
+2026-11-09 01:50:35 S2/default start: --size-mb 12.4 --files 300
+2026-11-09 01:51:06 S2/default end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:51:06 S2/workers1 start: --size-mb 12.4 --files 300 --workers 1
+2026-11-09 01:51:37 S2/workers1 end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:51:37 S2/prealloc start: --size-mb 12.4 --files 300 --prealloc
+2026-11-09 01:52:06 S2/prealloc end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:52:06 S2/fsyncnone start: --size-mb 12.4 --files 300 --fsync none
+2026-11-09 01:52:33 S2/fsyncnone end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:52:33 S2/chunk0 start: --size-mb 12.4 --files 300 --chunk-kb 0
+2026-11-09 01:53:02 S2/chunk0 end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:53:02 S2/direct start: --size-mb 12.4 --files 300 --chunk-kb 0 --prealloc --direct
+2026-11-09 01:53:34 S2/direct end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:53:34 S2/subdir start: --size-mb 12.4 --files 300 --subdir 5000
+2026-11-09 01:54:04 S2/subdir end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 01:54:04 S3/flat38 start: --size-mb 1.3 --fps 38 --seconds 1800 --budget-mb 800
+2026-11-09 02:24:07 S3/flat38 end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 02:24:07 S3/subdir38 start: --size-mb 1.3 --fps 38 --seconds 1800 --budget-mb 800 --subdir 5000
+2026-11-09 02:54:12 S3/subdir38 end rc=0 folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-09 02:54:12 probes done; drive: 
+2026-11-09 02:54:12 ladder start
+2026-11-09 06:16:18 ladder process ended rc=0 DONE: 2026-11-09 06:16:18 all stages done
+2026-11-09 06:18:23 night over; powering off through Core (power_off_system)

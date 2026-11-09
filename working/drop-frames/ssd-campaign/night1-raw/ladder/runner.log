@@ -1,0 +1,37 @@
+2026-11-09 02:54:12 write budget 3500 GB, 0 GB used so far in this run
+2026-11-09 02:54:12 preserving 0 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-09 02:54:12 campaign start: modes ['2kSDR12', '2kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR12', '4kSDR10', '2kSDR10', '2kHDR12', '4kHDR12', '4kHDR16']; 128 configs; drive 167 MB/s; out=/home/pi/longtakes/ladder-20261109
+2026-11-09 02:55:37 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=60.0 -> buffer_full after 35s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-09 02:55:37 meter 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 60.0 fps: capacity 34.46 fps (fit), drain 60.6 MB/s, buffer_full
+2026-11-09 02:57:41 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=60.0 -> ab_clean after 90s dropped=0 kinds= pi=57C nvme=None
+2026-11-09 02:57:41 meter 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 at 60.0 fps: capacity 53.64 fps (fit), drain 74.1 MB/s, ab_clean
+2026-11-09 02:58:48 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 fps=30.0 -> buffer_full after 21s dropped=0 kinds=buffer_full:1 pi=49C nvme=None
+2026-11-09 02:58:48 meter 2kHDR16_unc_log0_tdn0_lock0_trim1_web0 at 30.0 fps: capacity 18.13 fps (fit), drain 76.7 MB/s, buffer_full
+2026-11-09 03:00:49 2kHDR16_lossless_log0_tdn0_lock0_trim1_web0 fps=30.0 -> ab_clean after 90s dropped=0 kinds= pi=57C nvme=None
+2026-11-09 03:00:49 meter 2kHDR16_lossless_log0_tdn0_lock0_trim1_web0 at 30.0 fps: capacity 28.5 fps (fit), drain 65.8 MB/s, ab_clean
+2026-11-09 03:02:48 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> buffer_full after 89s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-09 03:02:48 split30 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: buffer_full after 89.0s, capacity 28.97, files 2370
+2026-11-09 03:02:48 2kHDR16: metered capacity 18.1 fps x 0.95 = 17 fps is below the 25 fps floor: metered only, no long takes
+2026-11-09 03:07:15 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> buffer_full after 240s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-09 03:07:15 split101 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: buffer_full after 239.6s, capacity 31.69, files 7391
+2026-11-09 03:17:59 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 600s dropped=0 kinds= pi=54C nvme=None
+2026-11-09 03:17:59 split102 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 600.3s, capacity 32.24, files 19208
+2026-11-09 03:23:30 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> buffer_full after 304s dropped=0 kinds=buffer_full:1 pi=53C nvme=None
+2026-11-09 03:23:30 split103 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: buffer_full after 303.6s, capacity 31.83, files 9386
+2026-11-09 03:27:33 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=31.0 -> buffer_full after 217s dropped=0 kinds=buffer_full:1 pi=52C nvme=None
+2026-11-09 03:27:33 long30 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 31.0 fps: buffer_full after 216.6s, capacity 30.93, files 6473
+2026-11-09 03:27:33 2kHDR16: metered capacity 18.1 fps x 0.90 = 16 fps is below the 25 fps floor: metered only, no long takes
+2026-11-09 03:58:06 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 1800s dropped=0 kinds= pi=51C nvme=None
+2026-11-09 03:58:06 mlv30 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 1800.1s, capacity 32.0, files 0
+2026-11-09 04:29:06 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 1800s dropped=0 kinds= pi=52C nvme=None
+2026-11-09 04:29:06 knob5000 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 1800.2s, capacity 32.0, files 57608
+2026-11-09 05:04:59 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 1800s dropped=0 kinds= pi=56C nvme=None
+2026-11-09 05:04:59 knob0 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 1800.5s, capacity 32.0, files 57614
+2026-11-09 05:04:59 restored frames_per_folder=0 and clip_merge=True
+2026-11-09 05:40:08 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> buffer_full after 1781s dropped=0 kinds=buffer_full:1 pi=56C nvme=None
+2026-11-09 05:40:08 soak1 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: buffer_full after 1781.4s
+2026-11-09 06:16:16 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> buffer_full after 1756s dropped=0 kinds=buffer_full:1 pi=55C nvme=None
+2026-11-09 06:16:16 soak2 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: buffer_full after 1756.0s
+2026-11-09 06:16:16 2kHDR16: metered capacity 18.1 fps x 0.85 = 15 fps is below the 25 fps floor: metered only, no long takes
+2026-11-09 06:16:18 campaign ended (settings restored except Log, which stays as last set)
+2026-11-09 06:16:18 DONE marker written (all stages done): a resume will not restart this run; remove /home/pi/longtakes/ladder-20261109/DONE to run it again

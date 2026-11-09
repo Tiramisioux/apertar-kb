@@ -1,0 +1,4 @@
+folder /media/RAW/probe_exfat_write_015302  size 12.40 MB  workers 4  chunk whole file  fsync tick  prealloc True  direct True  subdir -  fps max  disk sda
+SUMMARY files 300 in 32.1 s = 9.4 files/s, 116.0 MB/s; per-file p50 181.9 p90 1006.9 p99 1680.3 max 1986.7 ms; errors 0
+per-file timings: /home/pi/ssd-campaign/S2/direct/probe_exfat_write_015302.csv
+folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
