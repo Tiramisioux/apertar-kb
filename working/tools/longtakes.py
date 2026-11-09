@@ -1682,6 +1682,8 @@ def main():
     ap.add_argument('--meter-fps', type=float, default=0, help='fps of the meter takes (0 = the mode maximum)')
     ap.add_argument('--meter-log', action='store_true', help='stage m also meters the Log twins')
     ap.add_argument('--split-fps', type=float, default=0, help='fps of the split test, MLV control and knob A/B (0 = 0.95 x the metered capacity)')
+    ap.add_argument('--long-comp', default='none', choices=('none', 'lossless_jpeg'),
+                    help='compression of the split, long and soak takes (default none = the uncompressed baseline; the meter and MLV ignore it)')
     ap.add_argument('--split-frames', type=int, default=5000, help='frames_per_folder value for the knob A/B (stage k)')
     ap.add_argument('--long-fps', type=float, default=0, help='fps of the long instrumented take (0 = 0.9 x the metered capacity)')
     ap.add_argument('--long-seconds', type=int, default=1800, help='length of the long, split, MLV, knob and soak takes')
@@ -1837,6 +1839,15 @@ def main():
     def baseline_of(m):
         return [x for x in cfgs if x.mode == m][0]
 
+    def long_cfg_of(m):
+        """The config of the long, split and soak takes: the mode's baseline, or with --long-comp its baseline in that
+        compression (everything else as the baseline). The meter keeps baseline_of."""
+        b = baseline_of(m)
+        if a.long_comp == b.comp:
+            return b
+        sel = [x for x in cfgs if x.mode == m and x.comp == a.long_comp and (x.log, x.tdn, x.lock, x.trim, x.web) == (b.log, b.tdn, b.lock, b.trim, b.web)]
+        return sel[0] if sel else b
+
     def mode_max_fps(c):
         """The fps the mode itself allows (Core's fps_take_max after the mode is applied); a camera switch, so only under the gate."""
         if c.key in MODE_MAX:
@@ -1923,8 +1934,8 @@ def main():
         A take that ended in a gate, watchdog, budget or setup stop is not a result and runs again on a resume."""
         for m in inc:
             if stop['now']: return
-            c = baseline_of(m)
-            fps = pick_fps(m, fps_arg, factor)
+            c = long_cfg_of(m)
+            fps = pick_fps(m, fps_arg, factor, c.comp)
             if fps is None:
                 continue
             for i in range(repeats):
@@ -1990,10 +2001,10 @@ def main():
             passes = [float(r['fps']) for r in load_rows(out)
                       if r['mode'] == m[0] and r.get('fps') and r.get('format', 'cdng') == 'cdng' and is_clean(r.get('outcome'))
                       and (r.get('variant', '') in ('split30', 'long30') or r.get('variant', '').startswith('knob'))]
-            fps = max(passes) if passes else pick_fps(m, 0, 0.85)
+            fps = max(passes) if passes else pick_fps(m, 0, 0.85, long_cfg_of(m).comp)
             if fps is None:
                 continue
-            c = baseline_of(m)
+            c = long_cfg_of(m)
             for i in (1, 2):
                 if stop['now']: return
                 if any(r['cfg_id'] == c.id and r.get('variant') == 'soak%d' % i and is_result(r.get('outcome')) for r in load_rows(out)):
