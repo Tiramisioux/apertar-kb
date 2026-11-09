@@ -82,3 +82,14 @@ drive idle time after heavy writing before a long take (no trim).
 
 Not yet: a second split 30-min take (n = 1), HDR16 lossless long takes (the runner meters uncompressed for its floor), the S6 Core
 patches, the NVMe card.
+
+## Night 2 (planned 2026-11-09, waiting for the Pi)
+
+- **Decision (User, 2026-11-09):** `frames_per_folder` 5000 is the default on the camera. Night 2 leaves it at 5000 and turns
+  the merge back on. No Core code default changed.
+- **Optional items left out (User):** S6 tune-key patches, the fan A/B and the 1 MB-cluster format.
+- Chain: [night2/night2.sh](night2/night2.sh). Run 1 is the split layout at 2kSDR12 unc 32 fps (split30, split10×3, long30,
+  soak×2). Run 2 is long 2kSDR12 lossless at 48 fps. Run 3 is long 2kHDR16 lossless at 27 fps. 10 min idle between runs.
+- Power-off: [night2/poweroff-after-night2.sh](night2/poweroff-after-night2.sh) `<pid>` follows the chain's PID, waits until
+  nothing is recording, then calls Core `power_off_system`.
+- Needs first: `longtakes.py` cf0b37e copied to `~/longtakes/bin`, camera idle, WebUI closed, T7 mounted.
