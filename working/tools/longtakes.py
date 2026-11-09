@@ -852,6 +852,9 @@ def apply_cfg(c, fps, fmt='cdng'):
     st = state()
     if st.get('recording_format') not in (None, fmt):
         core('set_record_format', value=fmt); time.sleep(3)
+        # Core keeps settings per format (profile.<format>.*): the switch loads that profile's resolution and Clear HDR,
+        # so the checks below need the state after it (smoke 2026-11-09: MLV came up 3840x2160, setup_mismatch).
+        st = state()
     if bool(st.get('clear_hdr')) != c.hdr:
         core('set_clear_hdr', enabled=c.hdr); time.sleep(4)
     if st.get('resolution') != '%dx%d' % (c.w, c.h):

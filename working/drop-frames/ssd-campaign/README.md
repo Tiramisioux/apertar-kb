@@ -35,3 +35,13 @@ After smoke 2 ends with "all stages done": S2 (`exfat_write_probe.py --size-mb 1
 Log: `~/ssd-campaign/night1.log`; probe output `~/ssd-campaign/S2|S3/`; ladder `~/longtakes/ladder-20261109/` (`results.md`,
 `capacity.md`, `runner.log`, `DONE`). **No reboot resume**: the `@reboot` crontab line of plan 7.1 was not installed (the session's
 safety check refused it), so a reboot ends the night; rerunning the ladder line with the same `--out` resumes it.
+- Smoke 2 result (01:28-01:41): meter, split and long stages pass (2kSDR12 unc meter 40.3 fps / 97.6 MB/s, lossless 60.0 fps clean;
+  2kHDR16 unc 23.9 fps / 100.4 MB/s, below the 25 fps floor so metered only, lossless 30.0 fps clean at the mode max; split 1 x 60 s
+  and 3 x 20 s at 38 fps clean; long 60 s at 36 fps clean), then **stopped at the MLV stage: `setup_mismatch: res=3840x2160`**. Cause:
+  `apply_cfg` read the state before `set_record_format`; Core loads the MLV profile (4K) on the switch, so the resolution check used
+  the stale 2K value and skipped `set_resolution`. Fixed (the state is read again after a format switch).
+- Smoke 3 (`--stages MkS --modes 2kSDR12 --long-seconds 60 --split-fps 35 --long-fps 33`, 01:42-01:50): pass. MLV 60 s at 35 fps
+  clean; `frames_per_folder` 5000 and 0 clean (2,100 files each), restored to 0 and merge on; soak 2 x 60 s clean.
+- Night 1 ran as `night1b.sh` from 01:50 (S2, S3, the ladder; the smoke-2 check replaced by smoke 3's). Power-off watcher
+  `poweroff-after-night1b.sh <pid>` (follows the chain's PID; a first version matched by path and would have fired at once: caught and
+  killed within a minute).
