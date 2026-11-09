@@ -189,6 +189,7 @@ Core `f4a1393..ba0658d` (then `..01f170c`, the two verify fixes), UI `7029db1..7
 | `68516f1` | Merge worker: a pause asks for one more scan ("after pause"), so a take recorded while a merge is paused gets merged too (found in verify step 6); branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 | `01f170c` | Merge worker: `refreshBufferRequest()` before the worker starts, so `clip_merge=off` holds at Core's start (the atomic started true); branch `clip-split`; GitHub `cinemate-port` (2026-11-08) | fork-only; on GitHub `cinemate-port` |
 | `c9e7707` | "Standard" clip-name preset `{format}_{date}_{clip}_{tc}` (`clipname::kStandardTemplate`, first in the WebUI presets); a time token no longer makes every take C0001; no next-name example during a take; default and timecode unchanged; Pi branch `clip-split` (Mac worktree sha `f006f6b`) | fork-only; Pi only; built, tried 2026-11-09 (2K 12-bit SDR: C0001 + C0002 named, numbered, played; no WAV, the mic was off the bus) |
+| `b5e9e68` (Mac) | WebUI Media card: "Split long takes" (Off / 1000 / 2000 / 5000 / 10000 frames per folder, plus a config value) and "Merge split clips" On/Off, with the merge status; reads the split/merge fields from `/api/state` system | fork-only; Mac worktree `clip-split-mac`, not on the Pi, not built |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
@@ -197,6 +198,7 @@ Core `f4a1393..ba0658d` (then `..01f170c`, the two verify fixes), UI `7029db1..7
 | `7029db1` | Touch UI: Settings > Timecode has UI timecode and File timecode (bridge `fileTimecodeMode` from Core's state); the tap on the camera screen toggles the UI timecode only | fork-only, Pi only; building 2026-10-29, not tested |
 | `7ea9afc` | Clip browser, player and image prefetch read split clips (`part_NNN/`, Core `d7dd337`) via `src/ClipFrameFiles.hpp`; local branch `clip-split` from `drop-frames` `c153c33`; GitHub `cinemate-port` fast-forwarded `7029db1..7ea9afc` (22 commits: the Pi's drop-frames UI line + this) on 2026-11-08 | fork-only; on GitHub `cinemate-port`; built, not tried on a touch screen |
 | `3ebbd23` | Settings clip-name card: "Standard" preset `{format}_{date}_{clip}_{tc}` first (Core `c9e7707`); Pi branch `clip-split` (Mac worktree sha `87c2186`) | fork-only; Pi only; built, not tried (no touch screen) |
+| `53fe704` (Mac) | Media section, first card: Split Long Takes dropdown and Merge Split Clips tiles; bridge `framesPerFolder`, `clipMergeEnabled`, `applyFramesPerFolder`, `applyClipMerge` | fork-only; Mac worktree, not on the Pi, not built |
 | `c9d841f` | T38 part 4: the touch UI no longer writes a default `apertar-hardware.conf` when it is missing (both bridges); local branch `controls` | fork-only |
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `08cefcf` | timecode modes named Time of Day and Clip | fork-only |
@@ -283,5 +285,3 @@ None yet (checked 2026-10-25: `gh pr list --repo Apertar-Studio/<repo> --author 
 ## Landed upstream
 
 None yet.
-| Core b5e9e68 (Mac) | web: settings for splitting long takes (Off/1000-10000 frames per folder) and merging split clips | fork-only, not built |
-| UI 53fe704 (Mac) | qml: the same two settings in the Media section | fork-only, not built |
