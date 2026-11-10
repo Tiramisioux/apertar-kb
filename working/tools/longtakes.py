@@ -105,13 +105,13 @@ MODE_FILTER = None
 DISK_MBPS = 354.0
 DISK_MARGIN = 0.98
 SCREEN = {'s': 300}     # round 0: every config in the walk records this long (5 min); 10, 20 and 30 min only for the survivors
-TIER_NAMES = {300: '5min', 600: '10min', 1200: '20min', 1800: '30min'}
+TIER_NAMES = {180: '3min', 300: '5min', 600: '10min', 900: '15min', 1200: '20min', 1800: '30min'}
 
 
 def mode_size_mb(m):
     """DNG bytes per frame in MB: width x raw height x bits / 8 (16-bit Clear HDR raw frames carry 40 extra lines)."""
     key, w, h, bits, hdr = m
-    raw_h = {2160: 2200, 1080: 1100}[h] if bits == 16 else h
+    raw_h = {2160: 2200, 1080: 1100}.get(h, h + 40) if bits == 16 else h
     return w * raw_h * bits / 8 / 1e6
 
 
@@ -120,6 +120,9 @@ def mode_possible(m):
 
 
 MODE_MAX = {}     # mode key -> the fps the mode itself allows, learned when its walk starts
+# NVMe 4K campaign (plan nvme-campaign/plan.md, revision 2026-11-10; --stages N): set by campaign_main(). 'pre' and 'post' are
+# hooks run_take() calls before record_start (void / WAITING checks) and after the take (stats, the merge, the clip ledger).
+CAMPAIGN = {'on': False, 'pre': None, 'post': None}
 
 
 def mode_top_fps(m):
@@ -132,16 +135,17 @@ def mode_cap_fps(m):
 
 
 class Cfg:
-    def __init__(self, mode, comp, log, tdn, lock, trim, web):
+    def __init__(self, mode, comp, log, tdn, lock, trim, web, split=None):
         self.mode = mode
         self.key, self.w, self.h, self.bits, self.hdr = mode
         self.comp, self.log, self.tdn, self.lock, self.trim, self.web = comp, log, tdn, lock, trim, web
+        self.split = split      # frames_per_folder for the take (NVMe campaign R1: 5000 = split, 0 = flat); None = leave Core's
 
     @property
     def id(self):
-        return '%s_%s_log%d_tdn%d_lock%d_trim%d_web%d' % (
+        return '%s_%s_log%d_tdn%d_lock%d_trim%d_web%d%s' % (
             self.key, 'unc' if self.comp == 'none' else 'lossless', int(self.log), int(self.tdn),
-            int(self.lock), int(self.trim), int(self.web))
+            int(self.lock), int(self.trim), int(self.web), '' if self.split is None else '_fpf%d' % int(self.split))
 
     def distance(self):   # number of factors away from the baseline
         return sum([self.comp != 'none', self.log, self.tdn, self.lock, not self.trim, self.web])
@@ -343,7 +347,8 @@ def storage_frontier(rows, size_mb):
 
 SAMPLE_COLS = ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'throttled', 'dropped',
                'state', 'core_cpu_pct', 'core_top_thread', 'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors',
-               'dev_w_ticks', 'dev_inflight', 'dirty_kb', 'writeback_kb', 'trim_running', 'trim_last_unix')
+               'dev_w_ticks', 'dev_inflight', 'dirty_kb', 'writeback_kb', 'trim_running', 'trim_last_unix', 't_unix',
+               'clients', 'merge_pending')
 DEV = {'disk': ''}      # the recording drive's whole-disk name (sda, nvme0n1) for /sys/block/<disk>/stat; set in main()
 LAST_END = {'t': None}  # wall time the previous take ended (idle gap, trim-since-last-take)
 
@@ -793,9 +798,19 @@ class Sampler(threading.Thread):
                 dirty = int(l.split()[1])
             elif l.startswith('Writeback:'):
                 wb = int(l.split()[1])
-        sv = os.statvfs(MEDIA)
-        total, free = sv.f_blocks * sv.f_frsize, sv.f_bavail * sv.f_frsize
-        thr = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True).stdout.strip().split('=')[-1]
+        try:
+            sv = os.statvfs(MEDIA)
+            total, free = sv.f_blocks * sv.f_frsize, sv.f_bavail * sv.f_frsize
+        except OSError:
+            total, free = 1, 0       # a dead medium: the take loop sees free 0 and the state, never a crashed sampler
+            self.statvfs_error = True
+        if self.n % 10 == 0 or not hasattr(self, 'thr'):    # H8: no vcgencmd subprocess every second
+            try:
+                self.thr = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True,
+                                          timeout=5).stdout.strip().split('=')[-1]
+            except (OSError, subprocess.SubprocessError):
+                self.thr = '?'
+        thr = self.thr
         st = state()
         ccpu, ctop = self.core_cpu()
         pi = int(rd(PI_TEMP, '0')) / 1000
@@ -814,15 +829,23 @@ class Sampler(threading.Thread):
                 'core_cpu_pct': ccpu, 'core_top_thread': ctop,
                 'buffer_used': used, 'buffer_capacity': cap, 'dev_w_ios': w_ios, 'dev_w_sectors': w_sect,
                 'dev_w_ticks': w_ticks, 'dev_inflight': inflight, 'dirty_kb': dirty, 'writeback_kb': wb,
-                'trim_running': self.trim[0], 'trim_last_unix': self.trim[1]}
+                'trim_running': self.trim[0], 'trim_last_unix': self.trim[1], 't_unix': round(time.time(), 2),
+                'clients': web_peers(loopback=True) if CAMPAIGN['on'] else None, 'merge_pending': st.get('clip_merge_pending')}
 
     def run(self):
+        # 1 Hz (H8). A failing sample is logged as an error row, never ends the thread (C2 F9): the take loop's stale-sample
+        # guard (CAMPAIGN) stops a take whose samples stop arriving.
         while not self.stop_ev.is_set():
-            r = self.sample()
-            self.rows.append(r)
-            self.w.writerow([r.get(k) for k in SAMPLE_COLS])
-            self.f.flush()
-            self.stop_ev.wait(0.5)
+            t = time.monotonic()
+            try:
+                r = self.sample()
+                self.rows.append(r)
+                self.w.writerow([r.get(k) for k in SAMPLE_COLS])
+                self.f.flush()
+            except Exception as e:      # noqa: BLE001 - the sampler must survive anything
+                self.errors = getattr(self, 'errors', 0) + 1
+                self.last_error = repr(e)[:200]
+            self.stop_ev.wait(max(0.05, (1.0 if CAMPAIGN['on'] else 0.5) - (time.monotonic() - t)))
 
     def last(self):
         return self.rows[-1] if self.rows else {}
@@ -869,6 +892,8 @@ def apply_cfg(c, fps, fmt='cdng'):
     core('set_preview_tdn', enabled=c.tdn)
     core('set_fps_phase_lock', enabled=c.lock)
     core('set_media_trim', enabled=c.trim)
+    if getattr(c, 'split', None) is not None:
+        core('set_frames_per_folder', value=int(c.split))
     core('set_fps', value=float(fps))
     time.sleep(4)
     return settle()
@@ -888,6 +913,8 @@ def verify(c, fps, st, fmt='cdng', expect=None):
     if abs(float(st.get('fps', 0)) - fps) > 0.01: bad.append('fps=%s' % st.get('fps'))
     if st.get('resolution') != '%dx%d' % (c.w, c.h): bad.append('res=%s' % st.get('resolution'))
     if bool(st.get('clear_hdr')) != c.hdr: bad.append('clear_hdr=%s' % st.get('clear_hdr'))
+    if getattr(c, 'split', None) is not None and str(st.get('frames_per_folder')) != str(int(c.split)):
+        bad.append('frames_per_folder=%s' % st.get('frames_per_folder'))
     return ' '.join(bad)
 
 
@@ -957,13 +984,17 @@ def clear_media(out):
 WEB_REMOTE = False
 
 
-def web_peers():
-    """Remote clients holding a connection to Core's WebUI port (loopback ones do not count)."""
-    r = subprocess.run(['ss', '-tnH', 'state', 'established', '( sport = :8000 )'], capture_output=True, text=True)
+def web_peers(loopback=False):
+    """Clients holding a connection to Core's WebUI port; loopback ones count only with loopback=True (the NVMe campaign's
+    Pi-local stand-in, 2026-11-10: the campaign runs without the Mac)."""
+    try:
+        r = subprocess.run(['ss', '-tnH', 'state', 'established', '( sport = :8000 )'], capture_output=True, text=True, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        return -1
     n = 0
     for l in r.stdout.splitlines():
         f = l.split()
-        if len(f) >= 4 and not f[3].startswith(('127.', '[::1]', '::1')):
+        if len(f) >= 4 and (loopback or not f[3].startswith(('127.', '[::1]', '::1'))):
             n += 1
     return n
 
@@ -1020,7 +1051,7 @@ def journal(t_wall):
 
 
 STAT_KEYS = ('enqueued', 'dropped_queue_full', 'dropped_gap_estimate', 'peak_queue', 'queue_bytes_peak', 'queue_budget',
-             'write_failures', 'fault')
+             'write_failures', 'fault', 'written', 'dropped_copy_slot', 'index_jumps', 'discarded_on_stop')
 
 
 def parse_journal(lines, t_rec_wall):
@@ -1131,6 +1162,10 @@ def db_ingest(out, row, payload):
                                 ('samples', 'trim_last_unix', 'INT')):
             if col not in [c[1] for c in con.execute('PRAGMA table_info(%s)' % table)]:
                 con.execute('ALTER TABLE %s ADD COLUMN %s %s' % (table, col, typ))
+        have_s = [c[1] for c in con.execute('PRAGMA table_info(samples)')]
+        for col in SAMPLE_COLS:          # columns added after the table was made (the NVMe campaign's t_unix, clients, ...)
+            if col not in have_s:
+                con.execute('ALTER TABLE samples ADD COLUMN %s %s' % (col, 'TEXT' if col in ('throttled', 'state', 'core_top_thread', 'trim_running') else 'REAL'))
         for t in ('takes', 'samples', 'drop_events', 'stats', 'journal'):
             con.execute('DELETE FROM %s WHERE take_id=?' % t, (tid,))
         r = row
@@ -1151,7 +1186,7 @@ def db_ingest(out, row, payload):
             r.get('format'), r.get('buffer_unit'), _num(r.get('capacity_fps')), r.get('capacity_how'), _num(r.get('drain_mbps'))))
         numeric = {'t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'dropped', 'core_cpu_pct',
                    'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors', 'dev_w_ticks', 'dev_inflight', 'dirty_kb',
-                   'writeback_kb', 'trim_last_unix'}
+                   'writeback_kb', 'trim_last_unix', 't_unix', 'clients', 'merge_pending'}
         con.executemany('INSERT INTO samples(take_id, %s) VALUES (?, %s)' % (','.join(SAMPLE_COLS), ','.join('?' * len(SAMPLE_COLS))), [
             (tid,) + tuple((_num(x.get(k)) if k in numeric else x.get(k)) if x.get(k) not in ('', None) else None for k in SAMPLE_COLS)
             for x in payload.get('samples', [])])
@@ -1345,7 +1380,7 @@ def set_variant(out, name, settings):
 
 
 def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', tune_note='', fmt='cdng', before_cmds=(), expect=None):
-    tid = '%s_fps%s_%s' % (c.id, int(fps), time.strftime('%H%M%S'))
+    tid = '%s_fps%s_%s' % (c.id, int(fps), time.strftime('%Y%m%d-%H%M%S'))     # H2: the date, so ids never repeat
     row = {'take_id': tid, 'cfg_id': c.id, 'mode': c.key, 'bits': c.bits, 'comp': c.comp, 'log': c.log, 'tdn': c.tdn, 'lock': c.lock,
            'trim': c.trim, 'web': c.web, 'fps': fps, 'started': time.strftime('%F %T'), 'variant': variant,
            'tune_readback': tune_note, 'format': fmt}
@@ -1418,6 +1453,13 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         row['outcome'] = 'media_not_mounted'
         release_lock()
         return row
+    if CAMPAIGN['on'] and CAMPAIGN['pre']:
+        # void / WAITING checks of the fixed state (plan section 7, H10): a void or a wait is not a result
+        o = CAMPAIGN['pre'](out, c, fps, st, row, max_seconds)
+        if o:
+            row['outcome'] = o
+            release_lock()
+            return row
     row['start_pi_c'] = int(rd(PI_TEMP, '0')) / 1000
     row['start_nvme_c'] = int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else ''
     before = clip_dirs()
@@ -1434,6 +1476,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
                                 '--host', '127.0.0.1', '--port', '8000', '--log', out + '/webui/%s.log' % tid],
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         time.sleep(3)
+        if CAMPAIGN['on']:
+            row['_web_pid'] = web.pid
+            row['webclient_ticks0'] = proc_ticks(web.pid)
     join_ingest()      # the previous take's logs went into the database while this one was being set up
     os.makedirs(out + '/samples', exist_ok=True)
     hold_lock(variant or 'take', max_seconds or 1800)
@@ -1459,11 +1504,20 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         el = time.monotonic() - t_rec
         if not last:
             continue
+        try:
+            free_now = os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize
+        except OSError:
+            free_now = None
         if STOP['sig']:
             outcome, ctx_drop = 'stopped_by_signal', dict(last)
+        elif CAMPAIGN['on'] and (free_now is None or time.time() - (last.get('t_unix') or time.time()) > 5):
+            # H7: a dead medium or a sampler that stopped answering: stop the take, never call it a pass
+            outcome, ctx_drop = 'fault', dict(last)
+            row['cause_estimate'] = 'medium not readable (statvfs failed)' if free_now is None else 'the 1 Hz sampler stopped (%s)' % getattr(sam, 'last_error', '?')
+            HALT['why'] = HALT['why'] or row['cause_estimate']
         elif stop_on_drop and last['dropped'] and last['dropped'] > 0:
             outcome, ctx_drop = 'drop', dict(last)
-        elif os.statvfs(MEDIA).f_bavail * os.statvfs(MEDIA).f_frsize < CAPACITY_GUARD:
+        elif free_now is not None and free_now < CAPACITY_GUARD:
             outcome = 'pass_drive_full'
         elif el >= (max_seconds or 1800):
             outcome = 'pass_30min' if not max_seconds else 'pass_capped_%ds' % max_seconds
@@ -1485,6 +1539,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     seconds = time.monotonic() - t_rec
     ctx_end = dict(sam.last())
     core('record_stop')
+    if web and CAMPAIGN['on']:
+        row['webclient_alive_at_end'] = 1 if web.poll() is None else 0
+        row['webclient_ticks1'] = proc_ticks(web.pid)
     if web: web.terminate()
     if c.web and WEB_REMOTE:
         web_flag(out, 0)
@@ -1526,6 +1583,16 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         nums.sort()
         files = len(nums)
         missing = (nums[-1] + 1 - len(nums)) if nums else 0
+        if CAMPAIGN['on'] and nums:
+            # R3: where the missing frame numbers are (ranges), for the boundary flag and the drop timeline
+            gaps, prev = [], nums[0] - 1
+            if nums[0] > 0:
+                gaps.append((0, nums[0] - 1))
+            for n_ in nums:
+                if n_ > prev + 1:
+                    gaps.append((prev + 1, n_ - 1))
+                prev = n_
+            row['_gaps'] = gaps
         audio = ' '.join(af) if af else ('in-mlv' if mlvs else 'NONE')
     jl = journal(t_wall)
     os.makedirs(out + '/journal', exist_ok=True)
@@ -1553,6 +1620,27 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         if m:
             row['media_class'] = m.group(1)
     dropped = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0), missing)
+    if CAMPAIGN['on']:
+        # R2 (plan revision item 4): a numbering gap is not a dropped picture. missing == index_jumps, every Core counter 0
+        # and no capture-gap line: the time index skipped a number after a late timestamp, no frame was lost.
+        counters = max(int(st_end.get('recording_dropped_frames', 0) or 0), int(ctx.get('dropped', 0) or 0))
+        try:
+            ij = int(stats.get('index_jumps', 0) or 0)
+        except ValueError:
+            ij = 0
+        core_cnt = sum(int(stats.get(k, 0) or 0) for k in ('dropped_queue_full', 'dropped_copy_slot', 'write_failures')
+                       if str(stats.get(k, '0')).isdigit())
+        row['index_jumps'] = ij if 'index_jumps' in stats else ''
+        row['numbering_gap'] = 0
+        if missing > 0 and missing == ij and counters == 0 and core_cnt == 0 and 'capture-gap' not in kinds:
+            row['numbering_gap'] = missing
+            dropped = 0
+        # H11: Core ends a take on an audio error as "recording failure: ... ALSA capture: ...": its own outcome
+        fl = [l for l in jl if 'recording failure:' in l]
+        row['failure_line'] = fl[-1].split('ApertarCore ', 1)[-1][:300] if fl else ''
+        if any('ALSA capture' in l for l in fl):
+            outcome = 'audio_fault'
+        row['audio_missing'] = 0 if any('audio capture:' in l for l in jl) else 1
     gb = 0
     if clip and os.path.isdir(clip) and files:
         names = []
@@ -1629,7 +1717,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         else:
             row['cause_estimate'] = ''
     # delete only what this take made, then count what was written since the last trim
-    if clip and os.path.isdir(clip) and clip.startswith((MEDIA + '/cDNG', MEDIA + '/MLV')):
+    if CAMPAIGN['on']:
+        pass        # H5 / R5 (plan): clips stay until the fill gate needs the space; deleted only through Core's media route
+    elif clip and os.path.isdir(clip) and clip.startswith((MEDIA + '/cDNG', MEDIA + '/MLV')):
         shutil.rmtree(clip, ignore_errors=True)
     BUDGET['used'] += gb
     ok, why = hardware_ok(out)
@@ -1642,8 +1732,1532 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         c.id, fps, outcome, seconds, dropped, row['drop_kinds'], ctx.get('pi_c', 0), ctx.get('nvme_c')))
     row['_payload'] = {'samples': [{k: v for k, v in x.items() if k != '_st'} for x in sam.rows], 'journal': jl,
                        't_rec_wall': t_rec_wall}
+    if CAMPAIGN['on'] and CAMPAIGN['post']:
+        t0_, t1_ = row.get('webclient_ticks0'), row.get('webclient_ticks1')
+        row['webclient_cpu_s'] = round((t1_ - t0_) / os.sysconf('SC_CLK_TCK'), 1) if (t0_ is not None and t1_ is not None) else ''
+        row['rec_offset_s'] = round(t_rec - t0, 2)
+        try:
+            CAMPAIGN['post'](out, row, c, fps, sam.rows, jl, clip, stats, kinds)
+        except Exception as e:      # noqa: BLE001 - the statistics must never lose the take
+            log(out, 'WARNING: campaign post-take step failed for %s: %r' % (tid, e))
     LAST_END['t'] = time.time()
     return row
+
+
+# ==== NVMe 4K campaign (--stages N --night ...): plan working/drop-frames/nvme-campaign/plan.md with its "Revision 2026-11-10",
+# build list nvme-campaign/build-list.md sections H and R. Everything below runs on the Pi alone (User, 2026-11-10: "the campaign
+# has to be able to run without the computer"): the WebUI stand-in is Pi-local, every night writes its own report, and the Pi is
+# powered off by poweroff-after-night.sh when the night is over. Additions of 2026-11-10 (User): after every take of a tier of
+# 15 min or more the merge is switched on and the runner waits for it (merge statistics); every split take records its part
+# boundaries (the 8ec2f1a check) and its index jumps (the e298d4a check); flat controls run past their first drop so the flat
+# folder's cost curve per 4K mode says when the split is needed.
+HELPER = '/usr/local/libexec/apertar-campaign-helper'
+YAML_SRC = '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+YAML_RUN = '/run/apertar-media/pisp-pipeline.yaml'
+YAML_MD5 = '88929ca34bc8e4e8d4ab5ffaac1e2b64'        # num_cfe_config_queue 4 (R2 section 2g; read on the Pi 2026-11-10)
+SPLIT_DEFAULT = 5000                                  # R1: every scored take is split, as Patrik shoots
+BOUNDARY_WINDOW = 64                                  # R3: a drop within 64 frames after a part boundary is a boundary drop
+MERGE_AFTER_S = 900                                   # User 2026-11-10: merge after every take of a tier >= 15 min
+EARLY_S = 600                                         # plan section 7: a long-tier drop before minute 10 is early
+WALK_C_PROBE_NS = 63.3                                # probe 2026-11-08: ns per directory entry, the walk alone
+FRAME_MB = {('4kHDR16', 'none', False): 16.59, ('4kHDR16', 'none', True): 12.45,   # plan section 3 (measured)
+            ('4kSDR12', 'lossless_jpeg', False): 5.98}
+BRACKET_TOP = {'4kHDR16': 30, '4kHDR12': 30}          # the record's brackets (plan section 5): 30 is the mode max
+NIGHT_STAGES = ('SMOKE', 'S1', 'S2', 'S4', 'S5', 'S6', 'PARTB', 'END')
+GO_STAGES = ('S4', 'S5', 'S6', 'PARTB')
+TIMERS = ('fstrim.timer', 'apt-daily.timer', 'apt-daily-upgrade.timer', 'man-db.timer', 'logrotate.timer')
+CS = {'out': '', 'night': '', 'args': None, 'voids': 0, 'audio_faults': 0, 'arm_audio': {}, 'stop': '', 'core_pid': None,
+      'serial': '', 'boot': '', 'tuning': None, 'seq': collections.Counter(), 'status_head': '', 'current': None,
+      'audio_expected': True, 'decisions': [], 'night_t0': None, 'gb_night': 0.0, 'smart0': None, 'smart_last': None,
+      'cold_wait_s': 0}
+
+CAMPAIGN_SCHEMA = '''
+CREATE TABLE IF NOT EXISTS clips(serial TEXT, clip TEXT, take_id TEXT, created REAL, mtime REAL, files INT, parts INT, bytes REAL,
+  boot_id TEXT, merged INT DEFAULT 0, deleted REAL, delete_s REAL, delete_result TEXT, PRIMARY KEY(serial, clip, created));
+CREATE TABLE IF NOT EXISTS merges(take_id TEXT, clip TEXT, files_before INT, parts_before INT, files_after INT, parts_left INT,
+  marker_left INT, merge_s REAL, ms_per_file REAL, eta_first_s REAL, eta_first_at_s REAL, eta_err_pct REAL, samples INT, ok INT,
+  readback_off INT, note TEXT);
+CREATE TABLE IF NOT EXISTS merge_samples(take_id TEXT, t_s REAL, pending INT, active TEXT, paused TEXT, clip_done INT,
+  clip_total INT, all_done INT, all_total INT, eta_s REAL);
+CREATE TABLE IF NOT EXISTS boundaries(take_id TEXT, k INT, frame INT, t_s REAL, buf_max_pct REAL, buf_median_pct REAL,
+  core_cpu_min REAL, core_cpu_median REAL, drops_in_window INT);
+CREATE TABLE IF NOT EXISTS index_jumps(take_id TEXT, frame INT, count INT, skipped INT, dt_us INT, since_first_us INT);
+CREATE TABLE IF NOT EXISTS minute_bins(take_id TEXT, minute INT, core_cpu REAL, buf_pct REAL, ticks_per_write REAL, nvme_c REAL,
+  dirty_kb REAL, files_est INT);
+CREATE TABLE IF NOT EXISTS take_extra(take_id TEXT, k TEXT, v TEXT);
+CREATE TABLE IF NOT EXISTS smart(t REAL, night TEXT, take_id TEXT, data_units_written INT, temperature_c REAL, critical_warning INT,
+  percent_used INT, thm1_count INT, thm2_count INT, raw TEXT);
+CREATE TABLE IF NOT EXISTS s1_samples(run TEXT, t_s REAL, bytes INT, mbps REAL, nvme_c REAL, dev_w_ticks INT, dev_w_ios INT);
+CREATE TABLE IF NOT EXISTS deletes(t REAL, clip TEXT, files INT, parts INT, cold INT, budget_s REAL, delete_s REAL, result TEXT);
+'''
+CAMPAIGN_FIELDS = ['night', 'stage', 'ckey', 'split', 'tier_s', 'planned_gb', 'fit_limited', 'void_reason', 'outcome_raw',
+                   'numbering_gap', 'index_jumps', 'drop_frames', 'boundaries_crossed', 'boundary_drops', 'copy_slot_drops',
+                   'boundary_buf_bump_pct', 'walk_ns_per_entry', 'walk_share_end_pct', 'signature', 'failure_line',
+                   'audio_missing', 'audio_peak_backlog_kb', 'audio_discontinuities', 'audio_ring', 'webclient_cpu_s',
+                   'webclient_alive_at_end', 'clients_min', 'merge_s', 'merge_ms_per_file', 'merge_ok', 'merge_eta_err_pct',
+                   'hot_flag', 'throttled_hist', 'core_pid', 'uptime_s', 'memfree_mb', 'buddy_order8', 'takes_since_restart',
+                   'smart_temp_c', 'smart_duw', 'rec_offset_s', 'verdict']
+for _f in CAMPAIGN_FIELDS:
+    if _f not in FIELDS:
+        FIELDS.append(_f)
+
+
+def proc_ticks(pid, dead_ok=False):
+    """utime + stime of a process in clock ticks; None when it is gone."""
+    try:
+        st = open('/proc/%d/stat' % int(pid)).read()
+        f = st[st.rindex(')') + 2:].split()
+        return int(f[11]) + int(f[12])
+    except (OSError, ValueError, IndexError, TypeError):
+        return None
+
+
+def boot_id():
+    return rd('/proc/sys/kernel/random/boot_id', '') or ''
+
+
+def unit_pid(unit):
+    try:
+        v = subprocess.run(['systemctl', 'show', '-p', 'MainPID', '--value', unit], capture_output=True, text=True,
+                           timeout=10).stdout.strip()
+        return int(v) if v.isdigit() and int(v) > 0 else None
+    except (OSError, subprocess.SubprocessError):
+        return None
+
+
+def proc_environ(pid):
+    try:
+        raw = open('/proc/%d/environ' % pid, 'rb').read().split(b'\0')
+        return dict(x.decode(errors='replace').split('=', 1) for x in raw if b'=' in x)
+    except (OSError, TypeError):
+        return {}
+
+
+def fe_depth4(env):
+    """FE Config depth 4 in Core's environment: LIBCAMERA_RPI_CONFIG_FILE names a file with the depth-4 md5. Since 2026-11-06
+    /home/pi/start-apertar-core.sh exports the Tuning-Files copy itself (survives every boot; found 2026-11-10), so the /run copy of
+    the campaign drop-in is one of two accepted paths, not the only one."""
+    p = env.get('LIBCAMERA_RPI_CONFIG_FILE')
+    if not p:
+        return False, 'LIBCAMERA_RPI_CONFIG_FILE is not in Core\'s environment (sudo %s arm)' % HELPER
+    m = md5_of(p)
+    if m != YAML_MD5:
+        return False, '%s has md5 %s, not the depth-4 file %s' % (p, m or 'unreadable', YAML_MD5[:8])
+    return True, p
+
+
+def md5_of(path):
+    import hashlib
+    try:
+        return hashlib.md5(open(path, 'rb').read()).hexdigest()
+    except OSError:
+        return ''
+
+
+def card_facts():
+    """The recording card: model, serial, firmware from sysfs (H6), size and free bytes of the mount."""
+    d = {k: (rd('/sys/class/nvme/nvme0/%s' % k, '') or '').strip() for k in ('model', 'serial', 'firmware_rev')}
+    try:
+        sv = os.statvfs(MEDIA)
+        d['size_b'], d['free_b'] = sv.f_blocks * sv.f_frsize, sv.f_bavail * sv.f_frsize
+    except OSError:
+        d['size_b'] = d['free_b'] = 0
+    try:
+        d['mount'] = subprocess.run(['findmnt', '-no', 'SOURCE,FSTYPE,OPTIONS', MEDIA], capture_output=True, text=True,
+                                    timeout=10).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        d['mount'] = ''
+    return d
+
+
+def helper(word, timeout=300):
+    """The campaign root helper's unattended words (sudo -n: fails closed when sudoers does not allow the word)."""
+    if not os.path.exists(HELPER):
+        return 127, 'helper not installed (%s)' % HELPER
+    try:
+        r = subprocess.run(['sudo', '-n', HELPER, word], capture_output=True, text=True, timeout=timeout)
+        return r.returncode, (r.stdout + r.stderr).strip()
+    except (OSError, subprocess.SubprocessError) as e:
+        return 1, repr(e)
+
+
+def smartlog():
+    """smart-log through the helper (A18/H14): {} when the helper is absent or the output is not readable."""
+    rc, txt = helper('smartlog', 60)
+    if rc != 0:
+        return {'error': txt[:200]}
+    i = txt.find('{')
+    try:
+        j = json.loads(txt[i:txt.rindex('}') + 1]) if i >= 0 else {}
+    except ValueError:
+        j = {}
+    if not j:       # plain text: "key : value" lines
+        for l in txt.splitlines():
+            if ':' in l:
+                k, v = l.split(':', 1)
+                j[k.strip().lower().replace(' ', '_')] = v.strip()
+    def n(*keys):
+        for k in keys:
+            v = j.get(k)
+            if v is None:
+                continue
+            try:
+                return int(str(v).replace(',', '').split()[0])
+            except ValueError:
+                continue
+        return None
+    t = n('temperature')
+    if t is not None and t > 200:
+        t -= 273      # nvme-cli json gives Kelvin
+    return {'data_units_written': n('data_units_written'), 'temperature_c': t, 'critical_warning': n('critical_warning'),
+            'percent_used': n('percent_used', 'percentage_used'), 'thm1': n('thm_temp1_trans_count', 'thermal_management_t1_trans_count'),
+            'thm2': n('thm_temp2_trans_count', 'thermal_management_t2_trans_count'), 'raw': txt[:2000]}
+
+
+def smart_record(out, take_id=''):
+    s = smartlog()
+    CS['smart_last'] = s
+    if 'error' in s:
+        return s
+    con = sqlite3.connect(out + '/longtakes.db', timeout=60)
+    try:
+        con.execute('INSERT INTO smart VALUES (?,?,?,?,?,?,?,?,?,?)', (time.time(), CS['night'], take_id, s['data_units_written'],
+                    s['temperature_c'], s['critical_warning'], s['percent_used'], s['thm1'], s['thm2'], s['raw']))
+        con.commit()
+    finally:
+        con.close()
+    return s
+
+
+def busy_sessions():
+    """H10: pty login sessions with a running child process other than their shell (an idle ssh shell is exempt)."""
+    busy = []
+    try:
+        for l in subprocess.run(['who'], capture_output=True, text=True, timeout=10).stdout.splitlines():
+            f = l.split()
+            if len(f) < 2 or not f[1].startswith('pts/'):
+                continue
+            ps = subprocess.run(['ps', '-t', f[1], '-o', 'stat=,comm='], capture_output=True, text=True, timeout=10).stdout.split('\n')
+            procs = [p.split(None, 1) for p in ps if p.strip()]
+            run = [c for s_, c in (p for p in procs if len(p) == 2) if c not in ('bash', 'sh', 'zsh', 'sshd', '-bash', 'tmux')]
+            if run:
+                busy.append('%s: %s' % (f[1], ','.join(run)[:60]))
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return busy
+
+
+def ui_drawing(window=5.0):
+    """H10: the touch UI service active AND drawing (its CPU time advancing); a SIGSTOPped UI stays 'active'. Summed over the
+    service's cgroup: its MainPID is the run_pi_direct.sh wrapper, the Qt UI is a child (found in the smoke test, 2026-11-10)."""
+    cg = '/sys/fs/cgroup/system.slice/apertar-ui-direct.service/cgroup.procs'
+
+    def ticks():
+        try:
+            pids = [int(x) for x in open(cg).read().split()]
+        except (OSError, ValueError):
+            pids = [p for p in [unit_pid('apertar-ui-direct')] if p]
+        return sum(proc_ticks(p) or 0 for p in pids), len(pids)
+    a0, n = ticks()
+    if not n:
+        return False, 'apertar-ui-direct has no process'
+    time.sleep(window)
+    a1, _n = ticks()
+    return (a1 > a0), 'ui ticks +%d in %.0f s (%d processes)' % (a1 - a0, window, n)
+
+
+def decide(out, text):
+    line = time.strftime('%F %T ') + '[%s] ' % CS['night'] + text
+    CS['decisions'].append(line)
+    with open(out + '/decisions.log', 'a') as f:
+        f.write(line + '\n')
+    log(out, 'DECISION ' + text)
+
+
+def cdb(out):
+    con = sqlite3.connect(out + '/longtakes.db', timeout=60)
+    con.executescript(CAMPAIGN_SCHEMA)
+    return con
+
+
+def write_atomic(path, text):
+    with open(path + '.tmp', 'w') as f:
+        f.write(text)
+    os.replace(path + '.tmp', path)
+
+
+# ---- the clip ledger (H5): every campaign clip keyed by card serial, clip name, creation time and take id --------------------
+def clip_count(path):
+    """(dng files, part folders, .parts marker) of a clip folder, recursive."""
+    files = parts = 0
+    for dp, dirs, names in os.walk(path):
+        if dp == path:
+            parts = sum(1 for d in dirs if d.startswith('part_'))
+        files += sum(1 for n in names if n.endswith('.dng'))
+    return files, parts, os.path.exists(os.path.join(path, '.parts'))
+
+
+def ledger_add(out, row, clip):
+    if not clip or not os.path.isdir(clip):
+        return
+    files, parts, _m = clip_count(clip)
+    con = cdb(out)
+    try:
+        con.execute('INSERT OR REPLACE INTO clips(serial, clip, take_id, created, mtime, files, parts, bytes, boot_id) VALUES (?,?,?,?,?,?,?,?,?)',
+                    (CS['serial'], os.path.basename(clip), row.get('take_id'), time.time(), os.path.getmtime(clip), files, parts,
+                     float(row.get('gb_written') or 0) * 1e9, boot_id()))
+        con.commit()
+    finally:
+        con.close()
+
+
+def ledger_update(out, name, **kw):
+    con = cdb(out)
+    try:
+        sets = ', '.join('%s=?' % k for k in kw)
+        con.execute('UPDATE clips SET %s WHERE serial=? AND clip=? AND deleted IS NULL' % sets, list(kw.values()) + [CS['serial'], name])
+        con.commit()
+    finally:
+        con.close()
+
+
+def ledger_live(out):
+    con = cdb(out)
+    try:
+        return [dict(zip(('clip', 'take_id', 'created', 'mtime', 'files', 'parts', 'bytes', 'boot_id', 'merged'), r)) for r in con.execute(
+            'SELECT clip, take_id, created, mtime, files, parts, bytes, boot_id, merged FROM clips WHERE serial=? AND deleted IS NULL '
+            'ORDER BY created', (CS['serial'],))]
+    finally:
+        con.close()
+
+
+def foreign_folders(out):
+    """Clip folders on the card the database did not create (plan section 7: WAITING, never deleted)."""
+    known = {c['clip'] for c in ledger_live(out)} | set(CS.get('preserve') or ())
+    return sorted(clip_dirs() - known)
+
+
+def cold_budget_s(files, parts):
+    """Probe step 4: a delete after a reboot costs 13.6 s x (files / 10,000)^2 per folder (cold unlink, linear per entry)."""
+    if parts:
+        per = files / max(parts, 1)
+        return parts * 13.6 * (per / 1e4) ** 2
+    return 13.6 * (files / 1e4) ** 2
+
+
+def media_delete(out, name):
+    """Core's media route by exact name (A3''; pauses a merge, deletes, trims): (ok, message, seconds). Never rm, never a glob."""
+    import urllib.request, urllib.parse
+    for _ in range(120):
+        st = state()
+        if st and not st.get('recording') and not st.get('media_writes_pending'):
+            break
+        time.sleep(1)
+    t = time.monotonic()
+    try:
+        req = urllib.request.Request('http://127.0.0.1:8000/api/media/delete?kind=folder&id=%s' % urllib.parse.quote(name),
+                                     data=b'', method='POST')
+        body = urllib.request.urlopen(req, timeout=1800).read().decode(errors='replace')
+        ok = '"ok":true' in body.replace(' ', '')
+    except Exception as e:      # noqa: BLE001
+        body, ok = getattr(e, 'read', lambda: b'')().decode(errors='replace') if hasattr(e, 'read') else repr(e), False
+    return ok and not os.path.exists(os.path.join(MEDIA, name)), body[:300], round(time.monotonic() - t, 2)
+
+
+def delete_clip(out, c):
+    """Re-stat against the ledger, then the media route. Returns '' or a WAITING reason."""
+    path = os.path.join(MEDIA, c['clip'])
+    if not os.path.isdir(path):
+        ledger_update(out, c['clip'], deleted=time.time(), delete_result='gone before delete')
+        return ''
+    files, parts, _m = clip_count(path)
+    if files != int(c['files'] or 0):
+        return 'WAITING: foreign folder (%s has %d frames, the ledger %s)' % (c['clip'], files, c['files'])
+    cold = (c.get('boot_id') or '') != boot_id()
+    budget = cold_budget_s(files, parts) if cold else files * 5e-6
+    log(out, 'fill gate: deleting %s (%d frames, %d parts, %s, budget %.0f s) through the media route' % (
+        c['clip'], files, parts, 'cold: written before this boot' if cold else 'warm', budget))
+    ok, msg, secs = media_delete(out, c['clip'])
+    con = cdb(out)
+    try:
+        con.execute('INSERT INTO deletes VALUES (?,?,?,?,?,?,?,?)', (time.time(), c['clip'], files, parts, int(cold), budget, secs, msg[:200]))
+        con.commit()
+    finally:
+        con.close()
+    if not ok:
+        return 'WAITING: delete failed for %s (%s)' % (c['clip'], msg[:120])
+    ledger_update(out, c['clip'], deleted=time.time(), delete_s=secs, delete_result='ok')
+    decide(out, 'deleted %s: %d frames in %.1f s (%s, budget %.0f s)' % (c['clip'], files, secs, 'cold' if cold else 'warm', budget))
+    if cold:
+        CS['cold_wait_s'] = max(CS['cold_wait_s'], 600)
+    return ''
+
+
+def wait_trim(t_before, cap=60):
+    t = time.monotonic()
+    while time.monotonic() - t < cap:
+        ws = web_state()
+        tl = _num(ws.get('media_trim_last_unix'))
+        if tl and tl >= t_before and not ws.get('media_trim_running'):
+            return True
+        time.sleep(3)
+    return False
+
+
+def fill_gate(out, need_b):
+    """Plan section 6: free >= need, else delete the OLDEST campaign clips until it fits. '' when it fits, else why not."""
+    try:
+        sv = os.statvfs(MEDIA)
+        free = sv.f_bavail * sv.f_frsize
+    except OSError:
+        return 'medium not readable'
+    if free >= need_b:
+        return ''
+    t0 = time.time()
+    for c in ledger_live(out):
+        if free >= need_b:
+            break
+        w = delete_clip(out, c)
+        if w:
+            return w
+        sv = os.statvfs(MEDIA)
+        free = sv.f_bavail * sv.f_frsize
+    if time.time() > t0 + 1 and not wait_trim(t0):
+        log(out, 'fill gate: Core\'s trim did not report within 60 s of the deletes; asking the helper for fstrim')
+        helper('fstrim', 900)
+    if CS['cold_wait_s']:
+        decide(out, 'cold deletes after a reboot: %d s idle before the next take (plan: never within budget + 10 min)' % CS['cold_wait_s'])
+        idle(out, CS['cold_wait_s'], 'drive idle after cold deletes')
+        CS['cold_wait_s'] = 0
+    return '' if free >= need_b else 'only %.0f GB free after deleting every campaign clip' % (free / 1e9)
+
+
+def idle(out, seconds, why):
+    status(out, 'IDLE until %s (%s): safe to read' % (time.strftime('%H:%M', time.localtime(time.time() + seconds)), why))
+    t = time.monotonic()
+    while time.monotonic() - t < seconds and not STOP['sig']:
+        time.sleep(5)
+
+
+# ---- the merge after a long take (User 2026-11-10: "the system waits for the merge after each long take") -------------------
+def merge_and_wait(out, row, clip, cap_s=5400):
+    tid = row['take_id']
+    files0, parts0, mark0 = clip_count(clip)
+    if not parts0 and not mark0:
+        return
+    status(out, 'MERGING %s (%d frames in %d parts): safe to read' % (os.path.basename(clip), files0, parts0))
+    os.makedirs(out + '/merge', exist_ok=True)
+    t_wall, t0 = time.time(), time.monotonic()
+    core('set_clip_merge', enabled=True)
+    samples, seen_active = [], False
+    with open(out + '/merge/%s.csv' % tid, 'w') as f:
+        f.write('t_s,pending,active,paused,clip_done,clip_total,all_done,all_total,eta_s\n')
+        while time.monotonic() - t0 < cap_s and not STOP['sig']:
+            st = state()
+            el = round(time.monotonic() - t0, 1)
+            smp = (el, st.get('clip_merge_pending'), st.get('clip_merge_active') or '', st.get('clip_merge_paused') or '',
+                   st.get('clip_merge_clip_done'), st.get('clip_merge_clip_total'), st.get('clip_merge_all_done'),
+                   st.get('clip_merge_all_total'), st.get('clip_merge_eta_s'))
+            samples.append(smp)
+            f.write(','.join(str(x) for x in smp) + '\n'); f.flush()
+            seen_active = seen_active or bool(smp[2])
+            _f, p_left, m_left = clip_count(clip) if el > 120 or not smp[2] else (0, 1, True)
+            fs_done = not p_left and not m_left
+            if not smp[2] and not smp[1] and (seen_active or fs_done or el > 30):
+                break
+            time.sleep(1 if el < 20 else 10)
+    merge_s = round(time.monotonic() - t0, 1)
+    r_off = core('set_clip_merge', enabled=False)
+    st = state()
+    files1, parts1, mark1 = clip_count(clip)
+    eta = [(s_[0], float(s_[8])) for s_ in samples if s_[8] not in (None, '', 0, 0.0) and s_[2]]
+    eta_first_at, eta_first = (eta[0] if eta else (None, None))
+    err = round(100 * ((eta_first_at + eta_first) - merge_s) / merge_s, 1) if eta and merge_s else None
+    ok = int(files1 == files0 and parts1 == 0 and not mark1)
+    jl = [l for l in journal(t_wall - 2) if 'clip merge' in l]
+    note = ' | '.join(l.split('ApertarCore ', 1)[-1] for l in jl[-3:])[:400]
+    # Core's own timing of the merge ("clip merge: done <clip> files=N seconds=S per_file_ms=M"); the poll time is the fallback
+    done = [re.search(r'clip merge: done %s files=(\d+) seconds=([\d.]+)' % re.escape(os.path.basename(clip)), l) for l in jl]
+    done = [d for d in done if d]
+    poll_s = merge_s
+    if done:
+        merge_s = float(done[-1].group(2))
+    note = ('poll %.1f s; ' % poll_s) + note
+    con = cdb(out)
+    try:
+        con.execute('INSERT INTO merges VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', (
+            tid, os.path.basename(clip), files0, parts0, files1, parts1, int(mark1), merge_s, round(1000 * merge_s / max(files0, 1), 3),
+            eta_first, eta_first_at, err, len(samples), ok, int(st.get('clip_merge_enabled') is False and bool(r_off.get('ok'))), note))
+        con.executemany('INSERT INTO merge_samples VALUES (?,?,?,?,?,?,?,?,?,?)', [(tid,) + s_ for s_ in samples])
+        con.commit()
+    finally:
+        con.close()
+    row.update({'merge_s': merge_s, 'merge_ms_per_file': round(1000 * merge_s / max(files0, 1), 3), 'merge_ok': ok,
+                'merge_eta_err_pct': err if err is not None else ''})
+    ledger_update(out, os.path.basename(clip), merged=1, mtime=os.path.getmtime(clip), files=files1, parts=parts1)
+    decide(out, 'merge of %s: %d frames, %d parts, %.0f s (%.2f ms per frame), first ETA error %s %%, %s; merge off again: %s' % (
+        os.path.basename(clip), files0, parts0, merge_s, 1000 * merge_s / max(files0, 1), err, 'intact' if ok else
+        'NOT INTACT (%d frames after, %d parts left, marker %s)' % (files1, parts1, mark1), st.get('clip_merge_enabled') is False))
+    if not ok:
+        CS['stop'] = CS['stop'] or 'merge left %s not intact' % os.path.basename(clip)
+
+
+# ---- per-take statistics (R2, R3, the fix checks, the split-need curve, the attribution signatures) --------------------------
+def _median(v):
+    v = sorted(x for x in v if x is not None)
+    return v[len(v) // 2] if v else None
+
+
+def campaign_post(out, row, c, fps, samples, jl, clip, stats, kinds):
+    tid = row['take_id']
+    row['tier_s'] = CS.get('tier_s') or row.get('tier_s')     # set by ctake() before run_take(): the merge-after rule reads it
+    off = float(row.get('rec_offset_s') or 0)
+    rec = [x for x in samples if x.get('state') == 'rec']
+    fpf = int(c.split or 0)
+    # first drop from the 1 Hz samples (H11), not from rate-limited journal lines
+    fd = next((x for x in samples if (x.get('dropped') or 0) > 0), None)
+    if fd is not None:
+        row['first_drop_s'] = round(float(fd['t_s']) - off, 1)
+    # where the missing frames are (R3) and the boundary flag
+    gaps = row.pop('_gaps', [])
+    frames = []
+    for a_, b_ in gaps:
+        frames.extend(range(a_, min(b_, a_ + 500) + 1))
+    for l in jl:
+        m = re.search(r'drop\[(queue-full|copy-slot)\]: frame=(\d+)', l)
+        if m:
+            frames.append(int(m.group(2)))
+    frames = sorted(set(frames))
+    row['drop_frames'] = ' '.join('%d-%d' % g if g[1] > g[0] else '%d' % g[0] for g in gaps[:30])
+    row['boundary_drops'] = sum(1 for f in frames if fpf and f >= fpf and f % fpf < BOUNDARY_WINDOW) if fpf else ''
+    row['copy_slot_drops'] = stats.get('dropped_copy_slot', '')
+    files = int(row.get('files') or 0)
+    row['boundaries_crossed'] = (files - 1) // fpf if (fpf and files) else 0
+    # the 8ec2f1a check: the buffer and Core's CPU around every part boundary against the take's median
+    used = [(float(x['t_s']) - off, 100.0 * float(x['buffer_used']) / float(x['buffer_capacity']))
+            for x in rec if x.get('buffer_used') not in (None, '') and x.get('buffer_capacity')]
+    med_buf = _median([u for _t, u in used])
+    med_cpu = _median([x.get('core_cpu_pct') for x in rec])
+    bl, bump = [], 0.0
+    if fpf and files:
+        for k in range(1, row['boundaries_crossed'] + 1):
+            tb = k * fpf / float(fps)
+            win = [u for t_, u in used if tb - 1 <= t_ <= tb + 3]
+            cpu = [x.get('core_cpu_pct') for x in rec if tb - 1 <= float(x['t_s']) - off <= tb + 3 and x.get('core_cpu_pct') is not None]
+            dw = sum(1 for f in frames if k * fpf <= f < k * fpf + BOUNDARY_WINDOW)
+            bmax = max(win) if win else None
+            if bmax is not None and med_buf is not None:
+                bump = max(bump, bmax - med_buf)
+            bl.append((tid, k, k * fpf, round(tb, 1), bmax, med_buf, min(cpu) if cpu else None, med_cpu, dw))
+    row['boundary_buf_bump_pct'] = round(bump, 2) if bl else ''
+    # the e298d4a check: every "frame index jump" line
+    ij = []
+    for l in jl:
+        m = re.search(r'frame index jump: frame=(\d+) count=(\d+) skipped=(\d+) dt_us=(-?\d+) since_first_us=(\d+)', l)
+        if m:
+            ij.append((tid,) + tuple(int(g) for g in m.groups()))
+    # minute bins (the split-need curve): Core CPU, buffer, device ticks per write, temperature, dirty pages
+    bins = []
+    for mnt in range(0, int((float(row.get('seconds') or 0)) // 60) + 1):
+        w = [x for x in rec if mnt * 60 <= float(x['t_s']) - off < (mnt + 1) * 60]
+        if len(w) < 10:
+            continue
+        cpu = [x['core_cpu_pct'] for x in w if x.get('core_cpu_pct') is not None]
+        bu = [100.0 * float(x['buffer_used']) / float(x['buffer_capacity']) for x in w if x.get('buffer_used') not in (None, '') and x.get('buffer_capacity')]
+        tk = None
+        if w[0].get('dev_w_ios') is not None and w[-1].get('dev_w_ios') is not None and w[-1]['dev_w_ios'] > w[0]['dev_w_ios']:
+            tk = round((w[-1]['dev_w_ticks'] - w[0]['dev_w_ticks']) / float(w[-1]['dev_w_ios'] - w[0]['dev_w_ios']), 3)
+        nv = [x['nvme_c'] for x in w if x.get('nvme_c')]
+        dk = [x['dirty_kb'] for x in w if x.get('dirty_kb') is not None]
+        n_est = int(fps * (mnt + 0.5) * 60)
+        bins.append((tid, mnt, round(sum(cpu) / len(cpu), 1) if cpu else None, round(sum(bu) / len(bu), 2) if bu else None, tk,
+                     max(nv) if nv else None, round(sum(dk) / len(dk)) if dk else None, (n_est % fpf) if fpf else n_est))
+    # the walk cost from Core's CPU slope: slope (cores per s) = 5 entries x c x fps^2 in a flat folder
+    sl = _num(row.get('core_cpu_slope'))
+    if sl is not None and not fpf and fps:
+        row['walk_ns_per_entry'] = round(1e9 * sl / (5 * fps * fps), 1)
+    n_end = (files % fpf if fpf else files) or files
+    c_ns = _num(row.get('walk_ns_per_entry')) or WALK_C_PROBE_NS
+    row['walk_share_end_pct'] = round(100 * c_ns * 1e-9 * 5 * (fpf if fpf else n_end) * fps, 1) if files else ''
+    # attribution signature of a late drop (plan section 7, H22): directory / drive state / heat / page cache / capture side
+    row['signature'] = signature(row, bins, sl, fpf) if row.get('first_drop_s') not in ('', None) and float(row.get('seconds') or 0) >= 600 else ''
+    # audio (5a / H11)
+    m = [re.search(r'peak_backlog_kb=(\d+)', l) for l in jl]
+    row['audio_peak_backlog_kb'] = max([int(x.group(1)) for x in m if x] or [0]) if any(m) else ''
+    row['audio_discontinuities'] = sum(1 for l in jl if 'audio discontinuity' in l)
+    ring = next((re.search(r'buffer_frames=(\d+) period_frames=(\d+)', l) for l in jl if 'buffer_frames=' in l), None)
+    row['audio_ring'] = '%s/%s' % ring.groups() if ring else ''
+    # liveness of the client, heat, power, drift columns
+    cl = [x.get('clients') for x in rec if x.get('clients') is not None]
+    row['clients_min'] = min(cl) if cl else ''
+    row['hot_flag'] = 1 if (_num(row.get('nvme_c_max')) or 0) > 75 else 0
+    try:
+        row['throttled_hist'] = subprocess.run(['vcgencmd', 'get_throttled'], capture_output=True, text=True, timeout=5).stdout.strip().split('=')[-1]
+    except (OSError, subprocess.SubprocessError):
+        row['throttled_hist'] = ''
+    row['core_pid'] = CS['core_pid']
+    row['uptime_s'] = int(float((rd('/proc/uptime', '0') or '0').split()[0]))
+    mf = [l for l in open('/proc/meminfo') if l.startswith('MemFree')] if os.path.exists('/proc/meminfo') else []
+    row['memfree_mb'] = int(mf[0].split()[1]) // 1024 if mf else ''
+    bd = [l.split() for l in open('/proc/buddyinfo')] if os.path.exists('/proc/buddyinfo') else []
+    row['buddy_order8'] = sum(int(f[4 + 8]) for f in bd if len(f) > 12)
+    # voids found after the take (plan section 7)
+    if row.get('outcome') not in ('void',) and c.web and row.get('webclient_alive_at_end') == 0:
+        void(row, 'the Pi-local WebUI client died during the take')
+    elif c.web and cl and min(cl) < 1:
+        void(row, 'the WebUI client was not connected for part of the take')
+    elif CS['audio_expected'] and row.get('audio_missing') == 1 and row.get('outcome') not in ('record_start_failed',):
+        void(row, 'audio_missing: no "audio capture" line in the take window')
+    con = cdb(out)
+    try:
+        con.executemany('INSERT INTO boundaries VALUES (?,?,?,?,?,?,?,?,?)', bl)
+        con.executemany('INSERT INTO index_jumps VALUES (?,?,?,?,?,?)', ij)
+        con.executemany('INSERT INTO minute_bins VALUES (?,?,?,?,?,?,?,?)', bins)
+        con.commit()
+    finally:
+        con.close()
+    ledger_add(out, row, clip)
+    # the merge after a long take (User 2026-11-10), before anything else touches the card
+    if clip and os.path.isdir(clip) and fpf and int(row.get('tier_s') or 0) >= MERGE_AFTER_S and row.get('outcome') not in ('void',):
+        merge_and_wait(out, row, clip)
+
+
+def signature(row, bins, slope, fpf):
+    """Plan section 7's pre-registered reading of a late drop, in its order; thresholds are pre-registered choices."""
+    if len(bins) < 6:
+        return 'too short to read'
+    n = len(bins)
+    third = max(1, n // 3)
+    tk1 = [b[4] for b in bins[:third] if b[4]]; tk3 = [b[4] for b in bins[-third:] if b[4]]
+    t1 = sum(tk1) / len(tk1) if tk1 else None; t3 = sum(tk3) / len(tk3) if tk3 else None
+    bu = [b[3] for b in bins]
+    last5 = [x for x in bu[-5:] if x is not None]; before = [x for x in bu[:-5] if x is not None]
+    nv = [b[5] for b in bins]; dk = [b[6] for b in bins]
+    c_ns = (1e9 * slope / (5 * float(row['fps']) ** 2)) if (slope is not None and not fpf) else None
+    if c_ns is not None and 63 <= c_ns <= 133 and t1 and t3 and abs(t3 - t1) / t1 <= 0.15 and len(last5) >= 2 and \
+            (last5[-1] - last5[0]) > 5 * (max(before[-1] - before[0], 0) if len(before) >= 2 else 0):
+        return 'directory (c=%.0f ns/entry, device latency flat)' % c_ns
+    if t1 and t3 and t3 > 1.3 * t1:
+        return 'drive state (ticks per write %.2f -> %.2f)' % (t1, t3)
+    pairs = [(a_, b_[4]) for a_, b_ in zip(nv, bins) if a_ and b_[4]]
+    if len(pairs) >= 6:
+        mx = sum(p[0] for p in pairs) / len(pairs); my = sum(p[1] for p in pairs) / len(pairs)
+        sxx = sum((p[0] - mx) ** 2 for p in pairs); syy = sum((p[1] - my) ** 2 for p in pairs)
+        r = sum((p[0] - mx) * (p[1] - my) for p in pairs) / (sxx * syy) ** 0.5 if sxx and syy else 0
+        if r > 0.7:
+            return 'heat (r=%.2f temperature vs latency)' % r
+    d1 = [x for x in dk[:third] if x is not None]; d3 = [x for x in dk[-third:] if x is not None]
+    if d1 and d3 and sum(d3) / len(d3) > 2 * max(sum(d1) / len(d1), 1):
+        return 'page cache (dirty x%.1f)' % ((sum(d3) / len(d3)) / max(sum(d1) / len(d1), 1))
+    return 'capture side (no storage signature)'
+
+
+def void(row, why):
+    if row.get('outcome') != 'void':
+        row['outcome_raw'] = row.get('outcome')
+    row['outcome'] = 'void'
+    row['void_reason'] = (row.get('void_reason') + '; ' if row.get('void_reason') else '') + why
+
+
+def campaign_pre(out, c, fps, st, row, max_seconds):
+    """Before record_start: WAITING conditions (hold and retry every 2 min, end the night after 30 min) and the void list of
+    plan section 7 / H10. Returns '' (go), 'void' or 'waiting_timeout' / 'stop'."""
+    t0 = time.monotonic()
+    while True:
+        wait = []
+        ff = foreign_folders(out)
+        if ff:
+            wait.append('a folder on the card the database did not create: %s (Patrik moves it; it is never deleted)' % ', '.join(ff)[:200])
+        st2 = state()
+        if st2.get('clip_merge_active'):
+            wait.append('a merge is running (%s)' % st2.get('clip_merge_active'))
+        if not wait:
+            break
+        if time.monotonic() - t0 > 1800:
+            CS['stop'] = 'WAITING for 30 min: ' + '; '.join(wait)
+            return 'waiting_timeout'
+        status(out, 'WAITING: ' + '; '.join(wait))
+        log(out, 'WAITING: ' + '; '.join(wait))
+        for _ in range(24):
+            if STOP['sig']:
+                return 'waiting_timeout'
+            time.sleep(5)
+    bad = []
+    pid = unit_pid('apertar-core')
+    if CS['core_pid'] and pid != CS['core_pid']:
+        bad.append('Core restarted (pid %s -> %s)' % (CS['core_pid'], pid))
+        CS['core_pid'] = pid
+        core('set_clip_merge', enabled=False)       # plan section 7: re-sent after any Core restart, read back by the next check
+        CS['need_warmup'] = True
+    env = proc_environ(pid) if pid else {}
+    if not CS['args'].no_dropin_check:
+        ok_, why_ = fe_depth4(env)
+        if not ok_:
+            CS['stop'] = 'WAITING: re-arm (%s)' % why_
+            return 'stop'
+    if CS['args'].audio_ms and env.get('APERTAR_AUDIO_BUFFER_MS') != str(CS['args'].audio_ms):
+        bad.append('APERTAR_AUDIO_BUFFER_MS=%s, the night wants %s' % (env.get('APERTAR_AUDIO_BUFFER_MS'), CS['args'].audio_ms))
+    row['tune_readback'] = 'env:%s audio_ms:%s' % (env.get('LIBCAMERA_RPI_CONFIG_FILE', '-'), env.get('APERTAR_AUDIO_BUFFER_MS', '-'))
+    cf = card_facts()
+    if CS['serial'] and cf.get('serial') != CS['serial']:
+        CS['stop'] = 'card serial %s, the night started on %s' % (cf.get('serial'), CS['serial'])
+        return 'stop'
+    if ' rw' not in ' ' + cf.get('mount', '').replace(',', ' ') :
+        CS['stop'] = 'the card is not mounted read-write (%s)' % cf.get('mount')
+        return 'stop'
+    for k, want in (('fps_speed_ramp', False), ('ladder_enabled', False), ('storage_preroll_auto', True)):
+        if bool(st.get(k)) != want:
+            bad.append('%s=%s' % (k, st.get(k)))
+    if bool(st.get('clip_merge_enabled')) != bool(getattr(c, 'merge_on', False)):
+        bad.append('clip_merge_enabled=%s' % st.get('clip_merge_enabled'))
+    if CS['tuning'] is not None and st.get('tuning_file') != CS['tuning']:
+        bad.append('tuning_file=%s' % st.get('tuning_file'))
+    ok, why = ui_drawing()
+    if not ok:
+        bad.append('touch UI not drawing (%s)' % why)
+    bs = busy_sessions()
+    if bs:
+        bad.append('login session busy: %s' % '; '.join(bs))
+    if bad:
+        void(row, '; '.join(bad))
+        return 'void'
+    return ''
+
+
+# ---- status, reports -----------------------------------------------------------------------------------------------------------
+def status(out, head, decision=''):
+    if not CS['out']:
+        return
+    rows = load_rows(out)
+    night_rows = [r for r in rows if r.get('night') == CS['night']]
+    hb = rd(out + '/heartbeat', '0') or '0'
+    try:
+        hb_age = int(time.time() - float(hb))
+    except ValueError:
+        hb_age = -1
+    gb_all = sum(float(r.get('gb_written') or 0) for r in rows)
+    arms = load_arms(out)
+    cur = CS.get('current') or {}
+    sm = CS.get('smart_last') or {}
+    L = [head, decision or (CS['decisions'][-1].split('] ', 1)[-1] if CS['decisions'] else ''),
+         'liveness: heartbeat %d s old; runner pid %d; night %s started %s' % (hb_age, os.getpid(), CS['night'],
+                                                                            time.strftime('%H:%M', time.localtime(CS['night_t0'] or time.time()))),
+         'take: %s' % (json.dumps(cur) if cur else '-'),
+         'progress: %d takes this night (%d in the campaign), %.0f GB this night, %.0f GB in all of a %.0f GB budget' % (
+             len(night_rows), len(rows), sum(float(r.get('gb_written') or 0) for r in night_rows), gb_all, BUDGET['gb'] or 0),
+         'card: %s %s; free %.0f GB; smart temp %s C, written %s units, critical_warning %s' % (
+             CS['serial'], '', card_facts().get('free_b', 0) / 1e9, sm.get('temperature_c'), sm.get('data_units_written'), sm.get('critical_warning')),
+         'voids %d, audio faults %d this night%s' % (CS['voids'], CS['audio_faults'], ('; STOP: ' + CS['stop']) if CS['stop'] else ''),
+         '', '## Arms', '']
+    for m_, a_ in arms.items():
+        L.append('- %s: %s' % (m_, ', '.join('%s=%s' % (k, v) for k, v in a_.items() if k != 'cells')
+                               + ('; cells ' + ' '.join('%s:%s' % kv for kv in sorted(a_.get('cells', {}).items())) if a_.get('cells') else '')))
+    L += ['', '## Last 10 takes', '', '| take | stage | fps | tier | outcome | s | dropped | first drop | gap | boundary | merge s | verdict |',
+          '|---|---|---|---|---|---|---|---|---|---|---|---|']
+    for r in rows[-10:]:
+        L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
+            r.get('take_id', '')[-28:], r.get('stage'), r.get('fps'), r.get('tier_s'), r.get('outcome'), r.get('seconds'), r.get('dropped'),
+            r.get('first_drop_s'), r.get('numbering_gap'), r.get('boundary_drops'), r.get('merge_s'), r.get('verdict')))
+    L += ['', '## Decisions (tail)', ''] + ['    ' + d for d in CS['decisions'][-12:]]
+    write_atomic(out + '/status.md', '\n'.join(L) + '\n')
+    write_atomic(out + '/status.json', json.dumps({'head': head, 'decision': decision, 'night': CS['night'], 'current': cur,
+                                                   'take_in_progress': cur.get('take_running', False), 'stop': CS['stop'],
+                                                   'heartbeat_age_s': hb_age, 't': time.time()}, indent=1))
+
+
+def heartbeat(out):
+    def beat():
+        while CS.get('alive'):
+            write_atomic(out + '/heartbeat', '%d\n' % time.time())
+            for _ in range(60):
+                if not CS.get('alive'):
+                    return
+                time.sleep(1)
+    open(out + '/ACTIVE', 'w').write('pid=%d night=%s started=%s\n' % (os.getpid(), CS['night'], time.strftime('%F %T')))
+    CS['alive'] = True
+    threading.Thread(target=beat, daemon=True).start()
+
+
+def load_arms(out):
+    p = out + '/arms.json'
+    try:
+        return json.load(open(p))
+    except (OSError, ValueError):
+        return {}
+
+
+def save_arms(out, arms):
+    write_atomic(out + '/arms.json', json.dumps(arms, indent=1, sort_keys=True))
+
+
+def q(sql, out, args=()):
+    con = cdb(out)
+    try:
+        return list(con.execute(sql, args))
+    finally:
+        con.close()
+
+
+def report(out, nights):
+    """The night's own report (no computer needed): the takes, the fix checks, the merges, the split-need curve."""
+    rows = load_rows(out)
+    nr = [r for r in rows if r.get('night') in nights]
+    L = ['# NVMe campaign report: %s (%s)' % (', '.join(nights), time.strftime('%F %T')), '',
+         'Labels: every number here is measured by the runner on this night unless it says derived. Card %s.' % CS['serial'], '',
+         '## Takes', '', '| take | stage | arm | fps | tier s | outcome | s | dropped | first drop s | numbering gap | boundary drops | '
+         'Core CPU avg | buffer peak % | nvme max C | GB | merge s | verdict |', '|' + '---|' * 17]
+    for r in nr:
+        L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |' % (
+            r.get('take_id', '')[-24:], r.get('stage'), r.get('cfg_id'), r.get('fps'), r.get('tier_s'), r.get('outcome'), r.get('seconds'),
+            r.get('dropped'), r.get('first_drop_s'), r.get('numbering_gap'), r.get('boundary_drops'), r.get('core_cpu_avg'),
+            r.get('buffer_peak_pct'), r.get('nvme_c_max'), r.get('gb_written'), r.get('merge_s'), r.get('verdict')))
+    # fix checks: 8ec2f1a (part folder on the writer) and e298d4a (index jumps), over the whole campaign so far
+    sp = [r for r in rows if str(r.get('split') or '') not in ('', '0', 'None') and r.get('outcome') not in ('void',) and r.get('files')]
+    tb = sum(int(_num(r.get('boundaries_crossed')) or 0) for r in sp)
+    bd = sum(int(_num(r.get('boundary_drops')) or 0) for r in sp)
+    cs_ = sum(int(_num(r.get('copy_slot_drops')) or 0) for r in sp)
+    ijs = sum(int(_num(r.get('index_jumps')) or 0) for r in rows if r.get('index_jumps') not in ('', None))
+    ng = sum(int(_num(r.get('numbering_gap')) or 0) for r in rows)
+    unexpl = [r for r in rows if int(_num(r.get('missing')) or 0) > 0 and int(_num(r.get('numbering_gap')) or 0) == 0]
+    bumps = q('SELECT MAX(buf_max_pct - buf_median_pct), AVG(buf_max_pct - buf_median_pct), COUNT(*) FROM boundaries', out)[0]
+    frames = sum(int(_num(r.get('files')) or 0) for r in sp)
+    L += ['', '## Fix checks (whole campaign so far)', '',
+          '- **8ec2f1a, part folder made on the writer**: %d part boundaries crossed in %d split takes (%d frames); %d drops within %d '
+          'frames after a boundary; %d copy-slot drops in all. The buffer around a boundary (1 s before to 3 s after) rose at most %s '
+          'points above its take median (mean %s, %d boundaries). Expectation if the fix holds: 0 boundary drops, 0 copy-slot drops '
+          '(night 2 on the old binary: 3 copy-slot drops at 1 of ~40 boundaries).' % (
+              tb, len(sp), frames, bd, BOUNDARY_WINDOW, cs_, None if bumps[0] is None else round(bumps[0], 1),
+              None if bumps[1] is None else round(bumps[1], 2), bumps[2] or 0),
+          '- **e298d4a, frame index jump logged and counted**: %d index jumps in Core\'s stats over the campaign; %d takes had a numbering '
+          'gap explained by them (%d frames, no picture lost); %d takes had missing frames NOT explained by index jumps (each is a drop).' % (
+              ijs, sum(1 for r in rows if int(_num(r.get('numbering_gap')) or 0) > 0), ng, len(unexpl))]
+    for r in unexpl[:10]:
+        L.append('  - %s: missing %s, index_jumps %s, frames %s' % (r.get('take_id'), r.get('missing'), r.get('index_jumps'), r.get('drop_frames')))
+    jumps = q('SELECT take_id, frame, skipped, dt_us FROM index_jumps ORDER BY rowid DESC LIMIT 10', out)
+    for j in jumps:
+        L.append('  - jump in %s at frame %d: skipped %d, dt %d us' % j)
+    # merges
+    mg = q('SELECT take_id, clip, files_before, parts_before, merge_s, ms_per_file, eta_err_pct, ok FROM merges ORDER BY rowid', out)
+    L += ['', '## Merges after the long takes (User, 2026-11-10)', '', '| take | clip | frames | parts | merge s | ms per frame | first ETA error % | intact |',
+          '|---|---|---|---|---|---|---|---|']
+    for m_ in mg:
+        L.append('| %s | %s | %s | %s | %s | %s | %s | %s |' % ((m_[0][-24:],) + tuple(m_[1:])))
+    if mg:
+        L.append('')
+        L.append('Model (T7 night 2, derived): 0.1 ms + 0.32 us x files already in the main folder per frame; 45,001 frames in 342 s.')
+    # the split-need curve: flat against split at the same mode and fps
+    L += ['', '## When does 4K need the split (flat vs split, same mode and fps)', '',
+          'Directory walk share of the frame period, derived: s(t) = 5 x c x fps^2 x t (c in s per entry; flat folder); a split at N '
+          'caps it at 5 x c x N x fps. The flat control runs past its first drop (to Core\'s safety stop or the tier length).', '',
+          '| mode | fps | variant | take | outcome | s | first drop s | c ns/entry (CPU slope) | Core CPU min 1 -> last | buffer % last 5 min |',
+          '|---|---|---|---|---|---|---|---|---|---|']
+    long_ = [r for r in rows if int(_num(r.get('tier_s')) or 0) >= 900 and r.get('outcome') not in ('void',)]
+    for r in long_:
+        b = q('SELECT minute, core_cpu, buf_pct FROM minute_bins WHERE take_id=? ORDER BY minute', out, (r['take_id'],))
+        cpu1 = b[1][1] if len(b) > 1 else None
+        cpuN = b[-1][1] if b else None
+        bl5 = [x[2] for x in b[-5:] if x[2] is not None]
+        L.append('| %s | %s | %s | %s | %s | %s | %s | %s | %s -> %s | %s |' % (
+            r.get('mode'), r.get('fps'), 'flat' if str(r.get('split')) == '0' else 'split %s' % r.get('split'), r['take_id'][-24:],
+            r.get('outcome'), r.get('seconds'), r.get('first_drop_s'), r.get('walk_ns_per_entry'), cpu1, cpuN,
+            round(max(bl5), 1) if bl5 else ''))
+    preds = []
+    for r in long_:
+        c_ns = _num(r.get('walk_ns_per_entry'))
+        if str(r.get('split')) == '0' and c_ns and c_ns > 0:
+            for f in (25, 28, 30, 33, 42):
+                preds.append((r.get('mode'), f, round(0.6 / (5 * c_ns * 1e-9 * f * f) / 60, 1)))
+    if preds:
+        L += ['', 'Flat lifetime t* at the 60 % share, from each flat control\'s measured c (derived; the T7 HDR modes failed nearer '
+              '35-40 %, so read these as upper bounds for Clear HDR):', '']
+        for p_ in preds:
+            L.append('- %s at %d fps: %.1f min' % p_)
+    dl = q('SELECT clip, files, parts, cold, budget_s, delete_s FROM deletes ORDER BY rowid DESC LIMIT 10', out)
+    if dl:
+        L += ['', '## Deletes (media route)', ''] + ['- %s: %d frames, %d parts, %s, budget %.0f s, took %.1f s' % (
+            d[0], d[1], d[2], 'cold' if d[3] else 'warm', d[4], d[5]) for d in dl]
+    L += ['', '## Decisions', ''] + ['    ' + d for d in CS['decisions']]
+    path = out + '/report-%s.md' % '-'.join(nights)
+    write_atomic(path, '\n'.join(L) + '\n')
+    return path
+
+
+# ---- the take wrapper of the campaign ------------------------------------------------------------------------------------------
+def planned_bytes(out, c, fps, seconds):
+    """Model bytes per frame (plan section 3), replaced by the arm's measured mean after its first take."""
+    rows = [r for r in load_rows(out) if r.get('mode') == c.key and r.get('comp') == c.comp and str(r.get('log')) == str(c.log)
+            and int(_num(r.get('files')) or 0) > 100 and _num(r.get('gb_written'))]
+    if rows:
+        bpf = sum(float(r['gb_written']) * 1e9 for r in rows) / sum(int(float(r['files'])) for r in rows)
+    else:
+        bpf = FRAME_MB.get((c.key, c.comp, bool(c.log)), mode_size_mb(c.mode) * (0.48 if c.comp != 'none' else 1.0)) * 1e6
+    return bpf * fps * seconds, bpf
+
+
+def arm_cfg(mkey, comp='none', log_=False, tdn=False, web=True, split=SPLIT_DEFAULT):
+    m = [x for x in MODES if x[0] == mkey][0]
+    c = Cfg(m, comp, log_, tdn, False, True, web, split)
+    return c
+
+
+def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False):
+    """One campaign take: resume-safe (a result already recorded under the same key is returned, not re-recorded), the fill gate,
+    the fit limit, the budget, the void/audio repeat rules and the night-stop rules. Returns the row; row['verdict'] is clean, drop,
+    audio, void, stop or skip."""
+    a = CS['args']
+    key0 = '%s|%s|%s|%s|%s' % (stage, c.id, variant, fps, tier_s)
+    CS['seq'][key0] += 1
+    key = '%s|%d' % (key0, CS['seq'][key0])
+    for r in load_rows(out):
+        if r.get('ckey') == key and r.get('verdict') in ('clean', 'drop', 'audio', 'skip'):
+            return r
+    if CS['stop'] or STOP['sig'] or HALT['why']:
+        return {'verdict': 'stop'}
+    secs = tier_s
+    if a.max_seconds:
+        secs = min(secs, a.max_seconds)
+    need, bpf = planned_bytes(out, c, fps, secs)
+    total_b = card_facts().get('free_b', 0) + sum(float(x.get('bytes') or 0) for x in ledger_live(out))
+    fit = 0
+    if need * 1.03 + 10e9 > total_b:
+        secs2 = int((total_b - 10e9) / (1.03 * bpf * fps))
+        decide(out, '%s %s at %s fps: %d s plans %.0f GB, more than the card can hold: fit-limited to %d s' % (stage, c.id, fps, secs, need / 1e9, secs2))
+        secs, fit = max(secs2, 0), 1
+        need = bpf * fps * secs
+    if fit and secs < 30:
+        return {'verdict': 'skip', 'ckey': key}
+    w = fill_gate(out, need * 1.03 + 10e9)
+    if w:
+        CS['stop'] = w
+        return {'verdict': 'stop'}
+    for attempt in (1, 2):
+        sm = smart_record(out)
+        if sm.get('critical_warning'):
+            CS['stop'] = 'smart critical_warning=%s' % sm.get('critical_warning')
+            return {'verdict': 'stop'}
+        if CS['smart0'] and sm.get('data_units_written') and BUDGET['gb'] and \
+                (sm['data_units_written'] - CS['smart0']) * 512000 / 1e9 + need / 1e9 > BUDGET['gb']:
+            CS['stop'] = 'write budget (smart-log) reached'
+            return {'verdict': 'stop'}
+        if CS.get('need_warmup') and variant != 'warmup':
+            CS['need_warmup'] = False
+            warmup(out, c, fps, stage)
+        c.merge_on = merge_on
+        CS['tier_s'] = tier_s
+        CS['current'] = {'stage': stage, 'arm': c.id, 'fps': fps, 'tier_s': secs, 'planned_gb': round(need / 1e9), 'take_running': True,
+                         'expected_end': time.strftime('%H:%M', time.localtime(time.time() + secs + 90))}
+        status(out, 'TAKE RUNNING until about %s: do not touch the Pi (one cat of this file is fine)' % CS['current']['expected_end'])
+        row = run_take(out, c, float(fps), secs, {'gb': 0}, stop_on_drop=stop_on_drop, variant=variant)
+        CS['current'] = {}
+        payload = row.pop('_payload', None)
+        row.update({'night': CS['night'], 'stage': stage, 'ckey': key, 'split': c.split, 'tier_s': tier_s, 'planned_gb': round(need / 1e9, 1),
+                    'fit_limited': fit, 'smart_temp_c': (CS['smart_last'] or {}).get('temperature_c'),
+                    'smart_duw': (CS['smart_last'] or {}).get('data_units_written'),
+                    'takes_since_restart': sum(1 for r in load_rows(out) if r.get('core_pid') == str(CS['core_pid']))})
+        o = row.get('outcome', '')
+        clean = o.startswith('pass') and int(_num(row.get('dropped')) or 0) == 0
+        if o == 'void':
+            CS['voids'] += 1
+            row['verdict'] = 'void'
+        elif o == 'audio_fault':
+            CS['audio_faults'] += 1
+            CS['arm_audio'][c.id] = CS['arm_audio'].get(c.id, 0) + 1
+            row['verdict'] = 'audio'
+        elif clean:
+            row['verdict'] = 'clean'
+        elif o in ('drop', 'buffer_full') or (o.startswith('pass') or o.startswith('ab_')):
+            row['verdict'] = 'drop'
+        elif o in ('waiting_timeout', 'stop'):
+            row['verdict'] = 'stop'
+        else:
+            row['verdict'] = 'stop'
+            CS['stop'] = CS['stop'] or '%s: %s' % (o, row.get('cause_estimate') or row.get('mismatch') or row.get('void_reason'))
+        append_row(out, row)
+        start_ingest(out, row, payload)
+        decide(out, '%s %s %s at %s fps, %s s: %s (%s s, dropped %s, first drop %s, gap %s, boundary %s)%s' % (
+            stage, variant, c.id, fps, secs, o, row.get('seconds'), row.get('dropped'), row.get('first_drop_s'), row.get('numbering_gap'),
+            row.get('boundary_drops'), (' void: ' + row.get('void_reason', '')) if o == 'void' else ''))
+        if HALT['why']:
+            CS['stop'] = CS['stop'] or 'watchdog: ' + HALT['why']
+        if row['verdict'] == 'void':
+            if CS['voids'] >= 2:
+                CS['stop'] = CS['stop'] or 'a second void this night (%s)' % row.get('void_reason')
+                return row
+            continue        # a void is repeated once
+        if row['verdict'] == 'audio':
+            if CS['audio_faults'] >= 2:
+                CS['stop'] = CS['stop'] or 'a second audio fault this night'
+                return row
+            if tier_s >= 900:
+                return row  # a faulted long take is never repeated automatically
+            continue        # repeated once; never steps the fps down
+        return row
+    return row
+
+
+def warmup(out, c, fps, stage):
+    """Plan section 7: an unscored 60-s warm-up after every Core restart, reboot and mode switch."""
+    w = Cfg(c.mode, c.comp, c.log, c.tdn, c.lock, c.trim, c.web, c.split)
+    ctake(out, w, fps, 60, stage, 'warmup', stop_on_drop=False)
+
+
+def cell(out, c, fps, stage):
+    """S2/S3 rule for one cell: 3-min clean + 5-min clean = carried; two concordant 3-min drops = out; 1-1 = a third 3-min take
+    decides; a 5-min drop after a clean 3-min = a third 3-min take, then (clean) a second 5-min take. Returns carried/out/stop and
+    the capacity hint of a buffer_full."""
+    def t(tier):
+        r = ctake(out, c, fps, tier, stage, 'walk')
+        return r.get('verdict'), _num(r.get('capacity_fps')) if r.get('outcome') == 'buffer_full' else None
+    seq = []
+    v1, cap = t(180); seq.append(v1)
+    if v1 in ('stop', 'void', 'audio', 'skip'):
+        return 'stop' if v1 != 'skip' else 'out', cap
+    if v1 == 'clean':
+        v5, cap5 = t(300)
+        if v5 == 'clean':
+            return 'carried', None
+        if v5 != 'drop':
+            return 'stop', None
+        v3, cap = t(180)
+        if v3 != 'clean':
+            return ('out' if v3 == 'drop' else 'stop'), cap or cap5
+        v5b, cap = t(300)
+        return ('carried' if v5b == 'clean' else 'out' if v5b == 'drop' else 'stop'), cap
+    v2, cap2 = t(180)
+    if v2 == 'drop':
+        return 'out', cap2 or cap
+    if v2 != 'clean':
+        return 'stop', None
+    v3, cap3 = t(180)
+    if v3 != 'clean':
+        return ('out' if v3 == 'drop' else 'stop'), cap3
+    v5, cap5 = t(300)
+    return ('carried' if v5 == 'clean' else 'out' if v5 == 'drop' else 'stop'), cap5
+
+
+def walk(out, c, edge, top, floor, stage, arms, akey):
+    """Step 1 from the edge: up while carried, down while out; best = the highest carried fps."""
+    a_ = arms.setdefault(akey, {})
+    cells = a_.setdefault('cells', {})
+    f, direction, best = int(edge), None, a_.get('best')
+    while floor <= f <= top:
+        if CS['stop'] or STOP['sig']:
+            return best
+        v, cap = cell(out, c, f, stage)
+        if v == 'stop':
+            return best
+        cells[str(f)] = v
+        save_arms(out, arms)
+        if v == 'carried':
+            best = max(best or 0, f)
+            a_['best'] = best
+            save_arms(out, arms)
+            if direction == 'down' or f + 1 > top:
+                break
+            direction, f = 'up', f + 1
+        else:
+            if direction == 'up':
+                break
+            direction = 'down'
+            nf = f - 1
+            if cap and int(cap) < nf:
+                decide(out, '%s: buffer_full twice at %d fps, writers carried %.1f fps: next cell %d' % (akey, f, cap, int(cap)))
+                nf = int(cap)
+            f = nf
+    decide(out, '%s: walk ends, best carried fps %s (cells %s)' % (akey, best, ' '.join('%s:%s' % kv for kv in sorted(cells.items()))))
+    return best
+
+
+def mode_top(c):
+    apply_cfg(c, 25)
+    st = state()
+    top = int(float(st.get('fps_take_max') or st.get('fps_max') or 30))
+    MODE_MAX[c.key] = top
+    return min(top, BRACKET_TOP.get(c.key, top))
+
+
+def parse_kv(text):
+    d = {}
+    for part in (text or '').split(','):
+        if '=' in part:
+            k, v = part.split('=', 1)
+            d[k.strip()] = v.strip()
+    return d
+
+
+def meter(out, c, top, stage, arms):
+    """SDR12 (plan section 7): a meter take 5-10 % above the record's clean 42 fps (44, then 46, then 50 while the buffer never
+    filled); capacity from the buffer's slope; the walk's edge = capacity - 1."""
+    for f in (44, 46, 50):
+        f = min(f, top)
+        r = ctake(out, c, f, 60, stage, 'meter', stop_on_drop=False)
+        if r.get('verdict') in ('stop', 'void'):
+            return None
+        cap, how = _num(r.get('capacity_fps')), r.get('capacity_how')
+        decide(out, '%s meter at %d fps: capacity %s (%s), budget %s s of input' % (c.key, f, cap, how, r.get('budget_seconds')))
+        if how != 'at least' or f >= top:
+            break
+    edge = min(top, int(cap) - 1) if cap else 42
+    arms.setdefault(c.key, {})['meter_capacity'] = cap
+    return edge
+
+
+def preroll_capacity(c, fps):
+    """The manual pre-roll (storage_preroll) at the arm's settings: Core's measured fps, the encoder's capacity reading."""
+    apply_cfg(c, fps)
+    r = core('storage_preroll', seconds=5)
+    if not r.get('ok'):
+        return None, str(r.get('error'))
+    for _ in range(120):
+        time.sleep(2)
+        if not state().get('storage_preroll_active'):
+            break
+    last = state().get('storage_preroll_last') or ''
+    m = re.search(r'measured ([\d.]+)', last)
+    return (float(m.group(1)) if m else None), last
+
+
+def s2_night(out, arms):
+    a = CS['args']
+    start = parse_kv(a.start_fps)
+    for mkey in [m for m in a.modes.split(',') if m]:
+        if CS['stop'] or STOP['sig']:
+            return
+        c = arm_cfg(mkey)
+        if mkey in CROPS:
+            win = (arms.get('4kSDR12') or {}).get('best')
+            if not win:
+                decide(out, '%s: no SDR12 winner yet: crop skipped' % mkey)
+                continue
+            top = mode_top(c)
+            f = min(top, win + 1)
+            warmup(out, c, f, 'S2')
+            v, _cap = cell(out, c, f, 'S2')
+            arms.setdefault(mkey, {}).update({'cells': {str(f): v}, 'best': f if v == 'carried' else None, 'note': 'confirmation at the SDR12 winner + 1'})
+            save_arms(out, arms)
+            continue
+        top = mode_top(c)
+        a_ = arms.setdefault(mkey, {})
+        if start.get(mkey) == 'meter':
+            warmup(out, c, min(42, top), 'S2')
+            edge = a_.get('edge') or meter(out, c, top, 'S2', arms)
+            if edge is None:
+                return
+        else:
+            edge = int(float(start.get(mkey) or top))
+            warmup(out, c, edge, 'S2')
+        a_['edge'], a_['top'] = edge, top
+        save_arms(out, arms)
+        walk(out, c, edge, top, 25, 'S2', arms, mkey)
+        if mkey == '4kHDR16' and not a.no_levers:
+            order = parse_kv(a.abba)
+            for lever in ('log', 'web'):
+                lc = arm_cfg(mkey, log_=(lever == 'log'), web=(lever != 'web'))
+                seqs = 'ABBA' if order.get(lever, 'AB') == 'AB' else 'BAAB'
+                for i, x in enumerate(seqs):
+                    if CS['stop'] or STOP['sig']:
+                        return
+                    ctake(out, c if x == 'A' else lc, edge, 180, 'S2', 'abba-%s-%s%d' % (lever, x, i + 1))
+            ctake(out, arm_cfg(mkey, log_=True), min(30, top), 180, 'S2', 'log30')
+            ctake(out, arm_cfg(mkey, tdn=True), 25, 180, 'S2', 'tdn25')
+        for spec in [x for x in a.comp_arms.split(',') if x.split(':')[0] == mkey]:
+            # plan section 5: SDR12 lossless walks if its pre-roll capacity beats the uncompressed edge; HDR16 lossless + Log only
+            # if its pre-roll says > 25 fps (HDR16 lossless alone measured 17.6-18.5 fps: out; Log + lossless made larger files
+            # than lossless alone on the SSD, so SDR12 gets no Log + lossless arm)
+            f_ = (spec.split(':') + ['', '', ''])[:4]
+            comp_, log_, thr = f_[1] or 'lossless_jpeg', f_[2] == 'log', f_[3] or 'edge'
+            lc = arm_cfg(mkey, comp=comp_, log_=log_)
+            cap, txt = preroll_capacity(lc, top)
+            ak = '%s/%s%s' % (mkey, 'lossless' if comp_ == 'lossless_jpeg' else comp_, '+log' if log_ else '')
+            arms.setdefault(ak, {})['preroll'] = txt
+            limit = edge if thr == 'edge' else float(thr)
+            if cap and cap > limit:
+                decide(out, '%s: pre-roll %s, above %s: walked' % (ak, txt, limit))
+                walk(out, lc, min(top, int(cap) - 1), top, 25, 'S2', arms, ak)
+            else:
+                decide(out, '%s: pre-roll %s, not above %s: no walk' % (ak, txt, limit))
+            save_arms(out, arms)
+        ctake(out, c, edge, 180, 'S2', 'ctrl-end')
+        save_arms(out, arms)
+
+
+def long_stage(out, arms, stage, tier, order, src_key, dst_key, steps=2, early_only=False):
+    """S4 (15 min) and S5 (30 min): one take per mode at the source fps; a drop steps down 1 fps and repeats the tier (S5: only an
+    early drop, before minute 10; a late one is recorded, its signature attributed)."""
+    for mkey in order:
+        if CS['stop'] or STOP['sig']:
+            return
+        a_ = arms.get(mkey) or {}
+        fps = a_.get(src_key)
+        if not fps:
+            decide(out, '%s %s: no fps from %s: skipped' % (stage, mkey, src_key))
+            continue
+        c = arm_cfg(mkey)
+        warmup(out, c, fps, stage)
+        for i in range(steps + 1):
+            r = ctake(out, c, fps, tier, stage, 'long%d' % (tier // 60))
+            v = r.get('verdict')
+            a_.setdefault(stage, {})[str(fps)] = v if v != 'drop' else 'drop at %s s (%s)' % (r.get('first_drop_s'), r.get('signature') or '')
+            if v == 'clean':
+                a_[dst_key] = fps
+                break
+            if v != 'drop':
+                break
+            early = float(_num(r.get('first_drop_s')) or _num(r.get('seconds')) or 0) < EARLY_S
+            if early_only and not early:
+                decide(out, '%s %s at %s fps: late drop (%s s, %s): recorded, not repeated' % (stage, mkey, fps, r.get('first_drop_s'), r.get('signature')))
+                break
+            fps -= 1
+            if fps < 25:
+                break
+            decide(out, '%s %s: drop at %s s: the cell %d fps repeats the tier' % (stage, mkey, r.get('first_drop_s'), fps))
+        arms[mkey] = a_
+        save_arms(out, arms)
+
+
+def go_wait(out, stage):
+    """A20 / H12: wait for GO-<stage> (one line: unconditional | if all_passed <stage> | if passed <mode> <stage>), up to 8 h."""
+    p = out + '/GO-' + stage
+    t0 = time.monotonic()
+    while time.monotonic() - t0 < 8 * 3600 and not STOP['sig']:
+        if os.path.exists(p):
+            cond = (open(p).read().strip().splitlines() or [''])[0].strip()
+            ok, why = go_condition(out, cond)
+            if ok:
+                decide(out, 'GO-%s found (%s): %s' % (stage, cond, why))
+                return True
+            status(out, 'WAITING for GO-%s: its condition "%s" is %s' % (stage, cond, why))
+        else:
+            status(out, 'WAITING for GO-%s (place %s with one line: unconditional | if all_passed <stage> | if passed <mode> <stage>)' % (stage, p))
+        time.sleep(60)
+    CS['stop'] = CS['stop'] or 'no GO-%s within 8 h' % stage
+    return False
+
+
+def go_condition(out, cond):
+    arms = load_arms(out)
+    if cond == 'unconditional':
+        return True, 'unconditional'
+    m = re.match(r'if all_passed (S\d)$', cond)
+    if m:
+        st_ = m.group(1)
+        dst = {'S4': 's4_pass', 'S5': 's5_pass'}.get(st_)
+        modes = [k for k in arms if '/' not in k and k not in CROPS]
+        bad = [k for k in modes if not arms[k].get(dst)] if dst else ['?']
+        return (not bad), ('true' if not bad else 'false (%s did not pass %s)' % (', '.join(bad), st_))
+    m = re.match(r'if passed (\S+) (S\d)$', cond)
+    if m:
+        dst = {'S4': 's4_pass', 'S5': 's5_pass', 'S2': 'best'}.get(m.group(2))
+        ok = bool((arms.get(m.group(1)) or {}).get(dst))
+        return ok, 'true' if ok else 'false'
+    return False, 'unparseable'
+
+
+def s6_night(out, arms):
+    """Revision item 1 + R5: one FLAT 30-min control per primary mode at its winning fps, after its split take; run past the first
+    drop (User 2026-11-10: the flat curve says when 4K needs the split). Optional: the merge-ON check (H25)."""
+    a = CS['args']
+    order = [m for m in (a.order or a.modes).split(',') if m and m not in CROPS]
+    fc = parse_kv(a.flat_control)
+    for mkey in order:
+        if CS['stop'] or STOP['sig']:
+            return
+        fps = int(float(fc[mkey])) if mkey in fc else (arms.get(mkey) or {}).get('s5_pass')
+        if not fps:
+            decide(out, 'S6 %s: no 30-min split pass and no --flat-control: no flat control' % mkey)
+            continue
+        c = arm_cfg(mkey, split=0)
+        warmup(out, c, fps, 'S6')
+        r = ctake(out, c, fps, 1800, 'S6', 'flat30', stop_on_drop=False)
+        arms.setdefault(mkey, {})['s6_flat'] = '%s at %s fps: %s, first drop %s s, c %s ns/entry' % (
+            r.get('verdict'), fps, r.get('outcome'), r.get('first_drop_s'), r.get('walk_ns_per_entry'))
+        save_arms(out, arms)
+    if a.merge_check:
+        mk, f = list(parse_kv(a.merge_check).items())[0]
+        c = arm_cfg(mk)
+        r = ctake(out, c, int(float(f)), 1800, 'S6', 'merge-src', stop_on_drop=True)
+        decide(out, 'S6 merge check: the 30-min split source clip %s is merged automatically after it; the 3-min take during the merge '
+               'is not built yet (H25)' % r.get('clip'))
+
+
+def s1_direct(out, gb, max_s=0, label='direct'):
+    """H24: one single-stream direct write (dd oflag=direct bs=16M) with progress and temperature at 1 Hz; the file is a database
+    deletable removed right after (the one os.unlink exception of the plan)."""
+    path = os.path.join(MEDIA, 's1_%s_%s.bin' % (label, time.strftime('%Y%m%d-%H%M%S')))
+    n = int(gb * 1e9 / (16 * 2**20))
+    t0 = time.monotonic()
+    p = subprocess.Popen(['dd', 'if=/dev/zero', 'of=' + path, 'bs=16M', 'count=%d' % n, 'oflag=direct', 'status=progress'],
+                         stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    last = {'b': 0}
+
+    def reader():
+        buf = b''
+        while True:
+            ch = p.stderr.read(64)
+            if not ch:
+                return
+            buf += ch
+            for part in re.split(rb'[\r\n]', buf)[:-1]:
+                m = re.match(rb'\s*(\d+) bytes', part)
+                if m:
+                    last['b'] = int(m.group(1))
+            buf = re.split(rb'[\r\n]', buf)[-1]
+    threading.Thread(target=reader, daemon=True).start()
+    rows, prev = [], (0.0, 0)
+    while p.poll() is None:
+        time.sleep(1)
+        el = time.monotonic() - t0
+        b = last['b']
+        mbps = (b - prev[1]) / max(el - prev[0], 0.1) / 1e6
+        prev = (el, b)
+        w_ios, _s, w_ticks, _i = dev_stat(DEV['disk'])
+        rows.append((label, round(el, 1), b, round(mbps, 1), int(rd(NVME_TEMP, '0')) / 1000 if NVME_TEMP else None, w_ticks, w_ios))
+        if max_s and el >= max_s:
+            p.terminate()
+    el = time.monotonic() - t0
+    size = os.path.getsize(path) if os.path.exists(path) else 0
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
+    con = cdb(out)
+    try:
+        con.executemany('INSERT INTO s1_samples VALUES (?,?,?,?,?,?,?)', rows)
+        con.commit()
+    finally:
+        con.close()
+    rate = size / el / 1e6 if el else 0
+    tmax = max([r_[4] for r_ in rows if r_[4]] or [0])
+    decide(out, 'S1 %s write: %.1f GB in %.0f s = %.0f MB/s (min 10-s window %.0f MB/s), NVMe max %.0f C; file deleted' % (
+        label, size / 1e9, el, rate, min([sum(r_[3] for r_ in rows[i:i + 10]) / 10 for i in range(0, max(len(rows) - 10, 1))] or [0]), tmax))
+    return rate
+
+
+def s1_night(out):
+    a = CS['args']
+    if not fill_gate(out, 120e9) == '':
+        return
+    rate = s1_direct(out, 60, 0, 'direct60')
+    probe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'exfat_write_probe.py')
+    for extra in ([], ['--workers', '1'], ['--prealloc'], ['--fsync', 'none'], ['--direct'], ['--subdir', '5000']):
+        if CS['stop'] or STOP['sig']:
+            return
+        r = subprocess.run([sys.executable, '-I', probe, '--size-mb', '16.6', '--files', '300', '--out', out + '/s1'] + extra,
+                           capture_output=True, text=True)
+        tail = [l for l in r.stdout.splitlines() if l.strip()][-1:] or ['(no output)']
+        decide(out, 'S1 matrix %s: %s' % (' '.join(extra) or 'default', tail[0][:200]))
+    if a.paced:
+        for extra in ([], ['--subdir', '5000']):
+            r = subprocess.run([sys.executable, '-I', probe, '--size-mb', '1', '--fps', '42', '--seconds', '1800', '--budget-mb', '800',
+                                '--out', out + '/s1'] + extra, capture_output=True, text=True)
+            tail = [l for l in r.stdout.splitlines() if l.strip()][-1:] or ['(no output)']
+            decide(out, 'S1 paced 42 files/s %s: %s' % (' '.join(extra) or 'flat', tail[0][:200]))
+    s1_direct(out, 50, 60, 'state60')
+    sess = json.load(open(out + '/session.json'))
+    sess['s1_direct_mbps'] = round(rate)
+    json.dump(sess, open(out + '/session.json', 'w'), indent=1)
+
+
+def end_night(out):
+    """The end of a part: every campaign clip deleted through the media route, one fstrim, the folders the database did not make
+    left as they are and listed."""
+    for c in ledger_live(out):
+        w = delete_clip(out, c)
+        if w:
+            decide(out, 'END: %s' % w)
+    rc, txt = helper('fstrim', 1800)
+    decide(out, 'END: fstrim rc=%s %s' % (rc, txt.splitlines()[-1][:160] if txt else ''))
+    ff = foreign_folders(out)
+    if ff:
+        decide(out, 'END: left as found (not the campaign\'s): %s' % ', '.join(ff))
+
+
+def smoke_night(out):
+    a = CS['args']
+    mkey = [m for m in a.modes.split(',') if m][0]
+    c = arm_cfg(mkey, split=a.smoke_split)
+    fps = int(float(parse_kv(a.start_fps).get(mkey) or 25)) if parse_kv(a.start_fps).get(mkey) != 'meter' else 25
+    r = ctake(out, c, fps, MERGE_AFTER_S, 'SMOKE', 'smoke')     # tier 900 so the merge-after path runs; --max-seconds caps it
+    decide(out, 'SMOKE: %s, %s frames, buffer peak %s %%, index_jumps %s, boundaries %s, merge %s s ok=%s' % (
+        r.get('outcome'), r.get('files'), r.get('buffer_peak_pct'), r.get('index_jumps'), r.get('boundaries_crossed'),
+        r.get('merge_s'), r.get('merge_ok')))
+    if a.smoke_delete:
+        for cl in ledger_live(out):
+            if cl['take_id'] == r.get('take_id'):
+                decide(out, 'SMOKE: delete of its clip: %s' % (delete_clip(out, cl) or 'ok'))
+
+
+CROPS = set()
+
+
+def campaign_main(a, out):
+    """--stages N: the nights of the NVMe campaign. Returns the reason the night ended."""
+    CAMPAIGN.update({'on': True, 'pre': campaign_pre, 'post': campaign_post})
+    CS.update({'out': out, 'night': a.night, 'args': a, 'night_t0': time.time(), 'boot': boot_id(), 'preserve': set(a.preserve.split(',')) - {''}})
+    con = cdb(out); con.close()
+    heartbeat(out)
+    nights = [n for n in a.night.split(',') if n]
+    cf = card_facts()
+    CS['serial'] = cf.get('serial', '')
+    CS['core_pid'] = unit_pid('apertar-core')
+    st0 = state()
+    CS['tuning'] = st0.get('tuning_file')
+    aud = ui_audio()
+    CS['audio_expected'] = aud.get('record_audio_enabled') is not False
+    found = {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log', 'preview_tdn', 'fps_phase_lock',
+                                     'fps_speed_ramp', 'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled',
+                                     'frames_per_folder', 'clip_merge_enabled', 'tuning_file')}
+    np_ = out + '/night-%s.json' % '-'.join(nights)
+    if not os.path.exists(np_):
+        json.dump({'found': found, 'audio': aud, 'card': cf, 'boot_id': CS['boot'], 'core_pid': CS['core_pid'],
+                   'core_exe_mtime': os.path.getmtime('/proc/%d/exe' % CS['core_pid']) if CS['core_pid'] else None,
+                   'core_commit': subprocess.run(['git', '-C', os.path.expanduser('~/ApertarCore'), 'log', '--oneline', '-1'],
+                                                 capture_output=True, text=True).stdout.strip(),
+                   'cpu_serial': next((l.split(':')[1].strip() for l in open('/proc/cpuinfo') if l.startswith('Serial')), ''),
+                   'kernel': os.uname().release, 'cmdline': rd('/proc/cmdline', ''), 'started': time.strftime('%F %T')},
+                  open(np_, 'w'), indent=1)
+    found = json.load(open(np_))['found']
+    sess = json.load(open(out + '/session.json'))
+    if a.expect_serial and CS['serial'] != a.expect_serial:
+        return 'STOP: card serial %s, expected %s (a T7 or any other medium = stop)' % (CS['serial'], a.expect_serial)
+    if 'MP600' not in cf.get('model', '').upper().replace(' ', '') and 'MP600' not in cf.get('model', '').upper():
+        return 'STOP: the medium is %r, not a Corsair MP600 Mini' % cf.get('model')
+    rel = tuple(int(x) for x in re.findall(r'\d+', os.uname().release)[:2])
+    if rel >= (6, 18) and 'nvme.sgl_threshold=0' not in (rd('/proc/cmdline', '') or ''):
+        return 'STOP: kernel %s without nvme.sgl_threshold=0 (the 6.18.y NVMe corruption bug)' % os.uname().release
+    if not a.no_dropin_check:
+        ok_, why_ = fe_depth4(proc_environ(CS['core_pid']) if CS['core_pid'] else {})
+        if not ok_:
+            return 'WAITING: re-arm: %s' % why_
+    sm = smart_record(out)
+    if 'smart0' not in sess and sm.get('data_units_written'):
+        sess['smart0'] = {'serial': CS['serial'], 'data_units_written': sm['data_units_written'], 't': time.strftime('%F %T')}
+        json.dump(sess, open(out + '/session.json', 'w'), indent=1)
+    if (sess.get('smart0') or {}).get('serial') == CS['serial']:
+        CS['smart0'] = sess['smart0']['data_units_written']
+    rc, txt = helper('timers-mask', 120)
+    decide(out, 'night %s start: card %s %s fw %s, free %.0f GB; Core pid %s; drop-in %s; timers-mask rc=%s; smart %s' % (
+        a.night, cf.get('model'), CS['serial'], cf.get('firmware_rev'), cf.get('free_b', 0) / 1e9, CS['core_pid'],
+        'checked' if not a.no_dropin_check else 'NOT checked (--no-dropin-check)', rc,
+        'temp %s C' % sm.get('temperature_c') if 'error' not in sm else sm['error'][:80]))
+    core('set_mode_ladder', enabled=False)
+    core('set_clip_merge', enabled=False)
+    core('set_fps_speed_ramp', enabled=False)
+    st1 = state()
+    decide(out, 'fixed state: ladder %s, merge %s, frames_per_folder %s, speed ramp %s, pre-roll %s (%s)' % (
+        st1.get('ladder_enabled'), st1.get('clip_merge_enabled'), st1.get('frames_per_folder'), st1.get('fps_speed_ramp'),
+        st1.get('storage_preroll_auto'), st1.get('storage_preroll_last')))
+    arms = load_arms(out)
+    CS['need_warmup'] = False
+    try:
+        for i, n in enumerate(nights):
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                break
+            if os.path.exists(out + '/DONE-' + n):
+                decide(out, 'stage %s already done: skipped' % n)
+                continue
+            if i:
+                idle(out, a.idle_between, 'drive recovery between runs')
+            if n in GO_STAGES and not a.no_go and not go_wait(out, n):
+                break
+            status(out, 'STAGE %s starting' % n)
+            if n == 'SMOKE':
+                smoke_night(out)
+            elif n == 'S1':
+                s1_night(out)
+            elif n == 'S2':
+                s2_night(out, arms)
+            elif n == 'S4':
+                long_stage(out, arms, 'S4', 900, [m for m in ('4kHDR16', '4kSDR12', '4kHDR12') if m in a.modes.split(',')],
+                           'best', 's4_pass', steps=2)
+            elif n == 'S5':
+                long_stage(out, arms, 'S5', 1800, [m for m in (a.order or a.modes).split(',') if m and m not in CROPS],
+                           's4_pass', 's5_pass', steps=1, early_only=True)
+            elif n == 'S6':
+                s6_night(out, arms)
+            elif n == 'PARTB':
+                s1_direct(out, 60, 0, 'knee60')
+                long_stage(out, arms, 'PARTB', 1800, ['4kHDR16'], 's5_pass', 'partb_pass_' + CS['serial'], steps=0)
+                long_stage(out, arms, 'PARTB', 900, ['4kSDR12'], 's4_pass', 'partb15_pass_' + CS['serial'], steps=0)
+            elif n == 'END':
+                end_night(out)
+            if not (CS['stop'] or STOP['sig'] or HALT['why']):
+                write_atomic(out + '/DONE-' + n, time.strftime('%F %T') + ' done\n')
+                decide(out, 'stage %s done' % n)
+    finally:
+        why = CS['stop'] or (('stopped by ' + STOP['sig']) if STOP['sig'] else '') or HALT['why'] or 'all stages of the night done'
+        if CS['stop'] or HALT['why']:
+            try:
+                k = subprocess.run(['journalctl', '-k', '-b', '-n', '300', '--no-pager', '-o', 'short-iso'], capture_output=True,
+                                   text=True, timeout=60).stdout
+                write_atomic(out + '/kernel-%s.log' % '-'.join(nights), k)
+            except (OSError, subprocess.SubprocessError):
+                pass
+        restore_night(out, found, nights, why)
+        p = report(out, nights)
+        CS['alive'] = False
+        try:
+            os.unlink(out + '/ACTIVE')
+        except OSError:
+            pass
+        status(out, 'NIGHT OVER (%s): safe to read; report %s' % (why, os.path.basename(p)))
+    return why
+
+
+def restore_night(out, found, nights, why):
+    """The restore list (plan section 7 with revision item 7), read back and written to restore-<night>.txt; the power-off watcher
+    powers the Pi off only when the file says RESTORE OK."""
+    ow, oh = (found.get('resolution') or '3840x2160').split('x')
+    core('set_record_format', value=found.get('recording_format') or 'cdng')
+    for cmd, kw in (('set_clear_hdr', {'enabled': bool(found.get('clear_hdr', True))}),
+                    ('set_resolution', {'width': int(ow), 'height': int(oh)}),
+                    ('set_raw_bit_depth', {'value': 12 if found.get('raw_bit_depth') == 16 else 16}),
+                    ('set_raw_bit_depth', {'value': found.get('raw_bit_depth') or 16}),
+                    ('set_cdng_compression', {'value': found.get('cdng_compression') or 'none'}),
+                    ('set_cdng_log', {'value': found.get('cdng_log') or 'off'}),
+                    ('set_preview_tdn', {'enabled': bool(found.get('preview_tdn'))}),
+                    ('set_fps_phase_lock', {'enabled': bool(found.get('fps_phase_lock'))}),
+                    ('set_media_trim', {'enabled': True}),
+                    ('set_fps_speed_ramp', {'enabled': bool(found.get('fps_speed_ramp'))}),
+                    ('set_fps', {'value': float(found.get('fps') or 25)}),
+                    ('set_frames_per_folder', {'value': SPLIT_DEFAULT}),
+                    ('set_clip_merge', {'enabled': True}),
+                    ('set_mode_ladder', {'enabled': bool(found.get('ladder_enabled'))})):
+        core(cmd, **kw)
+        time.sleep(4 if cmd in ('set_clear_hdr', 'set_resolution', 'set_raw_bit_depth') else 0.3)
+    settle()
+    st = state()
+    want = dict(found)
+    want.update({'frames_per_folder': SPLIT_DEFAULT, 'clip_merge_enabled': True})
+    bad = ['%s=%s (want %s)' % (k, st.get(k), v) for k, v in want.items() if k != 'tuning_file' and str(st.get(k)) != str(v)]
+    rc, txt = helper('timers-unmask', 120)
+    lines = ['night %s ended: %s' % (','.join(nights), why), time.strftime('%F %T'),
+             'read back: ' + ', '.join('%s=%s' % (k, st.get(k)) for k in want),
+             'timers-unmask rc=%s' % rc, 'merge pending %s' % st.get('clip_merge_pending'),
+             'RESTORE OK' if not bad else 'RESTORE INCOMPLETE: ' + '; '.join(bad)]
+    write_atomic(out + '/restore-%s.txt' % '-'.join(nights), '\n'.join(lines) + '\n')
+    decide(out, lines[-1])
+
+
+def plan_only(a):
+    """--dry-run with --stages N (B6 / H21): the planned takes per stage with bytes and minutes, from the model sizes. Runs on the Mac."""
+    print('NVMe campaign plan (model sizes, plan section 3; the runner replaces them with each arm\'s measured mean after its first take)')
+    card = 990e9
+    print('card usable ~%.0f GB; fill gate: free >= planned x 1.03 + 10 GB; split %d frames per folder; merge after tiers >= %d s' % (
+        card / 1e9, SPLIT_DEFAULT, MERGE_AFTER_S))
+    start = parse_kv(a.start_fps)
+    for mkey in [m for m in a.modes.split(',') if m]:
+        m = [x for x in MODES if x[0] == mkey][0]
+        bpf = FRAME_MB.get((mkey, 'none', False), mode_size_mb(m))
+        f = start.get(mkey, '?')
+        ff = 44 if f == 'meter' else int(float(f)) if f not in ('?', '') else 25
+        print('%-9s %5.2f MB/frame; start %s; at %d fps: 3 min %4.0f GB, 5 min %4.0f GB, 15 min %4.0f GB, 30 min %4.0f GB '
+              '(30 min needs %4.0f GB with the margin%s); flat walk share at 30 min (c=%.1f ns) %.0f %%, split %.1f %%' % (
+                  mkey, bpf, f, ff, bpf * ff * 180 / 1e3, bpf * ff * 300 / 1e3, bpf * ff * 900 / 1e3, bpf * ff * 1800 / 1e3,
+                  bpf * ff * 1800 / 1e3 * 1.03 + 10, '; fit-limited' if bpf * ff * 1800 * 1.03e6 + 10e9 > card else '',
+                  WALK_C_PROBE_NS, 100 * 5 * WALK_C_PROBE_NS * 1e-9 * ff * ff * 1800, 100 * 5 * WALK_C_PROBE_NS * 1e-9 * SPLIT_DEFAULT * ff))
+    print('nights: %s; GO sentinels before %s; idle %d s between stages; budget %.0f GB' % (
+        a.night, ', '.join(x for x in a.night.split(',') if x in GO_STAGES) or '-', a.idle_between, a.budget_gb))
 
 
 def main():
@@ -1687,7 +3301,43 @@ def main():
     ap.add_argument('--split-frames', type=int, default=5000, help='frames_per_folder value for the knob A/B (stage k)')
     ap.add_argument('--long-fps', type=float, default=0, help='fps of the long instrumented take (0 = 0.9 x the metered capacity)')
     ap.add_argument('--long-seconds', type=int, default=1800, help='length of the long, split, MLV, knob and soak takes')
+    # NVMe 4K campaign (--stages N; plan nvme-campaign/plan.md, revision 2026-11-10)
+    ap.add_argument('--night', default='', help='N: the stages of this night, comma list of %s (e.g. S2, or S4,S5, or S6,END)' % ','.join(NIGHT_STAGES))
+    ap.add_argument('--start-fps', default='4kHDR16=28,4kSDR12=meter,4kHDR12=30', help='N: walk start per mode (fps or meter)')
+    ap.add_argument('--tiers', default='180,300,900,1800', help='N: the tier ladder (fixed by the plan; recorded only)')
+    ap.add_argument('--abba', default='log=AB,web=AB', help='N: per lever AB = baseline first (ABBA), BA = lever first (the die roll)')
+    ap.add_argument('--comp-arms', default='4kSDR12:lossless_jpeg::edge,4kHDR16:lossless_jpeg:log:25',
+                    help='N, S2 (plan section 5): mode:compression:log:threshold; the arm is read with the manual pre-roll and walked only '
+                         'if Core measured more than the threshold (edge = the uncompressed edge of the mode)')
+    ap.add_argument('--crop-modes', default='', help='N: crop modes key=WxH:bits[:hdr], e.g. 4kC185=3840x2076:12,4kC239=3840x1608:12 (S0 probe)')
+    ap.add_argument('--order', default='', help='N: mode order of S5/S6/Part B (the pre-registered die roll); default --modes')
+    ap.add_argument('--flat-control', default='', help='N, S6 (R5): mode=fps of the flat 30-min controls; default each mode\'s S5 pass')
+    ap.add_argument('--merge-check', default='', help='N, S6 (H25): mode=fps for the merge-on real-use check')
+    ap.add_argument('--no-levers', action='store_true', help='N, S2: skip the HDR16 lever block (ABBA Log and WebUI, Log 30, TDN 25)')
+    ap.add_argument('--no-go', action='store_true', help='N: do not wait for GO-<stage> sentinels (smoke tests only)')
+    ap.add_argument('--no-dropin-check', action='store_true', help='N: do not require FE depth 4 in Core\'s environment (smoke tests only)')
+    ap.add_argument('--expect-serial', default='A936B442006AC2', help='N: the campaign card (any other medium = stop)')
+    ap.add_argument('--preserve', default='', help='N, SMOKE only: comma list of clip folders on the card that are Patrik\'s (never touched)')
+    ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
+    ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
+    ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
+    ap.add_argument('--audio-ms', type=int, default=0, help='N: the APERTAR_AUDIO_BUFFER_MS the night expects in Core\'s environment (0 = not set)')
+    ap.add_argument('--paced', action='store_true', help='N, S1: the paced small-file probe pair (1 MB files at 42 files/s, 30 min, flat and split)')
     a = ap.parse_args()
+    for spec in [x for x in a.crop_modes.split(',') if x]:
+        k, v = spec.split('=', 1)
+        geo, bits = v.split(':')[:2]
+        w_, h_ = geo.split('x')
+        MODES.append((k, int(w_), int(h_), int(bits), v.endswith(':hdr')))
+        CROPS.add(k)
+    if 'N' in a.stages:
+        if a.preserve and 'SMOKE' not in a.night.split(','):
+            sys.exit('--preserve is for the SMOKE night only: Patrik offloads his footage before S0 (plan section 6)')
+        bad = [n for n in a.night.split(',') if n and n not in NIGHT_STAGES]
+        if not a.night or bad:
+            sys.exit('--stages N needs --night with stages from %s (got %r)' % (','.join(NIGHT_STAGES), a.night))
+        if not a.modes:
+            sys.exit('--stages N needs --modes (A2), e.g. 4kHDR16,4kSDR12,4kHDR12')
     GATE['on'] = not a.no_gate
     GATE['timeout_s'] = int(a.gate_timeout_h * 3600)
     BUDGET['gb'] = a.budget_gb
@@ -1703,6 +3353,9 @@ def main():
     excl = [m for m in MODES if m not in inc]
     n_base = len(inc)
     n_d1 = sum(1 for c in cfgs if c.distance() == 1)
+    if a.dry_run and 'N' in a.stages:
+        plan_only(a)
+        return
     if a.dry_run:
         for m in MODES:
             print('%-8s %5.2f MB/frame  %4.0f MB/s at %d fps (%3.0f%% of %.0f)  storage cap %d fps  %s' % (
@@ -1713,7 +3366,7 @@ def main():
                   n_base, n_d1, len(cfgs) - n_base - n_d1))
         print('A/B variants:', ', '.join(v for v, _ in AB_VARIANTS))
         return
-    if os.path.exists(out + '/DONE'):
+    if os.path.exists(out + '/DONE') and 'N' not in a.stages:
         sys.exit('this campaign already ended (%s): remove %s/DONE to run it again' % (open(out + '/DONE').read().strip()[:200], out))
     inst = open(out + '/.instance.lock', 'a+')      # one runner per --out: the crontab resume must not start a second one
     try:
@@ -2287,6 +3940,10 @@ def main():
                     bracket(c, best_fps, secs, label, rows_all)
 
     try:
+        if 'N' in a.stages:
+            stop['why'] = campaign_main(a, out)
+            log(out, 'night %s over: %s' % (a.night, stop['why']))
+            return
         if a.fix_budget:
             try:
                 rec = set_storage_keys(HWCONF, {'buffer_ram_fraction': '0.9', 'buffer_ram_floor_mb': '256'}, out)
@@ -2325,47 +3982,51 @@ def main():
             soak_stage()
     except Exception as e:
         stop['why'] = 'crashed: %r' % e
-        log(out, 'ERROR: the runner crashed: %r' % e)
+        import traceback
+        log(out, 'ERROR: the runner crashed: %r\n%s' % (e, traceback.format_exc()))
         raise
     finally:
         release_lock()
-        try:
-            if restore_storage_keys(HWCONF, out):
-                log(out, 'put the [storage] keys of %s back as they were' % HWCONF)
-        except (OSError, ValueError) as e:
-            log(out, 'WARNING: could not restore the [storage] keys of %s: %s' % (HWCONF, e))
-        try:
-            restore_knobs()
-        except Exception as e:
-            log(out, 'WARNING: could not restore the knobs: %s' % e)
-        core('set_record_format', value=orig.get('recording_format') or 'cdng')
-        try:
-            set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on
-        except Exception as e:
-            log(out, 'WARNING: could not restore the tuning override: %s' % e)
-        ow, oh = (orig.get('resolution') or '3840x2160').split('x')
-        for cmd, kw in (('set_clear_hdr', {'enabled': bool(orig.get('clear_hdr', True))}),
-                        ('set_resolution', {'width': int(ow), 'height': int(oh)}),
-                        ('set_preview_tdn', {'enabled': bool(orig.get('preview_tdn'))}),
-                        ('set_fps_phase_lock', {'enabled': bool(orig.get('fps_phase_lock'))}),
-                        ('set_media_trim', {'enabled': True}),
-                        ('set_cdng_compression', {'value': orig.get('cdng_compression') or 'none'}),
-                        ('set_raw_bit_depth', {'value': orig.get('raw_bit_depth') or 16}),
-                        ('set_fps_speed_ramp', {'enabled': bool(orig.get('fps_speed_ramp'))}),
-                        ('set_fps', {'value': float(orig.get('fps') or 25)})):
-            core(cmd, **kw)
-        join_ingest()
-        orig_fmt = (json.load(open(out + '/session.json')).get('audio_original') or {}).get('audio_sample_format')
-        if orig_fmt and orig_fmt != 'auto':
-            core('set_audio_capture_options', format=orig_fmt)
-        log(out, 'campaign ended (settings restored except Log, which stays as last set)')
-        if STOP['sig']:
-            log(out, 'stopped by %s: no DONE marker, so a crontab @reboot resume continues this run' % STOP['sig'])
+        if CAMPAIGN['on']:
+            join_ingest()       # the campaign restored its own list (restore_night) and writes DONE-<stage> markers
         else:
-            why = stop['why'] or ('all stages done' if not stop['now'] else 'stopped, see runner.log')
-            with open(out + '/DONE', 'w') as f:
-                f.write(time.strftime('%F %T ') + why + '\n')
-            log(out, 'DONE marker written (%s): a resume will not restart this run; remove %s/DONE to run it again' % (why, out))
+            try:
+                if restore_storage_keys(HWCONF, out):
+                    log(out, 'put the [storage] keys of %s back as they were' % HWCONF)
+            except (OSError, ValueError) as e:
+                log(out, 'WARNING: could not restore the [storage] keys of %s: %s' % (HWCONF, e))
+            try:
+                restore_knobs()
+            except Exception as e:
+                log(out, 'WARNING: could not restore the knobs: %s' % e)
+            core('set_record_format', value=orig.get('recording_format') or 'cdng')
+            try:
+                set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on
+            except Exception as e:
+                log(out, 'WARNING: could not restore the tuning override: %s' % e)
+            ow, oh = (orig.get('resolution') or '3840x2160').split('x')
+            for cmd, kw in (('set_clear_hdr', {'enabled': bool(orig.get('clear_hdr', True))}),
+                            ('set_resolution', {'width': int(ow), 'height': int(oh)}),
+                            ('set_preview_tdn', {'enabled': bool(orig.get('preview_tdn'))}),
+                            ('set_fps_phase_lock', {'enabled': bool(orig.get('fps_phase_lock'))}),
+                            ('set_media_trim', {'enabled': True}),
+                            ('set_cdng_compression', {'value': orig.get('cdng_compression') or 'none'}),
+                            ('set_raw_bit_depth', {'value': orig.get('raw_bit_depth') or 16}),
+                            ('set_fps_speed_ramp', {'enabled': bool(orig.get('fps_speed_ramp'))}),
+                            ('set_fps', {'value': float(orig.get('fps') or 25)})):
+                core(cmd, **kw)
+            join_ingest()
+            orig_fmt = (json.load(open(out + '/session.json')).get('audio_original') or {}).get('audio_sample_format')
+            if orig_fmt and orig_fmt != 'auto':
+                core('set_audio_capture_options', format=orig_fmt)
+            log(out, 'campaign ended (settings restored except Log, which stays as last set)')
+            if STOP['sig']:
+                log(out, 'stopped by %s: no DONE marker, so a crontab @reboot resume continues this run' % STOP['sig'])
+            else:
+                why = stop['why'] or ('all stages done' if not stop['now'] else 'stopped, see runner.log')
+                with open(out + '/DONE', 'w') as f:
+                    f.write(time.strftime('%F %T ') + why + '\n')
+                log(out, 'DONE marker written (%s): a resume will not restart this run; remove %s/DONE to run it again' % (why, out))
 
 
 def collections_count(rows, cfg_id):
