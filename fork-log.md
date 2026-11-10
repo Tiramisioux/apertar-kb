@@ -195,6 +195,7 @@ Core `f4a1393..ba0658d` (then `..01f170c`, the two verify fixes), UI `7029db1..7
 | `b755383` | WebUI: grey merge bars (current clip, all clips) in the Media card; thin grey bar and "Merging N clips · about X min" on the Storage tile; grey fill in the READY pill while idle; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, Core restarted on it; not watched in a browser yet |
 | `8ec2f1a` | Split take: the part folder's mkdir moves from the copy worker to the DNG writer (SSD night 2: 3 copy-slot drops at the part_008 boundary) | fork-only; Pi `clip-split` (Mac worktree `09243e5`, `4b827e7`), built 2026-11-10, not tried |
 | `e298d4a` | Log "frame index jump" when the time index runs ahead of the count; `index_jumps=` in the recording stats (SSD night 2: a numbering gap with every counter at 0) | fork-only; Pi `clip-split` (Mac worktree `09243e5`, `4b827e7`), built 2026-11-10, not tried |
+| `7e6e2a3` | Keep the DNG queue stopping while writers left behind on a 'gone' medium still run (a slow writer otherwise never returned and every take was refused until a Core restart); Pi branch `clip-split` | fork-only; Pi only; offer; built 2026-11-10, stall path not exercised |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 

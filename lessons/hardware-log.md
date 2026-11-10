@@ -1042,3 +1042,34 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   bus 1, 30 ms, ~570 interrupts/s on CPU0) matters at all.
 - Confirmed by: Patrik ("all of the above", after the two clean takes).
 - Tutorial: none.
+
+## 2026-11-10: the touch UI leaked 48 preview dmabuf fds per camera reconfigure; after ~19 the takes had no sound (UI `25eeb47`)
+
+- Tested: NVMe campaign night 1 (Core `e298d4a`, UI `181a1e1`, branch `clip-split`), HDR16/SDR12 takes with a 12/16-bit
+  switch before each; then the fixed UI over the day run (14 takes, ~28 reconfigures) and 8 bit-depth switches by hand.
+- Seen: old UI: dmabuf fds 48 -> 144 -> 192 (+48 per 2 reconfigures; all `videobuf2_dma_contig` 1280x720 preview
+  buffers), soft limit 1024; on night 1 at 03:56 `MESA: error: Failed to export gem bo to dmabuf` began (~2000 lines a
+  minute) and the next two 5-min takes had no `audio capture` line and no WAV, `record_start` OK. Fixed UI: 48 -> 72, then
+  flat; sound in all 14 day-run takes; no MESA line.
+- Why: `PreviewWindowRenderer` caches each imported buffer (EGLImage, texture, dup()ed fds) by dmabuf inode and pruned it
+  only on a preview layout change; a reconfigure keeps the layout but brings new buffers. The silent takes: probable
+  (the UI out of fds loses its `arecord` device list and Core records without audio silently); the leak: measured.
+- Consequences: `25eeb47` evicts entries unused for 64 imports. Core turning audio off without a word is still open.
+- Confirmed by: the day run's measurements (Patrik asked for the fix, 2026-11-10).
+- Tutorial: none.
+
+## 2026-11-10: the Corsair MP600 Mini stalls past ~96 % full; Core then refused every take until restarted (Core `7e6e2a3`)
+
+- Tested: NVMe campaign day run, HDR16 3-min takes at 28 fps (~465 MB/s), card A936B442006AC2 filled to 84-97 % by the
+  runner's fill gate (need + 10 GB), Core trimming after each delete.
+- Seen: two of four takes that went past 95.8 % fill stalled (96.0 %, 96.9 %): write rate ~470 -> 16-120 MB/s within 2 s,
+  buffer to 91 % / 59 %; none below 94 %. On the second, Core's stop logged `no frame written for 5101 ms, treating the
+  medium as gone` and `1 writer(s) still blocked`, and every later `record_start` failed (`writers are still blocked on the
+  removed medium`) for 5 min until the power-off; no kernel NVMe error; Core's merges wrote to the card normally.
+- Why: the stall is on the drive's side at high fill (probable). The refusal: `stop()` cleared `stopping_` after detaching
+  the slow writer, which then waited for frames forever (`CameraController.cpp:4614`, code reading; the thread itself was
+  not inspected).
+- Consequences: the runner keeps 10 % of the card free after every take; `7e6e2a3` keeps `stopping_` set while detached
+  writers run (built, path not yet exercised). For shooting: treat ~95 % as full on this card.
+- Confirmed by: measurements of the day run (Patrik asked for the Core fix, 2026-11-10).
+- Tutorial: none.

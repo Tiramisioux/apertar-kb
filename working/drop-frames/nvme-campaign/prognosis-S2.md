@@ -1,11 +1,13 @@
-# Prognosis before the S2 resume (written 2026-11-10 after night 1)
+# Prognosis before S2 resumes (written 2026-11-10 evening, after the day run)
 
-- HDR16: 28 fps out (capture gaps at 136 s and 153 s). 27 fps: one clean 3-min take; owed: the 5-min take. Prognosis
-  (probable): 27 fps carries; 28 fps's gaps were on the capture side, not the card, so 27 is the 3-5 min ceiling
-  for HDR16 on this card at 16:9.
-- SDR12 (meter start 44/46/50) and HDR12 (start 30): not reached. The card's worst 10-s window (596 MB/s) is above
-  SDR12 at 44 fps (547 MB/s, derived) but close; at 46 fps the card itself becomes the probable limit.
-- Heat: expect the NVMe near or above 76 C within the first hour of back-to-back takes; the first hourly break
-  will give the cooling curve.
-- Audio: unless the UI's dmabuf failure is found, expect silent takes after about 25 min (night 1), each a void;
-  two voids end the night.
+Changed since the day run: the UI fd fix (`25eeb47`, measured to work), the Core stranded-writer fix (`7e6e2a3`, built,
+not exercised), the fill gate keeps 10 % of the card free after every take.
+
+- HDR16: done in S2 (27 fps carried; Log, TDN 25 and lossless+Log out). The runner skips what is recorded and continues.
+- SDR12: the meter (44/46/50 fps), then the walk. Card worst 10-s window 596 MB/s; SDR12 at 44 fps needs ~547 MB/s, so the
+  card itself becomes the probable limit at 46-48 fps (derived). Probable carried: 44-46 fps.
+- HDR12: starts at 30 fps; 12.4 MB/frame x 30 = 373 MB/s, well within the card; the capture side decides (probable 30+).
+- SDR12 lossless: walked only if its pre-roll beats the uncompressed edge.
+- Sound: expected in every take (UI fix). A silent take counts and gets a full snapshot.
+- Card: at most 90 % full after any take; no stall expected (none below 94 % so far).
+- S4 (15 min, each mode at its S2 best): HDR16 27 probable pass (27 fps passed 5 min twice); S5 runs only if all pass.
