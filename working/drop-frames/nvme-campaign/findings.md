@@ -75,6 +75,57 @@ runs it, per-process fd kinds and limits, memory/CMA, the full /api/state and th
 with audio; one line per snapshot in `audio-events.log`. Silent takes now count as picture results (`--audio-optional`),
 flagged `audio_missing=1`.
 
+## Day run: S2 resumed + S4,S5 chained, 2026-11-10 10:51-11:36 (stopped by Core, then powered off)
+
+**How it ended (measured).** At 11:30:32, stopping the end-control take (HDR16 28 fps, after its first drop at 159 s),
+Core logged `no frame written for 5101 ms, treating the medium as gone`, then `1 writer(s) still blocked on the removed
+medium, left behind`. Every later `record_start` (SDR12 warm-up 11:32, S4's warm-up 11:35) failed with `The previous
+take's writers are still blocked on the removed medium (1)`. No kernel NVMe/PCIe error; Core's own merges wrote to the
+card normally at 11:33. The chain started S4,S5, it failed the same way, the restore read back, the Pi powered off.
+
+**Core bug behind the stop (probable, from the code; the stuck thread could not be inspected).** `stop()` waits up to
+`APERTAR_DEAD_MEDIUM_STOP_MS` for writers on a "gone" medium, detaches the ones still busy, and at its end sets
+`stopping_ = false` unconditionally (`CameraController.cpp:4614`, e298d4a; the stuck-writer path came with a3ac8da). A
+writer that was only slow wakes up, sees `stopping_ == false`, waits for work again and never returns, so
+`liveWorkers_` stays 1 and `startAtFolder` refuses until Core restarts. Candidate fix: keep `stopping_` true when
+writers were left behind (`startAtFolder` clears it once `liveWorkers_` is 0). Not changed (Core edits need Patrik's OK).
+
+**The card stalls when nearly full (measured; cause on the drive's side probable).** The two takes where writing fell
+behind both ran the card past 96 %: the web-lever A1 take (`buffer_full` at 138.6 s, fill 96.0 %, 37 GB free) and the
+end control (drop at 159.2 s, fill 96.9 %, 29 GB free). In both the write rate fell from ~470 MB/s to 16-120 MB/s within
+2 s while the buffer filled (91 % / 59 %). Two other takes passed 95.8 % and 97.1 % clean; no take below 94 % stalled.
+Core had trimmed after every delete. NVMe 70-72 C at the stalls, 74 C on a clean take. The runner's fill gate kept only
+need + 10 GB free; **changed: at least 10 % of the card stays free after every take** (`FILL_HEADROOM`, deployed).
+For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
+
+**The UI fix works (measured).** 14 takes and ~28 camera reconfigures: sound in every take (`audio_missing` 0,
+`audio_pre` ready each time), UI fds 101-105 and dmabufs 72 throughout, no MESA line in any snapshot.
+
+**S2 results, HDR16 16:9 (measured).**
+
+| take | fps | tier | result | first drop | kind |
+| --- | --- | --- | --- | --- | --- |
+| walk (owed 5-min) | 27 | 5 min | clean | - | - |
+| ABBA Log, A (Log off) x2 | 28 | 3 min | clean, clean | - | - |
+| ABBA Log, B (Log on) x2 | 28 | 3 min | drop, drop | 4.8 s, 4.8 s | capture-gap |
+| ABBA WebUI, A (client on) | 28 | 3 min | buffer_full | 138.6 s | card stall at 96 % (see above) |
+| ABBA WebUI, B (client off) x2 | 28 | 3 min | clean, clean | - | - |
+| ABBA WebUI, A (client on) | 28 | 3 min | clean | - | - |
+| Log at 30 | 30 | 3 min | drop | 1.7 s | capture-gap |
+| TDN on at 25 | 25 | 3 min | drop | 3.7 s | capture-gap |
+| lossless + Log (pre-roll 26.6 fps) x2 | 25 | 3 min | drop, drop | 4.8 s, 4.7 s | capture-gap |
+| end control | 28 | 3 min | drop | 159.2 s | card stall at 96.9 % |
+
+- HDR16 uncompressed: **27 fps carried** (3 + 5 min clean); 28 fps out from night 1. 28 fps then ran five clean 3-min
+  takes today: its night-1 capture gaps are intermittent, not a hard edge (measured).
+- **Log costs more than 1 fps at 28** (both Log takes dropped within 5 s, both baselines clean; measured, n=2+2).
+- **TDN on fails even at 25 fps** (one take, 3.7 s); **HDR16 lossless + Log fails at 25 fps** (two takes) although its
+  pre-roll measured 26.6 fps. All of these are capture gaps, the capture/ISP side, not the card.
+- WebUI client: no effect shown (its one failure is the 96 % card stall; three client-on/off takes clean).
+- Merges (Core, at the restore, 14 pending clips): 1.0-1.9 ms per file, 8105 files in 15.8 s.
+- Heat: NVMe 62-74 C back to back; the run lasted 41 min, so no hourly break came.
+- Not reached: SDR12, HDR12, the SDR12 lossless arm, S4, S5.
+
 ## Deviations from the preregistration
 
 - 2026-11-10 03:38: no drive-recovery idles between stages or after cold deletes (User: "simulate a shooting
@@ -83,3 +134,4 @@ flagged `audio_missing=1`.
 - One 3-min take at 28 fps stopped after 51 s for the restart (recorded as not a result, re-run).
 - 2026-11-10 10:45: takes without audio count (`--audio-optional`, User: "have the tests continue even without sound");
   audio faults no longer end the night. Takes with `audio_missing=1` ran without the audio writer's load.
+- 2026-11-10 20:55: the fill gate keeps at least 10 % of the card free after every take (was need + 10 GB).

@@ -1,0 +1,5 @@
+2026-11-10 11:34:34 following runner pid 51985 (night S4-S5, run /home/pi/longtakes/nvme-20261110)
+2026-11-10 11:35:34 runner ended; waiting for a quiet camera
+2026-11-10 11:36:34 restore read back: frames_per_folder=5000 merge=true; RESTORE OK
+2026-11-10 11:36:34 night S4-S5 over; powering off through Core (power_off_system)
+{"ok":true,"powering_off":true}

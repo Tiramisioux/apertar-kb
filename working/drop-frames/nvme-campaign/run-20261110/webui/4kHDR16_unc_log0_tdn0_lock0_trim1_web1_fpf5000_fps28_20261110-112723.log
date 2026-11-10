@@ -1,0 +1,19 @@
+2026-11-10 11:27:43 start host=127.0.0.1 port=8000
+2026-11-10 11:27:53 mjpeg connected=yes reconnects=0 parts/s=20.6 KB/s=129.5 state ok=10 fail=0
+2026-11-10 11:28:03 mjpeg connected=yes reconnects=0 parts/s=16.4 KB/s=102.5 state ok=10 fail=0
+2026-11-10 11:28:13 mjpeg connected=yes reconnects=0 parts/s=18.0 KB/s=112.0 state ok=10 fail=0
+2026-11-10 11:28:23 mjpeg connected=yes reconnects=0 parts/s=18.1 KB/s=112.0 state ok=10 fail=0
+2026-11-10 11:28:33 mjpeg connected=yes reconnects=0 parts/s=16.4 KB/s=100.9 state ok=10 fail=0
+2026-11-10 11:28:43 mjpeg connected=yes reconnects=0 parts/s=17.6 KB/s=107.5 state ok=10 fail=0
+2026-11-10 11:28:53 mjpeg connected=yes reconnects=0 parts/s=18.2 KB/s=110.8 state ok=10 fail=0
+2026-11-10 11:29:03 mjpeg connected=yes reconnects=0 parts/s=18.2 KB/s=110.2 state ok=10 fail=0
+2026-11-10 11:29:13 mjpeg connected=yes reconnects=0 parts/s=16.4 KB/s=98.9 state ok=10 fail=0
+2026-11-10 11:29:23 mjpeg connected=yes reconnects=0 parts/s=18.5 KB/s=111.4 state ok=10 fail=0
+2026-11-10 11:29:33 mjpeg connected=yes reconnects=0 parts/s=18.2 KB/s=109.3 state ok=10 fail=0
+2026-11-10 11:29:43 mjpeg connected=yes reconnects=0 parts/s=17.1 KB/s=102.4 state ok=10 fail=0
+2026-11-10 11:29:53 mjpeg connected=yes reconnects=0 parts/s=17.0 KB/s=101.5 state ok=10 fail=0
+2026-11-10 11:30:03 mjpeg connected=yes reconnects=0 parts/s=17.1 KB/s=102.0 state ok=10 fail=0
+2026-11-10 11:30:13 mjpeg connected=yes reconnects=0 parts/s=17.9 KB/s=106.7 state ok=10 fail=0
+2026-11-10 11:30:23 mjpeg connected=yes reconnects=0 parts/s=18.5 KB/s=110.4 state ok=10 fail=0
+2026-11-10 11:30:33 mjpeg connected=yes reconnects=0 parts/s=25.1 KB/s=150.1 state ok=3 fail=0
+2026-11-10 11:30:35 stopping

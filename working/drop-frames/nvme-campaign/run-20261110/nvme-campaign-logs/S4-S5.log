@@ -1,0 +1,11 @@
+2026-11-10 11:34:32 write budget 10000 GB, 1324 GB used so far in this run
+2026-11-10 11:34:32 preserving 0 pre-existing clip folder(s); 16 clip folder(s) of this run on the drive
+2026-11-10 11:34:32 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-10 11:34:35 DECISION night S4,S5 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 166 GB; Core pid 820; drop-in checked; timers-mask rc=0; smart temp 63 C
+2026-11-10 11:34:35 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 5.0 s at 30 fps (measured 26.6), 125 frames, 1.5 GB written and deleted)
+2026-11-10 11:34:35 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-113435-baseline-S4_S5
+2026-11-10 11:34:35 DECISION GO-S4 found (unconditional): unconditional
+2026-11-10 11:35:01 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=27.0 -> record_start_failed after 0s dropped=4 kinds= pi=0C nvme=None
+2026-11-10 11:35:01 DECISION S4 warmup 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 60 s: record_start_failed (0.0 s, dropped 4, first drop 0.0, gap 0, boundary 0)
+2026-11-10 11:35:23 DECISION RESTORE OK
+2026-11-10 11:35:23 night S4,S5 over: record_start_failed: The previous take's writers are still blocked on the removed medium (1). Try again in a moment.

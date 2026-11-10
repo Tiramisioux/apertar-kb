@@ -30,3 +30,54 @@
 2026-11-10 04:07:16 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: void (300.3 s, dropped 0, first drop , gap 0, boundary 0) void: audio_missing: no "audio capture" line in the take window
 2026-11-10 04:07:37 [S2] RESTORE OK
 2026-11-10 04:07:37 watcher: ACTIVE gone: exiting
+2026-11-10 10:44:37 watcher: watching (pid 11249)
+2026-11-10 10:44:37 [SMOKE] night SMOKE start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 379 GB; Core pid 820; drop-in checked; timers-mask rc=0; smart temp 31 C
+2026-11-10 10:44:37 [SMOKE] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 10:44:37 [SMOKE] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-104437-baseline-SMOKE
+2026-11-10 10:45:33 [SMOKE] merge of cDNG_26-11-10_10450114_C0001: 559 frames, 3 parts, 0 s (0.18 ms per frame), first ETA error None %, intact; merge off again: True
+2026-11-10 10:45:33 [SMOKE] SMOKE smoke 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf200 at 28 fps, 20 s: pass_capped_20s (20.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 10:45:33 [SMOKE] SMOKE: pass_capped_20s, 559 frames, buffer peak 2.2 %, index_jumps 0, boundaries 2, merge 0.1 s ok=1
+2026-11-10 10:45:34 [SMOKE] deleted cDNG_26-11-10_10450114_C0001: 559 frames in 0.2 s (warm, budget 0 s)
+2026-11-10 10:45:34 [SMOKE] SMOKE: delete of its clip: ok
+2026-11-10 10:45:34 [SMOKE] stage SMOKE done
+2026-11-10 10:45:55 [SMOKE] RESTORE OK
+2026-11-10 10:46:07 watcher: ACTIVE gone: exiting
+2026-11-10 10:51:57 watcher: watching (pid 19870)
+2026-11-10 10:51:57 [S2] night S2 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 379 GB; Core pid 820; drop-in checked; timers-mask rc=0; smart temp 34 C
+2026-11-10 10:51:57 [S2] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 10:51:57 [S2] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-105157-baseline-S2
+2026-11-10 10:57:49 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 10:57:49 [S2] 4kHDR16: walk ends, best carried fps 27 (cells 27:carried 28:out)
+2026-11-10 11:01:24 [S2] S2 abba-log-A1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:02:04 [S2] S2 abba-log-B2 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (5.0 s, dropped 1, first drop 4.8, gap 0, boundary 0)
+2026-11-10 11:02:44 [S2] S2 abba-log-B3 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (5.0 s, dropped 2, first drop 4.8, gap 0, boundary 0)
+2026-11-10 11:06:20 [S2] S2 abba-log-A4 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:06:20 [S2] deleted cDNG_26-11-10_03391901-C0001: 1680 frames in 0.4 s (cold, budget 0 s)
+2026-11-10 11:09:14 [S2] S2 abba-web-A1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: buffer_full (138.6 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:09:14 [S2] deleted cDNG_26-11-10_03405408-C0002: 1414 frames in 0.4 s (cold, budget 0 s)
+2026-11-10 11:09:20 [S2] deleted cDNG_26-11-10_03431702-C0003: 5042 frames in 5.7 s (cold, budget 3 s)
+2026-11-10 11:13:56 [S2] S2 abba-web-B2 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000 at 28 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:13:59 [S2] deleted cDNG_26-11-10_03465206-C0004: 3806 frames in 2.3 s (cold, budget 2 s)
+2026-11-10 11:18:35 [S2] S2 abba-web-B3 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000 at 28 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:18:38 [S2] deleted cDNG_26-11-10_03494415-C0005: 4285 frames in 2.9 s (cold, budget 2 s)
+2026-11-10 11:23:24 [S2] S2 abba-web-A4 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:23:28 [S2] deleted cDNG_26-11-10_03525320-C0006: 4862 frames in 3.8 s (cold, budget 3 s)
+2026-11-10 11:25:02 [S2] S2 log30 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 180 s: drop (2.0 s, dropped 2, first drop 1.7, gap 0, boundary 0)
+2026-11-10 11:25:41 [S2] S2 tdn25 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: drop (4.0 s, dropped 1, first drop 3.7, gap 0, boundary 0)
+2026-11-10 11:26:03 [S2] 4kHDR16/lossless+log: pre-roll ok: 5.0 s at 30 fps (measured 26.6), 125 frames, 1.5 GB written and deleted, above 25.0: walked
+2026-11-10 11:26:43 [S2] S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: drop (5.0 s, dropped 2, first drop 4.8, gap 0, boundary 0)
+2026-11-10 11:27:23 [S2] S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: drop (5.0 s, dropped 2, first drop 4.7, gap 0, boundary 0)
+2026-11-10 11:27:23 [S2] 4kHDR16/lossless+log: walk ends, best carried fps None (cells 25:out)
+2026-11-10 11:30:46 [S2] S2 ctrl-end 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (159.7 s, dropped 4, first drop 159.2, gap 0, boundary 0)
+2026-11-10 11:31:16 [S2] deleted cDNG_26-11-10_03562910-C0007: 8106 frames in 10.0 s (cold, budget 9 s)
+2026-11-10 11:32:46 [S2] S2 warmup 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 42 fps, 60 s: record_start_failed (0.0 s, dropped 4, first drop 0.0, gap 0, boundary 0)
+2026-11-10 11:33:07 [S2] RESTORE OK
+2026-11-10 11:33:27 watcher: ACTIVE gone: exiting
+2026-11-10 11:34:34 watcher: watching (pid 52315)
+2026-11-10 11:34:35 [S4,S5] night S4,S5 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 166 GB; Core pid 820; drop-in checked; timers-mask rc=0; smart temp 63 C
+2026-11-10 11:34:35 [S4,S5] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 5.0 s at 30 fps (measured 26.6), 125 frames, 1.5 GB written and deleted)
+2026-11-10 11:34:35 [S4,S5] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-113435-baseline-S4_S5
+2026-11-10 11:34:35 [S4,S5] GO-S4 found (unconditional): unconditional
+2026-11-10 11:35:01 [S4,S5] S4 warmup 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 60 s: record_start_failed (0.0 s, dropped 4, first drop 0.0, gap 0, boundary 0)
+2026-11-10 11:35:23 [S4,S5] RESTORE OK
+2026-11-10 11:35:34 watcher: ACTIVE gone: exiting

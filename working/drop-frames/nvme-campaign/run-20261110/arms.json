@@ -1,9 +1,20 @@
 {
  "4kHDR16": {
+  "S4": {
+   "27": "stop"
+  },
+  "best": 27,
   "cells": {
+   "27": "carried",
    "28": "out"
   },
   "edge": 28,
   "top": 30
+ },
+ "4kHDR16/lossless+log": {
+  "cells": {
+   "25": "out"
+  },
+  "preroll": "ok: 5.0 s at 30 fps (measured 26.6), 125 frames, 1.5 GB written and deleted"
  }
 }

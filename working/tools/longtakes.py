@@ -1950,6 +1950,7 @@ YAML_RUN = '/run/apertar-media/pisp-pipeline.yaml'
 YAML_MD5 = '88929ca34bc8e4e8d4ab5ffaac1e2b64'        # num_cfe_config_queue 4 (R2 section 2g; read on the Pi 2026-11-10)
 SPLIT_DEFAULT = 5000                                  # R1: every scored take is split, as Patrik shoots
 BOUNDARY_WINDOW = 64                                  # R3: a drop within 64 frames after a part boundary is a boundary drop
+FILL_HEADROOM = 0.10     # of the card kept free after every take (see ctake)
 MERGE_AFTER_S = 900                                   # User 2026-11-10: merge after every take of a tier >= 15 min
 EARLY_S = 600                                         # plan section 7: a long-tier drop before minute 10 is early
 WALK_C_PROBE_NS = 63.3                                # probe 2026-11-08: ns per directory entry, the walk alone
@@ -2889,14 +2890,21 @@ def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False
     need, bpf = planned_bytes(out, c, fps, secs)
     total_b = card_facts().get('free_b', 0) + sum(float(x.get('bytes') or 0) for x in ledger_live(out))
     fit = 0
-    if need * 1.03 + 10e9 > total_b:
-        secs2 = int((total_b - 10e9) / (1.03 * bpf * fps))
+    # headroom: never let a take run the card past 90 % (2026-11-10: at 96-97 % full the MP600 Mini's writes fell from
+    # ~470 to 16-120 MB/s for seconds, twice in four takes that got there, and Core called the medium gone)
+    try:
+        sv_ = os.statvfs(MEDIA)
+        headroom = max(10e9, FILL_HEADROOM * sv_.f_blocks * sv_.f_frsize)
+    except OSError:
+        headroom = 10e9
+    if need * 1.03 + headroom > total_b:
+        secs2 = int((total_b - headroom) / (1.03 * bpf * fps))
         decide(out, '%s %s at %s fps: %d s plans %.0f GB, more than the card can hold: fit-limited to %d s' % (stage, c.id, fps, secs, need / 1e9, secs2))
         secs, fit = max(secs2, 0), 1
         need = bpf * fps * secs
     if fit and secs < 30:
         return {'verdict': 'skip', 'ckey': key}
-    w = fill_gate(out, need * 1.03 + 10e9)
+    w = fill_gate(out, need * 1.03 + headroom)
     if w:
         CS['stop'] = w
         return {'verdict': 'stop'}

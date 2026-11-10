@@ -1,0 +1,44 @@
+== apertar-ui-direct pid 17123 run_pi_direct.s (/bin/bash /home/pi/ApertarUI/run_pi_direct.sh /home/pi/ApertarUI/build/Apertar-UI )
+fds by kind: {'file': 2, 'socket': 2}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	    7472 kB
+VmRSS:	    3456 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 17144 Apertar-UI (/home/pi/ApertarUI/build/Apertar-UI )
+fds by kind: {'file': 5, 'socket': 10, 'anon_inode': 9, '/dev/dri': 5, 'dmabuf': 72}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	  504896 kB
+VmRSS:	  116304 kB
+Threads:	5
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 17145 run_pi_direct.s (/bin/bash /home/pi/ApertarUI/run_pi_direct.sh /home/pi/ApertarUI/build/Apertar-UI )
+fds by kind: {'file': 1, 'socket': 2}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	    7200 kB
+VmRSS:	    2224 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 52361 sleep (sleep 0.5 )
+fds by kind: {'file': 1, 'socket': 2}
+State:	S (sleeping)
+FDSize:	64
+VmSize:	    5424 kB
+VmRSS:	    1920 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-core pid 820 apertar-core (/home/pi/ApertarCore-build/apertar-core --socket /tmp/apertar-core.sock --media /media/RAW )
+fds by kind: {'file': 10, 'socket': 7, 'pipe': 2, 'anon_inode': 5, '/dev/media': 2, '/dev/video': 11, 'dmabuf': 74}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	 2672528 kB
+VmRSS:	  360000 kB
+Threads:	26
+Max open files            1024                 524288               files     

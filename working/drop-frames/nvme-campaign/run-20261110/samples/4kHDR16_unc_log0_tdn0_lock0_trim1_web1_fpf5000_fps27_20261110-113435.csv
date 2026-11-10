@@ -1,0 +1,5 @@
+t_s,pi_c,nvme_c,cpu_pct,load1,mem_avail_mb,fill_pct,free_gb,throttled,dropped,state,core_cpu_pct,core_top_thread,buffer_used,buffer_capacity,dev_w_ios,dev_w_sectors,dev_w_ticks,dev_inflight,dirty_kb,writeback_kb,trim_running,trim_last_unix,t_unix,clients,merge_pending,ui_fds,ui_dmabuf,arec_fds,core_fds,cma_free_kb,audio_ready,uiconf_rec,uiconf_dev,uiconf_mtime
+0.3,51.8,62.85,100.0,1.20556640625,3031,83.4,154.8,0x0,4,ready,,,0,1382858752,3799809,1384291156,80384292,0,624,0,,,1794306898.85,1,0,101,72,,112,48,1,1,"""hw:2,0""",1794304195.69
+1.0,51.8,60.85,11.8,1.20556640625,3044,83.4,154.8,0x0,4,ready,37.2,CameraManager:36,0,1382858752,3799809,1384291156,80384292,0,1312,0,,,1794306899.57,0,0,101,72,,112,48,1,1,"""hw:2,0""",1794304195.69
+2.0,52.9,62.85,10.5,1.20556640625,3047,83.4,154.8,0x0,4,ready,34.0,CameraManager:34,0,1382858752,3799809,1384291156,80384292,0,1312,0,,,1794306900.57,0,0,101,72,,112,48,1,1,"""hw:2,0""",1794304195.69
+3.0,52.35,60.85,11.6,1.20556640625,3049,83.4,154.8,0x0,4,ready,45.0,CameraManager:42,0,1382858752,3799809,1384291156,80384292,0,1408,0,,,1794306901.57,0,0,101,72,,112,48,1,1,"""hw:2,0""",1794304195.69

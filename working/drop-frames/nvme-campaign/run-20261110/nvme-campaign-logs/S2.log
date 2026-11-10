@@ -1,19 +1,60 @@
-2026-11-10 03:42:36 write budget 10000 GB, 51 GB used so far in this run
-2026-11-10 03:42:36 preserving 0 pre-existing clip folder(s); 2 clip folder(s) of this run on the drive
-2026-11-10 03:42:36 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
-2026-11-10 03:42:38 DECISION night S2 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 948 GB; Core pid 817; drop-in checked; timers-mask rc=0; smart temp 44 C
-2026-11-10 03:42:38 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
-2026-11-10 03:46:28 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> pass_3min after 180s dropped=0 kinds= pi=57C nvme=64.85
-2026-11-10 03:46:28 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
-2026-11-10 03:49:20 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> drop after 136s dropped=1 kinds=capture-gap:1 pi=58C nvme=68.85
-2026-11-10 03:49:20 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 300 s: drop (136.1 s, dropped 1, first drop 135.8, gap 0, boundary 0)
-2026-11-10 03:52:30 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> drop after 153s dropped=1 kinds=capture-gap:1 pi=58C nvme=70.85
-2026-11-10 03:52:30 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (153.2 s, dropped 1, first drop 152.8, gap 0, boundary 0)
-2026-11-10 03:56:05 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=27.0 -> pass_3min after 180s dropped=0 kinds= pi=58C nvme=71.85
-2026-11-10 03:56:06 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
-2026-11-10 04:01:41 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=27.0 -> pass_5min after 300s dropped=0 kinds= pi=58C nvme=73.85
-2026-11-10 04:01:41 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: void (300.3 s, dropped 0, first drop , gap 0, boundary 0) void: audio_missing: no "audio capture" line in the take window
-2026-11-10 04:07:16 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=27.0 -> pass_5min after 300s dropped=0 kinds= pi=59C nvme=75.85
-2026-11-10 04:07:16 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: void (300.3 s, dropped 0, first drop , gap 0, boundary 0) void: audio_missing: no "audio capture" line in the take window
-2026-11-10 04:07:37 DECISION RESTORE OK
-2026-11-10 04:07:37 night S2 over: a second void this night (audio_missing: no "audio capture" line in the take window)
+2026-11-10 10:51:55 write budget 10000 GB, 628 GB used so far in this run
+2026-11-10 10:51:55 preserving 0 pre-existing clip folder(s); 8 clip folder(s) of this run on the drive
+2026-11-10 10:51:55 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-10 10:51:57 DECISION night S2 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 379 GB; Core pid 820; drop-in checked; timers-mask rc=0; smart temp 34 C
+2026-11-10 10:51:57 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 10:51:57 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-105157-baseline-S2
+2026-11-10 10:57:49 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=27.0 -> pass_5min after 300s dropped=0 kinds= pi=58C nvme=60.85
+2026-11-10 10:57:49 DECISION S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 10:57:49 DECISION 4kHDR16: walk ends, best carried fps 27 (cells 27:carried 28:out)
+2026-11-10 11:01:24 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> pass_3min after 180s dropped=0 kinds= pi=58C nvme=67.85
+2026-11-10 11:01:24 DECISION S2 abba-log-A1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:02:04 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> drop after 5s dropped=1 kinds=capture-gap:1 pi=58C nvme=55.85
+2026-11-10 11:02:04 DECISION S2 abba-log-B2 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (5.0 s, dropped 1, first drop 4.8, gap 0, boundary 0)
+2026-11-10 11:02:44 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> drop after 5s dropped=2 kinds=capture-gap:1 pi=57C nvme=53.85
+2026-11-10 11:02:44 DECISION S2 abba-log-B3 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (5.0 s, dropped 2, first drop 4.8, gap 0, boundary 0)
+2026-11-10 11:06:20 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> pass_3min after 180s dropped=0 kinds= pi=58C nvme=69.85
+2026-11-10 11:06:20 DECISION S2 abba-log-A4 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:06:20 fill gate: deleting cDNG_26-11-10_03391901-C0001 (1680 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
+2026-11-10 11:06:20 DECISION deleted cDNG_26-11-10_03391901-C0001: 1680 frames in 0.4 s (cold, budget 0 s)
+2026-11-10 11:09:14 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> buffer_full after 139s dropped=0 kinds=buffer_full:1 pi=55C nvme=69.85
+2026-11-10 11:09:14 DECISION S2 abba-web-A1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: buffer_full (138.6 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:09:14 fill gate: deleting cDNG_26-11-10_03405408-C0002 (1414 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
+2026-11-10 11:09:14 DECISION deleted cDNG_26-11-10_03405408-C0002: 1414 frames in 0.4 s (cold, budget 0 s)
+2026-11-10 11:09:15 fill gate: deleting cDNG_26-11-10_03431702-C0003 (5042 frames, 0 parts, cold: written before this boot, budget 3 s) through the media route
+2026-11-10 11:09:20 DECISION deleted cDNG_26-11-10_03431702-C0003: 5042 frames in 5.7 s (cold, budget 3 s)
+2026-11-10 11:10:21 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-10 11:13:56 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000 fps=28.0 -> pass_3min after 180s dropped=0 kinds= pi=57C nvme=72.85
+2026-11-10 11:13:56 DECISION S2 abba-web-B2 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000 at 28 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:13:56 fill gate: deleting cDNG_26-11-10_03465206-C0004 (3806 frames, 0 parts, cold: written before this boot, budget 2 s) through the media route
+2026-11-10 11:13:59 DECISION deleted cDNG_26-11-10_03465206-C0004: 3806 frames in 2.3 s (cold, budget 2 s)
+2026-11-10 11:14:59 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-10 11:18:35 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000 fps=28.0 -> pass_3min after 180s dropped=0 kinds= pi=58C nvme=72.85
+2026-11-10 11:18:35 DECISION S2 abba-web-B3 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000 at 28 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:18:35 fill gate: deleting cDNG_26-11-10_03494415-C0005 (4285 frames, 0 parts, cold: written before this boot, budget 2 s) through the media route
+2026-11-10 11:18:38 DECISION deleted cDNG_26-11-10_03494415-C0005: 4285 frames in 2.9 s (cold, budget 2 s)
+2026-11-10 11:19:38 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-10 11:23:24 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> pass_3min after 180s dropped=0 kinds= pi=57C nvme=73.85
+2026-11-10 11:23:24 DECISION S2 abba-web-A4 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 11:23:24 fill gate: deleting cDNG_26-11-10_03525320-C0006 (4862 frames, 0 parts, cold: written before this boot, budget 3 s) through the media route
+2026-11-10 11:23:28 DECISION deleted cDNG_26-11-10_03525320-C0006: 4862 frames in 3.8 s (cold, budget 3 s)
+2026-11-10 11:24:28 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-10 11:25:02 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 fps=30.0 -> drop after 2s dropped=2 kinds=capture-gap:1 pi=54C nvme=64.85
+2026-11-10 11:25:02 DECISION S2 log30 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 180 s: drop (2.0 s, dropped 2, first drop 1.7, gap 0, boundary 0)
+2026-11-10 11:25:41 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000 fps=25.0 -> drop after 4s dropped=1 kinds=capture-gap:1 pi=54C nvme=57.85
+2026-11-10 11:25:41 DECISION S2 tdn25 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: drop (4.0 s, dropped 1, first drop 3.7, gap 0, boundary 0)
+2026-11-10 11:26:03 DECISION 4kHDR16/lossless+log: pre-roll ok: 5.0 s at 30 fps (measured 26.6), 125 frames, 1.5 GB written and deleted, above 25.0: walked
+2026-11-10 11:26:43 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 fps=25.0 -> drop after 5s dropped=2 kinds=capture-gap:1 pi=57C nvme=54.85
+2026-11-10 11:26:43 DECISION S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: drop (5.0 s, dropped 2, first drop 4.8, gap 0, boundary 0)
+2026-11-10 11:27:23 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 fps=25.0 -> drop after 5s dropped=2 kinds=capture-gap:1 pi=57C nvme=52.85
+2026-11-10 11:27:23 DECISION S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: drop (5.0 s, dropped 2, first drop 4.7, gap 0, boundary 0)
+2026-11-10 11:27:23 DECISION 4kHDR16/lossless+log: walk ends, best carried fps None (cells 25:out)
+2026-11-10 11:30:46 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=28.0 -> drop after 160s dropped=4 kinds=capture-gap:1 pi=57C nvme=67.85
+2026-11-10 11:30:46 DECISION S2 ctrl-end 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (159.7 s, dropped 4, first drop 159.2, gap 0, boundary 0)
+2026-11-10 11:31:06 fill gate: deleting cDNG_26-11-10_03562910-C0007 (8106 frames, 0 parts, cold: written before this boot, budget 9 s) through the media route
+2026-11-10 11:31:16 DECISION deleted cDNG_26-11-10_03562910-C0007: 8106 frames in 10.0 s (cold, budget 9 s)
+2026-11-10 11:32:16 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-10 11:32:46 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 fps=42.0 -> record_start_failed after 0s dropped=4 kinds= pi=0C nvme=None
+2026-11-10 11:32:46 DECISION S2 warmup 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 42 fps, 60 s: record_start_failed (0.0 s, dropped 4, first drop 0.0, gap 0, boundary 0)
+2026-11-10 11:33:07 DECISION RESTORE OK
+2026-11-10 11:33:07 night S2 over: record_start_failed: The previous take's writers are still blocked on the removed medium (1). Try again in a moment.

@@ -1,0 +1,72 @@
+== /proc/asound/cards
+0 [vc4hdmi0       ]: vc4-hdmi - vc4-hdmi-0
+                      vc4-hdmi-0
+ 1 [vc4hdmi1       ]: vc4-hdmi - vc4-hdmi-1
+                      vc4-hdmi-1
+ 2 [NTG            ]: USB-Audio - RØDE VideoMic NTG
+                      RØDE Microphones RØDE VideoMic NTG at usb-xhci-hcd.0-1, full speed
+== /proc/asound/pcm
+00-00: MAI PCM i2s-hifi-0 : MAI PCM i2s-hifi-0 : playback 1
+01-00: MAI PCM i2s-hifi-0 : MAI PCM i2s-hifi-0 : playback 1
+02-00: USB Audio : USB Audio : playback 1 : capture 1
+== /proc/asound/devices
+2: [ 0- 0]: digital audio playback
+  3: [ 0]   : control
+  4: [ 1- 0]: digital audio playback
+  5: [ 1]   : control
+  6: [ 2- 0]: digital audio playback
+  7: [ 2- 0]: digital audio capture
+  8: [ 2]   : control
+ 33:        : timer
+== /proc/asound/card2/pcm0c/sub0/hw_params
+access: MMAP_INTERLEAVED
+format: S16_LE
+subformat: STD
+channels: 2
+rate: 48000 (48000/1)
+period_size: 6000
+buffer_size: 24003
+== /proc/asound/card2/pcm0c/sub0/status
+state: RUNNING
+owner_pid   : 17195
+trigger_time: 1121.528993235
+tstamp      : 0.000000000
+delay       : 5088
+avail       : 5088
+avail_max   : 6096
+-----
+hw_ptr      : 5855098
+appl_ptr    : 5850010
+== arecord -l (what Core runs at record_start)
+rc=0
+**** List of CAPTURE Hardware Devices ****
+card 2: NTG [RØDE VideoMic NTG], device 0: USB Audio [USB Audio]
+  Subdevices: 0/1
+  Subdevice #0: subdevice #0
+
+== aplay -l
+rc=0
+**** List of PLAYBACK Hardware Devices ****
+card 0: vc4hdmi0 [vc4-hdmi-0], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: vc4hdmi1 [vc4-hdmi-1], device 0: MAI PCM i2s-hifi-0 [MAI PCM i2s-hifi-0]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 2: NTG [RØDE VideoMic NTG], device 0: USB Audio [USB Audio]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+== lsusb -t
+rc=0
+/:  Bus 001.Port 001: Dev 001, Class=root_hub, Driver=dwc2/1p, 480M
+/:  Bus 002.Port 001: Dev 001, Class=root_hub, Driver=xhci-hcd/2p, 480M
+    |__ Port 001: Dev 002, If 0, Class=Audio, Driver=snd-usb-audio, 12M
+    |__ Port 001: Dev 002, If 1, Class=Audio, Driver=snd-usb-audio, 12M
+    |__ Port 001: Dev 002, If 2, Class=Audio, Driver=snd-usb-audio, 12M
+    |__ Port 001: Dev 002, If 3, Class=Human Interface Device, Driver=usbhid, 12M
+    |__ Port 001: Dev 002, If 5, Class=Vendor Specific Class, Driver=[none], 12M
+/:  Bus 003.Port 001: Dev 001, Class=root_hub, Driver=xhci-hcd/1p, 5000M
+/:  Bus 004.Port 001: Dev 001, Class=root_hub, Driver=xhci-hcd/2p, 480M
+    |__ Port 001: Dev 002, If 0, Class=Hub, Driver=hub/4p, 480M
+/:  Bus 005.Port 001: Dev 001, Class=root_hub, Driver=xhci-hcd/1p, 5000M
