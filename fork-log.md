@@ -206,6 +206,7 @@ Core `f4a1393..ba0658d` (then `..01f170c`, the two verify fixes), UI `7029db1..7
 | `6a029fe` | Media section, first card: Split Long Takes dropdown and Merge Split Clips tiles; bridge `framesPerFolder`, `clipMergeEnabled`, `applyFramesPerFolder`, `applyClipMerge`; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, not tried (no touch screen) |
 | `2c1f34b` | Player reads a clip mid-merge: `existingFramePath`, `dngFramesOfClip` re-reads the clip folder after the parts; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, not tried |
 | `181a1e1` | Merge bars (grey) in the Media card; grey fill in the READY pill (StatusChip, ExternalMonitorWindow), idle only; bridge reads `clip_merge_*` and the `clip_merge` event; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, not tried (no touch screen) |
+| `25eeb47` | Preview renderer releases imports of buffers Core no longer sends (fd/dmabuf leak: +48 fds per camera reconfigure, 1024 limit, then MESA export errors and silent takes); Pi branch `clip-split` | fork-only; Pi only; offer; built and tried 2026-11-10 (8 reconfigures flat) |
 | `c9d841f` | T38 part 4: the touch UI no longer writes a default `apertar-hardware.conf` when it is missing (both bridges); local branch `controls` | fork-only |
 | `7c41a27` | T38 part 5: the display fallback with no file or no `[display]` keys is HDMI 1080p (`landscape_large`, `hdmi_external_only=true`), not 720x720 square | fork-only |
 | `08cefcf` | timecode modes named Time of Day and Clip | fork-only |

@@ -59,6 +59,12 @@ which reads the UI's settings and device list at `record_start`, records without
 the next run: `ui_fds` per sample against the first silent take. Also: the meter's `arecord` inherits 48 of the UI's
 dmabuf fds (no close-on-exec), so it pins the preview buffers it was started with.
 
+**Fixed in the UI (2026-11-10, Pi UI `25eeb47`, branch clip-split, built and running from 10:49).** The leak is in
+`PreviewWindowRenderer`'s import cache: keyed by the dmabuf inode, never pruned when a reconfigure keeps the preview
+layout. Each entry is now stamped when used and entries unused for 64 imports are destroyed with their fds. Measured:
+8 bit-depth reconfigures, UI dmabuf fds 48 -> 72 then flat (the old build: +48 per 2 reconfigures); no MESA errors.
+The run from 10:5x is the test: sound in every take = the chain above confirmed in practice.
+
 **What the runner logs from now on (User: "log carefully the loss of sound").** Every 5 s in the samples: `ui_fds`,
 `ui_dmabuf`, `arec_fds`, `core_fds`, `cma_free_kb`, `audio_ready` (Core's /api/state: record audio on and the configured
 device in its input list), and `uiconf_rec` / `uiconf_dev` / `uiconf_mtime` read straight from UI.conf. Before every take
