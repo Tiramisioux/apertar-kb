@@ -13,8 +13,9 @@
  },
  "4kHDR16/lossless+log": {
   "cells": {
-   "25": "out"
+   "25": "out",
+   "26": "out"
   },
-  "preroll": "ok: 5.0 s at 30 fps (measured 26.6), 125 frames, 1.5 GB written and deleted"
+  "preroll": "ok: 5.0 s at 30 fps (measured 27.7), 136 frames, 1.4 GB written and deleted"
  }
 }

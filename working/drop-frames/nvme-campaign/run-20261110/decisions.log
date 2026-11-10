@@ -81,3 +81,13 @@
 2026-11-10 11:35:01 [S4,S5] S4 warmup 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 60 s: record_start_failed (0.0 s, dropped 4, first drop 0.0, gap 0, boundary 0)
 2026-11-10 11:35:23 [S4,S5] RESTORE OK
 2026-11-10 11:35:34 watcher: ACTIVE gone: exiting
+2026-11-10 21:06:23 watcher: watching (pid 7554)
+2026-11-10 21:06:23 [S2,S4,S5] night S2,S4,S5 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 166 GB; Core pid 6958; drop-in checked; timers-mask rc=0; smart temp 33 C
+2026-11-10 21:06:23 [S2,S4,S5] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 21:06:23 [S2,S4,S5] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-210623-baseline-S2_S4_S5
+2026-11-10 21:06:39 [S2,S4,S5] 4kHDR16: walk ends, best carried fps 27 (cells 27:carried 28:out)
+2026-11-10 21:07:00 [S2,S4,S5] 4kHDR16/lossless+log: pre-roll ok: 5.0 s at 30 fps (measured 27.7), 136 frames, 1.4 GB written and deleted, above 25.0: walked
+2026-11-10 21:07:41 [S2,S4,S5] S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 26 fps, 180 s: drop (6.0 s, dropped 1, first drop 5.7, gap 0, boundary 0)
+2026-11-10 21:08:26 [S2,S4,S5] S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 26 fps, 180 s: drop (10.0 s, dropped 4, first drop 9.8, gap 0, boundary 0)
+2026-11-10 21:08:26 [S2,S4,S5] 4kHDR16/lossless+log: walk ends, best carried fps None (cells 25:out 26:out)
+2026-11-10 21:09:07 [S2,S4,S5] RESTORE OK

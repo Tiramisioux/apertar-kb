@@ -126,6 +126,12 @@ For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
 - Heat: NVMe 62-74 C back to back; the run lasted 41 min, so no hourly break came.
 - Not reached: SDR12, HDR12, the SDR12 lossless arm, S4, S5.
 
+## Evening run S2,S4,S5, 2026-11-10 21:06-21:09 (stopped by Claude: Patrik had asked to prepare, not start)
+
+- Core `7e6e2a3`, UI `25eeb47`. HDR16 lossless + Log re-walked from its new pre-roll (27.7 fps measured): 26 fps dropped
+  at 5.7 s and 9.8 s (capture gaps, buffer 2.3 %); the arm is out at 25 and 26 fps (measured). Sound in both takes, UI
+  fds 80-101. The runner was stopped by SIGTERM before its next take; restore read back OK; nothing else recorded.
+
 ## Deviations from the preregistration
 
 - 2026-11-10 03:38: no drive-recovery idles between stages or after cold deletes (User: "simulate a shooting

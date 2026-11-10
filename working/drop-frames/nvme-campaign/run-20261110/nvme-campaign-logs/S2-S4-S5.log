@@ -1,0 +1,10 @@
+2026-11-10 21:06:21 write budget 10000 GB, 1324 GB used so far in this run
+2026-11-10 21:06:21 preserving 0 pre-existing clip folder(s); 17 clip folder(s) of this run on the drive
+2026-11-10 21:06:21 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-10 21:06:23 DECISION night S2,S4,S5 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 166 GB; Core pid 6958; drop-in checked; timers-mask rc=0; smart temp 33 C
+2026-11-10 21:06:23 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 21:06:23 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-210623-baseline-S2_S4_S5
+2026-11-10 21:06:39 DECISION 4kHDR16: walk ends, best carried fps 27 (cells 27:carried 28:out)
+2026-11-10 21:07:00 DECISION 4kHDR16/lossless+log: pre-roll ok: 5.0 s at 30 fps (measured 27.7), 136 frames, 1.4 GB written and deleted, above 25.0: walked
+2026-11-10 21:07:41 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 fps=26.0 -> drop after 6s dropped=1 kinds=capture-gap:1 pi=57C nvme=33.85
+2026-11-10 21:07:41 DECISION S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 26 fps, 180 s: drop (6.0 s, dropped 1, first drop 5.7, gap 0, boundary 0)

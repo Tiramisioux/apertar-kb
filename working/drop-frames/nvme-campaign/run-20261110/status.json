@@ -1,10 +1,10 @@
 {
- "head": "NIGHT OVER (record_start_failed: The previous take's writers are still blocked on the removed medium (1). Try again in a moment.): safe to read; report report-S4-S5.md",
+ "head": "NIGHT OVER (stopped by SIGTERM): safe to read; report report-S2-S4-S5.md",
  "decision": "",
- "night": "S4,S5",
+ "night": "S2,S4,S5",
  "current": {},
  "take_in_progress": false,
- "stop": "record_start_failed: The previous take's writers are still blocked on the removed medium (1). Try again in a moment.",
- "heartbeat_age_s": 51,
- "t": 1794306923.2063572
+ "stop": "",
+ "heartbeat_age_s": 46,
+ "t": 1794341347.1285908
 }

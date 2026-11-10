@@ -1,0 +1,53 @@
+== apertar-ui-direct pid 618 run_pi_direct.s (/bin/bash /home/pi/ApertarUI/run_pi_direct.sh /home/pi/ApertarUI/build/Apertar-UI )
+fds by kind: {'pipe': 1, 'socket': 2, 'file': 1}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	    7472 kB
+VmRSS:	    3584 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 927 Apertar-UI (/home/pi/ApertarUI/build/Apertar-UI )
+fds by kind: {'file': 5, 'socket': 10, 'anon_inode': 10, '/dev/dri': 5, 'dmabuf': 48, 'pipe': 3}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	  502688 kB
+VmRSS:	  118272 kB
+Threads:	5
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 928 run_pi_direct.s (/bin/bash /home/pi/ApertarUI/run_pi_direct.sh /home/pi/ApertarUI/build/Apertar-UI )
+fds by kind: {'file': 1, 'socket': 2}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	    7200 kB
+VmRSS:	    2256 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 982 arecord (/usr/bin/arecord -q -D plughw:2,0 -f S16_LE -c 1 -r 16000 -t raw )
+fds by kind: {'pipe': 3, '/dev/snd': 1, '/dev/dri': 1, 'socket': 3, 'dmabuf': 48}
+State:	S (sleeping)
+FDSize:	128
+VmSize:	    7584 kB
+VmRSS:	    3040 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-ui-direct pid 7590 sleep (sleep 0.5 )
+fds by kind: {'file': 1, 'socket': 2}
+State:	S (sleeping)
+FDSize:	64
+VmSize:	    5424 kB
+VmRSS:	    1920 kB
+Threads:	1
+Max open files            1024                 524288               files     
+
+== apertar-core pid 6958 apertar-core (/home/pi/ApertarCore-build/apertar-core --socket /tmp/apertar-core.sock --media /media/RAW )
+fds by kind: {'file': 9, 'socket': 7, 'pipe': 2, 'anon_inode': 5, '/dev/media': 2, '/dev/video': 11, 'dmabuf': 74}
+State:	S (sleeping)
+FDSize:	256
+VmSize:	 2123504 kB
+VmRSS:	  179024 kB
+Threads:	25
+Max open files            1024                 524288               files     

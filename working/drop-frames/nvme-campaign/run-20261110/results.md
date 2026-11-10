@@ -32,6 +32,8 @@ Target per take: 30 min, or as long as the drive allows at these settings (pass_
 | 4kHDR16 | unc | off | off | off | on | on | 28.0 | drop | 159.7 | 4 | 159.2 | capture-gap:1 | 57.3 | 67.85 (69.85) | 75.2 | 2504 | 96.8 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
 | 4kSDR12 | unc | off | off | off | on | on | 42.0 | record_start_failed | 0.0 | 4 | 0.0 |  |  |  (55.85) |  |  |  |  | The previous take's writers are still blocked on the removed medium (1). Try again in a moment. |
 | 4kHDR16 | unc | off | off | off | on | on | 27.0 | record_start_failed | 0.0 | 4 | 0.0 |  |  |  (62.85) |  |  |  |  | The previous take's writers are still blocked on the removed medium (1). Try again in a moment. |
+| 4kHDR16 | lossless | on | off | off | on | on | 26.0 | drop | 6.0 | 1 | 5.7 | capture-gap:1 | 56.75 | 33.85 (33.85) | 84.2 | 2908 | 83.5 |  | probable: lossless JPEG encoder too slow above ~17.5 fps (recipe row 2); capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kHDR16 | lossless | on | off | off | on | on | 26.0 | drop | 10.0 | 4 | 9.8 | capture-gap:1 | 55.65 | 34.85 (34.85) | 89.4 | 2753 | 83.8 |  | probable: lossless JPEG encoder too slow above ~17.5 fps (recipe row 2); capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
 
 ## Best clean fps per config (first pass while stepping down)
 
