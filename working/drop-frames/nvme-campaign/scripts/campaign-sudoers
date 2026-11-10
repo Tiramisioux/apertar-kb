@@ -1,0 +1,27 @@
+# /etc/sudoers.d/apertar-nvme-campaign: lets user pi run the NVMe campaign's root helper
+# (/usr/local/libexec/apertar-campaign-helper, from apertar-campaign-helper.sh) with only these exact arguments.
+#   NVC_UNATTENDED: no password. Read-only, reversible, or fstrim. The detached runner calls these with `sudo -n`.
+#   NVC_INTERACTIVE: asks for pi's password (no NOPASSWD), so the runner's `sudo -n` fails closed. The helper also
+#   refuses these unless it is run from a terminal.
+# Remove at the end of the campaign:
+#   sudo rm /etc/sudoers.d/apertar-nvme-campaign /usr/local/libexec/apertar-campaign-helper
+Cmnd_Alias NVC_UNATTENDED = \
+  /usr/local/libexec/apertar-campaign-helper smartlog, \
+  /usr/local/libexec/apertar-campaign-helper status, \
+  /usr/local/libexec/apertar-campaign-helper fsck-ro, \
+  /usr/local/libexec/apertar-campaign-helper audio-usb, \
+  /usr/local/libexec/apertar-campaign-helper fstrim, \
+  /usr/local/libexec/apertar-campaign-helper timers-mask, \
+  /usr/local/libexec/apertar-campaign-helper timers-unmask
+Cmnd_Alias NVC_INTERACTIVE = \
+  /usr/local/libexec/apertar-campaign-helper arm, \
+  /usr/local/libexec/apertar-campaign-helper arm 1000, \
+  /usr/local/libexec/apertar-campaign-helper arm 2000, \
+  /usr/local/libexec/apertar-campaign-helper disarm, \
+  /usr/local/libexec/apertar-campaign-helper restart-core, \
+  /usr/local/libexec/apertar-campaign-helper compact0, \
+  /usr/local/libexec/apertar-campaign-helper compact-restore, \
+  /usr/local/libexec/apertar-campaign-helper reboot, \
+  /usr/local/libexec/apertar-campaign-helper poweroff
+pi ALL = (root) NOPASSWD: NVC_UNATTENDED
+pi ALL = (root) NVC_INTERACTIVE
