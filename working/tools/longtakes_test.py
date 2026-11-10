@@ -125,6 +125,12 @@ def test_post(tmp):
     row2 = dict(row, take_id='t2', audio_missing=1, outcome='pass_5min', _gaps=[])
     L.campaign_post(tmp, row2, c, 30.0, samples, [], '', {}, {})
     check('post: audio_missing = void', (row2['outcome'], row2['outcome_raw']), ('void', 'pass_5min'))
+    # --audio-optional (User 2026-11-10): the same take counts, audio_missing stays 1
+    L.CS['args'].audio_optional = True
+    row3 = dict(row, take_id='t3', audio_missing=1, outcome='pass_5min', _gaps=[])
+    L.campaign_post(tmp, row3, c, 30.0, samples, [], '', {}, {})
+    check('post: audio_missing with --audio-optional counts', (row3['outcome'], row3['audio_missing']), ('pass_5min', 1))
+    L.CS['args'].audio_optional = False
 
 
 def test_fill_gate(tmp):

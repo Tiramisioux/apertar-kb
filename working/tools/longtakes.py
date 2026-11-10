@@ -348,7 +348,9 @@ def storage_frontier(rows, size_mb):
 SAMPLE_COLS = ('t_s', 'pi_c', 'nvme_c', 'cpu_pct', 'load1', 'mem_avail_mb', 'fill_pct', 'free_gb', 'throttled', 'dropped',
                'state', 'core_cpu_pct', 'core_top_thread', 'buffer_used', 'buffer_capacity', 'dev_w_ios', 'dev_w_sectors',
                'dev_w_ticks', 'dev_inflight', 'dirty_kb', 'writeback_kb', 'trim_running', 'trim_last_unix', 't_unix',
-               'clients', 'merge_pending')
+               'clients', 'merge_pending', 'ui_fds', 'ui_dmabuf', 'arec_fds', 'core_fds', 'cma_free_kb', 'audio_ready',
+               'uiconf_rec', 'uiconf_dev', 'uiconf_mtime')
+UI_SAMPLE_COLS = ('ui_fds', 'ui_dmabuf', 'arec_fds', 'core_fds', 'cma_free_kb', 'audio_ready', 'uiconf_rec', 'uiconf_dev', 'uiconf_mtime')
 DEV = {'disk': ''}      # the recording drive's whole-disk name (sda, nvme0n1) for /sys/block/<disk>/stat; set in main()
 LAST_END = {'t': None}  # wall time the previous take ended (idle gap, trim-since-last-take)
 
@@ -725,6 +727,180 @@ def web_state(timeout=1.0):
         return {}
 
 
+UI_CG = '/sys/fs/cgroup/system.slice/apertar-ui-direct.service/cgroup.procs'
+
+
+def ui_health():
+    """The touch UI's resources (night 1, 2026-11-10: the UI began failing dmabuf exports at 03:56 and the next takes had no
+    audio): open fds and dmabuf fds of the Qt UI and of its meter arecord, Core's fds, and the kernel's free CMA."""
+    h = {'ui_fds': None, 'ui_dmabuf': None, 'arec_fds': None, 'core_fds': None, 'cma_free_kb': None}
+    h.update(uiconf_audio())
+
+    def fds(pid):
+        n = d = 0
+        try:
+            for f in os.listdir('/proc/%d/fd' % pid):
+                n += 1
+                try:
+                    if 'dmabuf' in os.readlink('/proc/%d/fd/%s' % (pid, f)):
+                        d += 1
+                except OSError:
+                    pass
+        except OSError:
+            return None, None
+        return n, d
+    try:
+        for x in open(UI_CG).read().split():
+            comm = rd('/proc/%s/comm' % x, '')
+            if comm == 'Apertar-UI':
+                h['ui_fds'], h['ui_dmabuf'] = fds(int(x))
+            elif comm == 'arecord':
+                h['arec_fds'] = fds(int(x))[0]
+    except (OSError, ValueError):
+        pass
+    try:     # Core's process by name in its cgroup (no systemctl subprocess every 5 s; the MainPID is the start script)
+        for x in open('/sys/fs/cgroup/system.slice/apertar-core.service/cgroup.procs').read().split():
+            if rd('/proc/%s/comm' % x, '') == 'apertar-core':
+                h['core_fds'] = fds(int(x))[0]
+    except (OSError, ValueError):
+        pass
+    try:
+        for l in open('/proc/meminfo'):
+            if l.startswith('CmaFree'):
+                h['cma_free_kb'] = int(l.split()[1])
+    except (OSError, ValueError):
+        pass
+    return h
+
+
+UICONF = os.path.expanduser('~/.config/CinePi/UI.conf')
+
+
+def uiconf_audio():
+    """The two keys Core's record_start reads from the touch UI's settings file (readSharedUiSettings, recordAudioEnabled
+    defaults to false when the file or key is missing), read straight from the file, not through Core."""
+    h = {'uiconf_rec': None, 'uiconf_dev': None, 'uiconf_mtime': None}
+    try:
+        h['uiconf_mtime'] = round(os.stat(UICONF).st_mtime, 2)
+        for l in open(UICONF):
+            k, _, v = l.strip().partition('=')
+            if k == 'recordAudioEnabled':
+                h['uiconf_rec'] = 1 if v.strip() in ('true', '1') else 0
+            elif k == 'audioInputDevice':
+                h['uiconf_dev'] = v.strip()
+    except OSError:
+        pass
+    return h
+
+
+def audio_forensics(out, tag, ui_since=None):
+    """Never raises: a failing snapshot is noted in audio-events.log and the take's bookkeeping goes on."""
+    try:
+        return _audio_forensics(out, tag, ui_since)
+    except Exception as e:
+        try:
+            with open(os.path.join(out, 'audio-events.log'), 'a') as f:
+                f.write(time.strftime('%F %T ') + 'snapshot %s failed: %r\n' % (tag, e))
+        except OSError:
+            pass
+        return 'snapshot-failed'
+
+
+def _audio_forensics(out, tag, ui_since=None):
+    """Everything about the audio path at one moment, into <run>/audio-forensics/<time>-<tag>/ (User 2026-11-10: "log
+    carefully the loss of sound so we can debug it later"). Read-only, no sudo; called between takes only: at the night start
+    (baseline), when the pre-check finds Core without the mic, and after a take with no audio."""
+    d = os.path.join(out, 'audio-forensics', time.strftime('%Y%m%d-%H%M%S-') + re.sub(r'[^A-Za-z0-9_.-]', '_', tag)[:80])
+    os.makedirs(d, exist_ok=True)
+
+    def put(name, text):
+        with open(os.path.join(d, name), 'w') as f:
+            f.write(text if text.endswith('\n') else text + '\n')
+
+    def run(cmd, timeout=20):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            return 'rc=%d\n%s%s' % (r.returncode, r.stdout, r.stderr)
+        except (OSError, subprocess.SubprocessError) as e:
+            return 'failed: %r' % e
+    try:
+        shutil.copy2(UICONF, os.path.join(d, 'UI.conf'))
+    except OSError as e:
+        put('UI.conf.error', repr(e))
+    put('uiconf_audio.json', json.dumps(dict(uiconf_audio(), mtime_local=time.strftime('%F %T', time.localtime(os.stat(UICONF).st_mtime)) if os.path.exists(UICONF) else None), indent=1))
+    asound = []
+    for f in ['/proc/asound/cards', '/proc/asound/pcm', '/proc/asound/devices'] + sorted(
+            glob.glob('/proc/asound/card*/pcm*c/sub*/status') + glob.glob('/proc/asound/card*/pcm*c/sub*/hw_params')):
+        asound.append('== %s\n%s' % (f, rd(f, '(unreadable)')))
+    asound.append('== arecord -l (what Core runs at record_start)\n' + run(['arecord', '-l']))
+    asound.append('== aplay -l\n' + run(['aplay', '-l']))
+    asound.append('== lsusb -t\n' + run(['lsusb', '-t']))
+    put('asound.txt', '\n'.join(asound))
+    procs = []
+    for unit in ('apertar-ui-direct', 'apertar-core'):
+        try:
+            pids = open('/sys/fs/cgroup/system.slice/%s.service/cgroup.procs' % unit).read().split()
+        except OSError:
+            pids = []
+        for x in pids:
+            comm = rd('/proc/%s/comm' % x, '?')
+            kinds = collections.Counter()
+            try:
+                for f in os.listdir('/proc/%s/fd' % x):
+                    try:
+                        t = os.readlink('/proc/%s/fd/%s' % (x, f))
+                    except OSError:
+                        continue
+                    kinds['dmabuf' if 'dmabuf' in t else re.sub(r'[:\[].*', '', t) if not t.startswith('/') else ('/dev/snd' if t.startswith('/dev/snd') else
+                          '/dev/dri' if t.startswith('/dev/dri') else '/dev/dma_heap' if t.startswith('/dev/dma_heap') else
+                          '/dev/video' if t.startswith('/dev/video') else '/dev/media' if t.startswith('/dev/media') else 'file')] += 1
+            except OSError:
+                pass
+            st_ = ''.join(l for l in (rd('/proc/%s/status' % x, '') or '').splitlines(True)
+                          if l.split(':')[0] in ('State', 'VmRSS', 'VmSize', 'Threads', 'FDSize'))
+            lim = ''.join(l for l in (rd('/proc/%s/limits' % x, '') or '').splitlines(True) if 'open files' in l)
+            procs.append('== %s pid %s %s (%s)\nfds by kind: %s\n%s%s' % (unit, x, comm, (rd('/proc/%s/cmdline' % x, '') or '').replace('\0', ' ')[:200],
+                         dict(kinds), st_, lim))
+    put('processes.txt', '\n'.join(procs))
+    mem = ''.join(l for l in open('/proc/meminfo') if l.split(':')[0] in ('MemAvailable', 'MemFree', 'CmaTotal', 'CmaFree'))
+    try:
+        bufs = os.listdir('/sys/kernel/dmabuf/buffers')
+        size = sum(int(rd('/sys/kernel/dmabuf/buffers/%s/size' % b, '0') or 0) for b in bufs)
+        exp = collections.Counter(rd('/sys/kernel/dmabuf/buffers/%s/exporter_name' % b, '?') for b in bufs)
+        mem += 'dmabuf buffers: %d, %.1f MiB, by exporter %s\n' % (len(bufs), size / 2**20, dict(exp))
+    except OSError as e:
+        mem += 'dmabuf sysfs: %r\n' % e
+    put('memory.txt', mem)
+    put('api_state.json', json.dumps(web_state(3.0), indent=1))
+    since = ui_since or time.time() - 600
+    try:
+        ul = subprocess.run(['journalctl', '-u', 'apertar-ui-direct', '-u', 'apertar-core', '--since', '@%d' % int(since),
+                             '-o', 'short-precise', '--no-pager'], capture_output=True, text=True, timeout=120).stdout.splitlines()
+    except (OSError, subprocess.SubprocessError):
+        ul = []
+    keep = ul if len(ul) <= 20000 else ul[:10000] + ['... %d lines left out ...' % (len(ul) - 20000)] + ul[-10000:]
+    put('journal-ui-core.log', '\n'.join(keep))
+    mesa = [l for l in ul if 'MESA' in l]
+    summary = 'tag %s at %s; journal since %s: %d lines, %d MESA, first MESA: %s' % (
+        tag, time.strftime('%F %T'), time.strftime('%T', time.localtime(since)), len(ul), len(mesa), mesa[0][:160] if mesa else '-')
+    put('summary.txt', summary)
+    with open(os.path.join(out, 'audio-events.log'), 'a') as f:
+        f.write(time.strftime('%F %T ') + summary + ' -> ' + os.path.basename(d) + '\n')
+    return d
+
+
+def audio_ready(ws):
+    """(ready, why) from /api/state: Core will record audio when ui.record_audio_enabled is on and ui.audio_input_device is one
+    of audio.input_devices (Core's own arecord -l, the list record_start resolves against; ApertarCoreApp.cpp:3157 e298d4a)."""
+    if not ws:
+        return None, 'no /api/state'
+    ui, au = ws.get('ui') or {}, ws.get('audio') or {}
+    ids = [d.get('id') for d in au.get('input_devices') or []]
+    dev = ui.get('audio_input_device') or ''
+    ok = bool(ui.get('record_audio_enabled')) and (dev in ids or (not dev and bool(ids)))
+    return ok, 'record_audio_enabled=%s audio_input_device=%r input_devices=%s' % (ui.get('record_audio_enabled'), dev, ids)
+
+
 class Sampler(threading.Thread):
     """1 Hz: temps, cpu, ram, drive fill, throttle flags, Core drop counter, Core's buffer level, the disk's own counters,
     dirty pages and the trim state. Keeps every sample for the take."""
@@ -739,6 +915,7 @@ class Sampler(threading.Thread):
         self.prev_core = None
         self.n = 0
         self.trim = (None, None)     # (media_trim_running, media_trim_last_unix) from /api/state, refreshed every 5th sample
+        self.uih = {}                # ui_health() + audio_ready, refreshed every 5th sample (campaign)
 
     @staticmethod
     def find_core():
@@ -820,6 +997,10 @@ class Sampler(threading.Thread):
             ws = web_state(0.5)
             if ws:
                 self.trim = (ws.get('media_trim_running'), ws.get('media_trim_last_unix'))
+            if CAMPAIGN['on']:
+                self.uih = ui_health()
+                ar = audio_ready(ws)[0]
+                self.uih['audio_ready'] = None if ar is None else int(ar)
         self.n += 1
         w_ios, w_sect, w_ticks, inflight = dev_stat(DEV['disk'] or resolve_disk()) if (DEV['disk'] or os.path.ismount(MEDIA)) else (None, None, None, None)
         return {'t_s': round(time.monotonic() - self.t0, 1), 'pi_c': pi, 'nvme_c': nv, 'cpu_pct': round(cpu, 1),
@@ -830,7 +1011,8 @@ class Sampler(threading.Thread):
                 'buffer_used': used, 'buffer_capacity': cap, 'dev_w_ios': w_ios, 'dev_w_sectors': w_sect,
                 'dev_w_ticks': w_ticks, 'dev_inflight': inflight, 'dirty_kb': dirty, 'writeback_kb': wb,
                 'trim_running': self.trim[0], 'trim_last_unix': self.trim[1], 't_unix': round(time.time(), 2),
-                'clients': web_peers(loopback=True) if CAMPAIGN['on'] else None, 'merge_pending': st.get('clip_merge_pending')}
+                'clients': web_peers(loopback=True) if CAMPAIGN['on'] else None, 'merge_pending': st.get('clip_merge_pending'),
+                **{k: self.uih.get(k) for k in UI_SAMPLE_COLS}}
 
     def run(self):
         # 1 Hz (H8). A failing sample is logged as an error row, never ends the thread (C2 F9): the take loop's stale-sample
@@ -1595,6 +1777,17 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
             row['_gaps'] = gaps
         audio = ' '.join(af) if af else ('in-mlv' if mlvs else 'NONE')
     jl = journal(t_wall)
+    if CAMPAIGN['on']:
+        try:
+            ul = subprocess.run(['journalctl', '-u', 'apertar-ui-direct', '--since', '@%d' % int(t_wall), '-o', 'short-unix',
+                                 '--no-pager'], capture_output=True, text=True, timeout=60).stdout.splitlines()
+        except (OSError, subprocess.SubprocessError):
+            ul = []
+        row['ui_mesa_errors'] = sum(1 for l in ul if 'MESA' in l)
+        row['ui_journal_lines'] = len(ul)
+        os.makedirs(out + '/journal-ui', exist_ok=True)
+        with open(out + '/journal-ui/%s.log' % tid, 'w') as uf:     # first and last 50 lines: the errors repeat
+            uf.write('\n'.join(ul[:50] + (['... %d lines ...' % (len(ul) - 100)] if len(ul) > 100 else []) + ul[50:][-50:]) + '\n')
     os.makedirs(out + '/journal', exist_ok=True)
     with open(out + '/journal/%s.log' % tid, 'w') as jf:   # raw Core journal for the take, to re-check a cause later
         jf.write('\n'.join(jl) + '\n')
@@ -1797,7 +1990,10 @@ CAMPAIGN_FIELDS = ['night', 'stage', 'ckey', 'split', 'tier_s', 'planned_gb', 'f
                    'audio_missing', 'audio_peak_backlog_kb', 'audio_discontinuities', 'audio_ring', 'webclient_cpu_s',
                    'webclient_alive_at_end', 'clients_min', 'merge_s', 'merge_ms_per_file', 'merge_ok', 'merge_eta_err_pct',
                    'hot_flag', 'throttled_hist', 'core_pid', 'uptime_s', 'memfree_mb', 'buddy_order8', 'takes_since_restart',
-                   'smart_temp_c', 'smart_duw', 'rec_offset_s', 'verdict']
+                   'smart_temp_c', 'smart_duw', 'rec_offset_s', 'verdict',
+                   'audio_pre', 'audio_pre_wait_s', 'ui_pre', 'ui_mesa_errors', 'ui_journal_lines', 'ui_fds_max', 'ui_dmabuf_max',
+                   'arec_fds_max', 'core_fds_max', 'cma_free_min_kb', 'audio_ready_min', 'audio_forensics', 'uiconf_rec_min',
+                   'uiconf_dev_changed']
 for _f in CAMPAIGN_FIELDS:
     if _f not in FIELDS:
         FIELDS.append(_f)
@@ -2246,6 +2442,12 @@ def _median(v):
 def campaign_post(out, row, c, fps, samples, jl, clip, stats, kinds):
     tid = row['take_id']
     row['tier_s'] = CS.get('tier_s') or row.get('tier_s')     # set by ctake() before run_take(): the merge-after rule reads it
+    devs = set(x.get('uiconf_dev') for x in samples if x.get('uiconf_dev') is not None)
+    row['uiconf_dev_changed'] = ' | '.join(sorted(map(repr, devs))) if len(devs) > 1 else ''
+    for k, f in (('ui_fds', max), ('ui_dmabuf', max), ('arec_fds', max), ('core_fds', max), ('cma_free_kb', min), ('audio_ready', min),
+                 ('uiconf_rec', min)):
+        v = [x.get(k) for x in samples if x.get(k) is not None]
+        row[{'cma_free_kb': 'cma_free_min_kb', 'audio_ready': 'audio_ready_min', 'uiconf_rec': 'uiconf_rec_min'}.get(k, k + '_max')] = f(v) if v else ''
     off = float(row.get('rec_offset_s') or 0)
     rec = [x for x in samples if x.get('state') == 'rec']
     fpf = int(c.split or 0)
@@ -2341,8 +2543,23 @@ def campaign_post(out, row, c, fps, samples, jl, clip, stats, kinds):
         void(row, 'the Pi-local WebUI client died during the take')
     elif c.web and cl and min(cl) < 1:
         void(row, 'the WebUI client was not connected for part of the take')
+    if CS['audio_expected'] and row.get('audio_missing') == 0:
+        CS['audio_ok_t'] = time.time()
+    elif CS['audio_expected'] and row.get('audio_missing') == 1:
+        CS['audio_lost'] = CS.get('audio_lost', 0) + 1
+        # the full UI + Core journal from the end of the last take with audio, the first time; the last 10 min after that
+        row['audio_forensics'] = os.path.basename(audio_forensics(
+            out, 'take-%s' % tid, CS.get('audio_ok_t') if CS['audio_lost'] == 1 else None))
+    if row.get('outcome') in ('void',):
+        pass
+    elif CS['audio_expected'] and row.get('audio_missing') == 1 and row.get('outcome') not in ('record_start_failed',) \
+            and getattr(CS['args'], 'audio_optional', False):
+        # User 2026-11-10: "have the tests continue even without sound": the picture result counts, the row keeps audio_missing=1
+        decide(out, 'no audio in %s (pre-check: %s; UI MESA errors in the take: %s): counted anyway (--audio-optional)' % (
+            tid, row.get('audio_pre', '-'), row.get('ui_mesa_errors', '-')))
     elif CS['audio_expected'] and row.get('audio_missing') == 1 and row.get('outcome') not in ('record_start_failed',):
-        void(row, 'audio_missing: no "audio capture" line in the take window')
+        void(row, 'audio_missing: no "audio capture" line in the take window (pre-check: %s; UI MESA errors in the take: %s)' % (
+            row.get('audio_pre', '-'), row.get('ui_mesa_errors', '-')))
     con = cdb(out)
     try:
         con.executemany('INSERT INTO boundaries VALUES (?,?,?,?,?,?,?,?,?)', bl)
@@ -2450,6 +2667,24 @@ def campaign_pre(out, c, fps, st, row, max_seconds):
     ok, why = ui_drawing()
     if not ok:
         bad.append('touch UI not drawing (%s)' % why)
+    if CS['audio_expected']:
+        # night 1 (2026-11-10): Core recorded two takes without audio and said nothing; see what it sees before every take
+        ta = time.monotonic()
+        while True:
+            ar, awhy = audio_ready(web_state(2.0))
+            if ar or time.monotonic() - ta >= 60 or STOP['sig']:
+                break
+            time.sleep(5)
+        row['audio_pre'] = ('ready' if ar else 'NOT READY: ' + awhy)[:300]
+        row['audio_pre_wait_s'] = round(time.monotonic() - ta, 1)
+        uh = ui_health()
+        row['ui_pre'] = ' '.join('%s=%s' % kv for kv in uh.items())
+        if not ar:
+            row['audio_forensics'] = os.path.basename(audio_forensics(out, 'precheck-notready', CS.get('audio_ok_t')))
+            decide(out, 'audio pre-check: Core does not see the mic after %.0f s (%s; %s); the take runs, the void decides' % (
+                row['audio_pre_wait_s'], awhy, row['ui_pre']))
+        elif row['audio_pre_wait_s'] >= 5:
+            decide(out, 'audio pre-check: the mic came back after %.0f s (%s)' % (row['audio_pre_wait_s'], row['ui_pre']))
     bs = busy_sessions()
     if bs:
         bad.append('login session busy: %s' % '; '.join(bs))
@@ -2722,9 +2957,11 @@ def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False
                 return row
             continue        # a void is repeated once
         if row['verdict'] == 'audio':
-            if CS['audio_faults'] >= 2:
+            if CS['audio_faults'] >= 2 and not getattr(a, 'audio_optional', False):
                 CS['stop'] = CS['stop'] or 'a second audio fault this night'
                 return row
+            if CS['arm_audio'].get(c.id, 0) >= 2 and getattr(a, 'audio_optional', False):
+                return row  # --audio-optional: this arm faulted twice; the cell gets 'audio', the night goes on
             if tier_s >= 900:
                 return row  # a faulted long take is never repeated automatically
             continue        # repeated once; never steps the fps down
@@ -3184,6 +3421,8 @@ def campaign_main(a, out):
     decide(out, 'fixed state: ladder %s, merge %s, frames_per_folder %s, speed ramp %s, pre-roll %s (%s)' % (
         st1.get('ladder_enabled'), st1.get('clip_merge_enabled'), st1.get('frames_per_folder'), st1.get('fps_speed_ramp'),
         st1.get('storage_preroll_auto'), st1.get('storage_preroll_last')))
+    if CS['audio_expected']:
+        decide(out, 'audio baseline: %s -> %s' % (audio_ready(web_state(3.0))[1], audio_forensics(out, 'baseline-' + a.night)))
     arms = load_arms(out)
     CS['need_warmup'] = False
     try:
@@ -3358,6 +3597,7 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
+    ap.add_argument('--audio-optional', action='store_true', help='a take without audio counts (flagged audio_missing); audio faults never end the night')
     ap.add_argument('--cooldown-every', type=int, default=0, help='N: an idle break of --cooldown-s before the first take after every N s (0 = none)')
     ap.add_argument('--cooldown-s', type=int, default=600, help='N: length of the hourly break, temperatures logged every 10 s')
     ap.add_argument('--cold-wait', type=int, default=600, help='N: idle seconds after a cold delete before the next take (0 = shoot on)')
