@@ -83,7 +83,7 @@ drive idle time after heavy writing before a long take (no trim).
 Not yet: a second split 30-min take (n = 1), HDR16 lossless long takes (the runner meters uncompressed for its floor), the S6 Core
 patches, the NVMe card.
 
-## Night 2 (planned 2026-11-09, waiting for the Pi)
+## Night 2 (2026-11-09 20:29 - 2026-11-10 01:15, unsupervised)
 
 - **Decision (User, 2026-11-09):** `frames_per_folder` 5000 is the default on the camera. Night 2 leaves it at 5000 and turns
   the merge back on. No Core code default changed.
@@ -100,3 +100,40 @@ records one 30-min split take at 2kSDR12 unc 25 fps (45,000 frames, 9 parts), tu
 fields every 10 s (`~/ssd-campaign/merge-test-samples.txt`) and Core's merge lines, deletes that clip through
 `/api/media/delete`, and restores the camera settings. The power-off watcher follows the merge test now (pid 54783), not
 night2.sh. The merge itself was never timed beyond 4,503 frames before this (0.72 ms per file).
+
+## Night 2 results (ended "all stages done" 00:25; merge test 00:25-01:12; Pi powered off by the watcher at 01:15)
+
+Raw: [night2-raw/](night2-raw/) (`results.md`/`.csv`/`runner.log` per run, the split run's per-take journals, `night2.log`,
+`merge-test.log`, `merge-test-samples.txt`). Core b755383 (Pi), every take split at 5,000 frames (`.parts` in each clip).
+
+| run | takes | clean | dropped | Core CPU | RAM buffer peak (after 1 min) | write queue peak |
+| --- | --- | --- | --- | --- | --- | --- |
+| 2kSDR12 unc 32 fps (split30, split10×3, long30, soak×2) | 7 (4 × 30 min, 3 × 10 min) | 5 | 1 frame (split30), 3 frames (soak 1) | 51-58 %, flat over 30 min | 2.8-7.0 % | 22-54 frames |
+| 2kSDR12 lossless JPEG 48 fps, 30 min | 1 | 1 | 0 | n/a | n/a | 28 |
+| 2kHDR16 lossless JPEG 27 fps, 30 min | 1 | 1 | 0 | n/a | n/a | 5 |
+
+**1. The split removes the in-take slowdown (confirmed, n = 4 × 30 min at the drive's limit).** Core CPU 51-58 % from the first
+to the last 5 minutes of every 30-min take; night 1's flat takes climbed to 125-131 % and two hit the safety stop. The RAM buffer
+never went above 7 %. `frames_per_folder` 5000 stays the default.
+
+**2. The four dropped frames are not storage (measured; cause unconfirmed).** In both takes Core's write queue peaked at 54 frames
+or fewer of a ~800-frame budget, and `dropped_queue_full` = 0.
+- split30 (20:29): Core wrote every frame it got (enqueued = written = 57,605, no drop counter), but one frame number is
+  missing from the sequence: the frame never reached the recorder (upstream of the queue: sensor, CFE or ISP side).
+- soak 1 (22:02): `dropped_copy_slot` = 3 (`drop[copy-slot]: frame=40007 held=6/6`): all six copy slots were busy when the frame
+  arrived, so it was dropped before the queue.
+- Rate: 4 frames in ~4 h at 32 fps (~460,000 frames). Both kinds are a separate problem from the drive; next step is to read
+  the per-second samples around 40,007 and look for the same kinds at 25 fps.
+
+**3. Lossless JPEG is clean on this drive at 2kSDR12 48 fps and 2kHDR16 27 fps for 30 min (measured, n = 1 each).**
+
+**4. The merge of a 30-min clip (measured, n = 1).** 2kSDR12 unc 25 fps, 45,001 frames in 10 parts (the last holds 1 frame),
+0 dropped while recording.
+- Merge time **342 s (5.7 min)**, 7.6 ms per file on average; the model (0.1 ms + 0.32 µs per file already in the main folder)
+  predicted about 5½ min.
+- The per-file time grows straight with the folder size: 0.8 ms per file in the first 5,000, 7.6 ms average by the end
+  (Core's journal, `merge-test.log`).
+- **The time left shown in the UI was 4-6 % low all the way through** (316 s at 10 s in, actual 333 s; 30 s at 311 s, actual 32 s).
+  No change to the constants.
+- After the merge: no `part_*` folders, no `.parts`; the clip was deleted through the media route (45,003 files), the settings
+  were restored (4K HDR16, 25 fps), `frames_per_folder` 5000, merge on.

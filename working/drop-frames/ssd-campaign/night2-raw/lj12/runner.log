@@ -1,0 +1,7 @@
+2026-11-09 23:14:19 write budget 400 GB, 0 GB used so far in this run
+2026-11-09 23:14:19 preserving 0 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-09 23:14:19 campaign start: modes ['2kSDR12']; excluded (storage too slow at 25 fps): ['4kSDR12', '4kSDR10', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12', '4kHDR16']; 64 configs; drive 167 MB/s; out=/home/pi/longtakes/night2-lj12
+2026-11-09 23:45:01 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 fps=48.0 -> ab_clean after 1800s dropped=0 kinds= pi=56C nvme=None
+2026-11-09 23:45:01 long30 2kSDR12_lossless_log0_tdn0_lock0_trim1_web0 at 48.0 fps: ab_clean after 1800.3s, capacity 48.0, files 86415
+2026-11-09 23:45:03 campaign ended (settings restored except Log, which stays as last set)
+2026-11-09 23:45:03 DONE marker written (all stages done): a resume will not restart this run; remove /home/pi/longtakes/night2-lj12/DONE to run it again

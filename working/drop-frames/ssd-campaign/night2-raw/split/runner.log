@@ -1,0 +1,19 @@
+2026-11-09 20:29:07 write budget 1500 GB, 0 GB used so far in this run
+2026-11-09 20:29:07 preserving 0 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-09 20:29:07 campaign start: modes ['2kSDR12']; excluded (storage too slow at 25 fps): ['4kSDR12', '4kSDR10', '2kSDR10', '2kHDR16', '2kHDR12', '4kHDR12', '4kHDR16']; 64 configs; drive 167 MB/s; out=/home/pi/longtakes/night2-split
+2026-11-09 21:00:25 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_dropped after 1800s dropped=1 kinds= pi=52C nvme=None
+2026-11-09 21:00:25 split30 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_dropped after 1800.2s, capacity 32.0, files 57605
+2026-11-09 21:10:54 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 600s dropped=0 kinds= pi=52C nvme=None
+2026-11-09 21:10:54 split101 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 600.2s, capacity 32.0, files 19207
+2026-11-09 21:21:23 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 600s dropped=0 kinds= pi=51C nvme=None
+2026-11-09 21:21:23 split102 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 600.2s, capacity 32.0, files 19207
+2026-11-09 21:31:52 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 600s dropped=0 kinds= pi=51C nvme=None
+2026-11-09 21:31:52 split103 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 600.2s, capacity 32.0, files 19207
+2026-11-09 22:02:31 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 1800s dropped=0 kinds= pi=51C nvme=None
+2026-11-09 22:02:31 long30 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 1800.2s, capacity 32.0, files 57604
+2026-11-09 22:33:15 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_dropped after 1800s dropped=3 kinds= pi=52C nvme=None
+2026-11-09 22:33:15 soak1 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_dropped after 1800.2s
+2026-11-09 23:04:18 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 fps=32.0 -> ab_clean after 1800s dropped=0 kinds= pi=51C nvme=None
+2026-11-09 23:04:18 soak2 2kSDR12_unc_log0_tdn0_lock0_trim1_web0 at 32.0 fps: ab_clean after 1800.2s
+2026-11-09 23:04:19 campaign ended (settings restored except Log, which stays as last set)
+2026-11-09 23:04:19 DONE marker written (all stages done): a resume will not restart this run; remove /home/pi/longtakes/night2-split/DONE to run it again

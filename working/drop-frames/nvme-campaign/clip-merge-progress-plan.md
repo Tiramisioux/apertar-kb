@@ -4,24 +4,24 @@ Goal (User): see the merges happen in real time, so it is clear **when the card 
 all clips still to merge. Playback must keep working on a split clip and on one that is being merged.
 Base: Core clip-split (b5e9e68 on the Mac: the split/merge settings), UI 53fe704.
 
-**Status 2026-11-09:** written as Core `0e94a25` (item 7), `b30cdef` (1–6), `f40658b` (8); UI `745ba74` (10), `6542c9b` (9).
-On the Mac only, checked at the desk (page script, the summary helper with sample values, syntax of the playback
-headers). Not compiled on the Pi, not tried.
+**Status 2026-11-10:** built on the Pi (branch `clip-split`): Core 67ce387 (item 7), 6e340c8 (1–6), b755383 (8); UI 2c1f34b (10),
+181a1e1 (9, with the grey READY fill). Bars grey in both UIs. Verify step 1 done on a 45,001-frame clip in the night 2 merge
+test: 342 s, time left 4–6 % low throughout (`ssd-campaign/README.md`, Night 2 results 4). Steps 2–6 still to try with Patrik.
 
 ## Where it shows
 
 | Place | What |
 | --- | --- |
 | WebUI, settings, Media card (under "Merge split clips") | two bars: **current clip** (C0004, 62 %, 2,812 / 4,503) and **all clips** (3 clips, 40 %, about 4 min left) |
-| WebUI, first page, System, Storage tile ("Space left") | a second thin blue bar under the space bar: all clips; the sublabel reads "Merging 3 clips · about 4 min" instead of "Media root" |
+| WebUI, first page, System, Storage tile ("Space left") | a second thin grey bar under the space bar: all clips; the sublabel reads "Merging 3 clips · about 4 min" instead of "Media root" |
 | Touch UI, Media section, first card (under Merge Split Clips) | the same two bars as the WebUI |
-| Touch UI camera page, MEDIA line (the "min" value), and the HDMI monitor's minutes (ExternalMonitorWindow) | when the merge is on and a clip waits: a **blue pill behind the minutes**, filled left to right by the all-clips progress (the PRE-ROLL blue of StatusChip) |
+| Touch UI camera page status chip, and the HDMI monitor's status pill (ExternalMonitorWindow) | when the merge runs (not paused): a **light transparent grey fill inside the READY pill**, left to right by the all-clips progress. Idle only: never while recording, where the pill shows the frame buffer (User, 2026-11-09; replaced the first plan's blue pill behind the minutes) |
 
 States, the same text everywhere:
 - merging: the two bars;
 - paused (recording, standby, media delete…): the bars hold, "Paused (recording)";
 - merge off with split clips on the card: "3 split clips, merge off";
-- **nothing waiting: no pill, "Nothing to merge"**. The missing pill is the "card can come out" signal.
+- **nothing waiting: no grey fill, "Nothing to merge"**. The missing fill is the "card can come out" signal.
 
 Pulling the card mid-merge stays safe (clip-split verify step 7): the clip stays split and merges when the card is back.
 
@@ -64,12 +64,12 @@ Pulling the card mid-merge stays safe (clip-split verify step 7): the clip stays
 
 8. **WebUI:**
    - the two bars in the Media card, with the existing `progress-track` / `progress-fill`;
-   - the thin blue bar and sublabel in the Storage tile.
+   - the thin grey bar and sublabel in the Storage tile.
    Both read the new fields through the system-block filter (which already copies `clip_merge_*`).
 9. **Touch UI bridge:**
    - properties for the fields, set from `get_state` and the `clip_merge` event (the `buffer` event pattern);
    - the two bars in the Media card;
-   - the blue pill behind the MEDIA minutes and in ExternalMonitorWindow, shown only while the merge is on and the
+   - the grey fill in the READY pill (StatusChip, ExternalMonitorWindow), shown only while idle, the merge running and the
      all-clips total is above 0.
 10. **Touch UI player** (`ClipFrameFiles.hpp`): the same part-first, then main-folder lookup as item 7, for a clip with
     `.parts`.
@@ -100,4 +100,4 @@ The campaign rule stands: WebUI closed for measured takes.
 - `media: merge progress from the disk, in the state and a clip_merge event` (Core 1–6)
 - `playback: read a clip being merged through its .parts layout` (Core 7)
 - `web: merge progress bars in the Media card and the Storage tile` (8)
-- `qml: merge progress bars, the blue pill behind the minutes, and the player across .parts` (9–10)
+- `qml: merge progress bars, a grey fill in the READY pill, and the player across .parts` (9–10)
