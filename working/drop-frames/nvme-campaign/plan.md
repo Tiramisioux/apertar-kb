@@ -1,4 +1,4 @@
-# NVMe 4K campaign on the Corsair cards: the plan (2026-11-08)
+# NVMe 4K campaign on the Corsair cards: the plan (2026-11-08, revised 2026-11-10)
 
 Written in a cloud session for Patrik after a research pass over the KB (the drop-frames campaign, the SSD long-take run and its
 re-analysis, the dng-chain feasibility work, the exFAT directory probe, the runner `longtakes.py`) and a critique round (statistics,
@@ -27,6 +27,49 @@ watched on every take after the "ALSA capture: Broken pipe" stop of 2026-11-08. 
 own SMART estimate is more generous). The campaign writes those ~10 TB through the exFAT volume Patrik shoots on, on a rig with 1,535
 unsafe shutdowns and three controller deaths on record: that is the one irreversible risk the campaign carries, and running it on the
 shooting card is his decision (§11.1).
+
+## Revision 2026-11-10 (after SSD nights 1-2): what changes; this section wins where it conflicts with the rest
+
+Evidence: `ssd-campaign/README.md` (Night 1 and Night 2 results, "the four dropped frames", "Frame budget vs exFAT folder size").
+
+1. **Split is the default, flat is the control** (User's decision 2026-11-09: `frames_per_folder` 5000 on the camera). Every scored take runs
+   split at 5000, as Patrik shoots. On the T7 the split was the difference between a clean 30-min take and a safety stop near minute 29
+   (2kSDR12 32 fps: flat 2 of 3 stopped, split 4 of 4 clean, Core CPU flat 51-58 % instead of climbing to 125-131 %; confirmed). The old
+   split-first / unsplit-first rule (§3, §6 S5, §11.10) is replaced: R13 on the NVMe is answered by **one flat control per primary mode at
+   30 min in S6**, at the mode's winning fps, run after its split take (a flat drop = "split needed on the card too"; flat clean = "split not
+   needed at that fps on this card, n = 1"). Prognosis from the formula below: flat holds at 25-30 fps (walk share 36-51 % at 30 min) but the
+   T7's Clear HDR takes failed at 35-40 %, so the HDR16 flat control is the informative one.
+2. **Folder-budget formula** (in §3's place for the directory part): budget T = 1000/fps ms; create cost W(n) = 0.32 us x n; flat share at
+   time t s(t) = 0.32 us x fps^2 x t; flat lasts t* = 0.6 / (0.32 us x fps^2) = 1.9e6/fps^2 s (25 fps 50 min, 30 fps 35 min, 33 fps 29 min,
+   42 fps 18 min, 50 fps 13 min); a split at 5000 caps the share at 1.6 ms x fps (4-8 %). Any arm >= 33 fps for 30 min needs the split.
+3. **Binary**: Pi `clip-split` at `e298d4a` or later (Core restarted on it; `/proc/<core pid>/exe` built after 2026-11-10 03:00). It carries
+   the merge worker and its progress, the Standard clip-name preset, and two night-2 fixes: the part folder is made on a writer, not the
+   copy worker (night 2's 3 copy-slot drops at the part_008 boundary), and the "frame index jump" log line plus `index_jumps=` in the
+   recording stats. S0's status check reads `index_jumps=` in the first smoke take's stats line; the "binary 01f170c" check of S0 is replaced.
+4. **A numbering gap is not a dropped picture.** A take whose `missing` (highest number + 1 - files) equals its `index_jumps` with every
+   other Core counter 0 and no `drop[capture-gap]` line is recorded as `numbering_gap` (the time-based index skipped a number after a late
+   timestamp; no frame was lost): reported per recipe, never an elimination and never a stop. Any other missing frame stays a drop. Night 2
+   had one; 11-07 had two (2kHDR12 25 fps).
+5. **Part boundaries are watched.** Per take the runner records every drop with its frame number and flags those within 64 frames after a
+   multiple of `frames_per_folder` as `boundary`. A boundary drop on the new binary means the fix did not cover it: the arm's result
+   stands, and the lead writes it up before the next night.
+6. **The merge stays off during the campaign and goes back on at the end of every night** (as night 2: off before each run, on at the end).
+   Measured on the T7 (merge test, night 2): 45,001 files merged in 342 s, the UI's time left 4-6 % low throughout; a 54,000-file clip
+   (30 min at 30 fps) is predicted at ~8 min. S6's merge-on real-use check stays (merge pauses within ~30 ms of `record_start`, 0 lost
+   frames, n = 1 at 1,503 files; repeat it at 45,000).
+7. **Restore list** (§7): `frames_per_folder` **5000** and the merge **on** (not 0), the rest as listed.
+8. **The Pi is powered off after every night and after the campaign.** A watcher (`poweroff-after-<night>.sh <pid>`, the night-2 pattern:
+   follows the night's last process, waits until nothing records and writes are done, restores the list of item 7, then calls Core's
+   `power_off_system` over the socket) ends each night. Consequences, accepted: the drop-in and the runtime timer masks do not survive
+   the power-off, so Patrik re-arms the drop-in (and the helper re-masks the timers) at the start of every night, not only after an
+   unplanned reboot; clips left on the card are deleted after a boot, which is cheap for split clips (cold unlink ~13.6 s x (5,000/10,000)^2
+   = 3.4 s per part, ~30 s per 45,000-frame clip) and the fill gate's cold-delete budget applies to flat controls only. No `@reboot`
+   crontab line (the safety classifier denied it on 2026-11-09; do not work around it).
+9. **Drive recovery between heavy runs**: 10 min idle between runs within a night (night 2's pattern). On the T7 the first takes after
+   ~210 GB of probe writes ran at 84-98 MB/s and the drive recovered while idle (probable); S1's drive-state write measures the NVMe's own.
+10. **ssh and scripts** (lessons of nights 1-2): every remote start is `ssh -n apertar '( setsid nohup <cmd> </dev/null > <log> 2>&1 & )'`
+   (a plain nohup kept the ssh session open); the Pi has no `bc` (use `python3 -I -c`); never `journalctl` or a listing during a take
+   (one low-priority journal read between takes is fine); delete clips only through `POST /api/media/delete?kind=folder&id=<name>`.
 
 ## 1. The owner's requirements and where each is met
 
@@ -396,7 +439,7 @@ applies to the cell and to the arm's higher fps (two concordant drops at 3 min, 
   order is rotated between S5 and S6 and per Part B card (pre-registered) so heat is not aliased with mode; a take that ends with the card above 75 C is flagged
   (the MP600 Mini throttles near 80 C, web; its spec range ends at 65 C; the test card's own SMART thresholds read 82.9 C warning and 85 C
   critical, measured, so 75 C sits below both).
-- **Restore list** (read back at the end of every night and after any stop): ladder on, merge on, `frames_per_folder` 0, the storage knobs at their defaults, TDN as the
+- **Restore list** (read back at the end of every night and after any stop): ladder on, merge on, `frames_per_folder` 5000 (revision 2026-11-10), the storage knobs at their defaults, TDN as the
   owner's default, tuning automatic, the drop-in left armed for the campaign's duration (FE depth 4 in Patrik's daytime use is a named
   deviation; he disarms it at the campaign's end), the timers unmasked, `APERTAR_AUDIO_BUFFER_MS` removed, fps / mode / compression / Log and
   the audio format as found at the start, no folder outside the database touched (the end-of-night listing equals the start-of-night listing minus the campaign's own deletes); at the campaign's end also the `@reboot` and watcher
