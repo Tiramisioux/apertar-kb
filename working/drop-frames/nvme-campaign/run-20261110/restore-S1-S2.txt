@@ -1,0 +1,6 @@
+night S1,S2 ended: stopped by SIGTERM
+2026-11-10 03:38:29
+read back: fps=25.0, raw_bit_depth=16, cdng_compression=none, cdng_log=off, preview_tdn=False, fps_phase_lock=False, fps_speed_ramp=False, clear_hdr=True, resolution=3840x2160, recording_format=cdng, ladder_enabled=False, frames_per_folder=5000, clip_merge_enabled=True, tuning_file=
+timers-unmask rc=0
+merge pending 0
+RESTORE OK

@@ -1,0 +1,15 @@
+2026-11-10 03:22:02 write budget 10000 GB, 0 GB used so far in this run
+2026-11-10 03:22:02 preserving 1 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-10 03:22:02 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-smoke1
+2026-11-10 03:22:02 DECISION night SMOKE start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 996 GB; Core pid 817; drop-in checked; timers-mask rc=127; smart helper not installed (/usr/local/libexec/apertar-campaign-helper)
+2026-11-10 03:22:02 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 03:22:57 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf200 fps=28.0 -> pass_capped_20s after 20s dropped=0 kinds= pi=55C nvme=40.85
+2026-11-10 03:22:58 DECISION merge of cDNG_26-11-10_03222607-C0001: 559 frames, 3 parts, 0 s (0.18 ms per frame), first ETA error None %, intact; merge off again: True
+2026-11-10 03:22:58 DECISION SMOKE smoke 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf200 at 28 fps, 20 s: pass_capped_20s (20.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 03:22:58 DECISION SMOKE: pass_capped_20s, 559 frames, buffer peak 2.4 %, index_jumps 0, boundaries 2, merge 0.1 s ok=1
+2026-11-10 03:22:58 fill gate: deleting cDNG_26-11-10_03222607-C0001 (559 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-10 03:22:58 DECISION deleted cDNG_26-11-10_03222607-C0001: 559 frames in 0.1 s (warm, budget 0 s)
+2026-11-10 03:22:58 DECISION SMOKE: delete of its clip: ok
+2026-11-10 03:22:58 DECISION stage SMOKE done
+2026-11-10 03:23:18 DECISION RESTORE OK
+2026-11-10 03:23:18 night SMOKE over: all stages of the night done

@@ -1,0 +1,82 @@
+{
+ "started": "2026-11-10 03:32:04",
+ "pi_model": "Raspberry Pi Compute Module 5 Lite Rev 1.0",
+ "kernel": "6.12.75+rpt-rpi-2712",
+ "core_commit": "e298d4a cdng: log a frame-index jump, and count them in the recording stats",
+ "drive": "Corsair MP600 MINI 931.5G nvme",
+ "mount": "/dev/nvme0n1p2 exfat rw,noatime,uid=1000,gid=1000,fmask=0002,dmask=0002,allow_utime=0020,iocharset=utf8,errors=remount-ro",
+ "disk_mbps_sustained": 354.0,
+ "modes_run": [
+  [
+   "4kSDR12",
+   12.44,
+   27
+  ],
+  [
+   "4kHDR12",
+   12.44,
+   27
+  ],
+  [
+   "4kHDR16",
+   16.9,
+   20
+  ]
+ ],
+ "modes_excluded_storage_too_slow": [
+  [
+   "4kSDR10",
+   259
+  ],
+  [
+   "2kSDR12",
+   78
+  ],
+  [
+   "2kSDR10",
+   65
+  ],
+  [
+   "2kHDR16",
+   106
+  ],
+  [
+   "2kHDR12",
+   78
+  ]
+ ],
+ "tuning_file": "",
+ "ui_running": "0.87 1.09 1.06 1/221 28904",
+ "ui_service": "active",
+ "throttled_at_start": "throttled=0x0",
+ "kernel_tune_readback_at_start": "dirty_bytes=0 dirty_bg=0 writeback_cs=500 sched=? nr_requests=? rq_affinity=?",
+ "original_settings": {
+  "fps": 25.0,
+  "raw_bit_depth": 16,
+  "cdng_compression": "none",
+  "cdng_log": "off",
+  "preview_tdn": false,
+  "fps_phase_lock": false,
+  "fps_speed_ramp": false,
+  "clear_hdr": true,
+  "resolution": "3840x2160",
+  "recording_format": "cdng"
+ },
+ "pi_revision": "c041a0",
+ "pi_mac_eth0": "2c:cf:67:c8:2b:1b",
+ "preexisting_clips": [],
+ "audio": "as configured in Core (input and levels unchanged)",
+ "audio_original": {
+  "audio_sample_format": "s24",
+  "audio_sample_rate": 48000,
+  "audio_channels": "auto",
+  "record_audio_enabled": true,
+  "audio_input_device": "hw:2,0"
+ },
+ "smart0": {
+  "serial": "A936B442006AC2",
+  "data_units_written": 58985016,
+  "t": "2026-11-10 03:32:05"
+ },
+ "s1_direct_mbps": 780
+}

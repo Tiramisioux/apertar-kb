@@ -1,0 +1,32 @@
+2026-11-10 03:24:10 watcher: no ACTIVE marker within 10 min: exiting
+2026-11-10 03:32:06 watcher: watching (pid 29221)
+2026-11-10 03:32:07 [S1,S2] night S1,S2 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 1000 GB; Core pid 817; drop-in checked; timers-mask rc=0; smart temp 36 C
+2026-11-10 03:32:07 [S1,S2] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 03:33:24 [S1,S2] S1 direct60 write: 60.0 GB in 77 s = 780 MB/s (min 10-s window 627 MB/s), NVMe max 44 C; file deleted
+2026-11-10 03:33:31 [S1,S2] S1 matrix default: folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-10 03:33:38 [S1,S2] S1 matrix --workers 1: folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-10 03:33:45 [S1,S2] S1 matrix --prealloc: folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-10 03:33:51 [S1,S2] S1 matrix --fsync none: folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-10 03:33:57 [S1,S2] S1 matrix --direct: folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-10 03:34:06 [S1,S2] S1 matrix --subdir 5000: folder removed (the drive keeps the written clusters until a trim: Core trims only after its own deletes)
+2026-11-10 03:35:07 [S1,S2] S1 state60 write: 47.9 GB in 62 s = 777 MB/s (min 10-s window 596 MB/s), NVMe max 47 C; file deleted
+2026-11-10 03:35:07 [S1,S2] stage S1 done
+2026-11-10 03:38:29 [S1,S2] RESTORE OK
+2026-11-10 03:38:36 watcher: ACTIVE gone: exiting
+2026-11-10 03:38:39 watcher: watching (pid 34909)
+2026-11-10 03:38:40 [S2] night S2 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 1000 GB; Core pid 817; drop-in checked; timers-mask rc=0; smart temp 39 C
+2026-11-10 03:38:40 [S2] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 03:40:30 [S2] S2 warmup 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 03:41:56 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: stopped_by_signal (50.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 03:42:17 [S2] RESTORE OK
+2026-11-10 03:42:37 watcher: watching (pid 39952)
+2026-11-10 03:42:38 [S2] night S2 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 948 GB; Core pid 817; drop-in checked; timers-mask rc=0; smart temp 44 C
+2026-11-10 03:42:38 [S2] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
+2026-11-10 03:46:28 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 03:49:20 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 300 s: drop (136.1 s, dropped 1, first drop 135.8, gap 0, boundary 0)
+2026-11-10 03:52:30 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 28 fps, 180 s: drop (153.2 s, dropped 1, first drop 152.8, gap 0, boundary 0)
+2026-11-10 03:56:06 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 04:01:41 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: void (300.3 s, dropped 0, first drop , gap 0, boundary 0) void: audio_missing: no "audio capture" line in the take window
+2026-11-10 04:07:16 [S2] S2 walk 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 27 fps, 300 s: void (300.3 s, dropped 0, first drop , gap 0, boundary 0) void: audio_missing: no "audio capture" line in the take window
+2026-11-10 04:07:37 [S2] RESTORE OK
+2026-11-10 04:07:37 watcher: ACTIVE gone: exiting
