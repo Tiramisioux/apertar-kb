@@ -1073,3 +1073,24 @@ Full tables in `working/playback/measurements.md`; the findings Patrik confirmed
   writers run (built, path not yet exercised). For shooting: treat ~95 % as full on this card.
 - Confirmed by: measurements of the day run (Patrik asked for the Core fix, 2026-11-10).
 - Tutorial: none.
+
+## 2026-11-10: on the CM5, an IMX283 on CAM1 with no driver made the IMX585 on CAM0 fail its probe; with the imx283 driver and `always-on`, both probe
+
+- Tested: CM5 Lite on the Waveshare CM5-IO-BASE-A, kernel 6.12.75+rpt-rpi-2712, IMX585 on CAM0
+  (`dtoverlay=imx585,cam0,link-frequency=891000000`), an IMX283 plugged into CAM1, powered off for every change.
+- Seen: with the IMX283 plugged in and no imx283 line in config.txt, "imx585 10-001a: Error reading reg 0x30dc: -121",
+  "probe with driver imx585 failed with error -121" (an I2C NACK at 0x1a on cam0's bus, rp1 i2c@88000); Core started
+  with "sensor probe: no camera to acquire". With the IMX283 unplugged the IMX585 probed again. With the DKMS driver from
+  Tiramisioux/imx283-v4l2-driver `cinemate-port` (68b7dc9), `/etc/modprobe.d/imx283.conf` (`crop_vmax=0
+  experimental_modes=0`) and `dtoverlay=imx283,always-on` after the imx585 line: both probe ("imx283 0-001a" on rp1
+  i2c@70000 at 720 MHz, "imx585 10-001a" at 891 MHz), libcamera registers both (imx585 on /dev/media1, imx283 on
+  /dev/media2), and the live Core opens the IMX585, the first camera listed.
+- Why: the CM5 device tree has one camera regulator for both ports (`__symbols__/cam1_reg` = `/cam0_reg`, enable on
+  GPIO34). So the IMX283 powered up together with the IMX585 when the imx585 driver switched it on, and the IMX585 did
+  not answer its first read (probable: the shared supply at power-up). Which of the two changes cured it, the driver or
+  `always-on`, was not separated.
+- Consequences: on this rig keep `always-on` on the imx283 line; both sensors stay powered from boot. The two drivers keep
+  their own link frequencies. The DKMS post-install replaces the kernel's stock `overlays/imx283.dtbo`; a kernel package
+  update may put the stock one back, and `./setup.sh` again restores it.
+- Confirmed by: Patrik ("now imx585 is working!", 2026-11-10).
+- Tutorial: none.
