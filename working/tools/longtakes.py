@@ -1957,7 +1957,7 @@ WALK_C_PROBE_NS = 63.3                                # probe 2026-11-08: ns per
 FRAME_MB = {('4kHDR16', 'none', False): 16.59, ('4kHDR16', 'none', True): 12.45,   # plan section 3 (measured)
             ('4kSDR12', 'lossless_jpeg', False): 5.98}
 BRACKET_TOP = {'4kHDR16': 30, '4kHDR12': 30}          # the record's brackets (plan section 5): 30 is the mode max
-NIGHT_STAGES = ('SMOKE', 'S1', 'S2', 'S4', 'S5', 'S6', 'PARTB', 'END')
+NIGHT_STAGES = ('SMOKE', 'S1', 'S2', 'S4', 'S5', 'S6', 'PARTB', 'END', 'ARMS')
 GO_STAGES = ('S4', 'S5', 'S6', 'PARTB')
 TIMERS = ('fstrim.timer', 'apt-daily.timer', 'apt-daily-upgrade.timer', 'man-db.timer', 'logrotate.timer')
 CS = {'out': '', 'night': '', 'args': None, 'voids': 0, 'audio_faults': 0, 'arm_audio': {}, 'stop': '', 'core_pid': None,
@@ -3354,6 +3354,23 @@ def end_night(out):
         decide(out, 'END: left as found (not the campaign\'s): %s' % ', '.join(ff))
 
 
+def arms_night(out, arms):
+    """Extra arms at a fixed fps (User 2026-11-10: "add HDR16 lossless without log and HDR16 uncompressed + Log at 25 fps"):
+    one cell each (3 min + 5 min, the S2 cell rule) at the arm's fps, no walk. --arms mode:comp:log|nolog:fps,..."""
+    a = CS['args']
+    for spec in [x for x in a.arms.split(',') if x]:
+        f_ = (spec.split(':') + ['', '', '', ''])[:4]
+        mkey, comp_, log_, fps = f_[0], f_[1] or 'none', f_[2] == 'log', int(f_[3] or 25)
+        if CS['stop'] or STOP['sig'] or HALT['why']:
+            break
+        c = arm_cfg(mkey, comp=comp_, log_=log_)
+        ak = '%s/%s%s@%d' % (mkey, 'unc' if comp_ == 'none' else 'lossless', '+log' if log_ else '', fps)
+        v, _cap = cell(out, c, fps, 'ARMS')
+        arms.setdefault(ak, {})['cells'] = {str(fps): v}
+        save_arms(out, arms)
+        decide(out, 'ARMS %s at %d fps: %s' % (ak, fps, v))
+
+
 def smoke_night(out):
     a = CS['args']
     mkey = [m for m in a.modes.split(',') if m][0]
@@ -3465,6 +3482,8 @@ def campaign_main(a, out):
                 long_stage(out, arms, 'PARTB', 900, ['4kSDR12'], 's4_pass', 'partb15_pass_' + CS['serial'], steps=0)
             elif n == 'END':
                 end_night(out)
+            elif n == 'ARMS':
+                arms_night(out, arms)
             if not (CS['stop'] or STOP['sig'] or HALT['why']):
                 write_atomic(out + '/DONE-' + n, time.strftime('%F %T') + ' done\n')
                 decide(out, 'stage %s done' % n)
@@ -3605,6 +3624,8 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
+    ap.add_argument('--arms', default='4kHDR16:lossless_jpeg:nolog:25,4kHDR16:none:log:25',
+                    help='N, ARMS: extra arms at a fixed fps, mode:comp:log|nolog:fps, one cell each')
     ap.add_argument('--audio-optional', action='store_true', help='a take without audio counts (flagged audio_missing); audio faults never end the night')
     ap.add_argument('--cooldown-every', type=int, default=0, help='N: an idle break of --cooldown-s before the first take after every N s (0 = none)')
     ap.add_argument('--cooldown-s', type=int, default=600, help='N: length of the hourly break, temperatures logged every 10 s')
