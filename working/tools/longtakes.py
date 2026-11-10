@@ -1789,6 +1789,7 @@ CREATE TABLE IF NOT EXISTS smart(t REAL, night TEXT, take_id TEXT, data_units_wr
   percent_used INT, thm1_count INT, thm2_count INT, raw TEXT);
 CREATE TABLE IF NOT EXISTS s1_samples(run TEXT, t_s REAL, bytes INT, mbps REAL, nvme_c REAL, dev_w_ticks INT, dev_w_ios INT);
 CREATE TABLE IF NOT EXISTS deletes(t REAL, clip TEXT, files INT, parts INT, cold INT, budget_s REAL, delete_s REAL, result TEXT);
+CREATE TABLE IF NOT EXISTS cooldowns(t REAL, night TEXT, k INT, t_s REAL, nvme_c REAL, pi_c REAL);
 '''
 CAMPAIGN_FIELDS = ['night', 'stage', 'ckey', 'split', 'tier_s', 'planned_gb', 'fit_limited', 'void_reason', 'outcome_raw',
                    'numbering_gap', 'index_jumps', 'drop_frames', 'boundaries_crossed', 'boundary_drops', 'copy_slot_drops',
@@ -2130,6 +2131,40 @@ def fill_gate(out, need_b):
         idle(out, CS['cold_wait_s'], 'drive idle after cold deletes')
         CS['cold_wait_s'] = 0
     return '' if free >= need_b else 'only %.0f GB free after deleting every campaign clip' % (free / 1e9)
+
+
+def cooldown(out):
+    """The hourly break (User 2026-11-10: "allow cooldown of nvme approx each hour"): before a take, when --cooldown-every seconds
+    have passed since the night start or the last break, idle --cooldown-s seconds with the camera standing by, and log the NVMe and
+    Pi temperatures every 10 s (table cooldowns) for the cooling curve. Never inside a take or a merge wait."""
+    a = CS['args']
+    every = getattr(a, 'cooldown_every', 0)
+    if not every or STOP['sig'] or CS['stop']:
+        return
+    t_last = CS.get('cool_t') or CS['night_t0'] or time.time()
+    if time.time() - t_last < every:
+        return
+    k = CS.get('cool_k', 0) + 1
+    CS['cool_k'] = k
+    secs = a.cooldown_s
+    temp = lambda path: round(float(rd(path, 0) or 0) / 1000, 1) if path else None
+    status(out, 'COOLDOWN %d until %s (the hourly break, %d s): safe to read' % (
+        k, time.strftime('%H:%M', time.localtime(time.time() + secs)), secs))
+    n0, p0 = temp(NVME_TEMP), temp(PI_TEMP)
+    con = cdb(out)
+    t0 = time.monotonic()
+    try:
+        while not STOP['sig']:
+            el = time.monotonic() - t0
+            con.execute('INSERT INTO cooldowns VALUES (?,?,?,?,?,?)', (time.time(), CS['night'], k, round(el, 1), temp(NVME_TEMP), temp(PI_TEMP)))
+            con.commit()
+            if el >= secs:
+                break
+            time.sleep(10)
+    finally:
+        con.close()
+    decide(out, 'cooldown %d: %d s; NVMe %s -> %s C, Pi %s -> %s C' % (k, round(time.monotonic() - t0), n0, temp(NVME_TEMP), p0, temp(PI_TEMP)))
+    CS['cool_t'] = time.time()
 
 
 def idle(out, seconds, why):
@@ -2630,6 +2665,8 @@ def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False
     if w:
         CS['stop'] = w
         return {'verdict': 'stop'}
+    if variant != 'warmup':
+        cooldown(out)
     for attempt in (1, 2):
         sm = smart_record(out)
         if sm.get('critical_warning'):
@@ -3321,6 +3358,8 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
+    ap.add_argument('--cooldown-every', type=int, default=0, help='N: an idle break of --cooldown-s before the first take after every N s (0 = none)')
+    ap.add_argument('--cooldown-s', type=int, default=600, help='N: length of the hourly break, temperatures logged every 10 s')
     ap.add_argument('--cold-wait', type=int, default=600, help='N: idle seconds after a cold delete before the next take (0 = shoot on)')
     ap.add_argument('--audio-ms', type=int, default=0, help='N: the APERTAR_AUDIO_BUFFER_MS the night expects in Core\'s environment (0 = not set)')
     ap.add_argument('--paced', action='store_true', help='N, S1: the paced small-file probe pair (1 MB files at 42 files/s, 30 min, flat and split)')
