@@ -132,3 +132,26 @@ Critical path: H0 -> H1-H4, H6, H18 (smoke test, S0) -> H24 (S1) -> H5, H7-H15, 
 | R3 | Per drop: the frame number (from the `drop[...]` lines and the gap in the numbering), flagged `boundary` within 64 frames after a multiple of `frames_per_folder`; a column in results and the DB | `parse_journal`, results | 25 | night 2's copy-slot drops at part_008 (item 5) |
 | R4 | Night-end power-off watcher: `poweroff-after-night.sh <pid>` (copy of `ssd-campaign/night2/poweroff-after-night2.sh`): waits for the pid, then until not recording and no writes pending, restores the list (fpf 5000, merge on, settings as found), then `power_off_system` over the socket; logs to `~/nvme-campaign/<night>.log` | new script in `nvme-campaign/scripts/` | 30 | plan revision item 8 |
 | R5 | `--stages` accepts the S6 flat control (`--flat-control <mode>=<fps>`), run after that mode's split 30-min take | main, the stage table | 20 | item 1 |
+| R6 | Merge after every take of a tier >= 15 min: merge on, wait (Core's `clip merge: done` line, the clip's parts and marker), merge off and read back; `merges` + `merge_samples` tables, intact check; the ledger marks the clip merged (flat cold-delete budget) | `merge_and_wait` | 80 | plan revision item 11 (User) |
+| R7 | Fix checks: `boundaries` (buffer and CPU around every part boundary, drops in the 64-frame window) and `index_jumps` tables; the report's campaign-wide sums | `campaign_post`, `report` | 60 | item 12 (User) |
+| R8 | Split-need curve: `minute_bins` for every take, c from a flat take's CPU slope, flat controls run past the first drop, t*(fps) per mode in the report | `campaign_post`, `s6_night`, `report` | 50 | item 13 (User) |
+| R9 | Without the computer: Pi-local WebUI stand-in (CPU and client count per take, lost client = void), `start-night.sh`, `--go` on its command line, `report-<night>.md` | runner, `scripts/` | 80 | item 14 (User) |
+| R10 | FE depth 4 check accepts any environ path with the depth-4 md5 (the start script's own export) | `fe_depth4` | 10 | item 15 |
+| R11 | `--comp-arms mode:comp:log:threshold`: SDR12 lossless above the edge, HDR16 lossless + Log above 25 fps | `s2_night` | 15 | item 16 (User asked) |
+
+## Build status (2026-11-10, Pi `~/longtakes/bin/longtakes.py`, `--stages N --night ...`)
+
+Built and tried on the Pi (SMOKE, 20 s at 4kHDR16 28 fps, split 200: clean, 559 frames, 2 boundaries, merge 0.1 s intact, deleted
+through the media route, RESTORE OK): H1 (signals via the existing path; `record_stop` always runs), H2, H5 (ledger, media route,
+re-stat, fit limit, cold budget), H7 (stale-sample and statvfs guards, kernel >= 6.18 refusal), H8 (1 Hz, vcgencmd every 10 s),
+H10 (voids: Core PID, depth-4 md5, serial, rw mount, ramp, ladder, merge, pre-roll auto, tuning, UI drawing over the service cgroup,
+busy pty sessions, lost client, audio missing), H11 (first drop from the samples, `audio_fault` from `ALSA capture`, audio columns),
+H12 (the S2/S3 cell rule and the walk, warm-ups, the SDR12 meter, the HDR16 lever block, comp arms, end control; S4/S5 step-down
+rules), H13 (status.md/.json, decisions.log, report), H14 (smart-log through the helper, the smart-based budget), H15
+(heartbeat, ACTIVE, `longtakes_watch.py`), H18 (`working/tools/longtakes_test.py`, 29 checks), H21 (`--modes` order, `--dry-run` plan),
+H24 (S1 direct write, matrix, drive-state write), H26 (restore list read back), R1-R11, D (helper + sudoers, `scripts/`).
+Offline only (no take yet): S1, S2-S6, PARTB, END, the fill gate's deletes under pressure, the watcher's `record_stop`, the power-off
+watcher (it would power the Pi off). Not built: H16 (struck: no crontab, @reboot refused), H17's crop probe (S0 by hand, then
+`--crop-modes`), H19, H20, H22's full thresholds (a simplified signature is written), H25's 3-min take during a merge (stub), the
+ABBA lever verdicts and the prognosis/pre-registration pages (the lead writes them from the report and the database).
+

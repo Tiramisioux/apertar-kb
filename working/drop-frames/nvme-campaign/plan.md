@@ -71,6 +71,40 @@ Evidence: `ssd-campaign/README.md` (Night 1 and Night 2 results, "the four dropp
    (a plain nohup kept the ssh session open); the Pi has no `bc` (use `python3 -I -c`); never `journalctl` or a listing during a take
    (one low-priority journal read between takes is fine); delete clips only through `POST /api/media/delete?kind=folder&id=<name>`.
 
+11. **The merge runs after every long take, and the runner waits for it** (User, 2026-11-10: "so we get statistics on that"). After
+   every take of a tier of 15 min or more (S4, S5, S6's split takes, Part B) the runner switches the merge on, waits until Core
+   reports nothing pending, switches it off again and reads that back before the next take. Recorded per merge: Core's own
+   `clip merge: done ... seconds= per_file_ms=` timing, the poll time, frames and parts before and after (intact = the same frames,
+   no part folder, no `.parts` marker), the first ETA against the actual time, the 2-10 s samples (`merges`, `merge_samples`).
+   Takes still record with the merge off, as item 6. Consequence: a merged clip is flat again, so a delete after a reboot costs the
+   flat cold-delete time (~4.5 min at 45,000 frames); the fill gate budgets it and idles 10 min after a cold delete.
+12. **The latest fixes are verified on every split take** (User, 2026-11-10). 8ec2f1a (part folder on the writer): every part
+   boundary a take crosses is a row (`boundaries`: the buffer's peak 1 s before to 3 s after it against the take's median, Core's
+   CPU, drops within 64 frames after it); the report sums boundaries crossed, boundary drops and copy-slot drops over the campaign
+   (expected if the fix holds: 0 and 0). e298d4a (frame index jump): every `frame index jump` line is a row (`index_jumps`), and the
+   report separates numbering gaps explained by `index_jumps` from missing frames that are not (each of those is a drop).
+13. **When does 4K need the split** (User, 2026-11-10). S6's flat controls run past their first drop (to Core's safety stop, the
+   tier length or a full card), so the curve is recorded, not only the time of the first loss. Every take writes minute bins (Core
+   CPU, buffer, device ticks per write, NVMe temperature, dirty pages: `minute_bins`); a flat take's CPU slope gives the walk cost c
+   per 4K mode (ns per entry); the report sets each flat control against its split twin at the same mode and fps and predicts the
+   flat lifetime t*(fps) = 0.6 / (5 x c x fps^2) per mode (an upper bound for Clear HDR: the T7's HDR modes failed nearer 35-40 %).
+14. **The campaign runs without the computer** (User, 2026-11-10). The WebUI stand-in is Pi-local (`webui_client.py` over
+   loopback: real use has a WebUI client connected, Patrik has no touch screen), not the Mac's `webui_remote.py`; its CPU time is
+   recorded per take and the client count is sampled every second (a client lost mid-take = void). One command on the Pi starts a
+   night (`scripts/start-night.sh <stages> [--go STAGE=CONDITION]`, from any terminal), the GO sentinels can be given on that command
+   line in advance, and the runner writes its own `report-<night>.md` and `status.md`. This Pi has no `crontab`, so the watcher is
+   started with the runner, not relaunched by cron.
+15. **FE depth 4 is permanent** (found 2026-11-10): `/home/pi/start-apertar-core.sh` exports `LIBCAMERA_RPI_CONFIG_FILE` =
+   the Tuning-Files `pisp-depth4.yaml` since 2026-11-06, so it survives every power-off; no night needs a re-arm or a password. The
+   runner accepts any path in Core's environment whose md5 is the depth-4 file (`88929ca3...`). The helper's `arm` stays for the
+   audio-ring lever only.
+16. **Clear HDR 12-bit** (User asked, 2026-11-10): `4kHDR12` (3840x2160, CCMP, stored as 12-bit codes) stays one of the three primary
+   modes in S2-S6 from 30 fps. **Lossless + Log**: HDR16 lossless + Log is read with the manual pre-roll in S2 and walked only if it
+   reads above 25 fps (section 5); SDR12 gets no Log + lossless arm (larger files than lossless alone on the SSD).
+17. **The Pi powers off at the end of every night and of the campaign** (User, 2026-11-10: "turn off the pi when finished"), through
+   `scripts/poweroff-after-night.sh` and Core's `power_off_system`, only when `restore-<night>.txt` says RESTORE OK and Core reads back
+   `frames_per_folder` 5000 and the merge on; otherwise the Pi stays on and the log says why.
+
 ## 1. The owner's requirements and where each is met
 
 | # | Requirement (2026-11-08) | Where |
