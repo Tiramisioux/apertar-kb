@@ -193,6 +193,8 @@ Core `f4a1393..ba0658d` (then `..01f170c`, the two verify fixes), UI `7029db1..7
 | `67ce387` | Playback reads a clip while the merge moves its frames: `openClipFrame` (part path, then the root), facts kept while that clip merges, `listFrames` reads the root again after the parts; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, Core restarted on it; not tried mid-merge |
 | `6e340c8` | Merge progress counted from the disk at each scan (survives a power-off); `clip_merge_paused`, `_clip_done/_total`, `_all_done/_total`, `_all_clips`, `_eta_s`; in socket `get_state`; `clip_merge` event at most 1 Hz; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, Core restarted on it; tried 2026-11-10 (45,001-frame merge in 342 s, time left 4-6 % low) |
 | `b755383` | WebUI: grey merge bars (current clip, all clips) in the Media card; thin grey bar and "Merging N clips · about X min" on the Storage tile; grey fill in the READY pill while idle; Pi branch `clip-split` | fork-only; Pi only; built 2026-11-09, Core restarted on it; not watched in a browser yet |
+| `09243e5` (Mac) | Split take: the part folder's mkdir moves from the copy worker to the DNG writer (SSD night 2: 3 copy-slot drops at the part_008 boundary) | fork-only; Mac worktree, not on the Pi, not built |
+| `4b827e7` (Mac) | Log "frame index jump" when the time index runs ahead of the count; `index_jumps=` in the recording stats (SSD night 2: a numbering gap with every counter at 0) | fork-only; Mac worktree, not on the Pi, not built |
 
 ## Apertar-UI · base `upstream-1.6.0` (`43888e5`)
 
