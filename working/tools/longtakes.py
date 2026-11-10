@@ -2089,7 +2089,7 @@ def delete_clip(out, c):
     ledger_update(out, c['clip'], deleted=time.time(), delete_s=secs, delete_result='ok')
     decide(out, 'deleted %s: %d frames in %.1f s (%s, budget %.0f s)' % (c['clip'], files, secs, 'cold' if cold else 'warm', budget))
     if cold:
-        CS['cold_wait_s'] = max(CS['cold_wait_s'], 600)
+        CS['cold_wait_s'] = max(CS['cold_wait_s'], getattr(CS.get('args'), 'cold_wait', 600))
     return ''
 
 
@@ -3156,7 +3156,7 @@ def campaign_main(a, out):
             if os.path.exists(out + '/DONE-' + n):
                 decide(out, 'stage %s already done: skipped' % n)
                 continue
-            if i:
+            if i and a.idle_between:
                 idle(out, a.idle_between, 'drive recovery between runs')
             if n in GO_STAGES and not a.no_go and not go_wait(out, n):
                 break
@@ -3321,6 +3321,7 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
+    ap.add_argument('--cold-wait', type=int, default=600, help='N: idle seconds after a cold delete before the next take (0 = shoot on)')
     ap.add_argument('--audio-ms', type=int, default=0, help='N: the APERTAR_AUDIO_BUFFER_MS the night expects in Core\'s environment (0 = not set)')
     ap.add_argument('--paced', action='store_true', help='N, S1: the paced small-file probe pair (1 MB files at 42 files/s, 30 min, flat and split)')
     a = ap.parse_args()
