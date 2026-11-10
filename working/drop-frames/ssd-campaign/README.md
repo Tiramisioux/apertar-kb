@@ -137,3 +137,38 @@ or fewer of a ~800-frame budget, and `dropped_queue_full` = 0.
   No change to the constants.
 - After the merge: no `part_*` folders, no `.parts`; the clip was deleted through the media route (45,003 files), the settings
   were restored (4K HDR16, 25 fps), `frames_per_folder` 5000, merge on.
+
+## Night 2: the four dropped frames, examined (2026-11-10)
+
+**Soak 1 (22:02), 3 frames: copy-slot drops at the part_008 boundary (probable).** All three fell in one second, t = 1250.8 s
+(frames 40007-40025); frame 40000 is the 5000-frame boundary. `ensurePartFolder` runs `mkdir` on the copy worker's own thread
+(CameraController.cpp:4966-4981, Pi b755383); the camera keeps 8 raw buffers and Core may hold 6, so a copy-worker stall of
+>= 6 periods (190 ms at 32 fps) refuses frames (`enqueueCopy`, 5079). In that second Core's CPU was 35 % against 51 % the rest of
+the take (blocked, not busy), dirty 2 MB, writeback 1 MB. The T7 is UAS with queue depth 30: a directory-metadata read behind
+30 queued writes can wait hundreds of ms. ~40 other boundaries that night passed (n = 1 event; the timing to the frame is the
+evidence). Fix (not built): create the part folder from a writer thread (EEXIST tolerated) or pre-create part k+1 when part k
+starts, so nothing on the copy path touches the file system.
+
+**Split30 (20:29), 1 frame: a frame-number jump, not a lost frame (probable).** No counter moved, no `drop[...]` line, the state's
+dropped count stayed 0 all take. Frame numbers are `max(count, round((ts - ts0) x fps))` (4686-4694); the audio-sync line
+(output_samples = 57,606 periods for 57,605 frames) shows the time index ended exactly one ahead of the count. The cadence
+detector (10015-10062, dt > 1.5 periods, resets only at start/stop) checks every frame that reaches the numbering point, so a
+frame lost before Core would have left a 2-period gap and a log line. Same signature in two 2kHDR12 25-fps takes on 11-07
+(45,007 and 29,999 files). Other long takes end at 0, -1 or -2 (sensor slightly fast, numbering by count). So one sensor
+timestamp arrived >= half a period late, or the take's first intervals set the time grid late; which, the logs cannot say.
+Proposed (not built): log when the time index jumps ahead of the count (dt, ts, index); consider letting the time index win
+only when the cadence detector saw a gap. The runner counts a numbering gap as a drop (`missing`).
+
+## Frame budget vs exFAT folder size (formula; T7 measured, NVMe prognosis)
+
+- Budget per frame T = 1000/fps ms. Directory walk per create W(n) = 0.32 us x n (n files already in the folder; CPU under the
+  exFAT lock; measured on the NVMe probe and the T7's S3, same slope). Share of the budget s = W/T = 0.32 us x fps x n; in a
+  flat take n = fps x t, so s(t) = 0.32 us x fps^2 x t. The campaign's rule: flat holds below s = 0.6. Hence a flat folder
+  lasts t* = 0.6 / (0.32 us x fps^2) = 1.9e6 / fps^2 s: 50 min at 25 fps, 31 min at 32 fps, 14 min at 48 fps, 8.8 min at 60 fps,
+  3.2 min at 100 fps. Split at 5000 caps s at 1.6 ms x fps (5 % at 32 fps, 16 % at 100 fps).
+- T7 (measured, 2026-11-07 run + nights 1-2): flat 30 min passes at 2kSDR10 33 fps (s = 0.63 at the end), 2kSDR12 lossless
+  30 fps, 2kHDR12 28 fps, 2kHDR16 26 fps (bandwidth edge, ~110 MB/s), HDR16+Log 28 fps; 2kSDR12 unc 32 fps flat fails at
+  29 min (2 of 3), split passes (4 of 4); the Clear HDR modes fail earlier than the walk predicts (29-30 fps at 19-24 min,
+  s = 0.35-0.4; the HDR copy path costs more CPU, cause of the lower threshold unconfirmed). Ceilings: ~105 MB/s, ~40 files/s.
+- NVMe (prognosis): 415 MB/s Core-pattern sustained, small per-file cost, so the walk rule alone applies for 2K; 4K HDR16
+  uncompressed >= 25 fps (422+ MB/s) is at the drive's limit regardless of folders.
