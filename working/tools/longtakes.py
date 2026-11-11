@@ -3127,6 +3127,11 @@ def s2_night(out, arms):
                 return
         else:
             edge = int(float(start.get(mkey) or top))
+            if edge > top:
+                # Core's ceiling for the mode is below the planned start (2026-11-10: 4K HDR12 read 25 with the IMX283's
+                # probe in; the start of 30 came back as 25, a setup_mismatch, and the night stopped): start at the top.
+                decide(out, '%s: planned start %d fps is above the mode top %d: starting at %d' % (mkey, edge, top, top))
+                edge = top
             warmup(out, c, edge, 'S2')
         a_['edge'], a_['top'] = edge, top
         save_arms(out, arms)

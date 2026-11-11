@@ -152,6 +152,16 @@ For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
   (Patrik disabled the IMX283); the next boot's IMX585 probe failed with -121 and Core found no camera. Matches the
   hardware-log entry of 2026-11-10: with the IMX283 plugged in and no imx283 line, the IMX585 does not answer.
 
+- **The IMX283 capped the IMX585's fps (probable, from the journal).** In the run's boot (22:24) both sensors were
+  attached; Core's startup probe listed 57 modes, and they were the IMX283's (5472x3648, 3936x2176 crop, "(driver)").
+  The IMX585's ceilings then came from those: SDR12 4K read 30 (the meter asked for 44 and got 30), HDR12 4K 25,
+  HDR16 25. With the IMX283 out (2026-11-11 01:46) the probe gives 142 modes, 4K SDR12 60, 4K Clear HDR 12/16-bit 30.
+  So tonight's SDR12 cells (29, 30 carried, uncompressed and lossless) are valid but say nothing above 30; SDR12 and
+  HDR12 run S2 again. Their old entries are kept in arms.json as `<key>@cap-imx283-probe`. HDR16's cells were all
+  measured before the IMX283 went in (2026-11-10 22:06), except the two 25-fps ARMS cells, which are below the cap.
+- Runner fix: S2's planned start fps is clamped to the mode top (a start above it was a setup_mismatch that ended the
+  night).
+
 ## Deviations from the preregistration
 
 - 2026-11-10 03:38: no drive-recovery idles between stages or after cold deletes (User: "simulate a shooting
