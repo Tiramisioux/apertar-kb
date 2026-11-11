@@ -61,9 +61,9 @@ to the stage it loads. If that holds, two sizes per stage are enough and everyth
 | H.264 | output 1920x1080 and 3840x2160 | capture is 4K only, Core caps at 30; x264 had headroom (hardware-log 2026-10-28, measured) |
 
 **Levers (on/off):** TDN (`set_preview_tdn`), phase lock (`set_fps_phase_lock`; measured cost before the `{d, d+1}`
-fix `69a700e`, never since), WebUI client (the runner's stand-in), audio (`set_record_audio_enabled`), preview aids
+fix `69a700e`, never since), WebUI client (the runner's stand-in), audio recording (`set_record_audio_enabled`: the WAV file only; the meter stays as it is), preview aids
 (`set_focus_peaking_enabled` + `set_zebra_enabled` together). Held constant: trim on, merge off during probes,
-frames_per_folder 5000, speed ramp off, ladder off except in P4.
+frames_per_folder 5000 for cDNG and lossy DNG (MLV, ProRes and H.264 write one file per take), speed ramp off, ladder off except in P4.
 
 Full factorial = 7 modes x ~18 format levels x 32 lever states: not runnable. The design below measures the stages, not
 the combinations, then checks the combinations on a random sample.
