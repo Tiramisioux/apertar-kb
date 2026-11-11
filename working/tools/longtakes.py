@@ -1053,6 +1053,18 @@ class Sampler(threading.Thread):
         return self.rows[-1] if self.rows else {}
 
 
+def set_format(fmt):
+    """set_record_format, then once more if Core landed on the other DNG format: cDNG and lossy DNG share one saved settings
+    profile, and a switch into it from MLV/ProRes/H.264 brings back whichever of the two was used last (CameraController
+    setRecordingFormat, 'if (format == Cdng) format = next.recordingFormat'; EST day 2026-11-11: the restore asked for cdng
+    and got lossydng, so Clear HDR and 16-bit were refused)."""
+    r = core('set_record_format', value=fmt); time.sleep(3)
+    got = state().get('recording_format')
+    if got not in (None, fmt) and {got, fmt} <= {'cdng', 'lossydng'}:
+        r = core('set_record_format', value=fmt); time.sleep(3)
+    return r
+
+
 def log(out, msg):
     line = time.strftime('%F %T ') + msg
     print(line, flush=True)
@@ -1082,7 +1094,7 @@ def apply_cfg(c, fps, fmt='cdng'):
         return apply_ladder_take(c, fps)
     st = state()
     if st.get('recording_format') not in (None, fmt):
-        core('set_record_format', value=fmt); time.sleep(3)
+        set_format(fmt)
         # Core keeps settings per format (profile.<format>.*): the switch loads that profile's resolution and Clear HDR,
         # so the checks below need the state after it (smoke 2026-11-09: MLV came up 3840x2160, setup_mismatch).
         st = state()
@@ -1757,7 +1769,7 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         core('set_audio_capture_options', format='auto')
         r = core('record_start')
     t_rec_wall, t_rec = time.time(), time.monotonic()
-    outcome, ctx_drop = None, None
+    outcome, ctx_drop, full_wait = None, None, False
     if not r.get('ok'):
         outcome = 'record_start_failed'
         row['cause_estimate'] = str(r.get('error'))
@@ -1773,6 +1785,13 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
             free_now = None
         if STOP['sig']:
             outcome, ctx_drop = 'stopped_by_signal', dict(last)
+        elif (CAMPAIGN['on'] and free_now is not None and 5 < time.time() - (last.get('t_unix') or time.time()) <= 45
+              and (last.get('buffer_used') or 0) >= 0.8 * (last.get('buffer_capacity') or 1e18)):
+            # Core's safety stop with a full RAM buffer: the recorder winds the queue down and Core's socket does not answer
+            # meanwhile (EST day 2026-11-11, MLV 4K 60 fps: buffer at 89 %, stop 11.6 s, no sample for 11.8 s). Wait for the
+            # sampler; the stop branch below then reads the stop as buffer_full. Not a dead medium.
+            full_wait = True
+            continue
         elif CAMPAIGN['on'] and (free_now is None or time.time() - (last.get('t_unix') or time.time()) > 5):
             # H7: a dead medium or a sampler that stopped answering: stop the take, never call it a pass
             outcome, ctx_drop = 'fault', dict(last)
@@ -1790,7 +1809,7 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
             # Core stopped the take itself. The RAM write buffer reaching 90 % (buffer_safety_stop) means the drive fell
             # behind: that is a result (the drive cannot carry this fps), not an outside interference.
             safety = any(x.get('_st', {}).get('buffer_safety_stop') for x in sam.rows[-12:])
-            if safety:
+            if safety or full_wait:
                 outcome = 'buffer_full'
             elif last['free_gb'] < 1.5:
                 outcome = 'drive_full'
@@ -3506,7 +3525,7 @@ def est_spec_parts(spec):
 
 def est_cfg(spec, **lv):
     """spec = mode:format[:option[:option]]: 4kHDR16:cdng:unc|lj[:log], 4kSDR12:lossydng:3to1|5to1, 4kSDR12:mlv,
-    4kP:prores:hq|422|lt|proxy[:colour], 4kP:h264:1920x1080|3840x2160. Levers not given take the reference state."""
+    4kP:prores:hq|422|lt|proxy[:colour], 4kP:h264:1920x1080|2560x1440 (Core's largest H.264 size on a Pi 5). Levers not given take the reference state."""
     mkey, fmt, o = est_spec_parts(spec)
     lv_ = dict(EST_REF)
     lv_.update({k: v for k, v in lv.items() if k in EST_LEVERS})
@@ -3531,7 +3550,7 @@ def est_grid():
             g += [mk + ':cdng:unc:log', mk + ':cdng:lj:log']        # Log applies to Clear HDR 16-bit only (R2 section 2c)
     for mk in ('4kP', '2kP'):
         g += [mk + ':prores:' + p for p in ('hq', '422', 'lt', 'proxy')]
-    g += ['4kP:prores:hq:arri_logc4', '4kP:h264:1920x1080', '4kP:h264:3840x2160']
+    g += ['4kP:prores:hq:arri_logc4', '4kP:h264:1920x1080', '4kP:h264:2560x1440']
     return g
 
 
@@ -3735,7 +3754,7 @@ def est_ladder(out):
     text = ','.join(t % (str(th[i]) if i < len(rungs) - 1 and th[i] else '') for i, (_s, t) in enumerate(rungs))
     st = state()
     if st.get('recording_format') != 'cdng':
-        core('set_record_format', value='cdng'); time.sleep(3)
+        set_format('cdng')
     r = core('set_mode_ladder', resolutions=text, enabled='true')
     if not r.get('ok'):
         decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (text, r.get('error')))
@@ -3951,7 +3970,7 @@ def restore_formats(found):
         if fmt == (found.get('recording_format') or 'cdng'):
             continue
         p = (found.get('profiles') or {}).get(fmt) or {}
-        core('set_record_format', value=fmt); time.sleep(3)
+        set_format(fmt)
         if 'clear_hdr' in p and fmt not in ('prores', 'h264'):
             core('set_clear_hdr', enabled=p['clear_hdr'] in ('true', '1')); time.sleep(4)
         if p.get('resolution_width') and fmt != 'h264':
@@ -3980,7 +3999,7 @@ def restore_night(out, found, nights, why):
     powers the Pi off only when the file says RESTORE OK."""
     bad0 = restore_formats(found)
     ow, oh = (found.get('resolution') or '3840x2160').split('x')
-    core('set_record_format', value=found.get('recording_format') or 'cdng')
+    set_format(found.get('recording_format') or 'cdng')
     for cmd, kw in (('set_clear_hdr', {'enabled': bool(found.get('clear_hdr', True))}),
                     ('set_resolution', {'width': int(ow), 'height': int(oh)}),
                     ('set_raw_bit_depth', {'value': 12 if found.get('raw_bit_depth') == 16 else 16}),
@@ -4782,7 +4801,7 @@ def main():
                 restore_knobs()
             except Exception as e:
                 log(out, 'WARNING: could not restore the knobs: %s' % e)
-            core('set_record_format', value=orig.get('recording_format') or 'cdng')
+            set_format(orig.get('recording_format') or 'cdng')
             try:
                 set_variant(out, 'base', {})      # override file cleared; kernel tuning restored if it was on
             except Exception as e:
