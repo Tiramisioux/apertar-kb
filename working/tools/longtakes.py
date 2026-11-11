@@ -3312,7 +3312,7 @@ def go_condition(out, cond):
     if m:
         st_ = m.group(1)
         dst = {'S4': 's4_pass', 'S5': 's5_pass'}.get(st_)
-        modes = [k for k in arms if '/' not in k and k not in CROPS]
+        modes = [k for k in arms if '/' not in k and '@' not in k and k not in CROPS]     # '@' = a set-aside entry (2026-11-11)
         bad = [k for k in modes if not arms[k].get(dst)] if dst else ['?']
         return (not bad), ('true' if not bad else 'false (%s did not pass %s)' % (', '.join(bad), st_))
     m = re.match(r'if passed (\S+) (S\d)$', cond)

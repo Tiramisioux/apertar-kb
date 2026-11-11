@@ -15,7 +15,7 @@
 # sets it since 2026-11-06), so no password is needed. Follow it with:  cat <run>/status.md
 set -u
 STAGES=${1:?stages, e.g. S2 or S4,S5}; shift
-. "$HOME/nvme-campaign/campaign.env"
+. "${CAMPAIGN_ENV:-$HOME/nvme-campaign/campaign.env}"     # CAMPAIGN_ENV: another settings file (the estimator day)
 TAG=$(echo "$STAGES" | tr ',' '-')
 GOS=(); ARGS=()
 while [ $# -gt 0 ]; do
@@ -38,7 +38,7 @@ done
 ORDER=""
 case "$STAGES" in *S5*) [ -n "$ORDER_S5" ] && ORDER="--order $ORDER_S5" ;; *S6*) [ -n "$ORDER_S6" ] && ORDER="--order $ORDER_S6" ;; esac
 CROPARG=""; [ -n "$CROPS" ] && CROPARG="--crop-modes $CROPS"
-B=$HOME/longtakes/bin
+B=${LT_BIN:-$HOME/longtakes/bin}     # LT_BIN: another copy of the tools (the estimator day runs from bin-est)
 CMD="python3 -I $B/longtakes.py --out $RUN --stages N --night $STAGES --modes $MODES --start-fps $START_FPS --budget-gb $BUDGET_GB \
 --expect-serial $EXPECT_SERIAL --abba $ABBA $ORDER $CROPARG $EXTRA ${ARGS[*]+"${ARGS[*]}"}"
 echo "$(date '+%F %T') start-night $STAGES: $CMD" >> "$HOME/nvme-campaign/nights.log"
