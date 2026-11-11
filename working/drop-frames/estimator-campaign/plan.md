@@ -151,7 +151,7 @@ Labels as in the campaign: measured (a take), derived (the model), probable / un
 
 The plan's cap is 10 TB on this card, 2.2 TB used before tonight. Tonight's S2-S6 is estimated at ~7.8 TB (derived from
 the fps and tiers), so the cap probably stops S6 part-way (the runner halts cleanly, restores and powers off). This run
-adds ~4.6 TB. A new cap of 16 TB covers both; Patrik decides.
+adds ~4.6 TB. **New cap: 16 TB** for the campaign folder (User 2026-11-11, "16 TB write cap is good"), in the KB's `campaign.env`; on the Pi from the next deploy.
 
 ## 10. After this run
 

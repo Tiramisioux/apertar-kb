@@ -171,3 +171,5 @@ For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
 - 2026-11-10 10:45: takes without audio count (`--audio-optional`, User: "have the tests continue even without sound");
   audio faults no longer end the night. Takes with `audio_missing=1` ran without the audio writer's load.
 - 2026-11-10 20:55: the fill gate keeps at least 10 % of the card free after every take (was need + 10 GB).
+- 2026-11-11: write cap 10 TB -> 16 TB for the campaign folder (User: "16 TB write cap is good"), so the estimator day fits;
+  in effect from the next deploy of `campaign.env` (tonight's S6 still reads 10 TB).
