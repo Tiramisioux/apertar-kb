@@ -152,6 +152,87 @@ def test_fill_gate(tmp):
     L.ledger_live, L.delete_clip, L.os.statvfs, L.wait_trim = orig
 
 
+def test_estimator(tmp):
+    """Estimator campaign (2026-11-11): ids of the old configs unchanged, the new ones distinct; the half-fraction; ProRes lines."""
+    import itertools as it
+    check('est: old cfg id unchanged', L.arm_cfg('4kHDR16').id, '4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000')
+    check('est: prores id', L.est_cfg('4kP:prores:hq').id, '4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1')
+    check('est: lossy id', L.est_cfg('4kSDR12:lossydng:5to1', tdn=True).id,
+          '4kSDR12_unc_log0_tdn1_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1')
+    g = L.est_grid()
+    check('est: grid 44 specs, unique', (len(g), len(set(g))), (44, 44))
+    d = L.est_p2_design()
+    bal = all(sum(1 for r in d if r[k]) == 8 for k in L.EST_LEVERS)
+    pairs = all(sum(1 for r in d if (r[a], r[b]) == v) == 4 for a, b in it.combinations(L.EST_LEVERS, 2)
+                for v in it.product((False, True), repeat=2))
+    check('est: P2 16 runs, balanced, every pair balanced', (len(d), bal, pairs), (16, True, True))
+    jl = ['100.0 x ApertarCore ProRes drop[queue-full]: total=1', '101.0 x ApertarCore ProRes drop[queue-full]: total=30',
+          '102.0 x ApertarCore ProRes recording stats: queued=1500 submitted=1440 dropped_queue_full=60 failures=0 peak_queue=8/8']
+    kinds, first, stats, _t = L.parse_journal(jl, 99.0)
+    check('est: ProRes drop lines and stats', (kinds, first, stats.get('submitted'), stats.get('dropped_queue_full')),
+          ({'prores-queue-full': 30}, 1.0, '1440', '60'))
+    c = L.est_cfg('4kP:prores:hq')
+    r = {'stats': json.dumps({'submitted': '1440'}), 'seconds': 60.0, 'dropped': 60, 'capacity_fps': '', 'capacity_how': 'at least',
+         'outcome': 'ab_dropped', 'gb_written': 14.4, 'verdict': 'drop'}
+    rec = L.est_record('P1', 'cap', '4kP:prores:hq', {}, c, 25, 30.0, r, 1)
+    check('est: ProRes capacity = frames written per second', (rec['cap_fps'], rec['cap_how'], rec['bpf']), (24.0, 'delivered', 10000000))
+    # apply_cfg: ProRes sends its profile, no raw bit-depth round trip, and the levers
+    sent = []
+    orig = (L.core, L.state, L.settle, L.time.sleep)
+    L.core = lambda name, **kw: sent.append((name, kw)) or {'ok': True}
+    L.state = lambda: {'recording_format': 'cdng', 'clear_hdr': False, 'resolution': '3840x2160'}
+    L.settle = lambda timeout=40: {}
+    L.time.sleep = lambda s: None
+    L.apply_cfg(c, 25)
+    names = [n for n, _ in sent]
+    check('est: apply_cfg prores', ('set_record_format' in names, 'set_raw_bit_depth' in names, ('set_prores_profile', {'value': 'hq'}) in sent,
+                                     ('set_zebra_enabled', {'enabled': True}) in sent), (True, False, True, True))
+    L.core, L.state, L.settle, L.time.sleep = orig
+    ow = L.web_state
+    L.web_state = lambda timeout=1.0: {'ui': {'record_audio_enabled': True, 'focus_peaking_enabled': True, 'zebra_enabled': True}}
+    st = {'recording_format': 'prores', 'prores_profile': 'hq', 'prores_color_profile': 'standard', 'raw_bit_depth': 12,
+          'clear_hdr': True, 'preview_tdn': False, 'fps_phase_lock': False, 'fps': 25, 'resolution': '3840x2160'}
+    check('est: verify prores ignores bits and clear_hdr', L.verify(c, 25, st), '')
+    check('est: verify prores catches the profile', L.verify(c, 25, dict(st, prores_profile='422')), 'prores=422')
+    L.web_state = lambda timeout=1.0: {'ui': {'record_audio_enabled': False, 'focus_peaking_enabled': True, 'zebra_enabled': True}}
+    check('est: verify catches the audio lever', L.verify(c, 25, st), 'audio=False')
+    L.web_state = ow
+
+
+def test_estimate_model(tmp):
+    import estimate as E
+    run = os.path.join(tmp, 'estrun')
+    os.makedirs(run + '/est', exist_ok=True)
+    recs = []
+    def add(block, kind, spec, cap, how='fit', lv=None, gaps=0.0, fps=30, top=30, bpf=None, rep=1):
+        recs.append({'block': block, 'kind': kind, 'spec': spec, 'levers': dict(E.REF, **(lv or {})), 'cap_fps': cap, 'cap_how': how,
+                     'gaps_per_min': gaps, 'fps': fps, 'top': top, 'bpf': bpf, 'verdict': 'drop', 'outcome': 'ab_dropped', 'rep': rep})
+    add('P1', 'cap', '4kHDR16:cdng:lj', 18.0, 'delivered', fps=30, bpf=8e6)
+    add('P1', 'cap', '2kSDR12:cdng:lj', 70.0, 'delivered', fps=60, top=60, bpf=1.5e6)
+    add('P1', 'cap', '4kSDR12:cdng:unc', 48.0, 'fit', fps=60, top=60, bpf=12.44e6)
+    add('P1', 'cap', '4kSDR10:cdng:unc', 57.0, 'fit', fps=60, top=60, bpf=10.37e6)
+    add('P1', 'cap', '4kP:prores:hq', 30.0, 'at least', fps=30)
+    for r in L.est_p2_design():
+        cap = 18.0 * (0.9 if r['web'] else 1.0) / (0.9 if E.REF['web'] else 1.0)
+        add('P2', 'enc', '4kHDR16:cdng:lj', cap, 'delivered', lv=r, fps=25)
+    for line in recs:
+        pass
+    with open(run + '/est/probes.jsonl', 'w') as f:
+        f.write('\n'.join(json.dumps(x) for x in recs) + '\n')
+    m = E.fit(E.load(run))
+    p_ref = E.predict(m, '4kHDR16:cdng:lj')
+    p_web0 = E.predict(m, '4kHDR16:cdng:lj', {'web': False})
+    check('estimate: HDR16 lossless at the reference (known cell out at 25 caps it; the probe says 18)', (p_ref['fps'], p_ref['limiter']), (17, 'encoder'))
+    check('estimate: WebUI off lifts the encoder limit by 1/0.9', (p_web0['fps'], round(p_web0['limit'], 1)), (19, 20.0))
+    p_unc = E.predict(m, '4kSDR12:cdng:unc')
+    check('estimate: SDR12 unc: the probe (48) vs sustained 596 MB/s (47.9)', (p_unc['fps'], p_unc['limiter']), (46, 'storage (sustained)'))
+    check('estimate: ProRes HQ: at least the top', E.predict(m, '4kP:prores:hq')['fps'], 30)
+    p0 = E.fit(E.load(run), only_blocks=('P1',))
+    check('estimate: scaling, 4kSDR10 unc from the SDR12 write rate', round(E.scale_from_anchors(p0, '4kSDR10:cdng:unc')[0], 1), 57.6)
+    paths = E.write_outputs(run)
+    check('estimate: outputs written', [os.path.basename(x) for x in paths], ['estimate-table.csv', 'estimate.md', 'selftest.md'])
+
+
 def main():
     tmp = tempfile.mkdtemp(prefix='longtakes_test_')
     setup(tmp)
@@ -161,6 +242,8 @@ def main():
     test_budget()
     test_post(tmp)
     test_fill_gate(tmp)
+    test_estimator(tmp)
+    test_estimate_model(tmp)
     print('%d failed' % len(FAIL) if FAIL else 'all passed')
     sys.exit(1 if FAIL else 0)
 

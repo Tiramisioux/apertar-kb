@@ -135,17 +135,37 @@ def mode_cap_fps(m):
 
 
 class Cfg:
-    def __init__(self, mode, comp, log, tdn, lock, trim, web, split=None):
+    def __init__(self, mode, comp, log, tdn, lock, trim, web, split=None, fmt='cdng', lossy=None, prores=None, pcolor=None,
+                 h264=None, audio=None, aids=None, ladder=None):
         self.mode = mode
         self.key, self.w, self.h, self.bits, self.hdr = mode
         self.comp, self.log, self.tdn, self.lock, self.trim, self.web = comp, log, tdn, lock, trim, web
         self.split = split      # frames_per_folder for the take (NVMe campaign R1: 5000 = split, 0 = flat); None = leave Core's
+        # Estimator campaign (2026-11-11): the recording format and its own setting (lossy ratio 3to1|5to1, ProRes profile
+        # hq|422|lt|proxy and colour, H.264 output WxH), the audio and preview-aid levers (None = leave as found) and a
+        # take the Mode Ladder sets up (ladder = the rungs text; the mode then comes from the fps).
+        self.fmt, self.lossy, self.prores, self.pcolor, self.h264 = fmt, lossy, prores, pcolor, h264
+        self.audio, self.aids, self.ladder = audio, aids, ladder
+
+    @property
+    def processed(self):
+        return self.fmt in ('prores', 'h264')
 
     @property
     def id(self):
-        return '%s_%s_log%d_tdn%d_lock%d_trim%d_web%d%s' % (
+        x = ''
+        if self.fmt != 'cdng':
+            x += '_' + '-'.join(v for v in (self.fmt, self.lossy, self.prores,
+                                              self.pcolor if self.pcolor not in (None, 'standard') else None, self.h264) if v)
+        if self.audio is not None:
+            x += '_aud%d' % int(self.audio)
+        if self.aids is not None:
+            x += '_aids%d' % int(self.aids)
+        if self.ladder:
+            x += '_ladder'
+        return '%s_%s_log%d_tdn%d_lock%d_trim%d_web%d%s%s' % (
             self.key, 'unc' if self.comp == 'none' else 'lossless', int(self.log), int(self.tdn),
-            int(self.lock), int(self.trim), int(self.web), '' if self.split is None else '_fpf%d' % int(self.split))
+            int(self.lock), int(self.trim), int(self.web), '' if self.split is None else '_fpf%d' % int(self.split), x)
 
     def distance(self):   # number of factors away from the baseline
         return sum([self.comp != 'none', self.log, self.tdn, self.lock, not self.trim, self.web])
@@ -1053,7 +1073,13 @@ def settle(timeout=40):
 def apply_cfg(c, fps, fmt='cdng'):
     # Clear HDR and the resolution first, then a bit-depth round trip so every take starts from a fresh camera config.
     # (set_clear_hdr takes `enabled`; set_resolution takes width and height.) fmt: 'cdng' (default) or 'mlv' (the one-file
-    # control take of the storage-slowdown plan); the compression and Log commands are cDNG's.
+    # control take of the storage-slowdown plan); the compression and Log commands are cDNG's. A Cfg with its own fmt
+    # (estimator campaign) wins over the argument.
+    if getattr(c, 'fmt', 'cdng') != 'cdng':
+        fmt = c.fmt
+    CS.setdefault('fmts_touched', set()).add(fmt)
+    if getattr(c, 'ladder', None):
+        return apply_ladder_take(c, fps)
     st = state()
     if st.get('recording_format') not in (None, fmt):
         core('set_record_format', value=fmt); time.sleep(3)
@@ -1062,15 +1088,30 @@ def apply_cfg(c, fps, fmt='cdng'):
         st = state()
     if bool(st.get('clear_hdr')) != c.hdr:
         core('set_clear_hdr', enabled=c.hdr); time.sleep(4)
-    if st.get('resolution') != '%dx%d' % (c.w, c.h):
+    if fmt != 'h264' and st.get('resolution') != '%dx%d' % (c.w, c.h):
         core('set_resolution', width=c.w, height=c.h); time.sleep(4)
-    other = {16: 12, 12: (16 if c.hdr else 10), 10: 12}[c.bits]
-    core('set_raw_bit_depth', value=other); time.sleep(5)
-    core('set_raw_bit_depth', value=c.bits); time.sleep(6)
+    if fmt in ('prores', 'h264'):
+        # ProRes and H.264 are 10-bit by rule (Core's sanitiser): no raw bit-depth round trip; the format's settings
+        # reconfigure the camera themselves
+        if fmt == 'prores':
+            core('set_prores_profile', value=c.prores or '422')
+            core('set_prores_color_profile', value=c.pcolor or 'standard')
+        else:
+            hw, hh = (c.h264 or '1920x1080').split('x')
+            core('set_h264_resolution', width=int(hw), height=int(hh))
+        time.sleep(4)
+    else:
+        other = {16: 12, 12: (16 if c.hdr else 10), 10: 12}[c.bits]
+        core('set_raw_bit_depth', value=other); time.sleep(5)
+        core('set_raw_bit_depth', value=c.bits); time.sleep(6)
     settle()
     if fmt == 'cdng':
         core('set_cdng_compression', value=c.comp)
+    if fmt == 'lossydng':
+        core('set_lossy_dng_ratio', value=c.lossy or '3to1')
+    if fmt in ('cdng', 'lossydng'):
         core('set_cdng_log', value='on' if c.log else 'off')
+    apply_levers(c)
     core('set_preview_tdn', enabled=c.tdn)
     core('set_fps_phase_lock', enabled=c.lock)
     core('set_media_trim', enabled=c.trim)
@@ -1081,20 +1122,55 @@ def apply_cfg(c, fps, fmt='cdng'):
     return settle()
 
 
+def apply_levers(c):
+    """Audio and the preview aids (peaking + zebra together), estimator campaign; None = leave as found. Both are UI.conf
+    settings Core writes for the touch UI (handleUiToggle), so the take sees them at once."""
+    if getattr(c, 'audio', None) is not None:
+        core('set_record_audio_enabled', enabled=bool(c.audio))
+    if getattr(c, 'aids', None) is not None:
+        core('set_focus_peaking_enabled', enabled=bool(c.aids))
+        core('set_zebra_enabled', enabled=bool(c.aids))
+
+
+def levers_readback(c):
+    """'' when the web state shows the audio / aids levers as asked (a key the web state lacks is not checked)."""
+    if getattr(c, 'audio', None) is None and getattr(c, 'aids', None) is None:
+        return ''
+    u = (web_state(3.0) or {}).get('ui') or {}
+    bad = []
+    if c.audio is not None and 'record_audio_enabled' in u and bool(u['record_audio_enabled']) != bool(c.audio):
+        bad.append('audio=%s' % u['record_audio_enabled'])
+    for k in ('focus_peaking_enabled', 'zebra_enabled'):
+        if c.aids is not None and k in u and bool(u[k]) != bool(c.aids):
+            bad.append('%s=%s' % (k, u[k]))
+    return ' '.join(bad)
+
+
 def verify(c, fps, st, fmt='cdng', expect=None):
     """Return '' if Core reports what we asked for, else the mismatch. expect = {state key: value} a stage demands besides."""
     bad = []
     for k, v in (expect or {}).items():
         if str(st.get(k)) != str(v): bad.append('%s=%s' % (k, st.get(k)))
-    if st.get('raw_bit_depth') != c.bits: bad.append('bits=%s' % st.get('raw_bit_depth'))
+    if getattr(c, 'fmt', 'cdng') != 'cdng':
+        fmt = c.fmt
+    processed = fmt in ('prores', 'h264')
+    if not processed and st.get('raw_bit_depth') != c.bits: bad.append('bits=%s' % st.get('raw_bit_depth'))
     if 'recording_format' in st and st.get('recording_format') != fmt: bad.append('format=%s' % st.get('recording_format'))
     if fmt == 'cdng' and st.get('cdng_compression') != c.comp: bad.append('comp=%s' % st.get('cdng_compression'))
-    if fmt == 'cdng' and bool(st.get('cdng_log_applied')) != c.log: bad.append('log_applied=%s' % st.get('cdng_log_applied'))
+    if fmt in ('cdng', 'lossydng') and bool(st.get('cdng_log_applied')) != c.log:
+        bad.append('log_applied=%s' % st.get('cdng_log_applied'))
+    if fmt == 'lossydng' and st.get('lossy_dng_ratio') != (c.lossy or '3to1'): bad.append('lossy=%s' % st.get('lossy_dng_ratio'))
+    if fmt == 'prores' and st.get('prores_profile') != (c.prores or '422'): bad.append('prores=%s' % st.get('prores_profile'))
+    if fmt == 'prores' and st.get('prores_color_profile') not in (None, c.pcolor or 'standard'):
+        bad.append('prores_color=%s' % st.get('prores_color_profile'))
+    if fmt == 'h264' and st.get('h264_resolution') != (c.h264 or '1920x1080'): bad.append('h264=%s' % st.get('h264_resolution'))
     if bool(st.get('preview_tdn')) != c.tdn: bad.append('tdn=%s' % st.get('preview_tdn'))
     if bool(st.get('fps_phase_lock')) != c.lock: bad.append('lock=%s' % st.get('fps_phase_lock'))
     if abs(float(st.get('fps', 0)) - fps) > 0.01: bad.append('fps=%s' % st.get('fps'))
-    if st.get('resolution') != '%dx%d' % (c.w, c.h): bad.append('res=%s' % st.get('resolution'))
-    if bool(st.get('clear_hdr')) != c.hdr: bad.append('clear_hdr=%s' % st.get('clear_hdr'))
+    if fmt != 'h264' and st.get('resolution') != '%dx%d' % (c.w, c.h): bad.append('res=%s' % st.get('resolution'))
+    if not processed and bool(st.get('clear_hdr')) != c.hdr: bad.append('clear_hdr=%s' % st.get('clear_hdr'))
+    lv = levers_readback(c)
+    if lv: bad.append(lv)
     if getattr(c, 'split', None) is not None and str(st.get('frames_per_folder')) != str(int(c.split)):
         bad.append('frames_per_folder=%s' % st.get('frames_per_folder'))
     return ' '.join(bad)
@@ -1233,7 +1309,8 @@ def journal(t_wall):
 
 
 STAT_KEYS = ('enqueued', 'dropped_queue_full', 'dropped_gap_estimate', 'peak_queue', 'queue_bytes_peak', 'queue_budget',
-             'write_failures', 'fault', 'written', 'dropped_copy_slot', 'index_jumps', 'discarded_on_stop')
+             'write_failures', 'fault', 'written', 'dropped_copy_slot', 'index_jumps', 'discarded_on_stop',
+             'queued', 'submitted', 'skipped_stopping', 'failures')
 
 
 def parse_journal(lines, t_rec_wall):
@@ -1241,11 +1318,15 @@ def parse_journal(lines, t_rec_wall):
     trims = 0
     for l in lines:
         m = re.search(r'drop\[([a-z-]+)\]: \+(\d+)', l)
+        mt = None if m else re.search(r'(ProRes|H\.264) drop\[([a-z-]+)\]: total=(\d+)', l)
         if m:
             kinds[m.group(1)] = kinds.get(m.group(1), 0) + int(m.group(2))
-            if first is None:
-                try: first = float(l.split()[0]) - t_rec_wall
-                except ValueError: pass
+        elif mt:       # ProRes / H.264 print a running total (the 1st, then every 30th)
+            k_ = mt.group(1).lower().replace('.', '') + '-' + mt.group(2)
+            kinds[k_] = max(kinds.get(k_, 0), int(mt.group(3)))
+        if (m or mt) and first is None:
+            try: first = float(l.split()[0]) - t_rec_wall
+            except ValueError: pass
         if 'apertar-media-trim' in l and 'COMMAND' in l:
             trims += 1
         for k in STAT_KEYS:
@@ -1957,7 +2038,7 @@ WALK_C_PROBE_NS = 63.3                                # probe 2026-11-08: ns per
 FRAME_MB = {('4kHDR16', 'none', False): 16.59, ('4kHDR16', 'none', True): 12.45,   # plan section 3 (measured)
             ('4kSDR12', 'lossless_jpeg', False): 5.98}
 BRACKET_TOP = {'4kHDR16': 30, '4kHDR12': 30}          # the record's brackets (plan section 5): 30 is the mode max
-NIGHT_STAGES = ('SMOKE', 'S1', 'S2', 'S4', 'S5', 'S6', 'PARTB', 'END', 'ARMS')
+NIGHT_STAGES = ('SMOKE', 'S1', 'S2', 'S4', 'S5', 'S6', 'PARTB', 'END', 'ARMS', 'EST')
 GO_STAGES = ('S4', 'S5', 'S6', 'PARTB')
 TIMERS = ('fstrim.timer', 'apt-daily.timer', 'apt-daily-upgrade.timer', 'man-db.timer', 'logrotate.timer')
 CS = {'out': '', 'night': '', 'args': None, 'voids': 0, 'audio_faults': 0, 'arm_audio': {}, 'stop': '', 'core_pid': None,
@@ -2658,7 +2739,7 @@ def campaign_pre(out, c, fps, st, row, max_seconds):
     if ' rw' not in ' ' + cf.get('mount', '').replace(',', ' ') :
         CS['stop'] = 'the card is not mounted read-write (%s)' % cf.get('mount')
         return 'stop'
-    for k, want in (('fps_speed_ramp', False), ('ladder_enabled', False), ('storage_preroll_auto', True)):
+    for k, want in (('fps_speed_ramp', False), ('ladder_enabled', bool(getattr(c, 'ladder', None))), ('storage_preroll_auto', True)):
         if bool(st.get(k)) != want:
             bad.append('%s=%s' % (k, st.get(k)))
     if bool(st.get('clip_merge_enabled')) != bool(getattr(c, 'merge_on', False)):
@@ -2871,7 +2952,7 @@ def arm_cfg(mkey, comp='none', log_=False, tdn=False, web=True, split=SPLIT_DEFA
     return c
 
 
-def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False):
+def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False, skip_mismatch=False):
     """One campaign take: resume-safe (a result already recorded under the same key is returned, not re-recorded), the fill gate,
     the fit limit, the budget, the void/audio repeat rules and the night-stop rules. Returns the row; row['verdict'] is clean, drop,
     audio, void, stop or skip."""
@@ -2949,6 +3030,8 @@ def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False
             row['verdict'] = 'drop'
         elif o in ('waiting_timeout', 'stop'):
             row['verdict'] = 'stop'
+        elif skip_mismatch and o in ('setup_mismatch', 'skipped_unavailable', 'before_cmd_refused'):
+            row['verdict'] = 'skip'     # this combination does not exist on the camera: recorded, the night goes on
         else:
             row['verdict'] = 'stop'
             CS['stop'] = CS['stop'] or '%s: %s' % (o, row.get('cause_estimate') or row.get('mismatch') or row.get('void_reason'))
@@ -2960,7 +3043,7 @@ def ctake(out, c, fps, tier_s, stage, variant, stop_on_drop=True, merge_on=False
         if HALT['why']:
             CS['stop'] = CS['stop'] or 'watchdog: ' + HALT['why']
         if row['verdict'] == 'void':
-            if CS['voids'] >= 2:
+            if CS['voids'] >= getattr(a, 'max_voids', 2):
                 CS['stop'] = CS['stop'] or 'a second void this night (%s)' % row.get('void_reason')
                 return row
             continue        # a void is repeated once
@@ -3394,6 +3477,329 @@ def smoke_night(out):
 CROPS = set()
 
 
+# ==== Estimator campaign (--night EST): plan working/drop-frames/estimator-campaign/plan.md (User 2026-11-11: "a test run for
+# tomorrow which explores the different compression modes (also lossy) and the prores h264 ... also for all lever combinations").
+# Measures the stages, not the combinations: 60-s probes run past their drops and read the slowest stage's limit (the buffer's
+# slope, or the frames Core wrote per second); a half-fraction of the five levers at three anchors; then estimate.py fits the
+# stage model, predicts every combination and P3 checks a random sample with campaign cells. Records: <run>/est/*.jsonl.
+EST_MODES = {m[0]: m for m in MODES}
+EST_MODES.update({'crop4k3SDR12': ('crop4k3SDR12', 2880, 2160, 12, False),     # pixel-scaling check only (4:3 window at 4K height)
+                  '4kP': ('4kP', 3840, 2160, 10, False), '2kP': ('2kP', 1920, 1080, 10, False)})   # ProRes / H.264 (10-bit by rule)
+EST_LEVERS = ('tdn', 'lock', 'web', 'audio', 'aids')
+EST_REF = {'tdn': False, 'lock': False, 'web': True, 'audio': True, 'aids': True}    # the shooting state (plan section 3)
+EST_PROBE_S = 60
+EST_RAW = ('4kSDR12', '4kSDR10', '4kHDR12', '4kHDR16', '2kSDR12', '2kHDR16', 'crop4k3SDR12')
+# P0 = the self-test candidate (plan section 5): (kind, spec, fps or None = the mode top, levers)
+EST_P0 = (('cap', '4kSDR12:cdng:unc', None, None),          # storage (the 60-s write rate)
+          ('cap', '4kHDR16:cdng:lj', None, None), ('cap', '2kSDR12:cdng:lj', None, None),      # lossless JPEG, two sizes
+          ('cap', '4kSDR12:lossydng:3to1', None, None), ('cap', '4kP:prores:hq', None, None), ('cap', '4kP:h264:1920x1080', None, None),
+          ('gap', '4kHDR16:cdng:unc', 28, None), ('gap', '2kHDR16:cdng:unc', None, None),    # the back end, two sizes
+          ('gap', '4kHDR16:cdng:unc:log', 28, None), ('gap', '4kHDR16:cdng:unc', 25, {'tdn': True}))
+# P2 anchors, one per bottleneck: back end (gap rate at the onset), encoder (lossless HDR16, ~18 fps measured), storage
+EST_P2_ANCHORS = (('be', '4kHDR16:cdng:unc', 28), ('enc', '4kHDR16:cdng:lj', 25), ('stor', '4kSDR12:cdng:unc', None))
+
+
+def est_spec_parts(spec):
+    f = spec.split(':')
+    return f[0], f[1], (f[2:] + ['', ''])
+
+
+def est_cfg(spec, **lv):
+    """spec = mode:format[:option[:option]]: 4kHDR16:cdng:unc|lj[:log], 4kSDR12:lossydng:3to1|5to1, 4kSDR12:mlv,
+    4kP:prores:hq|422|lt|proxy[:colour], 4kP:h264:1920x1080|3840x2160. Levers not given take the reference state."""
+    mkey, fmt, o = est_spec_parts(spec)
+    lv_ = dict(EST_REF)
+    lv_.update({k: v for k, v in lv.items() if k in EST_LEVERS})
+    c = Cfg(EST_MODES[mkey], 'lossless_jpeg' if (fmt == 'cdng' and o[0] == 'lj') else 'none', 'log' in o, bool(lv_['tdn']),
+            bool(lv_['lock']), True, bool(lv_['web']), SPLIT_DEFAULT if fmt in ('cdng', 'lossydng') else None, fmt=fmt,
+            lossy=o[0] if fmt == 'lossydng' else None, prores=o[0] if fmt == 'prores' else None,
+            pcolor=(o[1] or None) if fmt == 'prores' else None, h264=o[0] if fmt == 'h264' else None,
+            audio=bool(lv_['audio']), aids=bool(lv_['aids']))
+    c.spec = spec
+    return c
+
+
+def est_grid():
+    """P1: every mode x format / compression of plan section 3 (44 specs)."""
+    g = []
+    for mk in EST_RAW:
+        _k, _w, _h, bits, hdr = EST_MODES[mk]
+        g += [mk + ':cdng:unc', mk + ':cdng:lj', mk + ':mlv']
+        if not hdr:
+            g += [mk + ':lossydng:3to1', mk + ':lossydng:5to1']
+        if bits == 16:
+            g += [mk + ':cdng:unc:log', mk + ':cdng:lj:log']        # Log applies to Clear HDR 16-bit only (R2 section 2c)
+    for mk in ('4kP', '2kP'):
+        g += [mk + ':prores:' + p for p in ('hq', '422', 'lt', 'proxy')]
+    g += ['4kP:prores:hq:arri_logc4', '4kP:h264:1920x1080', '4kP:h264:3840x2160']
+    return g
+
+
+def est_p2_design():
+    """2^(5-1), I = ABCDE: E = ABCD in +-1 coding (on iff an even number of A-D are on). Main effects and two-way interactions
+    are aliased only with three-way ones."""
+    runs = []
+    for a_, b_, c_, d_ in itertools.product((0, 1), repeat=4):
+        e_ = 1 - ((a_ + b_ + c_ + d_) % 2)
+        runs.append(dict(zip(EST_LEVERS, (bool(a_), bool(b_), bool(c_), bool(d_), bool(e_)))))
+    return runs
+
+
+def est_lever_tag(lv):
+    return ''.join('%s%d' % (k[0], int(bool(lv.get(k, EST_REF[k])))) for k in EST_LEVERS)
+
+
+def est_prereg(out):
+    """The die rolls before the first take (plan section 5): one seed from the OS, every order derived from it, written once."""
+    p = out + '/est/preregistration.json'
+    if os.path.exists(p):
+        return json.load(open(p))
+    import random
+    seed = int.from_bytes(os.urandom(4), 'big')
+    rng = random.Random(seed)
+    grid = est_grid()
+    p1 = grid[:]; rng.shuffle(p1)
+    p1b = [s for s in grid if s.startswith('4k')]; rng.shuffle(p1b)
+    design = est_p2_design()
+    orders = {}
+    for name, _spec, _f in EST_P2_ANCHORS:
+        idx = list(range(len(design))); rng.shuffle(idx); orders[name] = idx
+    idx = list(range(len(design))); rng.shuffle(idx); orders['be2'] = idx
+    pre = {'written': time.strftime('%F %T'), 'seed': seed, 'p0': [list(x) for x in EST_P0], 'p1_order': p1, 'p1b_order': p1b,
+           'p2_design': design, 'p2_anchors': [list(x) for x in EST_P2_ANCHORS], 'p2_orders': orders, 'p3_n': 12,
+           'p3_seed': rng.randrange(1 << 30), 'probe_s': EST_PROBE_S,
+           'success': {'p3_clean_at_p': '>= 10 of 12', 'p3_out_at_p1': '>= 8 of 12', 'selftest_within_1fps': '>= 90 %'}}
+    os.makedirs(out + '/est', exist_ok=True)
+    write_atomic(p, json.dumps(pre, indent=1))
+    decide(out, 'EST preregistration written: seed %d, %d P1 specs (+%d repeated), P2 16 runs x 3 anchors + the back end twice' % (
+        seed, len(p1), len(p1b)))
+    return pre
+
+
+def est_top(out, c):
+    """The highest fps Core gives this format and mode (fps_take_max, else fps_max), once per spec."""
+    k = getattr(c, 'spec', c.id)
+    tops = CS.setdefault('est_top', {})
+    if k not in tops:
+        st = apply_cfg(c, 25)
+        tops[k] = float(st.get('fps_take_max') or st.get('fps_max') or 0) or None
+    return tops[k]
+
+
+def est_ctake(out, c, fps, secs, variant, stop_on_drop):
+    """ctake for the estimator: a combination Core cannot set up is skipped; a take with audio off expects no audio."""
+    aud0 = CS['audio_expected']
+    CS['audio_expected'] = aud0 and c.audio is not False
+    try:
+        return ctake(out, c, fps, secs, 'EST', variant, stop_on_drop=stop_on_drop, skip_mismatch=True)
+    finally:
+        CS['audio_expected'] = aud0
+
+
+def est_record(block, kind, spec, lv, c, fps, top, r, rep):
+    st = r.get('stats') or {}
+    if isinstance(st, str):
+        try:
+            st = json.loads(st)
+        except ValueError:
+            st = {}
+    secs = _num(r.get('seconds')) or 0
+    written = _num(st.get('submitted' if c.fmt == 'prores' else 'written'))
+    if not written and _num(r.get('files')):
+        written = _num(r.get('files'))
+    delivered = round(written / secs, 2) if written and secs >= 5 else None
+    gaps = _num(st.get('dropped_gap_estimate')) or 0
+    dropped = int(_num(r.get('dropped')) or 0)
+    cap, how = _num(r.get('capacity_fps')), r.get('capacity_how') or ''
+    if how not in ('fit', 'stats'):
+        if dropped > 0 and delivered:
+            cap, how = delivered, 'delivered'
+        elif dropped == 0 and r.get('outcome') == 'ab_clean':
+            cap, how = float(fps), 'at least'
+        else:
+            cap, how = None, ''
+    gb = _num(r.get('gb_written')) or 0
+    return {'block': block, 'kind': kind, 'spec': spec, 'levers': {k: bool(lv.get(k, EST_REF[k])) for k in EST_LEVERS},
+            'rep': rep, 'fps': fps, 'top': top, 'verdict': r.get('verdict'), 'outcome': r.get('outcome'), 'seconds': secs,
+            'dropped': dropped, 'gaps': gaps, 'gaps_per_min': round(60.0 * gaps / secs, 2) if secs else None,
+            'written': written, 'delivered_fps': delivered, 'cap_fps': cap, 'cap_how': how,
+            'bpf': round(gb * 1e9 / written) if written and gb else None, 'mbps': round(gb * 1e3 / secs, 1) if secs and gb else None,
+            'drop_kinds': r.get('drop_kinds'), 'walk_ns_per_entry': r.get('walk_ns_per_entry'), 'core_cpu_avg': r.get('core_cpu_avg'),
+            'pi_c_max': r.get('pi_c_max'), 'nvme_c_max': r.get('nvme_c_max'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey'),
+            'mismatch': r.get('mismatch'), 't': time.strftime('%F %T')}
+
+
+def est_append(out, name, rec):
+    p = '%s/est/%s.jsonl' % (out, name)
+    os.makedirs(out + '/est', exist_ok=True)
+    if rec.get('ckey') and os.path.exists(p):
+        for l in open(p):
+            try:
+                if json.loads(l).get('ckey') == rec['ckey']:
+                    return          # a resumed night returns the recorded take: recorded once
+            except ValueError:
+                pass
+    with open(p, 'a') as f:
+        f.write(json.dumps(rec) + '\n')
+
+
+def est_probe(out, block, kind, spec, fps=None, lv=None, rep=1):
+    """One 60-s probe that runs past its drops (plan section 4)."""
+    if CS['stop'] or STOP['sig'] or HALT['why']:
+        return None
+    lv = lv or {}
+    c = est_cfg(spec, **lv)
+    top = est_top(out, c)
+    if not top:
+        decide(out, 'EST %s %s: Core gives no fps for it: skipped' % (block, spec))
+        return None
+    f = int(fps or min(top, 60))
+    f = min(f, int(top))
+    r = est_ctake(out, c, f, EST_PROBE_S, '%s-%s-%s-r%d' % (block, kind, est_lever_tag(lv), rep), stop_on_drop=False)
+    if r.get('verdict') == 'stop':
+        return None
+    rec = est_record(block, kind, spec, lv, c, f, top, r, rep)
+    est_append(out, 'probes', rec)
+    return rec
+
+
+def est_cell(out, block, spec, lv, fps, secs, tag):
+    c = est_cfg(spec, **lv)
+    r = est_ctake(out, c, int(fps), secs, '%s-%s-%s' % (block, tag, est_lever_tag(lv)), stop_on_drop=True)
+    return r
+
+
+def est_model():
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))      # python3 -I leaves the script's folder out
+    import estimate
+    return estimate
+
+
+def est_validate(out, pre):
+    """P3: 12 combinations by die (stratified by family), a 3-min take at the estimate p and at p+1, a 5-min one at p for 4."""
+    import random
+    E = est_model()
+    model = E.fit(E.load(out))
+    rng = random.Random(pre['p3_seed'])
+    for i, (spec, lv) in enumerate(E.draw_combos(model, rng, pre['p3_n'])):
+        if CS['stop'] or STOP['sig'] or HALT['why']:
+            return
+        p = E.predict(model, spec, lv)
+        rec = {'i': i, 'spec': spec, 'levers': lv, 'predicted': p, 'cells': {}}
+        f = p.get('fps') if p else None
+        if not f:
+            decide(out, 'EST P3 %d %s %s: no estimate (%s): skipped' % (i, spec, est_lever_tag(lv), (p or {}).get('note')))
+            est_append(out, 'validation', rec)
+            continue
+        f = int(f)
+        top = est_top(out, est_cfg(spec, **lv)) or f
+        for fps, secs, tag in ((f, 180, 'p'), (f + 1, 180, 'p+1'), (f, 300, 'p-5min')):
+            if fps > top or (tag == 'p-5min' and i >= 4):
+                continue
+            r = est_cell(out, 'P3', spec, lv, fps, secs, '%d-%s' % (i, tag))
+            rec['cells'][tag] = {'fps': fps, 'verdict': r.get('verdict'), 'outcome': r.get('outcome'),
+                                 'first_drop_s': r.get('first_drop_s'), 'take_id': r.get('take_id')}
+            if r.get('verdict') == 'stop':
+                break
+        rec['ckey'] = 'P3-%d' % i
+        est_append(out, 'validation', rec)
+        decide(out, 'EST P3 %d %s %s: estimate %s (%s): %s' % (i, spec, est_lever_tag(lv), f, p.get('limiter'),
+                                                               ' '.join('%s=%s' % (k, v['verdict']) for k, v in rec['cells'].items())))
+
+
+def apply_ladder_take(c, fps):
+    """A Mode Ladder take (P4): the ladder is on with c.ladder as its rungs; only the levers and the fps are set, the ladder
+    picks the mode, and verify() then compares it with the rung the estimate expects (c's mode)."""
+    apply_levers(c)
+    core('set_preview_tdn', enabled=c.tdn)
+    core('set_fps_phase_lock', enabled=c.lock)
+    core('set_media_trim', enabled=c.trim)
+    core('set_fps', value=float(fps))
+    time.sleep(6)
+    return settle()
+
+
+def est_ladder(out):
+    """P4: the existing Mode Ladder with thresholds from the estimates; 60-s takes at fps steps; the right rung, and clean."""
+    E = est_model()
+    model = E.fit(E.load(out))
+    rungs = [('4kHDR16:cdng:unc', '3840x2160:16:hdr:%s:none'), ('4kSDR12:cdng:lj', '3840x2160:12:sdr:%s:lossless_jpeg'),
+             ('2kSDR12:cdng:lj', '1920x1080:12:sdr:%s:lossless_jpeg')]
+    th = []
+    for spec, _t in rungs:
+        p = E.predict(model, spec, {})
+        th.append(int(p['fps']) if p and p.get('fps') else None)
+    if not th[0] or not th[1]:
+        decide(out, 'EST P4: no estimate for the first two rungs (%s): skipped' % th)
+        return
+    text = ','.join(t % (str(th[i]) if i < len(rungs) - 1 and th[i] else '') for i, (_s, t) in enumerate(rungs))
+    st = state()
+    if st.get('recording_format') != 'cdng':
+        core('set_record_format', value='cdng'); time.sleep(3)
+    r = core('set_mode_ladder', resolutions=text, enabled='true')
+    if not r.get('ok'):
+        decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (text, r.get('error')))
+        return
+    decide(out, 'EST P4: ladder %s' % text)
+    steps = sorted(set(x for x in (25, th[0] - 1, th[0], th[0] + 1, 35, 40, 45, 50) if x >= 1))
+    try:
+        for f in steps:
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                break
+            want = next((i for i, t in enumerate(th[:-1]) if t and f <= t), len(rungs) - 1)
+            c = est_cfg(rungs[want][0])
+            c.ladder = text
+            r = est_ctake(out, c, f, 60, 'P4-%s-rung%d' % (f, want + 1), stop_on_drop=True)
+            rec = {'fps': f, 'expected_rung': want + 1, 'spec': rungs[want][0], 'verdict': r.get('verdict'),
+                   'outcome': r.get('outcome'), 'mismatch': r.get('mismatch'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey')}
+            est_append(out, 'ladder', rec)
+    finally:
+        core('set_mode_ladder', enabled='false')
+
+
+def est_night(out):
+    a = CS['args']
+    pre = est_prereg(out)
+    smoke = bool(getattr(a, 'max_seconds', 0))
+    for b in [x for x in a.est_blocks.split(',') if x]:
+        if CS['stop'] or STOP['sig'] or HALT['why']:
+            break
+        status(out, 'EST block %s%s' % (b, ' (smoke)' if smoke else ''))
+        decide(out, 'EST block %s starts%s' % (b, ' (smoke: short takes, kept apart as smoke-%s)' % b if smoke else ''))
+        if smoke and b not in ('P0', 'P5'):
+            decide(out, 'EST smoke: only P0 / P5 run with --max-seconds; %s skipped' % b)
+            continue
+        if b in ('P0', 'P5'):
+            for kind, spec, f, lv in EST_P0:
+                est_probe(out, ('smoke-' + b) if smoke else b, kind, spec, f, lv)
+        elif b == 'P1':
+            for spec in pre['p1_order']:
+                est_probe(out, 'P1', 'cap', spec, None, None, 1)
+        elif b == 'P1b':
+            for spec in pre['p1b_order']:
+                est_probe(out, 'P1', 'cap', spec, None, None, 2)
+        elif b == 'P2':
+            design = pre['p2_design']
+            for name, spec, f in [tuple(x) for x in pre['p2_anchors']] + [('be2', pre['p2_anchors'][0][1], pre['p2_anchors'][0][2])]:
+                for j in pre['p2_orders'][name]:
+                    est_probe(out, 'P2', name, spec, f, design[j], 2 if name == 'be2' else 1)
+        elif b == 'P3':
+            est_validate(out, pre)
+        elif b == 'P4':
+            est_ladder(out)
+        else:
+            decide(out, 'EST: unknown block %s: skipped' % b)
+    if smoke:
+        CS['stop'] = CS['stop'] or 'EST smoke (--max-seconds): no DONE-EST, the real run starts from the beginning'
+        return
+    try:
+        E = est_model()
+        paths = E.write_outputs(out)
+        decide(out, 'EST outputs: %s' % ', '.join(paths))
+    except Exception as e:       # noqa: BLE001 - the takes are kept whatever the analysis does
+        decide(out, 'EST: estimate.py failed: %r' % e)
+
+
 def campaign_main(a, out):
     """--stages N: the nights of the NVMe campaign. Returns the reason the night ended."""
     CAMPAIGN.update({'on': True, 'pre': campaign_pre, 'post': campaign_post})
@@ -3411,6 +3817,14 @@ def campaign_main(a, out):
     found = {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log', 'preview_tdn', 'fps_phase_lock',
                                      'fps_speed_ramp', 'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled',
                                      'frames_per_folder', 'clip_merge_enabled', 'tuning_file')}
+    if 'EST' in a.night.split(','):
+        # the estimator touches every format: its settings, the UI levers, the ladder's rungs and each format's saved
+        # resolution profile (Core keeps resolution and Clear HDR per format, profile.<format>.* in camera_settings.conf)
+        found.update({k: st0.get(k) for k in ('lossy_dng_ratio', 'prores_profile', 'prores_color_profile', 'h264_resolution')})
+        u0 = (web_state(3.0) or {}).get('ui') or {}
+        found['ui'] = {k: u0.get(k) for k in ('record_audio_enabled', 'focus_peaking_enabled', 'zebra_enabled') if k in u0}
+        found['ladder_text'] = (core('get_mode_ladder').get('mode_ladder') or {}).get('resolutions_text')
+        found['profiles'] = est_profiles()
     np_ = out + '/night-%s.json' % '-'.join(nights)
     if not os.path.exists(np_):
         json.dump({'found': found, 'audio': aud, 'card': cf, 'boot_id': CS['boot'], 'core_pid': CS['core_pid'],
@@ -3489,6 +3903,8 @@ def campaign_main(a, out):
                 end_night(out)
             elif n == 'ARMS':
                 arms_night(out, arms)
+            elif n == 'EST':
+                est_night(out)
             if not (CS['stop'] or STOP['sig'] or HALT['why']):
                 write_atomic(out + '/DONE-' + n, time.strftime('%F %T') + ' done\n')
                 decide(out, 'stage %s done' % n)
@@ -3512,9 +3928,57 @@ def campaign_main(a, out):
     return why
 
 
+def est_profiles():
+    """profile.<format>.resolution_width / _height / clear_hdr from Core's settings file: what each format comes back with."""
+    prof = {}
+    try:
+        for l in open(os.path.expanduser('~/.config/apertar-core/camera_settings.conf')):
+            m = re.match(r'profile\.([a-z0-9]+)\.(resolution_width|resolution_height|clear_hdr)=(.*)', l.strip())
+            if m:
+                prof.setdefault(m.group(1), {})[m.group(2)] = m.group(3)
+    except OSError:
+        pass
+    return prof
+
+
+def restore_formats(found):
+    """Estimator nights: every format the night recorded in gets its saved resolution, Clear HDR and own settings back,
+    then the formats' common settings; the usual restore list follows in the found format."""
+    if 'profiles' not in found:
+        return []
+    bad = []
+    for fmt in sorted(CS.get('fmts_touched') or ()):
+        if fmt == (found.get('recording_format') or 'cdng'):
+            continue
+        p = (found.get('profiles') or {}).get(fmt) or {}
+        core('set_record_format', value=fmt); time.sleep(3)
+        if 'clear_hdr' in p and fmt not in ('prores', 'h264'):
+            core('set_clear_hdr', enabled=p['clear_hdr'] in ('true', '1')); time.sleep(4)
+        if p.get('resolution_width') and fmt != 'h264':
+            core('set_resolution', width=int(p['resolution_width']), height=int(p['resolution_height'])); time.sleep(4)
+        settle()
+    for cmd, k in (('set_lossy_dng_ratio', 'lossy_dng_ratio'), ('set_prores_profile', 'prores_profile'),
+                   ('set_prores_color_profile', 'prores_color_profile')):
+        if found.get(k):
+            core(cmd, value=found[k])
+    if found.get('h264_resolution') and 'x' in str(found['h264_resolution']):
+        hw, hh = found['h264_resolution'].split('x')
+        core('set_h264_resolution', width=int(hw), height=int(hh))
+    for k, cmd in (('record_audio_enabled', 'set_record_audio_enabled'), ('focus_peaking_enabled', 'set_focus_peaking_enabled'),
+                   ('zebra_enabled', 'set_zebra_enabled')):
+        if k in (found.get('ui') or {}):
+            core(cmd, enabled=bool(found['ui'][k]))
+    if found.get('ladder_text'):
+        r = core('set_mode_ladder', resolutions=found['ladder_text'], enabled='true' if found.get('ladder_enabled') else 'false')
+        if not r.get('ok'):
+            bad.append('ladder rungs not restored: %s' % r.get('error'))
+    return bad
+
+
 def restore_night(out, found, nights, why):
     """The restore list (plan section 7 with revision item 7), read back and written to restore-<night>.txt; the power-off watcher
     powers the Pi off only when the file says RESTORE OK."""
+    bad0 = restore_formats(found)
     ow, oh = (found.get('resolution') or '3840x2160').split('x')
     core('set_record_format', value=found.get('recording_format') or 'cdng')
     for cmd, kw in (('set_clear_hdr', {'enabled': bool(found.get('clear_hdr', True))}),
@@ -3535,9 +3999,11 @@ def restore_night(out, found, nights, why):
         time.sleep(4 if cmd in ('set_clear_hdr', 'set_resolution', 'set_raw_bit_depth') else 0.3)
     settle()
     st = state()
-    want = dict(found)
+    want = {k: v for k, v in found.items() if k not in ('ui', 'ladder_text', 'profiles')}
     want.update({'frames_per_folder': SPLIT_DEFAULT, 'clip_merge_enabled': True})
-    bad = ['%s=%s (want %s)' % (k, st.get(k), v) for k, v in want.items() if k != 'tuning_file' and str(st.get(k)) != str(v)]
+    bad = bad0 + ['%s=%s (want %s)' % (k, st.get(k), v) for k, v in want.items() if k != 'tuning_file' and str(st.get(k)) != str(v)]
+    u1 = (web_state(3.0) or {}).get('ui') or {}
+    bad += ['ui.%s=%s (want %s)' % (k, u1.get(k), v) for k, v in (found.get('ui') or {}).items() if k in u1 and u1.get(k) != v]
     rc, txt = helper('timers-unmask', 120)
     lines = ['night %s ended: %s' % (','.join(nights), why), time.strftime('%F %T'),
              'read back: ' + ', '.join('%s=%s' % (k, st.get(k)) for k in want),
@@ -3629,6 +4095,9 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
+    ap.add_argument('--est-blocks', default='P0,P1,P2,P1b,P3,P4,P5',
+                    help='N, EST (estimator plan section 5): blocks in order; P1b = the second P1 pass over the 4K rows')
+    ap.add_argument('--max-voids', type=int, default=2, help='N: voids in one night before it stops (the estimator day: 4)')
     ap.add_argument('--arms', default='4kHDR16:lossless_jpeg:nolog:25,4kHDR16:none:log:25',
                     help='N, ARMS: extra arms at a fixed fps, mode:comp:log|nolog:fps, one cell each')
     ap.add_argument('--audio-optional', action='store_true', help='a take without audio counts (flagged audio_missing); audio faults never end the night')
