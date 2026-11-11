@@ -3523,6 +3523,21 @@ EST_P0 = (('cap', '4kSDR12:cdng:unc', None, None),          # storage (the 60-s 
 EST_P2_ANCHORS = (('be', '4kHDR16:cdng:unc', 28), ('enc', '4kHDR16:cdng:lj', 25), ('stor', '4kSDR12:cdng:unc', None))
 
 
+def is_est(n):
+    return n == 'EST' or n.startswith('EST-')
+
+
+def est_set():
+    """The estimator night's name: EST (the clip-split 7e6e2a3 set of 2026-11-11) or EST-<build> for a new build's own set
+    (User 2026-11-11: the next run on the merged build): its own est folder, cache keys, saved state and restore file."""
+    return next((n for n in str(CS.get('night') or 'EST').split(',') if is_est(n)), 'EST')
+
+
+def est_dir(out):
+    n = est_set()
+    return out + ('/est' if n == 'EST' else '/est-' + n[4:])
+
+
 def est_spec_parts(spec):
     f = spec.split(':')
     return f[0], f[1], (f[2:] + ['', ''])
@@ -3575,7 +3590,7 @@ def est_lever_tag(lv):
 
 def est_prereg(out):
     """The die rolls before the first take (plan section 5): one seed from the OS, every order derived from it, written once."""
-    p = out + '/est/preregistration.json'
+    p = est_dir(out) + '/preregistration.json'
     if os.path.exists(p):
         return json.load(open(p))
     import random
@@ -3593,7 +3608,7 @@ def est_prereg(out):
            'p2_design': design, 'p2_anchors': [list(x) for x in EST_P2_ANCHORS], 'p2_orders': orders, 'p3_n': 12,
            'p3_seed': rng.randrange(1 << 30), 'probe_s': EST_PROBE_S,
            'success': {'p3_clean_at_p': '>= 10 of 12', 'p3_out_at_p1': '>= 8 of 12', 'selftest_within_1fps': '>= 90 %'}}
-    os.makedirs(out + '/est', exist_ok=True)
+    os.makedirs(est_dir(out), exist_ok=True)
     write_atomic(p, json.dumps(pre, indent=1))
     decide(out, 'EST preregistration written: seed %d, %d P1 specs (+%d repeated), P2 16 runs x 3 anchors + the back end twice' % (
         seed, len(p1), len(p1b)))
@@ -3615,7 +3630,7 @@ def est_ctake(out, c, fps, secs, variant, stop_on_drop):
     aud0 = CS['audio_expected']
     CS['audio_expected'] = aud0 and c.audio is not False
     try:
-        return ctake(out, c, fps, secs, 'EST', variant, stop_on_drop=stop_on_drop, skip_mismatch=True)
+        return ctake(out, c, fps, secs, est_set(), variant, stop_on_drop=stop_on_drop, skip_mismatch=True)
     finally:
         CS['audio_expected'] = aud0
 
@@ -3654,8 +3669,8 @@ def est_record(block, kind, spec, lv, c, fps, top, r, rep):
 
 
 def est_append(out, name, rec):
-    p = '%s/est/%s.jsonl' % (out, name)
-    os.makedirs(out + '/est', exist_ok=True)
+    p = '%s/%s.jsonl' % (est_dir(out), name)
+    os.makedirs(est_dir(out), exist_ok=True)
     if rec.get('ckey') and os.path.exists(p):
         for l in open(p):
             try:
@@ -3696,6 +3711,7 @@ def est_cell(out, block, spec, lv, fps, secs, tag):
 def est_model():
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))      # python3 -I leaves the script's folder out
     import estimate
+    estimate.SUB = os.path.basename(est_dir('x'))      # est, or est-<build> for a new build's own set
     return estimate
 
 
@@ -3841,7 +3857,7 @@ def campaign_main(a, out):
     found = {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log', 'preview_tdn', 'fps_phase_lock',
                                      'fps_speed_ramp', 'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled',
                                      'frames_per_folder', 'clip_merge_enabled', 'tuning_file')}
-    if 'EST' in a.night.split(','):
+    if any(is_est(n) for n in a.night.split(',')):
         # the estimator touches every format: its settings, the UI levers, the ladder's rungs and each format's saved
         # resolution profile (Core keeps resolution and Clear HDR per format, profile.<format>.* in camera_settings.conf)
         found.update({k: st0.get(k) for k in ('lossy_dng_ratio', 'prores_profile', 'prores_color_profile', 'h264_resolution')})
@@ -3927,7 +3943,7 @@ def campaign_main(a, out):
                 end_night(out)
             elif n == 'ARMS':
                 arms_night(out, arms)
-            elif n == 'EST':
+            elif is_est(n):
                 est_night(out)
             if not (CS['stop'] or STOP['sig'] or HALT['why']):
                 write_atomic(out + '/DONE-' + n, time.strftime('%F %T') + ' done\n')
@@ -4140,7 +4156,7 @@ def main():
     if 'N' in a.stages:
         if a.preserve and 'SMOKE' not in a.night.split(','):
             sys.exit('--preserve is for the SMOKE night only: Patrik offloads his footage before S0 (plan section 6)')
-        bad = [n for n in a.night.split(',') if n and n not in NIGHT_STAGES]
+        bad = [n for n in a.night.split(',') if n and n not in NIGHT_STAGES and not is_est(n)]
         if not a.night or bad:
             sys.exit('--stages N needs --night with stages from %s (got %r)' % (','.join(NIGHT_STAGES), a.night))
         if not a.modes:

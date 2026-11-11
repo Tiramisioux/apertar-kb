@@ -14,6 +14,8 @@ storage anchors and on the gap rate at the back-end anchor (a 2^(5-1) half-fract
 on / off). Every number in the outputs carries its label: measured (a probe or a cell), derived (the model)."""
 import argparse, csv, itertools, json, math, os, statistics, sys
 
+SUB = 'est'      # the run's estimator folder: est, or est-<build> for a build's own set (the runner sets it)
+
 LEVERS = ('tdn', 'lock', 'web', 'audio', 'aids')
 REF = {'tdn': False, 'lock': False, 'web': True, 'audio': True, 'aids': True}
 # The drives' sustained write (the stored drive profile, plan section 2; User 2026-11-11: the self-test does not measure the
@@ -61,7 +63,7 @@ def pixels(spec):
 
 def load(run):
     def jl(name):
-        p = os.path.join(run, 'est', name + '.jsonl')
+        p = os.path.join(run, SUB, name + '.jsonl')
         out = []
         if os.path.exists(p):
             for l in open(p):
@@ -78,7 +80,7 @@ def load(run):
             except (OSError, ValueError):
                 pass
     known = {k: {'carried': list(v.get('carried', [])), 'out': list(v.get('out', []))} for k, v in KNOWN_CELLS.items()}
-    kp = os.path.join(run, 'est', 'known-cells.json')
+    kp = os.path.join(run, SUB, 'known-cells.json')
     if os.path.exists(kp):
         for k, v in json.load(open(kp)).items():
             known[k] = v
@@ -343,7 +345,7 @@ def validation_summary(data):
 def write_outputs(run):
     data = load(run)
     model = fit(data)
-    d = os.path.join(run, 'est')
+    d = os.path.join(run, SUB)
     os.makedirs(d, exist_ok=True)
     tp = os.path.join(d, 'estimate-table.csv')
     with open(tp, 'w', newline='') as f:
@@ -393,7 +395,10 @@ def main():
     ap.add_argument('run')
     ap.add_argument('--spec')
     ap.add_argument('--levers', default='', help='e.g. tdn=1,web=0')
+    ap.add_argument('--set', default='est', help='the estimator folder in the run: est, or est-<build>')
     a = ap.parse_args()
+    global SUB
+    SUB = a.set
     if a.spec:
         lv = {k: v in ('1', 'true', 'on') for k, v in (x.split('=') for x in a.levers.split(',') if '=' in x)}
         print(json.dumps(predict(fit(load(a.run)), a.spec, lv, allow_scaling=True), indent=1))
