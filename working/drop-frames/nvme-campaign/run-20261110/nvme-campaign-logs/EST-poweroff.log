@@ -1,3 +1,4 @@
-2026-11-11 05:08:15 following runner pid 141961 (night EST, run /home/pi/longtakes/nvme-20261110)
-2026-11-11 05:38:15 runner ended; waiting for a quiet camera
-2026-11-11 05:39:15 NOT powering off: /home/pi/longtakes/nvme-20261110/restore-EST.txt missing or not RESTORE OK: RESTORE INCOMPLETE: raw_bit_depth=12 (want 16); clear_hdr=False (want True); recording_format=lossydng (want cdng)
+2026-11-11 09:02:28 following runner pid 241182 (night EST, run /home/pi/longtakes/nvme-20261110)
+2026-11-11 09:52:28 runner ended; waiting for a quiet camera
+2026-11-11 09:53:28 restore read back: frames_per_folder=5000 merge=true; RESTORE OK
+2026-11-11 09:53:28 night EST over; powering off through Core (power_off_system)

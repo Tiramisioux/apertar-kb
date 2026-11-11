@@ -5,6 +5,6 @@
  "current": {},
  "take_in_progress": false,
  "stop": "fault: fault:   | unconfirmed: no counter or context pointed to a cause",
- "heartbeat_age_s": 21,
- "t": 1794371854.4996822
+ "heartbeat_age_s": 52,
+ "t": 1794387138.3864684
 }

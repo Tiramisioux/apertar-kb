@@ -1,0 +1,12 @@
+1794387065.422939 apertar start-apertar-core.sh[823]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1794387065.436910 apertar start-apertar-core.sh[823]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1794387065.436910 apertar start-apertar-core.sh[823]: ApertarCore audio capture: format=s24 rate=48000 channels=2 first_channel=1
+1794387065.437292 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 1074 MiB (MemAvailable 2644 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 7.9 MiB = 135 frames) source=conf
+1794387065.445092 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/MLV_26-11-11_09510524_C0008 format=mlv compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=0
+1794387065.484508 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=28471270241
+1794387068.972330 apertar start-apertar-core.sh[823]: ApertarCore buffer: safety stop at 90 % (972/1074 MiB)
+1794387073.432013 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=210 written=210 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=0 fault= peak_queue=123/12 queue_bytes_peak=1020211200 queue_budget=1126993100
+1794387073.432013 apertar start-apertar-core.sh[823]: ApertarCore recorder stop time: 4.459s format=mlv discarded_on_stop=0
+1794387073.449192 apertar start-apertar-core.sh[823]: ApertarCore audio writer: peak_backlog_kb=16
+1794387073.449266 apertar start-apertar-core.sh[823]: ApertarCore audio sync: video_boot_us=28471270241 audio_boot_us=28471246738 trim_samples=1128 pad_samples=0 output_samples=168000 sample_rate=48000
+1794387073.580981 apertar start-apertar-core.sh[823]: ApertarCore recording stop: synced to the medium in 129 ms

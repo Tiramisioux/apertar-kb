@@ -217,6 +217,21 @@ WebUI, audio and aids on). All measured:
 - Runner fixes (862e2f1): re-ask for the DNG format when Core lands on the other one; wait up to 45 s for a silent socket
   when the buffer is at 80 % or more and read the stop as buffer_full; H.264 probe at 2560x1440.
 
+## Estimator day, second part, 2026-11-11 09:02-09:52 (stopped again by the same runner bug; powered off)
+
+- Resumed from the 18 probes done; P0 came from the cache in 3 min, P1 ran 31 probes to 09:51. 56 probes in
+  `run-20261110/est/probes.jsonl`; preliminary table in `est/estimate.md` (cold 60-s probes, see the warm-drive pauses).
+- Stopped on MLV 4K SDR12 at 60 fps: the last sample before Core's socket went silent showed the buffer at 71 % (the
+  first fix waited only from 80 %), Core's safety stop came 0.7 s later, 5.4 s of silence, called a fault (measured).
+  The restore read back OK and the Pi powered off at 09:53 as designed.
+- Fix (5995ac0): any 5-45 s silence while recording with the medium readable is waited for; Core's
+  `buffer: safety stop` journal line makes the stop buffer_full.
+- Measured in this part (60 s each): MLV 4K HDR12 at 30 buffer full at 9 s; 4K HDR16 uncompressed at 30: 119 dropped;
+  HDR16 lossless + Log at 30: 428 dropped; 4K ProRes HQ ARRI LogC4 at 60: 946 dropped; 2K ProRes HQ and Proxy at 60
+  clean; the 2880x2160 crop lossless at 60 clean; 4K SDR10 lossless at 60 buffer full at 12 s.
+- Not to be used from the table: 4kSDR10:mlv 11 fps comes from the faulted morning probe (frames over a stopped take),
+  and 4kHDR16:cdng:lj:log reads 30 against 16 for lossless without Log: both checked when P1 is complete.
+
 ## Deviations from the preregistration
 
 - 2026-11-10 03:38: no drive-recovery idles between stages or after cold deletes (User: "simulate a shooting
