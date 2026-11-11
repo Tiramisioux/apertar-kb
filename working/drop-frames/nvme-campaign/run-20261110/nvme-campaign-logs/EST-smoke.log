@@ -1,0 +1,29 @@
+2026-11-11 04:56:28 preserving 0 pre-existing clip folder(s); 3 clip folder(s) of this run on the drive
+2026-11-11 04:56:28 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-11 04:56:30 DECISION night EST start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 180 GB; Core pid 823; drop-in checked; timers-mask rc=0; smart temp 50 C
+2026-11-11 04:56:30 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 5.0 s at 60 fps (measured 60.0), 299 frames, 1.6 GB written and deleted)
+2026-11-11 04:56:30 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261111-045630-baseline-EST
+2026-11-11 04:56:30 DECISION EST preregistration written: seed 2307094834, 44 P1 specs (+25 repeated), P2 16 runs x 3 anchors + the back end twice
+2026-11-11 04:56:30 DECISION EST block P0 starts (smoke: short takes, kept apart as smoke-P0)
+2026-11-11 04:57:33 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 9s dropped=2 kinds=capture-gap:1 buffer_full:1 pi=58C nvme=51.85
+2026-11-11 04:57:33 DECISION EST smoke-P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 20 s: buffer_full (9.0 s, dropped 2, first drop 8.6, gap 0, boundary 0)
+2026-11-11 04:58:34 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 7s dropped=1 kinds=capture-gap:1 buffer_full:1 pi=59C nvme=48.85
+2026-11-11 04:58:34 DECISION EST smoke-P0-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 20 s: buffer_full (7.0 s, dropped 1, first drop 2.7, gap 0, boundary 0)
+2026-11-11 04:59:52 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_clean after 20s dropped=0 kinds= pi=56C nvme=50.85
+2026-11-11 04:59:52 DECISION EST smoke-P0-cap-t0l0w1a1a1-r1 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 20 s: ab_clean (20.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:01:01 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 12s dropped=0 kinds=buffer_full:1 pi=58C nvme=51.85
+2026-11-11 05:01:01 DECISION EST smoke-P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 20 s: buffer_full (11.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:01:54 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=60.0 -> ab_dropped after 20s dropped=582 kinds=capture-gap:21 prores-queue-full:270 pi=60C nvme=45.85
+2026-11-11 05:01:54 DECISION EST smoke-P0-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 20 s: ab_dropped (20.0 s, dropped 582, first drop 0.7, gap 0, boundary )
+2026-11-11 05:02:46 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 fps=60.0 -> ab_clean after 20s dropped=0 kinds= pi=58C nvme=47.85
+2026-11-11 05:02:46 DECISION EST smoke-P0-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 at 60 fps, 20 s: ab_clean (20.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-11 05:04:10 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_clean after 20s dropped=0 kinds= pi=57C nvme=48.85
+2026-11-11 05:04:10 DECISION EST smoke-P0-gap-t0l0w1a1a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 20 s: ab_clean (20.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:05:24 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 20s dropped=0 kinds= pi=53C nvme=46.85
+2026-11-11 05:05:24 DECISION EST smoke-P0-gap-t0l0w1a1a1-r1 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 20 s: ab_clean (20.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:06:39 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 20s dropped=44 kinds=capture-gap:6 pi=58C nvme=47.85
+2026-11-11 05:06:39 DECISION EST smoke-P0-gap-t0l0w1a1a1-r1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 20 s: ab_dropped (20.0 s, dropped 44, first drop 2.7, gap 0, boundary 0)
+2026-11-11 05:07:34 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> ab_dropped after 20s dropped=14 kinds=capture-gap:1 pi=56C nvme=47.85
+2026-11-11 05:07:34 DECISION EST smoke-P0-gap-t1l0w1a1a1-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 20 s: ab_dropped (20.0 s, dropped 14, first drop 5.7, gap 0, boundary 0)
+2026-11-11 05:08:12 DECISION RESTORE OK
+2026-11-11 05:08:12 night EST over: EST smoke (--max-seconds): no DONE-EST, the real run starts from the beginning

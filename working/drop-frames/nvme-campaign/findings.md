@@ -162,6 +162,61 @@ For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
 - Runner fix: S2's planned start fps is clamped to the mode top (a start above it was a setup_mismatch that ended the
   night).
 
+## Night run S2,S4,S5 then S6, 2026-11-11 02:02-04:55 (IMX283 unplugged; chained to the estimator day)
+
+- **S2, SDR12 uncompressed:** meter clean at 44 fps (60 s). 39 passed 3 min, then the 5-min take filled the buffer at
+  105 s and the repeat at 146 s; 38 passed 3 and 5 min; end control at 39: buffer full at 95 s. Best 38 (measured).
+- **S2, SDR12 lossless:** 59 filled the buffer at 10-13 s; 43 passed 3 and 5 min (measured).
+- **S2, HDR12:** every step from 30 down to 25 dropped frames within 2-93 s (capture gaps); end control at 30 dropped at
+  2 s. No passing fps, so S4 skipped HDR12 (measured). 4K HDR12 is now capped at 30 by Core (IMX585 alone).
+- **S2, HDR16 lossless + Log:** 27 dropped at 4 s, twice (measured).
+- **S4, 15-min takes (split 5000):**
+
+  | Mode | fps | Result |
+  | --- | --- | --- |
+  | HDR16 uncompressed | 27 | 3 dropped at 708 s (capture gaps) |
+  | HDR16 uncompressed | 26 | 2 dropped at 621 s |
+  | HDR16 uncompressed | 25 | buffer full at 758 s, 0 dropped |
+  | SDR12 uncompressed | 38 | buffer full at 799 s |
+  | SDR12 uncompressed | 37 | passed 15 min, 0 dropped |
+
+  All measured. HDR16 uncompressed has no fps on this card that holds 15 min; 4K SDR12 holds 37.
+- **Why the 15-min takes fail at 10-13 min (probable):** the drive pauses writes for a few seconds once it is warm.
+  The 1-min write rate stays flat (448 MB/s at HDR16 27, 460-476 MB/s at SDR12) right up to the failure, but from about
+  10 min (drive 72-78 C, from 40-47 C at the start) the RAM buffer jumps from 0 to 700-900 MB within 2-3 s, i.e. the
+  drive took no writes for about 2 s; one such pause fills Core's 1181 MiB buffer to its safety stop, or starves the
+  capture side (capture gaps, then drops). The SDR12 37-fps pass shows the same pauses at 661 and 841 s, just small
+  enough (58 and 299 MB) to drain (measured from the 1 Hz samples). Thermal throttling or the drive's own garbage
+  collection: unconfirmed, the samples cannot tell them apart. Consequence for the estimator: a 60-s probe sees the
+  cold drive; a sustained figure needs the warm-drive pause, i.e. a buffer that covers about 2 s at the take's rate.
+- **S5** did not run: its GO is "if all_passed S4", false (HDR12 and HDR16 did not pass). The estimator follower saw the
+  8-h wait in status.md and sent the runner SIGTERM (04:52); the runner restored and ended the night (measured).
+- **S6** did nothing: no mode had a 30-min split pass, so no flat control; over in 21 s.
+- Restores read back OK after both nights; the chain went on to the estimator day at 04:55 without anyone there.
+- Drive at the end: 69.1 M units written, critical_warning 0, 404 GB free, 4.8 TB written of the 16 TB campaign cap.
+
+## Estimator day, first part, 2026-11-11 05:08-05:37 (stopped by a runner bug; Pi stayed on)
+
+Results in `run-20261110/est/` (probes.jsonl, estimate.md). 60-s probes, levers at the reference (TDN off, lock off,
+WebUI, audio and aids on). All measured:
+
+- Clean for 60 s: HDR16 uncompressed at 28, 2K HDR16 at 30, 2K SDR12 lossless at 60, H.264 1080p at 60, 2K ProRes LT at 60.
+- RAM buffer full within 8-10 s: 4K SDR12 uncompressed at 60, 4K HDR16 lossless at 30, lossy DNG 3:1 and 5:1 at 60;
+  the 2880x2160 crop at lossy 3:1, 60 fps, lasted 28 s.
+- Dropped: 4K ProRes HQ at 60 (1793 frames, encoder queue full), HDR16 + Log at 28 (109) and 30 (284), HDR16 with TDN
+  on at 25 (128), 4K HDR12 at 30 (291). Log and TDN both cost frames at HDR16 speeds (probable; P2 measures it).
+- The preliminary table (estimate.md) comes from these cold 60-s probes and is above what the long takes hold (it gives
+  39 for 4K SDR12, S4 holds 37): see the warm-drive pauses above.
+- Stop 1: MLV 4K 10-bit at 60 fps filled the buffer in 3 s; Core's safety stop kept the socket silent for 11.8 s while
+  the recorder wound down, the runner read that as a dead sampler (fault) and ended the day.
+- Stop 2: the restore asked for cdng coming from ProRes and Core brought back lossy DNG: cDNG and lossy DNG share one
+  saved settings profile, and the last probe of that family was the lossy crop. Clear HDR and 16-bit were then refused,
+  RESTORE INCOMPLETE, the Pi stayed on (as designed). Put back by hand at 09:1x (format, Clear HDR, 16-bit, all
+  per-format profiles read back as before the day).
+- The 4K H.264 probe was a setup_mismatch: Core's largest H.264 size on a Pi 5 is 2560x1440.
+- Runner fixes (862e2f1): re-ask for the DNG format when Core lands on the other one; wait up to 45 s for a silent socket
+  when the buffer is at 80 % or more and read the stop as buffer_full; H.264 probe at 2560x1440.
+
 ## Deviations from the preregistration
 
 - 2026-11-10 03:38: no drive-recovery idles between stages or after cold deletes (User: "simulate a shooting
@@ -173,3 +228,5 @@ For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
 - 2026-11-10 20:55: the fill gate keeps at least 10 % of the card free after every take (was need + 10 GB).
 - 2026-11-11: write cap 10 TB -> 16 TB for the campaign folder (User: "16 TB write cap is good"), so the estimator day fits;
   in effect from the next deploy of `campaign.env` (tonight's S6 still reads 10 TB).
+- 2026-11-11 04:52: S5 ended by the estimator follower's SIGTERM instead of an 8-h GO wait (its condition was false).
+- 2026-11-11: the estimator day resumed after the runner fixes (User: GO), from the 18 probes already done.

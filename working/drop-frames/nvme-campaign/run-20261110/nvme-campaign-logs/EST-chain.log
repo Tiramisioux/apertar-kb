@@ -1,0 +1,10 @@
+2026-11-11 04:07:54 waiting for night S6 (run /home/pi/longtakes/nvme-20261110)
+2026-11-11 04:52:28 status: WAITING for GO-S5: its condition "if all_passed S4" is false (4kHDR12, 4kHDR12@cap-imx283-probe, 4kHDR16, 4kSDR12@cap-imx283-probe did not pass S4) -> SIGTERM to runner 4959 (an 8-h wait nobody answers; the runner restores and ends the night)
+2026-11-11 04:54:28 took over from night S6's power-off follower (pid 132392); following runner pid 132063
+2026-11-11 04:55:28 night S6's runner ended; waiting for a quiet camera
+2026-11-11 04:56:28 night S6 ended on: 2026-11-11 04:54:49 night S6 over: all stages of the night done
+2026-11-11 04:56:28 EST smoke (P0, 20-s takes) from bin-est
+2026-11-11 05:08:13 smoke: 10 usable probes of 10
+2026-11-11 05:08:13 starting the estimator day
+night EST started: runner pid 141961; the Pi powers off when it is over (if the restore reads back).
+follow:  cat /home/pi/longtakes/nvme-20261110/status.md

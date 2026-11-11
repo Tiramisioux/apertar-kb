@@ -1,0 +1,50 @@
+2026-11-11 05:08:13 write budget 16000 GB, 4681 GB used so far in this run
+2026-11-11 05:08:13 preserving 0 pre-existing clip folder(s); 11 clip folder(s) of this run on the drive
+2026-11-11 05:08:13 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-11 05:08:15 DECISION night EST start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 142 GB; Core pid 823; drop-in checked; timers-mask rc=0; smart temp 47 C
+2026-11-11 05:08:15 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 5.0 s at 60 fps (measured 60.0), 299 frames, 1.6 GB written and deleted)
+2026-11-11 05:08:15 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261111-050815-baseline-EST
+2026-11-11 05:08:15 DECISION EST block P0 starts
+2026-11-11 05:08:34 fill gate: deleting cDNG_26-11-11_04011935_C0003 (2281 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-11 05:08:35 DECISION deleted cDNG_26-11-11_04011935_C0003: 2281 frames in 0.9 s (warm, budget 0 s)
+2026-11-11 05:09:20 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 10s dropped=9 kinds=capture-gap:1 buffer_full:1 pi=58C nvme=51.85
+2026-11-11 05:09:20 DECISION EST P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (10.0 s, dropped 9, first drop 3.7, gap 0, boundary 0)
+2026-11-11 05:10:22 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 8s dropped=3 kinds=capture-gap:1 buffer_full:1 pi=58C nvme=47.85
+2026-11-11 05:10:22 DECISION EST P0-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (7.5 s, dropped 3, first drop 1.7, gap 0, boundary 0)
+2026-11-11 05:12:20 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=50.85
+2026-11-11 05:12:20 DECISION EST P0-cap-t0l0w1a1a1-r1 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:13:25 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=57C nvme=51.85
+2026-11-11 05:13:25 DECISION EST P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: buffer_full (8.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:14:59 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1793 kinds=capture-gap:92 prores-queue-full:660 pi=62C nvme=45.85
+2026-11-11 05:14:59 DECISION EST P0-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1793, first drop 1.3, gap 0, boundary )
+2026-11-11 05:16:31 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=59C nvme=49.85
+2026-11-11 05:16:31 DECISION EST P0-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-11 05:18:36 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=53.85
+2026-11-11 05:18:36 DECISION EST P0-gap-t0l0w1a1a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:20:30 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=53C nvme=48.85
+2026-11-11 05:20:30 DECISION EST P0-gap-t0l0w1a1a1-r1 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:20:50 fill gate: deleting cDNG_26-11-11_04043335_C0002 (30231 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-11 05:23:27 DECISION deleted cDNG_26-11-11_04043335_C0002: 30231 frames in 156.8 s (warm, budget 0 s)
+2026-11-11 05:24:27 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-11 05:26:06 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=109 kinds=capture-gap:4 pi=58C nvme=53.85
+2026-11-11 05:26:06 DECISION EST P0-gap-t0l0w1a1a1-r1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 109, first drop 3.7, gap 0, boundary 0)
+2026-11-11 05:27:41 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> ab_dropped after 60s dropped=128 kinds=capture-gap:5 pi=58C nvme=61.85
+2026-11-11 05:27:41 DECISION EST P0-gap-t1l0w1a1a1-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 60 s: ab_dropped (60.1 s, dropped 128, first drop 3.7, gap 0, boundary 0)
+2026-11-11 05:27:41 DECISION EST block P1 starts
+2026-11-11 05:29:20 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=57C nvme=47.85
+2026-11-11 05:29:20 DECISION EST P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-11 05:29:40 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-3840x2160_aud1_aids1 fps=60.0: setup_mismatch (h264=1920x1080) 
+2026-11-11 05:29:40 DECISION EST P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-3840x2160_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-11 05:31:18 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=284 kinds=capture-gap:31 pi=59C nvme=57.85
+2026-11-11 05:31:18 DECISION EST P1-cap-t0l0w1a1a1-r1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 284, first drop 1.7, gap 0, boundary 0)
+2026-11-11 05:33:08 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=291 kinds=capture-gap:27 pi=58C nvme=58.85
+2026-11-11 05:33:08 DECISION EST P1-cap-t0l0w1a1a1-r1 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 291, first drop 1.7, gap 0, boundary 0)
+2026-11-11 05:34:10 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=58C nvme=54.85
+2026-11-11 05:34:10 DECISION EST P1-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: buffer_full (9.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-11 05:35:32 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 28s dropped=2 kinds=buffer_full:1 pi=58C nvme=48.85
+2026-11-11 05:35:32 DECISION EST P1-cap-t0l0w1a1a1-r1 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: buffer_full (28.0 s, dropped 2, first drop 11.7, gap 0, boundary 0)
+2026-11-11 05:36:44 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> fault after 8s dropped=0 kinds= pi=57C nvme=49.85
+2026-11-11 05:36:44 DECISION EST P1-cap-t0l0w1a1a1-r1 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: fault (8.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-11 05:36:44 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est/estimate.md, /home/pi/longtakes/nvme-20261110/est/selftest.md
+2026-11-11 05:37:34 DECISION RESTORE INCOMPLETE: raw_bit_depth=12 (want 16); clear_hdr=False (want True); recording_format=lossydng (want cdng)
+2026-11-11 05:37:34 night EST over: fault: fault:   | unconfirmed: no counter or context pointed to a cause

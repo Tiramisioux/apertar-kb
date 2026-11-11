@@ -1,0 +1,78 @@
+{
+ "found": {
+  "fps": 25.0,
+  "raw_bit_depth": 16,
+  "cdng_compression": "none",
+  "cdng_log": "off",
+  "preview_tdn": false,
+  "fps_phase_lock": false,
+  "fps_speed_ramp": false,
+  "clear_hdr": true,
+  "resolution": "3840x2160",
+  "recording_format": "cdng",
+  "ladder_enabled": false,
+  "frames_per_folder": 5000,
+  "clip_merge_enabled": true,
+  "tuning_file": "",
+  "lossy_dng_ratio": "3to1",
+  "prores_profile": "hq",
+  "prores_color_profile": "davinci_intermediate",
+  "h264_resolution": "1920x1080",
+  "ui": {
+   "record_audio_enabled": true,
+   "focus_peaking_enabled": true,
+   "zebra_enabled": true
+  },
+  "ladder_text": "3840x2160:16:hdr::none,3840x2160:12:sdr:50:none,3840x2160:12:hdr::none,3840x2160:10:sdr::none,1920x1080:16:hdr::none,1920x1080:12:hdr::none,1920x1080:12:sdr::none,1920x1080:10:sdr::none",
+  "profiles": {
+   "cdng": {
+    "resolution_width": "3840",
+    "resolution_height": "2160",
+    "clear_hdr": "true"
+   },
+   "mlv": {
+    "resolution_width": "1920",
+    "resolution_height": "1080",
+    "clear_hdr": "false"
+   },
+   "h264": {
+    "resolution_width": "3840",
+    "resolution_height": "2160",
+    "clear_hdr": "false"
+   },
+   "prores": {
+    "resolution_width": "3840",
+    "resolution_height": "2160",
+    "clear_hdr": "false"
+   },
+   "still": {
+    "resolution_width": "3872",
+    "resolution_height": "2176",
+    "clear_hdr": "false"
+   }
+  }
+ },
+ "audio": {
+  "audio_sample_format": "s24",
+  "audio_sample_rate": 48000,
+  "audio_channels": "auto",
+  "record_audio_enabled": true,
+  "audio_input_device": "hw:2,0"
+ },
+ "card": {
+  "model": "Corsair MP600 MINI",
+  "serial": "A936B442006AC2",
+  "firmware_rev": "ERFM11.1",
+  "size_b": 999960870912,
+  "free_b": 179788316672,
+  "mount": "/dev/nvme0n1p2 exfat rw,noatime,uid=1000,gid=1000,fmask=0002,dmask=0002,allow_utime=0020,iocharset=utf8,errors=remount-ro"
+ },
+ "boot_id": "308fa840-14bc-4ccf-b739-81b3c666be43",
+ "core_pid": 823,
+ "core_exe_mtime": 1794340766.9817264,
+ "core_commit": "7e6e2a3 cdng: keep the queue stopping while writers left behind still run",
+ "cpu_serial": "bbc74c2c81a90839",
+ "kernel": "6.12.75+rpt-rpi-2712",
+ "cmdline": "reboot=w coherent_pool=1M 8250.nr_uarts=1 pci=pcie_bus_safe cgroup_disable=memory numa_policy=interleave nvme.max_host_mem_size_mb=0  numa=fake=8 system_heap.max_order=0 iommu_dma_numa_policy=interleave smsc95xx.macaddr=2C:CF:67:C8:2B:1B vc_mem.mem_base=0x3fc00000 vc_mem.mem_size=0x40000000  console=ttyAMA10,115200 console=tty1 root=PARTUUID=8d5a40f1-02 rootfstype=ext4 fsck.repair=yes rootwait ds=nocloud;i=rpi-imager-1777889301889 cfg80211.ieee80211_regdom=RO quiet loglevel=0 vt.global_cursor_default=0 splash plymouth.ignore-serial-consoles rp1_cfe.track_csi2_errors=1 nvme_core.default_ps_max_latency_us=0 pcie_aspm=off psi=1",
+ "started": "2026-11-11 04:56:28"
+}

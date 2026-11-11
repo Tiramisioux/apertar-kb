@@ -1,0 +1,13 @@
+2026-11-11 04:54:25 write budget 10000 GB, 4646 GB used so far in this run
+2026-11-11 04:54:25 preserving 0 pre-existing clip folder(s); 3 clip folder(s) of this run on the drive
+2026-11-11 04:54:25 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-11 04:54:28 DECISION night S6 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 180 GB; Core pid 823; drop-in checked; timers-mask rc=0; smart temp 55 C
+2026-11-11 04:54:28 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 5.0 s at 60 fps (measured 60.0), 299 frames, 1.6 GB written and deleted)
+2026-11-11 04:54:28 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261111-045428-baseline-S6
+2026-11-11 04:54:28 DECISION GO-S6 found (unconditional): unconditional
+2026-11-11 04:54:28 DECISION S6 4kSDR12: no 30-min split pass and no --flat-control: no flat control
+2026-11-11 04:54:28 DECISION S6 4kHDR16: no 30-min split pass and no --flat-control: no flat control
+2026-11-11 04:54:28 DECISION S6 4kHDR12: no 30-min split pass and no --flat-control: no flat control
+2026-11-11 04:54:28 DECISION stage S6 done
+2026-11-11 04:54:49 DECISION RESTORE OK
+2026-11-11 04:54:49 night S6 over: all stages of the night done

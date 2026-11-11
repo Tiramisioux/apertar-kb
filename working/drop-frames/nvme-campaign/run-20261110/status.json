@@ -1,10 +1,10 @@
 {
- "head": "NIGHT OVER (all stages of the night done): safe to read; report report-ARMS.md",
+ "head": "NIGHT OVER (fault: fault:   | unconfirmed: no counter or context pointed to a cause): safe to read; report report-EST.md",
  "decision": "",
- "night": "ARMS",
+ "night": "EST",
  "current": {},
  "take_in_progress": false,
- "stop": "",
- "heartbeat_age_s": 12,
- "t": 1794351111.1328511
+ "stop": "fault: fault:   | unconfirmed: no counter or context pointed to a cause",
+ "heartbeat_age_s": 21,
+ "t": 1794371854.4996822
 }

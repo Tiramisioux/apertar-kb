@@ -1,0 +1,19 @@
+2026-11-10 23:40:38 write budget 10000 GB, 2018 GB used so far in this run
+2026-11-10 23:40:38 preserving 0 pre-existing clip folder(s); 12 clip folder(s) of this run on the drive
+2026-11-10 23:40:38 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-10 23:40:41 DECISION night ARMS start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 308 GB; Core pid 621; drop-in checked; timers-mask rc=0; smart temp 65 C
+2026-11-10 23:40:41 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 5.0 s at 30 fps (measured 30.0), 149 frames, 0.9 GB written and deleted)
+2026-11-10 23:40:41 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-234041-baseline-ARMS
+2026-11-10 23:41:29 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 fps=25.0 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=59C nvme=60.85
+2026-11-10 23:41:29 DECISION ARMS walk 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: buffer_full (13.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 23:42:16 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 fps=25.0 -> buffer_full after 13s dropped=0 kinds=buffer_full:1 pi=59C nvme=55.85
+2026-11-10 23:42:16 DECISION ARMS walk 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: buffer_full (12.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 23:42:16 DECISION ARMS 4kHDR16/lossless@25 at 25 fps: out
+2026-11-10 23:45:52 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 fps=25.0 -> pass_3min after 180s dropped=0 kinds= pi=57C nvme=62.85
+2026-11-10 23:45:52 DECISION ARMS walk 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 23:51:29 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 fps=25.0 -> pass_5min after 300s dropped=0 kinds= pi=58C nvme=64.85
+2026-11-10 23:51:29 DECISION ARMS walk 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 300 s: pass_5min (300.3 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-10 23:51:29 DECISION ARMS 4kHDR16/unc+log@25 at 25 fps: carried
+2026-11-10 23:51:29 DECISION stage ARMS done
+2026-11-10 23:51:51 DECISION RESTORE OK
+2026-11-10 23:51:51 night ARMS over: all stages of the night done

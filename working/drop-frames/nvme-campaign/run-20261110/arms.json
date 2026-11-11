@@ -1,12 +1,26 @@
 {
  "4kHDR12": {
+  "cells": {
+   "25": "out",
+   "26": "out",
+   "27": "out",
+   "28": "out",
+   "29": "out",
+   "30": "out"
+  },
+  "edge": 30,
+  "top": 30
+ },
+ "4kHDR12@cap-imx283-probe": {
   "cells": {},
   "edge": 30,
   "top": 25
  },
  "4kHDR16": {
   "S4": {
-   "27": "stop"
+   "25": "drop at  s ()",
+   "26": "drop at 621.0 s (drive state (ticks per write 11.89 -> 22.70))",
+   "27": "drop at 708.1 s (drive state (ticks per write 14.58 -> 23.67))"
   },
   "best": 27,
   "cells": {
@@ -14,14 +28,15 @@
    "28": "out"
   },
   "edge": 28,
-  "top": 25
+  "top": 30
  },
  "4kHDR16/lossless+log": {
   "cells": {
    "25": "out",
-   "26": "out"
+   "26": "out",
+   "27": "out"
   },
-  "preroll": "ok: 5.0 s at 25 fps (measured 25.0), 124 frames, 1.2 GB written and deleted"
+  "preroll": "ok: 5.0 s at 30 fps (measured 28.7), 138 frames, 1.5 GB written and deleted"
  },
  "4kHDR16/lossless@25": {
   "cells": {
@@ -34,6 +49,37 @@
   }
  },
  "4kSDR12": {
+  "S4": {
+   "37": "clean",
+   "38": "drop at  s ()"
+  },
+  "best": 38,
+  "cells": {
+   "38": "carried",
+   "39": "out"
+  },
+  "edge": 39,
+  "meter_capacity": 40.91,
+  "s4_pass": 37,
+  "top": 60
+ },
+ "4kSDR12/lossless": {
+  "best": 43,
+  "cells": {
+   "43": "carried",
+   "59": "out"
+  },
+  "preroll": "ok: 5.0 s at 60 fps (measured 60.0), 299 frames, 1.6 GB written and deleted"
+ },
+ "4kSDR12/lossless@cap-imx283-probe": {
+  "best": 30,
+  "cells": {
+   "29": "carried",
+   "30": "carried"
+  },
+  "preroll": "ok: 5.0 s at 30 fps (measured 30.0), 149 frames, 0.9 GB written and deleted"
+ },
+ "4kSDR12@cap-imx283-probe": {
   "best": 30,
   "cells": {
    "29": "carried",
@@ -42,13 +88,5 @@
   "edge": 29,
   "meter_capacity": 30.0,
   "top": 30
- },
- "4kSDR12/lossless": {
-  "best": 30,
-  "cells": {
-   "29": "carried",
-   "30": "carried"
-  },
-  "preroll": "ok: 5.0 s at 30 fps (measured 30.0), 149 frames, 0.9 GB written and deleted"
  }
 }

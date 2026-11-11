@@ -4,3 +4,7 @@
 2026-11-10 21:06:23 tag baseline-S2,S4,S5 at 2026-11-10 21:06:23; journal since 20:56:23: 810 lines, 0 MESA, first MESA: - -> 20261110-210623-baseline-S2_S4_S5
 2026-11-10 22:48:46 tag baseline-S2,S4,S5 at 2026-11-10 22:48:46; journal since 22:38:46: 1 lines, 0 MESA, first MESA: - -> 20261110-224846-baseline-S2_S4_S5
 2026-11-10 23:40:41 tag baseline-ARMS at 2026-11-10 23:40:41; journal since 23:30:41: 380 lines, 0 MESA, first MESA: - -> 20261110-234041-baseline-ARMS
+2026-11-11 02:02:16 tag baseline-S2,S4,S5 at 2026-11-11 02:02:16; journal since 01:52:16: 849 lines, 0 MESA, first MESA: - -> 20261111-020216-baseline-S2_S4_S5
+2026-11-11 04:54:28 tag baseline-S6 at 2026-11-11 04:54:28; journal since 04:44:28: 62 lines, 0 MESA, first MESA: - -> 20261111-045428-baseline-S6
+2026-11-11 04:56:30 tag baseline-EST at 2026-11-11 04:56:30; journal since 04:46:30: 106 lines, 0 MESA, first MESA: - -> 20261111-045630-baseline-EST
+2026-11-11 05:08:15 tag baseline-EST at 2026-11-11 05:08:15; journal since 04:58:15: 867 lines, 0 MESA, first MESA: - -> 20261111-050815-baseline-EST

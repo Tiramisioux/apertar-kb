@@ -1,0 +1,354 @@
+{
+ "written": "2026-11-11 04:56:30",
+ "seed": 2307094834,
+ "p0": [
+  [
+   "cap",
+   "4kSDR12:cdng:unc",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kHDR16:cdng:lj",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "2kSDR12:cdng:lj",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kSDR12:lossydng:3to1",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kP:prores:hq",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kP:h264:1920x1080",
+   null,
+   null
+  ],
+  [
+   "gap",
+   "4kHDR16:cdng:unc",
+   28,
+   null
+  ],
+  [
+   "gap",
+   "2kHDR16:cdng:unc",
+   null,
+   null
+  ],
+  [
+   "gap",
+   "4kHDR16:cdng:unc:log",
+   28,
+   null
+  ],
+  [
+   "gap",
+   "4kHDR16:cdng:unc",
+   25,
+   {
+    "tdn": true
+   }
+  ]
+ ],
+ "p1_order": [
+  "2kP:prores:lt",
+  "4kP:h264:3840x2160",
+  "4kHDR16:cdng:unc:log",
+  "4kHDR12:cdng:unc",
+  "4kSDR12:lossydng:5to1",
+  "crop4k3SDR12:lossydng:3to1",
+  "4kSDR10:mlv",
+  "4kSDR10:cdng:unc",
+  "2kHDR16:mlv",
+  "2kHDR16:cdng:unc:log",
+  "4kP:h264:1920x1080",
+  "4kP:prores:422",
+  "crop4k3SDR12:mlv",
+  "2kSDR12:mlv",
+  "4kP:prores:hq",
+  "4kSDR12:cdng:lj",
+  "2kSDR12:cdng:unc",
+  "4kSDR10:lossydng:5to1",
+  "crop4k3SDR12:lossydng:5to1",
+  "4kSDR10:lossydng:3to1",
+  "4kHDR16:mlv",
+  "4kHDR12:cdng:lj",
+  "4kSDR12:cdng:unc",
+  "2kHDR16:cdng:lj:log",
+  "crop4k3SDR12:cdng:lj",
+  "4kSDR12:lossydng:3to1",
+  "4kHDR16:cdng:unc",
+  "4kSDR10:cdng:lj",
+  "2kSDR12:cdng:lj",
+  "4kHDR16:cdng:lj",
+  "4kP:prores:hq:arri_logc4",
+  "4kHDR12:mlv",
+  "4kHDR16:cdng:lj:log",
+  "2kP:prores:proxy",
+  "2kSDR12:lossydng:5to1",
+  "2kP:prores:hq",
+  "4kSDR12:mlv",
+  "2kP:prores:422",
+  "2kSDR12:lossydng:3to1",
+  "4kP:prores:lt",
+  "4kP:prores:proxy",
+  "2kHDR16:cdng:unc",
+  "2kHDR16:cdng:lj",
+  "crop4k3SDR12:cdng:unc"
+ ],
+ "p1b_order": [
+  "4kHDR16:cdng:unc:log",
+  "4kHDR12:cdng:unc",
+  "4kP:prores:lt",
+  "4kP:prores:proxy",
+  "4kP:prores:hq",
+  "4kSDR12:lossydng:5to1",
+  "4kSDR12:cdng:lj",
+  "4kP:h264:3840x2160",
+  "4kHDR12:mlv",
+  "4kSDR10:cdng:lj",
+  "4kSDR10:cdng:unc",
+  "4kHDR16:cdng:lj",
+  "4kP:prores:422",
+  "4kHDR16:cdng:lj:log",
+  "4kHDR12:cdng:lj",
+  "4kSDR12:lossydng:3to1",
+  "4kP:prores:hq:arri_logc4",
+  "4kSDR12:mlv",
+  "4kP:h264:1920x1080",
+  "4kHDR16:cdng:unc",
+  "4kSDR12:cdng:unc",
+  "4kSDR10:lossydng:3to1",
+  "4kSDR10:lossydng:5to1",
+  "4kHDR16:mlv",
+  "4kSDR10:mlv"
+ ],
+ "p2_design": [
+  {
+   "tdn": false,
+   "lock": false,
+   "web": false,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": false,
+   "web": false,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": false,
+   "lock": false,
+   "web": true,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": false,
+   "lock": false,
+   "web": true,
+   "audio": true,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": false,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": false,
+   "audio": true,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": true,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": true,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": false,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": false,
+   "audio": true,
+   "aids": true
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": true,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": true,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": false,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": false,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": true,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": true,
+   "audio": true,
+   "aids": true
+  }
+ ],
+ "p2_anchors": [
+  [
+   "be",
+   "4kHDR16:cdng:unc",
+   28
+  ],
+  [
+   "enc",
+   "4kHDR16:cdng:lj",
+   25
+  ],
+  [
+   "stor",
+   "4kSDR12:cdng:unc",
+   null
+  ]
+ ],
+ "p2_orders": {
+  "be": [
+   15,
+   3,
+   7,
+   2,
+   11,
+   13,
+   0,
+   10,
+   9,
+   6,
+   8,
+   4,
+   5,
+   12,
+   1,
+   14
+  ],
+  "enc": [
+   9,
+   11,
+   5,
+   1,
+   7,
+   2,
+   4,
+   3,
+   12,
+   8,
+   14,
+   0,
+   10,
+   6,
+   15,
+   13
+  ],
+  "stor": [
+   9,
+   7,
+   11,
+   3,
+   2,
+   4,
+   5,
+   10,
+   14,
+   6,
+   1,
+   8,
+   13,
+   12,
+   0,
+   15
+  ],
+  "be2": [
+   4,
+   1,
+   11,
+   14,
+   5,
+   6,
+   3,
+   7,
+   10,
+   9,
+   13,
+   2,
+   0,
+   15,
+   8,
+   12
+  ]
+ },
+ "p3_n": 12,
+ "p3_seed": 540458883,
+ "probe_s": 60,
+ "success": {
+  "p3_clean_at_p": ">= 10 of 12",
+  "p3_out_at_p1": ">= 8 of 12",
+  "selftest_within_1fps": ">= 90 %"
+ }
+}

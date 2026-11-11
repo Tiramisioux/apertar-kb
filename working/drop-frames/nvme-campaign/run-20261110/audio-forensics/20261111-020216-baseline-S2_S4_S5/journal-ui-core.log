@@ -1,0 +1,849 @@
+Nov 11 01:56:22.533941 apertar systemd[1]: Stopping apertar-core.service - ApertarCore capture backend...
+Nov 11 01:56:22.812253 apertar start-apertar-core.sh[828]: ApertarCore stopped.
+Nov 11 01:56:22.817089 apertar run_pi_direct.sh[677]: Apertar preview render unavailable: hasFrame false texture 0 target external externalPrograms true texture2DPrograms true planarPrograms true
+Nov 11 01:56:22.908496 apertar systemd[1]: apertar-core.service: Deactivated successfully.
+Nov 11 01:56:22.908603 apertar systemd[1]: Stopped apertar-core.service - ApertarCore capture backend.
+Nov 11 01:56:22.908697 apertar systemd[1]: apertar-core.service: Consumed 24.723s CPU time.
+Nov 11 01:56:22.933235 apertar systemd[1]: Stopping apertar-ui-direct.service - Apertar compositor-free Qt UI...
+Nov 11 01:56:22.938688 apertar systemd[1]: apertar-ui-direct.service: Main process exited, code=exited, status=143/n/a
+Nov 11 01:56:23.092089 apertar systemd[1]: apertar-ui-direct.service: Failed with result 'exit-code'.
+Nov 11 01:56:23.092329 apertar systemd[1]: Stopped apertar-ui-direct.service - Apertar compositor-free Qt UI.
+Nov 11 01:56:23.092593 apertar systemd[1]: apertar-ui-direct.service: Consumed 16.639s CPU time.
+-- Boot 308fa84014bc4ccfb73981b3c666be43 --
+Nov 11 01:56:37.804850 apertar systemd[1]: Starting apertar-ui-direct.service - Apertar compositor-free Qt UI...
+Nov 11 01:56:37.807778 apertar systemd[1]: Starting apertar-core.service - ApertarCore capture backend...
+Nov 11 01:56:38.088342 apertar run_pi_direct.sh[639]: Apertar direct display: shared system runtime (mirror on same filesystem).
+Nov 11 01:56:38.116838 apertar run_pi_direct.sh[639]: Apertar direct display: Mesa runtime=/home/pi/ApertarUI/mesa-minimal
+Nov 11 01:56:38.116838 apertar run_pi_direct.sh[639]: Apertar direct display: proxy backend=direct
+Nov 11 01:56:38.116838 apertar run_pi_direct.sh[639]: Apertar direct display: UI=card1-HDMI-A-1 (/dev/dri/card1) monitor=card1-HDMI-A-2 (/dev/dri/card1)
+Nov 11 01:56:38.116838 apertar run_pi_direct.sh[639]: Apertar direct display: input backend=evdev
+Nov 11 01:56:38.116838 apertar run_pi_direct.sh[639]: Apertar direct display: single Qt process owns all required outputs.
+Nov 11 01:56:38.497753 apertar run_pi_direct.sh[667]: Apertar UI startup: entered main qml_aot=true
+Nov 11 01:56:38.780750 apertar run_pi_direct.sh[667]: Apertar UI startup: QGuiApplication ready in 308 ms
+Nov 11 01:56:38.792586 apertar run_pi_direct.sh[667]: Apertar display config: path=/home/pi/apertar-hardware.conf size=1920x1080 layout=landscape_large rotation=0 opacity=1.00 windowed=false hdmi_external_only=true
+Nov 11 01:56:38.876195 apertar run_pi_direct.sh[667]: Apertar hotspot fallback: delay_seconds= 60 config= "/home/pi/apertar-hardware.conf"
+Nov 11 01:56:38.893828 apertar run_pi_direct.sh[667]: Apertar UI startup: application bridges ready in 421 ms
+Nov 11 01:56:39.334584 apertar run_pi_direct.sh[667]: Apertar UI startup: Main.qml loaded in 862 ms
+Nov 11 01:56:39.334724 apertar run_pi_direct.sh[667]: Apertar UI startup: Core start released in 862 ms
+Nov 11 01:56:39.360028 apertar apertar-wait-ui-core-start[586]: Apertar Core startup gate: UI scene ready after 1510 ms.
+Nov 11 01:56:39.362552 apertar systemd[1]: Started apertar-core.service - ApertarCore capture backend.
+Nov 11 01:56:39.619534 apertar start-apertar-core.sh[823]: ApertarCore media: cfexpress hat on bus=1 address=0x34
+Nov 11 01:56:39.620096 apertar start-apertar-core.sh[823]: ApertarCore media: state=mounted device=/dev/nvme0n1p2 fstype=exfat free_mb=146522 errno=0 node=1 nvme_state=live hat_card=in pulled=0
+Nov 11 01:56:39.621268 apertar run_pi_direct.sh[667]: Apertar preview shaders: external true texture2D true planarYuv true
+Nov 11 01:56:39.621535 apertar run_pi_direct.sh[667]: Apertar preview render unavailable: hasFrame false texture 0 target external externalPrograms true texture2DPrograms true planarPrograms true
+Nov 11 01:56:39.624474 apertar start-apertar-core.sh[823]: ApertarCore media tune: file=/home/pi/apertar-media-tune.conf override=absent dontneed=sync writeback=on sync_ms=1000 raw_buffers=8 extra_raw_buffers=0 workers=4 queue=12 kernel_tune=off source: dontneed=file [default],extra_raw_buffers=file [exfat],kernel_tune=file [default],queue=file [exfat],raw_buffers=file [default],sync_ms=file [default],workers=file [exfat],writeback=file [default]
+Nov 11 01:56:39.624474 apertar start-apertar-core.sh[823]: ApertarCore media profile: class=pi-nvme fs=exfat workers=4 queue=12 raw_buffers=+0
+Nov 11 01:56:39.638803 apertar run_pi_direct.sh[667]: Apertar UI startup: first frame presented in 1166 ms
+Nov 11 01:56:39.652551 apertar start-apertar-core.sh[823]: [0:00:05.461077255] [823]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 11 01:56:39.677464 apertar finish_plymouth_handoff.sh[640]: Apertar display handoff: primary UI frame ready; stopping Plymouth.
+Nov 11 01:56:39.678630 apertar start-apertar-core.sh[823]: [0:00:05.487227421] [856]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 11 01:56:39.694469 apertar start-apertar-core.sh[823]: [0:00:05.503080236] [856]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 11 01:56:39.700152 apertar systemd[1]: Started apertar-ui-direct.service - Apertar compositor-free Qt UI.
+Nov 11 01:56:39.713748 apertar start-apertar-core.sh[823]: [0:00:05.522354866] [856]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 11 01:56:39.716238 apertar start-apertar-core.sh[823]: [0:00:05.524837662] [856]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 11 01:56:39.716535 apertar start-apertar-core.sh[823]: [0:00:05.525166977] [856]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 11 01:56:39.717270 apertar start-apertar-core.sh[823]: [0:00:05.525881588] [856]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 11 01:56:39.717270 apertar start-apertar-core.sh[823]: [0:00:05.525895755] [856]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media0 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 11 01:56:39.717565 apertar start-apertar-core.sh[823]: [0:00:05.526191810] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.718527 apertar start-apertar-core.sh[823]: [0:00:05.526959310] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB10_1X10/RAW - Selected CFE format: 3840x2160-PC1R/RAW
+Nov 11 01:56:39.718652 apertar start-apertar-core.sh[823]: [0:00:05.527287162] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.719042 apertar start-apertar-core.sh[823]: [0:00:05.527676125] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1080-SRGGB10_1X10/RAW - Selected CFE format: 1920x1080-PC1R/RAW
+Nov 11 01:56:39.719177 apertar start-apertar-core.sh[823]: [0:00:05.527812533] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1440x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.719318 apertar start-apertar-core.sh[823]: [0:00:05.527954088] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1440x1080-SRGGB10_1X10/RAW - Selected CFE format: 1440x1080-PC1R/RAW
+Nov 11 01:56:39.720702 apertar start-apertar-core.sh[823]: [0:00:05.529129514] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2880x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.720702 apertar start-apertar-core.sh[823]: [0:00:05.529223014] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2880x2160-SRGGB10_1X10/RAW - Selected CFE format: 2880x2160-PC1R/RAW
+Nov 11 01:56:39.720702 apertar start-apertar-core.sh[823]: [0:00:05.529336533] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2160x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.720802 apertar start-apertar-core.sh[823]: [0:00:05.529418644] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2160x2160-SRGGB10_1X10/RAW - Selected CFE format: 2160x2160-PC1R/RAW
+Nov 11 01:56:39.720897 apertar start-apertar-core.sh[823]: [0:00:05.529529125] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2976x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.720974 apertar start-apertar-core.sh[823]: [0:00:05.529611958] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2976x2160-SRGGB10_1X10/RAW - Selected CFE format: 2976x2160-PC1R/RAW
+Nov 11 01:56:39.721080 apertar start-apertar-core.sh[823]: [0:00:05.529716958] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2072-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.721277 apertar start-apertar-core.sh[823]: [0:00:05.529841255] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2072-SRGGB10_1X10/RAW - Selected CFE format: 3840x2072-PC1R/RAW
+Nov 11 01:56:39.721358 apertar start-apertar-core.sh[823]: [0:00:05.529995366] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2032-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.721478 apertar start-apertar-core.sh[823]: [0:00:05.530116884] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2032-SRGGB10_1X10/RAW - Selected CFE format: 3840x2032-PC1R/RAW
+Nov 11 01:56:39.721581 apertar start-apertar-core.sh[823]: [0:00:05.530218866] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2024-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.721704 apertar start-apertar-core.sh[823]: [0:00:05.530341644] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2024-SRGGB10_1X10/RAW - Selected CFE format: 3840x2024-PC1R/RAW
+Nov 11 01:56:39.721808 apertar start-apertar-core.sh[823]: [0:00:05.530445255] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1920-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.721996 apertar start-apertar-core.sh[823]: [0:00:05.530568736] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1920-SRGGB10_1X10/RAW - Selected CFE format: 3840x1920-PC1R/RAW
+Nov 11 01:56:39.722068 apertar start-apertar-core.sh[823]: [0:00:05.530706033] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1744-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.722189 apertar start-apertar-core.sh[823]: [0:00:05.530826218] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1744-SRGGB10_1X10/RAW - Selected CFE format: 3840x1744-PC1R/RAW
+Nov 11 01:56:39.722288 apertar start-apertar-core.sh[823]: [0:00:05.530926181] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1728-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.722427 apertar start-apertar-core.sh[823]: [0:00:05.531051384] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1728-SRGGB10_1X10/RAW - Selected CFE format: 3840x1728-PC1R/RAW
+Nov 11 01:56:39.722523 apertar start-apertar-core.sh[823]: [0:00:05.531157940] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1632-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.722660 apertar start-apertar-core.sh[823]: [0:00:05.531296773] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1632-SRGGB10_1X10/RAW - Selected CFE format: 3840x1632-PC1R/RAW
+Nov 11 01:56:39.722768 apertar start-apertar-core.sh[823]: [0:00:05.531405514] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1608-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.722899 apertar start-apertar-core.sh[823]: [0:00:05.531537273] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1608-SRGGB10_1X10/RAW - Selected CFE format: 3840x1608-PC1R/RAW
+Nov 11 01:56:39.723004 apertar start-apertar-core.sh[823]: [0:00:05.531642051] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1536-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.723125 apertar start-apertar-core.sh[823]: [0:00:05.531763236] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1536-SRGGB10_1X10/RAW - Selected CFE format: 3840x1536-PC1R/RAW
+Nov 11 01:56:39.723226 apertar start-apertar-core.sh[823]: [0:00:05.531863736] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1504-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.723379 apertar start-apertar-core.sh[823]: [0:00:05.531990810] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1504-SRGGB10_1X10/RAW - Selected CFE format: 3840x1504-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532107921] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1040-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532191607] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1040-SRGGB10_1X10/RAW - Selected CFE format: 1920x1040-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532300718] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1008-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532382273] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1008-SRGGB10_1X10/RAW - Selected CFE format: 1920x1008-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532488681] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x800-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532569921] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x800-SRGGB10_1X10/RAW - Selected CFE format: 1920x800-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532676255] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1152-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532758014] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1152-SRGGB10_1X10/RAW - Selected CFE format: 2048x1152-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532863662] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1104-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.532942718] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1104-SRGGB10_1X10/RAW - Selected CFE format: 2048x1104-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.534295088] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.534380792] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1080-SRGGB10_1X10/RAW - Selected CFE format: 2048x1080-PC1R/RAW
+Nov 11 01:56:39.750464 apertar start-apertar-core.sh[823]: [0:00:05.534481977] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1024-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.534556995] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1024-SRGGB10_1X10/RAW - Selected CFE format: 2048x1024-PC1R/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.534888588] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x928-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.534970051] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x928-SRGGB10_1X10/RAW - Selected CFE format: 2048x928-PC1R/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.535578699] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x920-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.535665310] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x920-SRGGB10_1X10/RAW - Selected CFE format: 2048x920-PC1R/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.535808847] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x872-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.535915477] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x872-SRGGB10_1X10/RAW - Selected CFE format: 2048x872-PC1R/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.536095033] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x856-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.536208181] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x856-SRGGB10_1X10/RAW - Selected CFE format: 2048x856-PC1R/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.536364440] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x816-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.536464866] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x816-SRGGB10_1X10/RAW - Selected CFE format: 2048x816-PC1R/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.536843236] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x800-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751026 apertar start-apertar-core.sh[823]: [0:00:05.536933144] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x800-SRGGB10_1X10/RAW - Selected CFE format: 2048x800-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537058829] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1488x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537146255] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1488x1080-SRGGB10_1X10/RAW - Selected CFE format: 1488x1080-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537263255] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1036-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537347255] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1036-SRGGB10_1X10/RAW - Selected CFE format: 1920x1036-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537456792] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1016-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537538940] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1016-SRGGB10_1X10/RAW - Selected CFE format: 1920x1016-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537647421] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1012-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537731236] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1012-SRGGB10_1X10/RAW - Selected CFE format: 1920x1012-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537866662] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x960-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.537957588] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x960-SRGGB10_1X10/RAW - Selected CFE format: 1920x960-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.538101366] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x872-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.538202218] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x872-SRGGB10_1X10/RAW - Selected CFE format: 1920x872-PC1R/RAW
+Nov 11 01:56:39.751339 apertar start-apertar-core.sh[823]: [0:00:05.538334366] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x864-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.538429218] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x864-SRGGB10_1X10/RAW - Selected CFE format: 1920x864-PC1R/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.538600107] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x816-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.538795051] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x816-SRGGB10_1X10/RAW - Selected CFE format: 1920x816-PC1R/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.538978681] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x804-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539089921] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x804-SRGGB10_1X10/RAW - Selected CFE format: 1920x804-PC1R/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539230181] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x768-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539327273] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x768-SRGGB10_1X10/RAW - Selected CFE format: 1920x768-PC1R/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539454829] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x752-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539544181] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x752-SRGGB10_1X10/RAW - Selected CFE format: 1920x752-PC1R/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539681718] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539781847] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1080-SRGGB12_1X12/RAW - Selected CFE format: 1920x1080-PC1R/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.539911310] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751596 apertar start-apertar-core.sh[823]: [0:00:05.540027273] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB12_1X12/RAW - Selected CFE format: 3840x2160-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540160144] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2880x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540260421] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2880x2160-SRGGB12_1X12/RAW - Selected CFE format: 2880x2160-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540392866] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2160x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540490310] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2160x2160-SRGGB12_1X12/RAW - Selected CFE format: 2160x2160-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540617903] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2976x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540711440] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2976x2160-SRGGB12_1X12/RAW - Selected CFE format: 2976x2160-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540837570] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2072-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.540933125] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2072-SRGGB12_1X12/RAW - Selected CFE format: 3840x2072-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.541060903] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2032-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.541155495] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2032-SRGGB12_1X12/RAW - Selected CFE format: 3840x2032-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.541281033] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2024-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.541379533] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2024-SRGGB12_1X12/RAW - Selected CFE format: 3840x2024-PC1R/RAW
+Nov 11 01:56:39.751811 apertar start-apertar-core.sh[823]: [0:00:05.541513699] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1920-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.541617921] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1920-SRGGB12_1X12/RAW - Selected CFE format: 3840x1920-PC1R/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.541754810] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1744-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.541855292] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1744-SRGGB12_1X12/RAW - Selected CFE format: 3840x1744-PC1R/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.541984125] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1728-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542088699] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1728-SRGGB12_1X12/RAW - Selected CFE format: 3840x1728-PC1R/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542225755] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1632-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542324977] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1632-SRGGB12_1X12/RAW - Selected CFE format: 3840x1632-PC1R/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542451847] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1608-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542548718] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1608-SRGGB12_1X12/RAW - Selected CFE format: 3840x1608-PC1R/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542673310] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1536-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542769107] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1536-SRGGB12_1X12/RAW - Selected CFE format: 3840x1536-PC1R/RAW
+Nov 11 01:56:39.752035 apertar start-apertar-core.sh[823]: [0:00:05.542895199] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1504-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543010662] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1504-SRGGB12_1X12/RAW - Selected CFE format: 3840x1504-PC1R/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543149477] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1040-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543252255] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1040-SRGGB12_1X12/RAW - Selected CFE format: 1920x1040-PC1R/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543377347] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1008-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543471718] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1008-SRGGB12_1X12/RAW - Selected CFE format: 1920x1008-PC1R/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543594736] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x800-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543687199] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x800-SRGGB12_1X12/RAW - Selected CFE format: 1920x800-PC1R/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543842551] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1152-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.543951292] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1152-SRGGB12_1X12/RAW - Selected CFE format: 2048x1152-PC1R/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.544106755] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1104-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.544206718] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1104-SRGGB12_1X12/RAW - Selected CFE format: 2048x1104-PC1R/RAW
+Nov 11 01:56:39.752228 apertar start-apertar-core.sh[823]: [0:00:05.544331810] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.544433051] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1080-SRGGB12_1X12/RAW - Selected CFE format: 2048x1080-PC1R/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.544568570] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1024-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.544670514] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1024-SRGGB12_1X12/RAW - Selected CFE format: 2048x1024-PC1R/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.544800125] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x928-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.544899273] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x928-SRGGB12_1X12/RAW - Selected CFE format: 2048x928-PC1R/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545029921] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x920-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545126421] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x920-SRGGB12_1X12/RAW - Selected CFE format: 2048x920-PC1R/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545248958] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x872-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545341421] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x872-SRGGB12_1X12/RAW - Selected CFE format: 2048x872-PC1R/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545469440] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x856-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545567514] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x856-SRGGB12_1X12/RAW - Selected CFE format: 2048x856-PC1R/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545687995] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x816-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752419 apertar start-apertar-core.sh[823]: [0:00:05.545778181] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x816-SRGGB12_1X12/RAW - Selected CFE format: 2048x816-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.545895070] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x800-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.545982977] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x800-SRGGB12_1X12/RAW - Selected CFE format: 2048x800-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546099199] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1440x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546192884] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1440x1080-SRGGB12_1X12/RAW - Selected CFE format: 1440x1080-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546326773] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1488x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546438458] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1488x1080-SRGGB12_1X12/RAW - Selected CFE format: 1488x1080-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546586884] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1036-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546686421] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1036-SRGGB12_1X12/RAW - Selected CFE format: 1920x1036-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546816792] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1016-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.546912014] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1016-SRGGB12_1X12/RAW - Selected CFE format: 1920x1016-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.547037810] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1012-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.547137533] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1012-SRGGB12_1X12/RAW - Selected CFE format: 1920x1012-PC1R/RAW
+Nov 11 01:56:39.752648 apertar start-apertar-core.sh[823]: [0:00:05.547263847] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x960-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547355273] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x960-SRGGB12_1X12/RAW - Selected CFE format: 1920x960-PC1R/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547472570] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x872-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547558958] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x872-SRGGB12_1X12/RAW - Selected CFE format: 1920x872-PC1R/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547673699] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x864-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547760125] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x864-SRGGB12_1X12/RAW - Selected CFE format: 1920x864-PC1R/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547879033] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x816-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.547968051] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x816-SRGGB12_1X12/RAW - Selected CFE format: 1920x816-PC1R/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.548101847] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x804-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.548192144] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x804-SRGGB12_1X12/RAW - Selected CFE format: 1920x804-PC1R/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.548307255] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x768-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.548397144] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x768-SRGGB12_1X12/RAW - Selected CFE format: 1920x768-PC1R/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.548521514] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x752-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.752862 apertar start-apertar-core.sh[823]: [0:00:05.548620458] [856]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x752-SRGGB12_1X12/RAW - Selected CFE format: 1920x752-PC1R/RAW
+Nov 11 01:56:39.753068 apertar start-apertar-core.sh[823]: [0:00:05.549519607] [823]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 11 01:56:39.753068 apertar start-apertar-core.sh[823]: [0:00:05.558966458] [861]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 11 01:56:39.753068 apertar start-apertar-core.sh[823]: [0:00:05.559651440] [861]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 11 01:56:39.753068 apertar start-apertar-core.sh[823]: [0:00:05.561356995] [861]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 11 01:56:39.755103 apertar start-apertar-core.sh[823]: [0:00:05.563719792] [861]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 11 01:56:39.755401 apertar start-apertar-core.sh[823]: [0:00:05.564025070] [861]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 11 01:56:39.756089 apertar start-apertar-core.sh[823]: [0:00:05.564718458] [861]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 11 01:56:39.756089 apertar start-apertar-core.sh[823]: [0:00:05.564734366] [861]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media0 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 11 01:56:39.756287 apertar start-apertar-core.sh[823]: [0:00:05.564916699] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.756428 apertar start-apertar-core.sh[823]: [0:00:05.565061662] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.756428 apertar start-apertar-core.sh[823]: [0:00:05.565072366] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.761205 apertar start-apertar-core.sh[823]: [0:00:05.569836014] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.761205 apertar start-apertar-core.sh[823]: [0:00:05.569850570] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.762484 apertar start-apertar-core.sh[823]: [0:00:05.571110921] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.762509 apertar start-apertar-core.sh[823]: [0:00:05.571145199] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1080-SRGGB12_1X12/RAW - Selected CFE format: 1920x1080-RG16/RAW
+Nov 11 01:56:39.762759 apertar start-apertar-core.sh[823]: [0:00:05.571384403] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.762928 apertar start-apertar-core.sh[823]: [0:00:05.571561310] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.762928 apertar start-apertar-core.sh[823]: [0:00:05.571572755] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.765459 apertar start-apertar-core.sh[823]: [0:00:05.574094070] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.765459 apertar start-apertar-core.sh[823]: [0:00:05.574104644] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.766744 apertar start-apertar-core.sh[823]: [0:00:05.575374625] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.766774 apertar start-apertar-core.sh[823]: [0:00:05.575404514] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB12_1X12/RAW - Selected CFE format: 3840x2160-RG16/RAW
+Nov 11 01:56:39.766947 apertar start-apertar-core.sh[823]: [0:00:05.575573829] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2880x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.767113 apertar start-apertar-core.sh[823]: [0:00:05.575747107] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.767113 apertar start-apertar-core.sh[823]: [0:00:05.575757236] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.769629 apertar start-apertar-core.sh[823]: [0:00:05.578266477] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.769629 apertar start-apertar-core.sh[823]: [0:00:05.578274755] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.770918 apertar start-apertar-core.sh[823]: [0:00:05.579549607] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.770946 apertar start-apertar-core.sh[823]: [0:00:05.579578533] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2880x2160-SRGGB12_1X12/RAW - Selected CFE format: 2880x2160-RG16/RAW
+Nov 11 01:56:39.771121 apertar start-apertar-core.sh[823]: [0:00:05.579748440] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2160x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.771280 apertar start-apertar-core.sh[823]: [0:00:05.579913958] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.771280 apertar start-apertar-core.sh[823]: [0:00:05.579924421] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.773776 apertar start-apertar-core.sh[823]: [0:00:05.582411477] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.773776 apertar start-apertar-core.sh[823]: [0:00:05.582421088] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.775049 apertar start-apertar-core.sh[823]: [0:00:05.583681533] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.775078 apertar start-apertar-core.sh[823]: [0:00:05.583708495] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2160x2160-SRGGB12_1X12/RAW - Selected CFE format: 2160x2160-RG16/RAW
+Nov 11 01:56:39.775240 apertar start-apertar-core.sh[823]: [0:00:05.583867366] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2976x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.775697 apertar start-apertar-core.sh[823]: [0:00:05.584054236] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.775697 apertar start-apertar-core.sh[823]: [0:00:05.584065384] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.777914 apertar start-apertar-core.sh[823]: [0:00:05.586550570] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.777914 apertar start-apertar-core.sh[823]: [0:00:05.586559995] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.779180 apertar start-apertar-core.sh[823]: [0:00:05.587811810] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.779209 apertar start-apertar-core.sh[823]: [0:00:05.587840533] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2976x2160-SRGGB12_1X12/RAW - Selected CFE format: 2976x2160-RG16/RAW
+Nov 11 01:56:39.779406 apertar start-apertar-core.sh[823]: [0:00:05.588030495] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2072-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.779584 apertar start-apertar-core.sh[823]: [0:00:05.588216533] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.779584 apertar start-apertar-core.sh[823]: [0:00:05.588229014] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.782068 apertar start-apertar-core.sh[823]: [0:00:05.590704755] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.782068 apertar start-apertar-core.sh[823]: [0:00:05.590713570] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.783330 apertar start-apertar-core.sh[823]: [0:00:05.591962551] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.783715 apertar start-apertar-core.sh[823]: [0:00:05.591989199] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2072-SRGGB12_1X12/RAW - Selected CFE format: 3840x2072-RG16/RAW
+Nov 11 01:56:39.783812 apertar start-apertar-core.sh[823]: [0:00:05.592437644] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2032-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.783984 apertar start-apertar-core.sh[823]: [0:00:05.592615940] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.783984 apertar start-apertar-core.sh[823]: [0:00:05.592627866] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.786451 apertar start-apertar-core.sh[823]: [0:00:05.595089607] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.786451 apertar start-apertar-core.sh[823]: [0:00:05.595096884] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.787763 apertar start-apertar-core.sh[823]: [0:00:05.596391292] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.787830 apertar start-apertar-core.sh[823]: [0:00:05.596423032] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2032-SRGGB12_1X12/RAW - Selected CFE format: 3840x2032-RG16/RAW
+Nov 11 01:56:39.787979 apertar start-apertar-core.sh[823]: [0:00:05.596603570] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2024-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.788162 apertar start-apertar-core.sh[823]: [0:00:05.596793755] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.788162 apertar start-apertar-core.sh[823]: [0:00:05.596806107] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.790677 apertar start-apertar-core.sh[823]: [0:00:05.599312292] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.790677 apertar start-apertar-core.sh[823]: [0:00:05.599321792] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.791963 apertar start-apertar-core.sh[823]: [0:00:05.600594014] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.791996 apertar start-apertar-core.sh[823]: [0:00:05.600621995] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2024-SRGGB12_1X12/RAW - Selected CFE format: 3840x2024-RG16/RAW
+Nov 11 01:56:39.792394 apertar start-apertar-core.sh[823]: [0:00:05.601019329] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1920-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.792565 apertar start-apertar-core.sh[823]: [0:00:05.601198273] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.792565 apertar start-apertar-core.sh[823]: [0:00:05.601208773] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.795033 apertar start-apertar-core.sh[823]: [0:00:05.603671125] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.795033 apertar start-apertar-core.sh[823]: [0:00:05.603679051] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.796420 apertar start-apertar-core.sh[823]: [0:00:05.605043718] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.796473 apertar start-apertar-core.sh[823]: [0:00:05.605080810] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1920-SRGGB12_1X12/RAW - Selected CFE format: 3840x1920-RG16/RAW
+Nov 11 01:56:39.796632 apertar start-apertar-core.sh[823]: [0:00:05.605258644] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1744-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.796802 apertar start-apertar-core.sh[823]: [0:00:05.605435014] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.796802 apertar start-apertar-core.sh[823]: [0:00:05.605445588] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.799335 apertar start-apertar-core.sh[823]: [0:00:05.607962588] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.799335 apertar start-apertar-core.sh[823]: [0:00:05.607976273] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.800718 apertar start-apertar-core.sh[823]: [0:00:05.609339218] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.800762 apertar start-apertar-core.sh[823]: [0:00:05.609381384] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1744-SRGGB12_1X12/RAW - Selected CFE format: 3840x1744-RG16/RAW
+Nov 11 01:56:39.800959 apertar start-apertar-core.sh[823]: [0:00:05.609582940] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1728-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.801143 apertar start-apertar-core.sh[823]: [0:00:05.609776162] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.801143 apertar start-apertar-core.sh[823]: [0:00:05.609786625] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.803688 apertar start-apertar-core.sh[823]: [0:00:05.612306810] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.803688 apertar start-apertar-core.sh[823]: [0:00:05.612316495] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.804974 apertar start-apertar-core.sh[823]: [0:00:05.613601773] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.805012 apertar start-apertar-core.sh[823]: [0:00:05.613635477] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1728-SRGGB12_1X12/RAW - Selected CFE format: 3840x1728-RG16/RAW
+Nov 11 01:56:39.805201 apertar start-apertar-core.sh[823]: [0:00:05.613826218] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1632-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.805369 apertar start-apertar-core.sh[823]: [0:00:05.614003199] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.805369 apertar start-apertar-core.sh[823]: [0:00:05.614013736] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.807904 apertar start-apertar-core.sh[823]: [0:00:05.616536255] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.807904 apertar start-apertar-core.sh[823]: [0:00:05.616548310] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.809227 apertar start-apertar-core.sh[823]: [0:00:05.617852940] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.809265 apertar start-apertar-core.sh[823]: [0:00:05.617889662] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1632-SRGGB12_1X12/RAW - Selected CFE format: 3840x1632-RG16/RAW
+Nov 11 01:56:39.809466 apertar start-apertar-core.sh[823]: [0:00:05.618089514] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1608-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.809650 apertar start-apertar-core.sh[823]: [0:00:05.618283181] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.809650 apertar start-apertar-core.sh[823]: [0:00:05.618295532] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.812193 apertar start-apertar-core.sh[823]: [0:00:05.620829032] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.812193 apertar start-apertar-core.sh[823]: [0:00:05.620838292] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.813474 apertar start-apertar-core.sh[823]: [0:00:05.622103607] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.813504 apertar start-apertar-core.sh[823]: [0:00:05.622134051] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1608-SRGGB12_1X12/RAW - Selected CFE format: 3840x1608-RG16/RAW
+Nov 11 01:56:39.813697 apertar start-apertar-core.sh[823]: [0:00:05.622320477] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1536-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.813874 apertar start-apertar-core.sh[823]: [0:00:05.622506921] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.813874 apertar start-apertar-core.sh[823]: [0:00:05.622517570] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.816415 apertar start-apertar-core.sh[823]: [0:00:05.625045644] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.816415 apertar start-apertar-core.sh[823]: [0:00:05.625059162] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.817701 apertar start-apertar-core.sh[823]: [0:00:05.626329088] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.817728 apertar start-apertar-core.sh[823]: [0:00:05.626359755] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1536-SRGGB12_1X12/RAW - Selected CFE format: 3840x1536-RG16/RAW
+Nov 11 01:56:39.817925 apertar start-apertar-core.sh[823]: [0:00:05.626549995] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1504-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.818261 apertar start-apertar-core.sh[823]: [0:00:05.626743403] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.818261 apertar start-apertar-core.sh[823]: [0:00:05.626754070] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.820778 apertar start-apertar-core.sh[823]: [0:00:05.629401218] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.820778 apertar start-apertar-core.sh[823]: [0:00:05.629422292] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.822723 apertar start-apertar-core.sh[823]: [0:00:05.631335829] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.822758 apertar start-apertar-core.sh[823]: [0:00:05.631389773] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1504-SRGGB12_1X12/RAW - Selected CFE format: 3840x1504-RG16/RAW
+Nov 11 01:56:39.823003 apertar start-apertar-core.sh[823]: [0:00:05.631623588] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1040-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.823195 apertar start-apertar-core.sh[823]: [0:00:05.631825644] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.823195 apertar start-apertar-core.sh[823]: [0:00:05.631839532] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.826054 apertar start-apertar-core.sh[823]: [0:00:05.634672718] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.826054 apertar start-apertar-core.sh[823]: [0:00:05.634697458] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.827610 apertar start-apertar-core.sh[823]: [0:00:05.636223384] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.827666 apertar start-apertar-core.sh[823]: [0:00:05.636276625] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1040-SRGGB12_1X12/RAW - Selected CFE format: 1920x1040-RG16/RAW
+Nov 11 01:56:39.827951 apertar start-apertar-core.sh[823]: [0:00:05.636513884] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1008-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.828504 apertar start-apertar-core.sh[823]: [0:00:05.637125181] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.828504 apertar start-apertar-core.sh[823]: [0:00:05.637145884] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.831787 apertar start-apertar-core.sh[823]: [0:00:05.640227570] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.831787 apertar start-apertar-core.sh[823]: [0:00:05.640251014] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.833348 apertar start-apertar-core.sh[823]: [0:00:05.641971625] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.833393 apertar start-apertar-core.sh[823]: [0:00:05.642012514] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1008-SRGGB12_1X12/RAW - Selected CFE format: 1920x1008-RG16/RAW
+Nov 11 01:56:39.833593 apertar start-apertar-core.sh[823]: [0:00:05.642216366] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x800-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.833806 apertar start-apertar-core.sh[823]: [0:00:05.642392403] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.833806 apertar start-apertar-core.sh[823]: [0:00:05.642403495] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.837124 apertar start-apertar-core.sh[823]: [0:00:05.645755847] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.837124 apertar start-apertar-core.sh[823]: [0:00:05.645770403] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.838547 apertar start-apertar-core.sh[823]: [0:00:05.647175958] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.838580 apertar start-apertar-core.sh[823]: [0:00:05.647206699] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x800-SRGGB12_1X12/RAW - Selected CFE format: 1920x800-RG16/RAW
+Nov 11 01:56:39.839049 apertar start-apertar-core.sh[823]: [0:00:05.647672588] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1152-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.839229 apertar start-apertar-core.sh[823]: [0:00:05.647859144] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.839229 apertar start-apertar-core.sh[823]: [0:00:05.647872458] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.842153 apertar start-apertar-core.sh[823]: [0:00:05.650785607] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.842153 apertar start-apertar-core.sh[823]: [0:00:05.650797829] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.843936 apertar start-apertar-core.sh[823]: [0:00:05.652552107] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.843995 apertar start-apertar-core.sh[823]: [0:00:05.652595773] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1152-SRGGB12_1X12/RAW - Selected CFE format: 2048x1152-RG16/RAW
+Nov 11 01:56:39.844174 apertar start-apertar-core.sh[823]: [0:00:05.652799995] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1104-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.844343 apertar start-apertar-core.sh[823]: [0:00:05.652976736] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.844343 apertar start-apertar-core.sh[823]: [0:00:05.652987403] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.846949 apertar start-apertar-core.sh[823]: [0:00:05.655573662] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.846949 apertar start-apertar-core.sh[823]: [0:00:05.655588032] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.848271 apertar start-apertar-core.sh[823]: [0:00:05.656892958] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.848333 apertar start-apertar-core.sh[823]: [0:00:05.656928032] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1104-SRGGB12_1X12/RAW - Selected CFE format: 2048x1104-RG16/RAW
+Nov 11 01:56:39.849226 apertar start-apertar-core.sh[823]: [0:00:05.657245792] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.849226 apertar start-apertar-core.sh[823]: [0:00:05.657436625] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.849226 apertar start-apertar-core.sh[823]: [0:00:05.657448144] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.852647 apertar start-apertar-core.sh[823]: [0:00:05.661266551] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.852647 apertar start-apertar-core.sh[823]: [0:00:05.661291551] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.853968 apertar start-apertar-core.sh[823]: [0:00:05.662591273] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.854001 apertar start-apertar-core.sh[823]: [0:00:05.662632255] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1080-SRGGB12_1X12/RAW - Selected CFE format: 2048x1080-RG16/RAW
+Nov 11 01:56:39.854202 apertar start-apertar-core.sh[823]: [0:00:05.662836495] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1024-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.854374 apertar start-apertar-core.sh[823]: [0:00:05.663010569] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.854374 apertar start-apertar-core.sh[823]: [0:00:05.663021144] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.859007 apertar start-apertar-core.sh[823]: [0:00:05.667616921] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.859007 apertar start-apertar-core.sh[823]: [0:00:05.667643681] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.860383 apertar start-apertar-core.sh[823]: [0:00:05.669001829] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.860429 apertar start-apertar-core.sh[823]: [0:00:05.669044588] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1024-SRGGB12_1X12/RAW - Selected CFE format: 2048x1024-RG16/RAW
+Nov 11 01:56:39.860636 apertar start-apertar-core.sh[823]: [0:00:05.669264644] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x928-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.860822 apertar start-apertar-core.sh[823]: [0:00:05.669454569] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.860822 apertar start-apertar-core.sh[823]: [0:00:05.669466199] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.864507 apertar start-apertar-core.sh[823]: [0:00:05.673124792] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.864507 apertar start-apertar-core.sh[823]: [0:00:05.673148755] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.865809 apertar start-apertar-core.sh[823]: [0:00:05.674434921] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.865843 apertar start-apertar-core.sh[823]: [0:00:05.674470977] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x928-SRGGB12_1X12/RAW - Selected CFE format: 2048x928-RG16/RAW
+Nov 11 01:56:39.866044 apertar start-apertar-core.sh[823]: [0:00:05.674677921] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x920-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.866227 apertar start-apertar-core.sh[823]: [0:00:05.674862144] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.866227 apertar start-apertar-core.sh[823]: [0:00:05.674873514] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.868745 apertar start-apertar-core.sh[823]: [0:00:05.677379588] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.868745 apertar start-apertar-core.sh[823]: [0:00:05.677388495] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.870066 apertar start-apertar-core.sh[823]: [0:00:05.678650995] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.870066 apertar start-apertar-core.sh[823]: [0:00:05.678681514] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x920-SRGGB12_1X12/RAW - Selected CFE format: 2048x920-RG16/RAW
+Nov 11 01:56:39.870221 apertar start-apertar-core.sh[823]: [0:00:05.678856218] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x872-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.870390 apertar start-apertar-core.sh[823]: [0:00:05.679024569] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.870390 apertar start-apertar-core.sh[823]: [0:00:05.679035236] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.873417 apertar start-apertar-core.sh[823]: [0:00:05.682032866] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.873417 apertar start-apertar-core.sh[823]: [0:00:05.682057347] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.874779 apertar start-apertar-core.sh[823]: [0:00:05.683403347] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.874817 apertar start-apertar-core.sh[823]: [0:00:05.683438421] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x872-SRGGB12_1X12/RAW - Selected CFE format: 2048x872-RG16/RAW
+Nov 11 01:56:39.874996 apertar start-apertar-core.sh[823]: [0:00:05.683623421] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x856-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.875173 apertar start-apertar-core.sh[823]: [0:00:05.683807384] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.875173 apertar start-apertar-core.sh[823]: [0:00:05.683818810] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.878493 apertar start-apertar-core.sh[823]: [0:00:05.687108144] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.878493 apertar start-apertar-core.sh[823]: [0:00:05.687133255] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.879870 apertar start-apertar-core.sh[823]: [0:00:05.688487699] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.879912 apertar start-apertar-core.sh[823]: [0:00:05.688534199] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x856-SRGGB12_1X12/RAW - Selected CFE format: 2048x856-RG16/RAW
+Nov 11 01:56:39.880127 apertar start-apertar-core.sh[823]: [0:00:05.688759940] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x816-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.880322 apertar start-apertar-core.sh[823]: [0:00:05.688956884] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.880322 apertar start-apertar-core.sh[823]: [0:00:05.688968088] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.882816 apertar start-apertar-core.sh[823]: [0:00:05.691450736] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.882816 apertar start-apertar-core.sh[823]: [0:00:05.691459014] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.884137 apertar start-apertar-core.sh[823]: [0:00:05.692760107] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.884180 apertar start-apertar-core.sh[823]: [0:00:05.692795384] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x816-SRGGB12_1X12/RAW - Selected CFE format: 2048x816-RG16/RAW
+Nov 11 01:56:39.884564 apertar start-apertar-core.sh[823]: [0:00:05.693198736] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x800-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.884743 apertar start-apertar-core.sh[823]: [0:00:05.693377014] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.884743 apertar start-apertar-core.sh[823]: [0:00:05.693388051] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.887259 apertar start-apertar-core.sh[823]: [0:00:05.695888051] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.887259 apertar start-apertar-core.sh[823]: [0:00:05.695902718] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.890261 apertar start-apertar-core.sh[823]: [0:00:05.698834588] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.890418 apertar start-apertar-core.sh[823]: [0:00:05.698925403] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x800-SRGGB12_1X12/RAW - Selected CFE format: 2048x800-RG16/RAW
+Nov 11 01:56:39.890789 apertar start-apertar-core.sh[823]: [0:00:05.699410755] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1440x1080-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:39.891020 apertar start-apertar-core.sh[823]: [0:00:05.699651755] [861]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 11 01:56:39.891020 apertar start-apertar-core.sh[823]: [0:00:05.699665162] [861]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.893728 apertar start-apertar-core.sh[823]: [0:00:05.702289699] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.893728 apertar start-apertar-core.sh[823]: [0:00:05.702314107] [861]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 11 01:56:39.895073 apertar start-apertar-core.sh[823]: [0:00:05.703689088] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.895131 apertar start-apertar-core.sh[823]: [0:00:05.703735255] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1440x1080-SRGGB12_1X12/RAW - Selected CFE format: 1440x1080-RG16/RAW
+Nov 11 01:56:39.895534 apertar start-apertar-core.sh[823]: [0:00:05.704163069] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2200-SRGGB16/RAW
+Nov 11 01:56:39.895661 apertar start-apertar-core.sh[823]: [0:00:05.704297014] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.895728 apertar start-apertar-core.sh[823]: [0:00:05.704310977] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.898321 apertar start-apertar-core.sh[823]: [0:00:05.706947995] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.898321 apertar start-apertar-core.sh[823]: [0:00:05.706963847] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.899767 apertar start-apertar-core.sh[823]: [0:00:05.708301903] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.899767 apertar start-apertar-core.sh[823]: [0:00:05.708342069] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2200-SRGGB16_1X16/RAW - Selected CFE format: 3840x2200-RG16/RAW
+Nov 11 01:56:39.901563 apertar start-apertar-core.sh[823]: [0:00:05.708566347] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2880x2200-SRGGB16/RAW
+Nov 11 01:56:39.901563 apertar start-apertar-core.sh[823]: [0:00:05.708691403] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.901563 apertar start-apertar-core.sh[823]: [0:00:05.708704921] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.902664 apertar start-apertar-core.sh[823]: [0:00:05.711296069] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.902664 apertar start-apertar-core.sh[823]: [0:00:05.711308403] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.903994 apertar start-apertar-core.sh[823]: [0:00:05.712620421] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.904046 apertar start-apertar-core.sh[823]: [0:00:05.712654384] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2880x2200-SRGGB16_1X16/RAW - Selected CFE format: 2880x2200-RG16/RAW
+Nov 11 01:56:39.904209 apertar start-apertar-core.sh[823]: [0:00:05.712839958] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2160x2200-SRGGB16/RAW
+Nov 11 01:56:39.904314 apertar start-apertar-core.sh[823]: [0:00:05.712952588] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.904337 apertar start-apertar-core.sh[823]: [0:00:05.712963773] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.906509 apertar run_pi_direct.sh[667]: INA219 config: /home/pi/apertar-hardware.conf (enabled=false, bus=4, address=0x40)
+Nov 11 01:56:39.908548 apertar start-apertar-core.sh[823]: [0:00:05.717171569] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.908548 apertar start-apertar-core.sh[823]: [0:00:05.717193144] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.909855 apertar start-apertar-core.sh[823]: [0:00:05.718478829] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.909912 apertar start-apertar-core.sh[823]: [0:00:05.718517255] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2160x2200-SRGGB16_1X16/RAW - Selected CFE format: 2160x2200-RG16/RAW
+Nov 11 01:56:39.910079 apertar start-apertar-core.sh[823]: [0:00:05.718712255] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2976x2200-SRGGB16/RAW
+Nov 11 01:56:39.910188 apertar start-apertar-core.sh[823]: [0:00:05.718825829] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.910210 apertar start-apertar-core.sh[823]: [0:00:05.718837532] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.913459 apertar start-apertar-core.sh[823]: [0:00:05.722077514] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.913459 apertar start-apertar-core.sh[823]: [0:00:05.722099440] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.914775 apertar start-apertar-core.sh[823]: [0:00:05.723400181] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.914830 apertar start-apertar-core.sh[823]: [0:00:05.723436458] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2976x2200-SRGGB16_1X16/RAW - Selected CFE format: 2976x2200-RG16/RAW
+Nov 11 01:56:39.914991 apertar start-apertar-core.sh[823]: [0:00:05.723625884] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2112-SRGGB16/RAW
+Nov 11 01:56:39.915100 apertar start-apertar-core.sh[823]: [0:00:05.723736958] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.915123 apertar start-apertar-core.sh[823]: [0:00:05.723749218] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.917710 apertar start-apertar-core.sh[823]: [0:00:05.726336588] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.917710 apertar start-apertar-core.sh[823]: [0:00:05.726350773] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.919010 apertar start-apertar-core.sh[823]: [0:00:05.727634144] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.919051 apertar start-apertar-core.sh[823]: [0:00:05.727672921] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2112-SRGGB16_1X16/RAW - Selected CFE format: 3840x2112-RG16/RAW
+Nov 11 01:56:39.919226 apertar start-apertar-core.sh[823]: [0:00:05.727860866] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2072-SRGGB16/RAW
+Nov 11 01:56:39.919333 apertar start-apertar-core.sh[823]: [0:00:05.727971699] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.919733 apertar start-apertar-core.sh[823]: [0:00:05.727983144] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.923418 apertar start-apertar-core.sh[823]: [0:00:05.732016144] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.923418 apertar start-apertar-core.sh[823]: [0:00:05.732053403] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.924806 apertar start-apertar-core.sh[823]: [0:00:05.733426181] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.924874 apertar start-apertar-core.sh[823]: [0:00:05.733464662] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2072-SRGGB16_1X16/RAW - Selected CFE format: 3840x2072-RG16/RAW
+Nov 11 01:56:39.925015 apertar start-apertar-core.sh[823]: [0:00:05.733650847] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2064-SRGGB16/RAW
+Nov 11 01:56:39.925121 apertar start-apertar-core.sh[823]: [0:00:05.733759421] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.925144 apertar start-apertar-core.sh[823]: [0:00:05.733771014] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.927779 apertar start-apertar-core.sh[823]: [0:00:05.736311181] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.927779 apertar start-apertar-core.sh[823]: [0:00:05.736319644] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.930400 apertar start-apertar-core.sh[823]: [0:00:05.737590755] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.930400 apertar start-apertar-core.sh[823]: [0:00:05.737618532] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2064-SRGGB16_1X16/RAW - Selected CFE format: 3840x2064-RG16/RAW
+Nov 11 01:56:39.930400 apertar start-apertar-core.sh[823]: [0:00:05.737781144] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1960-SRGGB16/RAW
+Nov 11 01:56:39.930400 apertar start-apertar-core.sh[823]: [0:00:05.737887495] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.930400 apertar start-apertar-core.sh[823]: [0:00:05.737900866] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.931825 apertar start-apertar-core.sh[823]: [0:00:05.740454144] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.931825 apertar start-apertar-core.sh[823]: [0:00:05.740466532] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.933120 apertar start-apertar-core.sh[823]: [0:00:05.741747921] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.933170 apertar start-apertar-core.sh[823]: [0:00:05.741777199] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1960-SRGGB16_1X16/RAW - Selected CFE format: 3840x1960-RG16/RAW
+Nov 11 01:56:39.933307 apertar start-apertar-core.sh[823]: [0:00:05.741943662] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1784-SRGGB16/RAW
+Nov 11 01:56:39.933409 apertar start-apertar-core.sh[823]: [0:00:05.742046569] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.933432 apertar start-apertar-core.sh[823]: [0:00:05.742058014] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.935988 apertar start-apertar-core.sh[823]: [0:00:05.744620681] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.935988 apertar start-apertar-core.sh[823]: [0:00:05.744629403] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.937471 apertar start-apertar-core.sh[823]: [0:00:05.745906421] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.937471 apertar start-apertar-core.sh[823]: [0:00:05.745938829] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1784-SRGGB16_1X16/RAW - Selected CFE format: 3840x1784-RG16/RAW
+Nov 11 01:56:39.937626 apertar start-apertar-core.sh[823]: [0:00:05.746156181] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1768-SRGGB16/RAW
+Nov 11 01:56:39.937649 apertar start-apertar-core.sh[823]: [0:00:05.746278366] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.937649 apertar start-apertar-core.sh[823]: [0:00:05.746291662] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.941360 apertar start-apertar-core.sh[823]: [0:00:05.749485810] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.941360 apertar start-apertar-core.sh[823]: [0:00:05.749506162] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.942234 apertar start-apertar-core.sh[823]: [0:00:05.750854792] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.942306 apertar start-apertar-core.sh[823]: [0:00:05.750898884] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1768-SRGGB16_1X16/RAW - Selected CFE format: 3840x1768-RG16/RAW
+Nov 11 01:56:39.942480 apertar start-apertar-core.sh[823]: [0:00:05.751108940] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1672-SRGGB16/RAW
+Nov 11 01:56:39.942603 apertar start-apertar-core.sh[823]: [0:00:05.751237755] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.942633 apertar start-apertar-core.sh[823]: [0:00:05.751252014] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.946180 apertar start-apertar-core.sh[823]: [0:00:05.754789162] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.946180 apertar start-apertar-core.sh[823]: [0:00:05.754823106] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.949017 apertar start-apertar-core.sh[823]: [0:00:05.756281144] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.949017 apertar start-apertar-core.sh[823]: [0:00:05.756337292] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1672-SRGGB16_1X16/RAW - Selected CFE format: 3840x1672-RG16/RAW
+Nov 11 01:56:39.949017 apertar start-apertar-core.sh[823]: [0:00:05.756577421] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1648-SRGGB16/RAW
+Nov 11 01:56:39.949017 apertar start-apertar-core.sh[823]: [0:00:05.756791366] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.949017 apertar start-apertar-core.sh[823]: [0:00:05.756824477] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.951132 apertar start-apertar-core.sh[823]: [0:00:05.759726866] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.951132 apertar start-apertar-core.sh[823]: [0:00:05.759756551] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.952627 apertar start-apertar-core.sh[823]: [0:00:05.761222236] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.952760 apertar start-apertar-core.sh[823]: [0:00:05.761284106] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1648-SRGGB16_1X16/RAW - Selected CFE format: 3840x1648-RG16/RAW
+Nov 11 01:56:39.955565 apertar start-apertar-core.sh[823]: [0:00:05.764156292] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1576-SRGGB16/RAW
+Nov 11 01:56:39.956161 apertar start-apertar-core.sh[823]: [0:00:05.764775292] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.956161 apertar start-apertar-core.sh[823]: [0:00:05.764811866] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.959095 apertar start-apertar-core.sh[823]: [0:00:05.767708421] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.959095 apertar start-apertar-core.sh[823]: [0:00:05.767735403] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.960503 apertar start-apertar-core.sh[823]: [0:00:05.769114458] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.960564 apertar start-apertar-core.sh[823]: [0:00:05.769166421] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1576-SRGGB16_1X16/RAW - Selected CFE format: 3840x1576-RG16/RAW
+Nov 11 01:56:39.960789 apertar start-apertar-core.sh[823]: [0:00:05.769418162] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x1544-SRGGB16/RAW
+Nov 11 01:56:39.960912 apertar start-apertar-core.sh[823]: [0:00:05.769549921] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.960945 apertar start-apertar-core.sh[823]: [0:00:05.769562162] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.963886 apertar start-apertar-core.sh[823]: [0:00:05.772200273] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.963886 apertar start-apertar-core.sh[823]: [0:00:05.772221829] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.964943 apertar start-apertar-core.sh[823]: [0:00:05.773559051] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.964987 apertar start-apertar-core.sh[823]: [0:00:05.773606310] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x1544-SRGGB16_1X16/RAW - Selected CFE format: 3840x1544-RG16/RAW
+Nov 11 01:56:39.965203 apertar start-apertar-core.sh[823]: [0:00:05.773834588] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1056-SRGGB16/RAW
+Nov 11 01:56:39.965316 apertar start-apertar-core.sh[823]: [0:00:05.773955144] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.965338 apertar start-apertar-core.sh[823]: [0:00:05.773966644] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.967879 apertar start-apertar-core.sh[823]: [0:00:05.776512032] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.967879 apertar start-apertar-core.sh[823]: [0:00:05.776522347] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.969169 apertar start-apertar-core.sh[823]: [0:00:05.777799366] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.969210 apertar start-apertar-core.sh[823]: [0:00:05.777827477] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1056-SRGGB16_1X16/RAW - Selected CFE format: 1920x1056-RG16/RAW
+Nov 11 01:56:39.969363 apertar start-apertar-core.sh[823]: [0:00:05.777996143] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1048-SRGGB16/RAW
+Nov 11 01:56:39.969466 apertar start-apertar-core.sh[823]: [0:00:05.778103921] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.969494 apertar start-apertar-core.sh[823]: [0:00:05.778116125] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.972130 apertar start-apertar-core.sh[823]: [0:00:05.780754310] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.972130 apertar start-apertar-core.sh[823]: [0:00:05.780773755] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.973509 apertar start-apertar-core.sh[823]: [0:00:05.782119495] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.973571 apertar start-apertar-core.sh[823]: [0:00:05.782182755] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1048-SRGGB16_1X16/RAW - Selected CFE format: 1920x1048-RG16/RAW
+Nov 11 01:56:39.973880 apertar start-apertar-core.sh[823]: [0:00:05.782509199] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1000-SRGGB16/RAW
+Nov 11 01:56:39.974030 apertar start-apertar-core.sh[823]: [0:00:05.782665551] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.974071 apertar start-apertar-core.sh[823]: [0:00:05.782681477] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.976796 apertar start-apertar-core.sh[823]: [0:00:05.785410181] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.976796 apertar start-apertar-core.sh[823]: [0:00:05.785434755] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.978205 apertar start-apertar-core.sh[823]: [0:00:05.786808903] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.978290 apertar start-apertar-core.sh[823]: [0:00:05.786867458] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1000-SRGGB16_1X16/RAW - Selected CFE format: 1920x1000-RG16/RAW
+Nov 11 01:56:39.978721 apertar start-apertar-core.sh[823]: [0:00:05.787331218] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x912-SRGGB16/RAW
+Nov 11 01:56:39.978859 apertar start-apertar-core.sh[823]: [0:00:05.787492755] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.978897 apertar start-apertar-core.sh[823]: [0:00:05.787509866] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.981788 apertar start-apertar-core.sh[823]: [0:00:05.790392643] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.981788 apertar start-apertar-core.sh[823]: [0:00:05.790422995] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.983196 apertar start-apertar-core.sh[823]: [0:00:05.791807273] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.983284 apertar start-apertar-core.sh[823]: [0:00:05.791855977] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x912-SRGGB16_1X16/RAW - Selected CFE format: 1920x912-RG16/RAW
+Nov 11 01:56:39.983519 apertar start-apertar-core.sh[823]: [0:00:05.792140421] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x904-SRGGB16/RAW
+Nov 11 01:56:39.983647 apertar start-apertar-core.sh[823]: [0:00:05.792283532] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.983676 apertar start-apertar-core.sh[823]: [0:00:05.792297440] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.986292 apertar start-apertar-core.sh[823]: [0:00:05.794904681] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.986292 apertar start-apertar-core.sh[823]: [0:00:05.794927810] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.988812 apertar start-apertar-core.sh[823]: [0:00:05.796383958] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.988812 apertar start-apertar-core.sh[823]: [0:00:05.796450366] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x904-SRGGB16_1X16/RAW - Selected CFE format: 1920x904-RG16/RAW
+Nov 11 01:56:39.990282 apertar start-apertar-core.sh[823]: [0:00:05.798805051] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x856-SRGGB16/RAW
+Nov 11 01:56:39.990435 apertar start-apertar-core.sh[823]: [0:00:05.799060829] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.990535 apertar start-apertar-core.sh[823]: [0:00:05.799090995] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.993407 apertar start-apertar-core.sh[823]: [0:00:05.802023310] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.993407 apertar start-apertar-core.sh[823]: [0:00:05.802048236] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.994736 apertar start-apertar-core.sh[823]: [0:00:05.803354921] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.994806 apertar start-apertar-core.sh[823]: [0:00:05.803403903] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x856-SRGGB16_1X16/RAW - Selected CFE format: 1920x856-RG16/RAW
+Nov 11 01:56:39.995046 apertar start-apertar-core.sh[823]: [0:00:05.803674329] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x840-SRGGB16/RAW
+Nov 11 01:56:39.995306 apertar start-apertar-core.sh[823]: [0:00:05.803934162] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.995306 apertar start-apertar-core.sh[823]: [0:00:05.803947069] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:39.997898 apertar start-apertar-core.sh[823]: [0:00:05.806528403] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:39.997898 apertar start-apertar-core.sh[823]: [0:00:05.806539199] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:39.999235 apertar start-apertar-core.sh[823]: [0:00:05.807850125] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:39.999329 apertar start-apertar-core.sh[823]: [0:00:05.807901532] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x840-SRGGB16_1X16/RAW - Selected CFE format: 1920x840-RG16/RAW
+Nov 11 01:56:39.999561 apertar start-apertar-core.sh[823]: [0:00:05.808180699] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x808-SRGGB16/RAW
+Nov 11 01:56:39.999787 apertar start-apertar-core.sh[823]: [0:00:05.808403458] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:39.999787 apertar start-apertar-core.sh[823]: [0:00:05.808419921] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.002683 apertar start-apertar-core.sh[823]: [0:00:05.811120977] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.002683 apertar start-apertar-core.sh[823]: [0:00:05.811145514] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.004049 apertar start-apertar-core.sh[823]: [0:00:05.812654514] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.004107 apertar start-apertar-core.sh[823]: [0:00:05.812712181] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x808-SRGGB16_1X16/RAW - Selected CFE format: 1920x808-RG16/RAW
+Nov 11 01:56:40.004302 apertar start-apertar-core.sh[823]: [0:00:05.812934810] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x792-SRGGB16/RAW
+Nov 11 01:56:40.005053 apertar start-apertar-core.sh[823]: [0:00:05.813677032] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.005053 apertar start-apertar-core.sh[823]: [0:00:05.813700514] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.008171 apertar start-apertar-core.sh[823]: [0:00:05.816784921] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.008171 apertar start-apertar-core.sh[823]: [0:00:05.816813643] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.009557 apertar start-apertar-core.sh[823]: [0:00:05.818163477] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.009646 apertar start-apertar-core.sh[823]: [0:00:05.818215773] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x792-SRGGB16_1X16/RAW - Selected CFE format: 1920x792-RG16/RAW
+Nov 11 01:56:40.011841 apertar start-apertar-core.sh[823]: [0:00:05.818443125] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1192-SRGGB16/RAW
+Nov 11 01:56:40.011841 apertar start-apertar-core.sh[823]: [0:00:05.818569477] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.011841 apertar start-apertar-core.sh[823]: [0:00:05.818582588] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.012639 apertar start-apertar-core.sh[823]: [0:00:05.821259495] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.012639 apertar start-apertar-core.sh[823]: [0:00:05.821279718] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.015827 apertar start-apertar-core.sh[823]: [0:00:05.822557736] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.015827 apertar start-apertar-core.sh[823]: [0:00:05.822598977] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1192-SRGGB16_1X16/RAW - Selected CFE format: 2048x1192-RG16/RAW
+Nov 11 01:56:40.015827 apertar start-apertar-core.sh[823]: [0:00:05.822827255] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1144-SRGGB16/RAW
+Nov 11 01:56:40.015827 apertar start-apertar-core.sh[823]: [0:00:05.822954977] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.015827 apertar start-apertar-core.sh[823]: [0:00:05.822967773] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.017567 apertar start-apertar-core.sh[823]: [0:00:05.826187643] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.017655 apertar start-apertar-core.sh[823]: [0:00:05.826291606] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.019035 apertar start-apertar-core.sh[823]: [0:00:05.827640643] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.019157 apertar start-apertar-core.sh[823]: [0:00:05.827788199] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1144-SRGGB16_1X16/RAW - Selected CFE format: 2048x1144-RG16/RAW
+Nov 11 01:56:40.019440 apertar start-apertar-core.sh[823]: [0:00:05.828071588] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1120-SRGGB16/RAW
+Nov 11 01:56:40.019626 apertar start-apertar-core.sh[823]: [0:00:05.828260551] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.019684 apertar start-apertar-core.sh[823]: [0:00:05.828321699] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.022444 apertar start-apertar-core.sh[823]: [0:00:05.831023421] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.022638 apertar start-apertar-core.sh[823]: [0:00:05.831264199] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.024614 apertar start-apertar-core.sh[823]: [0:00:05.833228477] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.024715 apertar start-apertar-core.sh[823]: [0:00:05.833348569] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1120-SRGGB16_1X16/RAW - Selected CFE format: 2048x1120-RG16/RAW
+Nov 11 01:56:40.024978 apertar start-apertar-core.sh[823]: [0:00:05.833605273] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x1064-SRGGB16/RAW
+Nov 11 01:56:40.025132 apertar start-apertar-core.sh[823]: [0:00:05.833765310] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.025188 apertar start-apertar-core.sh[823]: [0:00:05.833825884] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.027851 apertar start-apertar-core.sh[823]: [0:00:05.836470514] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.027851 apertar start-apertar-core.sh[823]: [0:00:05.836494755] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.029167 apertar start-apertar-core.sh[823]: [0:00:05.837788810] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.029203 apertar start-apertar-core.sh[823]: [0:00:05.837832069] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x1064-SRGGB16_1X16/RAW - Selected CFE format: 2048x1064-RG16/RAW
+Nov 11 01:56:40.029419 apertar start-apertar-core.sh[823]: [0:00:05.838042718] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x968-SRGGB16/RAW
+Nov 11 01:56:40.029526 apertar start-apertar-core.sh[823]: [0:00:05.838162403] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.029551 apertar start-apertar-core.sh[823]: [0:00:05.838174625] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.032068 apertar start-apertar-core.sh[823]: [0:00:05.840704180] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.032068 apertar start-apertar-core.sh[823]: [0:00:05.840713440] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.033335 apertar start-apertar-core.sh[823]: [0:00:05.841966255] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.033362 apertar start-apertar-core.sh[823]: [0:00:05.841992810] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x968-SRGGB16_1X16/RAW - Selected CFE format: 2048x968-RG16/RAW
+Nov 11 01:56:40.033535 apertar start-apertar-core.sh[823]: [0:00:05.842160051] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x960-SRGGB16/RAW
+Nov 11 01:56:40.033641 apertar start-apertar-core.sh[823]: [0:00:05.842275588] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.033641 apertar start-apertar-core.sh[823]: [0:00:05.842289162] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.036222 apertar start-apertar-core.sh[823]: [0:00:05.844847273] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.036222 apertar start-apertar-core.sh[823]: [0:00:05.844865329] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.037523 apertar start-apertar-core.sh[823]: [0:00:05.846149218] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.037553 apertar start-apertar-core.sh[823]: [0:00:05.846183921] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x960-SRGGB16_1X16/RAW - Selected CFE format: 2048x960-RG16/RAW
+Nov 11 01:56:40.037749 apertar start-apertar-core.sh[823]: [0:00:05.846372218] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x912-SRGGB16/RAW
+Nov 11 01:56:40.037855 apertar start-apertar-core.sh[823]: [0:00:05.846490532] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.037855 apertar start-apertar-core.sh[823]: [0:00:05.846501958] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.040477 apertar start-apertar-core.sh[823]: [0:00:05.849107588] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.040477 apertar start-apertar-core.sh[823]: [0:00:05.849122421] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.041761 apertar start-apertar-core.sh[823]: [0:00:05.850392180] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.041788 apertar start-apertar-core.sh[823]: [0:00:05.850424495] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x912-SRGGB16_1X16/RAW - Selected CFE format: 2048x912-RG16/RAW
+Nov 11 01:56:40.041982 apertar start-apertar-core.sh[823]: [0:00:05.850607773] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x896-SRGGB16/RAW
+Nov 11 01:56:40.042079 apertar start-apertar-core.sh[823]: [0:00:05.850716106] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.042102 apertar start-apertar-core.sh[823]: [0:00:05.850727106] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.044749 apertar start-apertar-core.sh[823]: [0:00:05.853363921] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.044749 apertar start-apertar-core.sh[823]: [0:00:05.853387810] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.046080 apertar start-apertar-core.sh[823]: [0:00:05.854700403] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.046121 apertar start-apertar-core.sh[823]: [0:00:05.854745792] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x896-SRGGB16_1X16/RAW - Selected CFE format: 2048x896-RG16/RAW
+Nov 11 01:56:40.046353 apertar start-apertar-core.sh[823]: [0:00:05.854972569] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 2048x840-SRGGB16/RAW
+Nov 11 01:56:40.046470 apertar start-apertar-core.sh[823]: [0:00:05.855105958] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.046470 apertar start-apertar-core.sh[823]: [0:00:05.855118532] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.049036 apertar start-apertar-core.sh[823]: [0:00:05.857666273] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.049036 apertar start-apertar-core.sh[823]: [0:00:05.857679921] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.050330 apertar start-apertar-core.sh[823]: [0:00:05.858956847] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.050360 apertar start-apertar-core.sh[823]: [0:00:05.858993847] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2048x840-SRGGB16_1X16/RAW - Selected CFE format: 2048x840-RG16/RAW
+Nov 11 01:56:40.050574 apertar start-apertar-core.sh[823]: [0:00:05.859195069] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 1920x1100-SRGGB16/RAW
+Nov 11 01:56:40.050680 apertar start-apertar-core.sh[823]: [0:00:05.859317014] [861]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 11 01:56:40.050680 apertar start-apertar-core.sh[823]: [0:00:05.859327625] [861]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 11 01:56:40.053246 apertar start-apertar-core.sh[823]: [0:00:05.861867810] [861]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 11 01:56:40.053246 apertar start-apertar-core.sh[823]: [0:00:05.861886718] [861]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 11 01:56:40.054569 apertar start-apertar-core.sh[823]: [0:00:05.863190180] [861]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 11 01:56:40.054606 apertar start-apertar-core.sh[823]: [0:00:05.863233180] [861]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1100-SRGGB16_1X16/RAW - Selected CFE format: 1920x1100-RG16/RAW
+Nov 11 01:56:40.056332 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x2160 sdr max_fps=60 crop=(0, 0)/3840x2160 binning=1(table)
+Nov 11 01:56:40.056332 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x1080 sdr max_fps=60 crop=(0, 0)/3840x2160 binning=2(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1440x1080 sdr max_fps=60.54 crop=(480, 0)/2880x2160 binning=2(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2880x2160 sdr max_fps=60.54 crop=(480, 0)/2880x2160 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2160x2160 sdr max_fps=60.54 crop=(840, 0)/2160x2160 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2976x2160 sdr max_fps=60.54 crop=(432, 0)/2976x2160 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x2072 sdr max_fps=63.03 crop=(0, 44)/3840x2072 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x2032 sdr max_fps=64.23 crop=(0, 64)/3840x2032 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x2024 sdr max_fps=64.47 crop=(0, 68)/3840x2024 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1920 sdr max_fps=67.84 crop=(0, 120)/3840x1920 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1744 sdr max_fps=74.42 crop=(0, 208)/3840x1744 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1728 sdr max_fps=75.09 crop=(0, 216)/3840x1728 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1632 sdr max_fps=79.32 crop=(0, 264)/3840x1632 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1608 sdr max_fps=80.46 crop=(0, 276)/3840x1608 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1536 sdr max_fps=84.06 crop=(0, 312)/3840x1536 binning=1(table)
+Nov 11 01:56:40.056520 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 3840x1504 sdr max_fps=85.77 crop=(0, 328)/3840x1504 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x1040 sdr max_fps=121.62 crop=(960, 560)/1920x1040 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x1008 sdr max_fps=125.23 crop=(960, 576)/1920x1008 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x800 sdr max_fps=155.18 crop=(960, 680)/1920x800 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x1152 sdr max_fps=110.49 crop=(896, 504)/2048x1152 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x1104 sdr max_fps=115 crop=(896, 528)/2048x1104 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x1080 sdr max_fps=117.4 crop=(896, 540)/2048x1080 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x1024 sdr max_fps=123.41 crop=(896, 568)/2048x1024 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x928 sdr max_fps=135.28 crop=(896, 616)/2048x928 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x920 sdr max_fps=136.37 crop=(896, 620)/2048x920 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x872 sdr max_fps=143.33 crop=(896, 644)/2048x872 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x856 sdr max_fps=145.79 crop=(896, 652)/2048x856 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x816 sdr max_fps=152.39 crop=(896, 672)/2048x816 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 2048x800 sdr max_fps=155.18 crop=(896, 680)/2048x800 binning=1(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1488x1080 sdr max_fps=60.54 crop=(432, 0)/2976x2160 binning=2(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x1036 sdr max_fps=63.03 crop=(0, 44)/3840x2072 binning=2(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x1016 sdr max_fps=64.23 crop=(0, 64)/3840x2032 binning=2(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x1012 sdr max_fps=64.47 crop=(0, 68)/3840x2024 binning=2(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x960 sdr max_fps=67.84 crop=(0, 120)/3840x1920 binning=2(table)
+Nov 11 01:56:40.056834 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x872 sdr max_fps=74.42 crop=(0, 208)/3840x1744 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x864 sdr max_fps=75.09 crop=(0, 216)/3840x1728 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x816 sdr max_fps=79.32 crop=(0, 264)/3840x1632 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x804 sdr max_fps=80.46 crop=(0, 276)/3840x1608 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x768 sdr max_fps=84.06 crop=(0, 312)/3840x1536 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB10_CSI2P 1920x752 sdr max_fps=85.77 crop=(0, 328)/3840x1504 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1080 sdr max_fps=60 crop=(0, 0)/3840x2160 binning=2(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2160 sdr max_fps=60 crop=(0, 0)/3840x2160 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2880x2160 sdr max_fps=60.54 crop=(480, 0)/2880x2160 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2160x2160 sdr max_fps=60.54 crop=(840, 0)/2160x2160 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2976x2160 sdr max_fps=60.54 crop=(432, 0)/2976x2160 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2072 sdr max_fps=63.03 crop=(0, 44)/3840x2072 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2032 sdr max_fps=64.23 crop=(0, 64)/3840x2032 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2024 sdr max_fps=64.47 crop=(0, 68)/3840x2024 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1920 sdr max_fps=67.84 crop=(0, 120)/3840x1920 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1744 sdr max_fps=74.42 crop=(0, 208)/3840x1744 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1728 sdr max_fps=75.09 crop=(0, 216)/3840x1728 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1632 sdr max_fps=79.32 crop=(0, 264)/3840x1632 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1608 sdr max_fps=80.46 crop=(0, 276)/3840x1608 binning=1(table)
+Nov 11 01:56:40.057219 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1536 sdr max_fps=84.06 crop=(0, 312)/3840x1536 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1504 sdr max_fps=85.77 crop=(0, 328)/3840x1504 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1040 sdr max_fps=121.62 crop=(960, 560)/1920x1040 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1008 sdr max_fps=125.23 crop=(960, 576)/1920x1008 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x800 sdr max_fps=155.18 crop=(960, 680)/1920x800 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1152 sdr max_fps=110.49 crop=(896, 504)/2048x1152 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1104 sdr max_fps=115 crop=(896, 528)/2048x1104 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1080 sdr max_fps=117.4 crop=(896, 540)/2048x1080 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1024 sdr max_fps=123.41 crop=(896, 568)/2048x1024 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x928 sdr max_fps=135.28 crop=(896, 616)/2048x928 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x920 sdr max_fps=136.37 crop=(896, 620)/2048x920 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x872 sdr max_fps=143.33 crop=(896, 644)/2048x872 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x856 sdr max_fps=145.79 crop=(896, 652)/2048x856 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x816 sdr max_fps=152.39 crop=(896, 672)/2048x816 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x800 sdr max_fps=155.18 crop=(896, 680)/2048x800 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1440x1080 sdr max_fps=117.4 crop=(1200, 540)/1440x1080 binning=1(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1488x1080 sdr max_fps=60.54 crop=(432, 0)/2976x2160 binning=2(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1036 sdr max_fps=63.03 crop=(0, 44)/3840x2072 binning=2(table)
+Nov 11 01:56:40.057629 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1016 sdr max_fps=64.23 crop=(0, 64)/3840x2032 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1012 sdr max_fps=64.47 crop=(0, 68)/3840x2024 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x960 sdr max_fps=67.84 crop=(0, 120)/3840x1920 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x872 sdr max_fps=74.42 crop=(0, 208)/3840x1744 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x864 sdr max_fps=75.09 crop=(0, 216)/3840x1728 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x816 sdr max_fps=79.32 crop=(0, 264)/3840x1632 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x804 sdr max_fps=80.46 crop=(0, 276)/3840x1608 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x768 sdr max_fps=84.06 crop=(0, 312)/3840x1536 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x752 sdr max_fps=85.77 crop=(0, 328)/3840x1504 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1080 clear_hdr max_fps=30 crop=(0, 0)/3840x2160 binning=2(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2160 clear_hdr max_fps=30 crop=(0, 0)/3840x2160 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2880x2160 clear_hdr max_fps=30.27 crop=(480, 0)/2880x2160 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2160x2160 clear_hdr max_fps=30.27 crop=(840, 0)/2160x2160 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2976x2160 clear_hdr max_fps=30.27 crop=(432, 0)/2976x2160 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2072 clear_hdr max_fps=31.51 crop=(0, 44)/3840x2072 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2032 clear_hdr max_fps=32.11 crop=(0, 64)/3840x2032 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x2024 clear_hdr max_fps=32.24 crop=(0, 68)/3840x2024 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1920 clear_hdr max_fps=33.92 crop=(0, 120)/3840x1920 binning=1(table)
+Nov 11 01:56:40.057998 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1744 clear_hdr max_fps=37.21 crop=(0, 208)/3840x1744 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1728 clear_hdr max_fps=37.54 crop=(0, 216)/3840x1728 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1632 clear_hdr max_fps=39.66 crop=(0, 264)/3840x1632 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1608 clear_hdr max_fps=40.23 crop=(0, 276)/3840x1608 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1536 clear_hdr max_fps=42.03 crop=(0, 312)/3840x1536 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 3840x1504 clear_hdr max_fps=42.89 crop=(0, 328)/3840x1504 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1040 clear_hdr max_fps=60.81 crop=(960, 560)/1920x1040 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x1008 clear_hdr max_fps=62.62 crop=(960, 576)/1920x1008 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1920x800 clear_hdr max_fps=77.59 crop=(960, 680)/1920x800 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1152 clear_hdr max_fps=55.24 crop=(896, 504)/2048x1152 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1104 clear_hdr max_fps=57.5 crop=(896, 528)/2048x1104 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1080 clear_hdr max_fps=58.7 crop=(896, 540)/2048x1080 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x1024 clear_hdr max_fps=61.7 crop=(896, 568)/2048x1024 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x928 clear_hdr max_fps=67.64 crop=(896, 616)/2048x928 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x920 clear_hdr max_fps=68.18 crop=(896, 620)/2048x920 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x872 clear_hdr max_fps=71.66 crop=(896, 644)/2048x872 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x856 clear_hdr max_fps=72.9 crop=(896, 652)/2048x856 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x816 clear_hdr max_fps=76.19 crop=(896, 672)/2048x816 binning=1(table)
+Nov 11 01:56:40.058366 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 2048x800 clear_hdr max_fps=77.59 crop=(896, 680)/2048x800 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB12_CSI2P 1440x1080 clear_hdr max_fps=58.7 crop=(1200, 540)/1440x1080 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x2200 clear_hdr max_fps=30 crop=(0, 0)/3840x2160 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2880x2200 clear_hdr max_fps=30 crop=(480, 0)/2880x2160 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2160x2200 clear_hdr max_fps=30 crop=(840, 0)/2160x2160 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2976x2200 clear_hdr max_fps=30 crop=(432, 0)/2976x2160 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x2112 clear_hdr max_fps=31.22 crop=(0, 44)/3840x2072 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x2072 clear_hdr max_fps=31.81 crop=(0, 64)/3840x2032 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x2064 clear_hdr max_fps=31.93 crop=(0, 68)/3840x2024 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1960 clear_hdr max_fps=33.58 crop=(0, 120)/3840x1920 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1784 clear_hdr max_fps=36.81 crop=(0, 208)/3840x1744 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1768 clear_hdr max_fps=37.13 crop=(0, 216)/3840x1728 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1672 clear_hdr max_fps=39.2 crop=(0, 264)/3840x1632 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1648 clear_hdr max_fps=39.75 crop=(0, 276)/3840x1608 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1576 clear_hdr max_fps=41.51 crop=(0, 312)/3840x1536 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 3840x1544 clear_hdr max_fps=42.35 crop=(0, 328)/3840x1504 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x1056 clear_hdr max_fps=61.03 crop=(960, 572)/1920x1016 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x1048 clear_hdr max_fps=61.48 crop=(960, 576)/1920x1008 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x1000 clear_hdr max_fps=64.29 crop=(960, 600)/1920x960 binning=1(table)
+Nov 11 01:56:40.058741 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x912 clear_hdr max_fps=70.17 crop=(960, 644)/1920x872 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x904 clear_hdr max_fps=70.76 crop=(960, 648)/1920x864 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x856 clear_hdr max_fps=74.5 crop=(960, 672)/1920x816 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x840 clear_hdr max_fps=75.84 crop=(960, 680)/1920x800 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x808 clear_hdr max_fps=78.67 crop=(960, 696)/1920x768 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x792 clear_hdr max_fps=80.17 crop=(960, 704)/1920x752 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x1192 clear_hdr max_fps=54.35 crop=(896, 504)/2048x1152 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x1144 clear_hdr max_fps=56.54 crop=(896, 528)/2048x1104 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x1120 clear_hdr max_fps=57.69 crop=(896, 540)/2048x1080 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x1064 clear_hdr max_fps=60.6 crop=(896, 568)/2048x1024 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x968 clear_hdr max_fps=66.31 crop=(896, 616)/2048x928 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x960 clear_hdr max_fps=66.84 crop=(896, 620)/2048x920 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x912 clear_hdr max_fps=70.17 crop=(896, 644)/2048x872 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x896 clear_hdr max_fps=71.36 crop=(896, 652)/2048x856 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 2048x840 clear_hdr max_fps=75.84 crop=(896, 680)/2048x800 binning=1(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor mode: SRGGB16 1920x1100 clear_hdr max_fps=30 crop=(0, 0)/3840x2160 binning=2(table)
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: ApertarCore sensor probe: 142 modes in 405 ms
+Nov 11 01:56:40.059111 apertar start-apertar-core.sh[823]: [0:00:05.866943069] [823]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 11 01:56:40.066970 apertar start-apertar-core.sh[823]: [0:00:05.875585699] [876]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 11 01:56:40.067696 apertar start-apertar-core.sh[823]: [0:00:05.876325569] [876]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 11 01:56:40.069404 apertar start-apertar-core.sh[823]: [0:00:05.878020829] [876]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 11 01:56:40.072086 apertar start-apertar-core.sh[823]: [0:00:05.880656829] [876]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 11 01:56:40.072455 apertar start-apertar-core.sh[823]: [0:00:05.881077199] [876]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 11 01:56:40.073373 apertar start-apertar-core.sh[823]: [0:00:05.881981606] [876]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 11 01:56:40.073373 apertar start-apertar-core.sh[823]: [0:00:05.882008718] [876]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media0 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 11 01:56:40.075916 apertar start-apertar-core.sh[823]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 11 01:56:40.080202 apertar start-apertar-core.sh[823]: [0:00:05.888817143] [823]  INFO Camera camera.cpp:1216 configuring streams: (0) 960x720-YUV420/Rec709 (1) 2880x2160-RGGB_PISP_COMP1/RAW
+Nov 11 01:56:40.080372 apertar start-apertar-core.sh[823]: [0:00:05.888998421] [876]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 2880x2160-SRGGB12_1X12/RAW - Selected CFE format: 2880x2160-PC1R/RAW
+Nov 11 01:56:40.080672 apertar start-apertar-core.sh[823]: ApertarCore camera configured: sensor=IMX585 binning=1(inferred) raw=2880x2160 preview=960x720 stream=2880x2160 format=RGGB_PISP_COMP1 stride=2880 storage_bits=12 packing=pisp_comp1 transport_bits=16
+Nov 11 01:56:40.090137 apertar start-apertar-core.sh[823]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=6220800
+Nov 11 01:56:40.093331 apertar start-apertar-core.sh[823]: ApertarCore preview crop: native_max=(480, 0)/2880x2160 applied=(480, 0)/2880x2160
+Nov 11 01:56:40.108042 apertar start-apertar-core.sh[823]: NeoRotary4 input enabled: /dev/i2c-1 address=0x49 config=/home/pi/apertar-hardware.conf
+Nov 11 01:56:40.108042 apertar start-apertar-core.sh[823]: GPIO input enabled: chip=auto config=/home/pi/apertar-hardware.conf
+Nov 11 01:56:40.108160 apertar start-apertar-core.sh[823]: ApertarCore recording indicator LED enabled: target=gpio active_high=true gpio=/dev/gpiochip0 line=21 open_drain=false
+Nov 11 01:56:40.115997 apertar start-apertar-core.sh[823]: ApertarCore controls: ~/apertar-hardware.conf he9055e72bc56b88f: 0 errors, 0 warnings
+Nov 11 01:56:40.199087 apertar sudo[881]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/usr/local/libexec/apertar-media-trim /media/RAW
+Nov 11 01:56:40.202087 apertar sudo[881]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 11 01:56:40.285549 apertar run_pi_direct.sh[667]: Apertar preview render unavailable: hasFrame false texture 0 target external externalPrograms true texture2DPrograms true planarPrograms true
+Nov 11 01:56:41.186599 apertar start-apertar-core.sh[823]: ApertarCore running on /tmp/apertar-core.sock
+Nov 11 01:56:41.186599 apertar start-apertar-core.sh[823]: ApertarCore web control available on http://0.0.0.0:8000
+Nov 11 01:56:41.186599 apertar start-apertar-core.sh[823]: ApertarCore capture scheduling: thread=876 nice=-5
+Nov 11 01:56:41.188863 apertar run_pi_direct.sh[667]: Apertar preview buffer registered: 960 x 720 stride 1024 slot 0 layout planes 3 attached fds 3
+Nov 11 01:56:41.189511 apertar run_pi_direct.sh[667]: Apertar preview frame received: 960 x 720 stride 1024 slot 0 planes 3
+Nov 11 01:56:41.195651 apertar run_pi_direct.sh[667]: Apertar preview EGL import: 960 x 720 stride 1024 planes 3 target external
+Nov 11 01:56:45.377892 apertar sudo[881]: pam_unix(sudo:session): session closed for user root
+Nov 11 01:56:45.380412 apertar start-apertar-core.sh[823]: ApertarCore media: trim /media/RAW reason=mount result=trimmed bytes=153639976960 ms=5276
+Nov 11 01:56:45.882716 apertar start-apertar-core.sh[823]: ApertarCore buffer: ram budget 1592 MiB (MemAvailable 3507 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 5.9 MiB = 268 frames) source=conf
+Nov 11 01:56:45.890936 apertar start-apertar-core.sh[823]: ApertarCore recording clip: /media/RAW/cDNG_26-11-11_01564553_C0001 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=0
+Nov 11 01:56:45.915625 apertar start-apertar-core.sh[823]: ApertarCore color profile config: loaded 4 profile(s) from /home/pi/apertar-color-profiles.conf
+Nov 11 01:56:45.915702 apertar start-apertar-core.sh[823]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=11702708
+Nov 11 01:56:47.924078 apertar start-apertar-core.sh[823]: ApertarCore recording stats: enqueued=121 written=121 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=0 fault= peak_queue=9/12 queue_bytes_peak=55987200 queue_budget=1670053888
+Nov 11 01:56:47.939835 apertar start-apertar-core.sh[823]: ApertarCore recording stop: synced to the medium in 15 ms
+Nov 11 01:56:47.939957 apertar start-apertar-core.sh[823]: ApertarCore storage preroll: requested_fps=60.54 measured_fps=60.5381 enqueued=121 last_frame_us=16518 echoed_min_us=16518
+Nov 11 01:56:48.076056 apertar start-apertar-core.sh[823]: ApertarCore storage preroll: reason=start fps=60.54 measured_fps=60.5381 seconds=2 frames=121 bytes=1129266864 result=ok ms=5451
+Nov 11 01:56:50.585363 apertar sudo[1111]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/usr/local/libexec/apertar-media-trim /media/RAW
+Nov 11 01:56:50.585586 apertar sudo[1111]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 11 01:56:55.702805 apertar sudo[1111]: pam_unix(sudo:session): session closed for user root
+Nov 11 01:56:55.703399 apertar start-apertar-core.sh[823]: ApertarCore media: trim /media/RAW reason=delete result=trimmed bytes=153639976960 ms=5126
+Nov 11 02:01:14.957534 apertar start-apertar-core.sh[823]: [0:04:40.766148593] [4355]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 11 02:01:14.968307 apertar start-apertar-core.sh[823]: [0:04:40.776930905] [4356]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 11 02:01:14.969142 apertar start-apertar-core.sh[823]: [0:04:40.777773647] [4356]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 11 02:01:14.971183 apertar start-apertar-core.sh[823]: [0:04:40.779814390] [4356]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 11 02:01:14.974155 apertar start-apertar-core.sh[823]: [0:04:40.782771672] [4356]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 11 02:01:14.974451 apertar start-apertar-core.sh[823]: [0:04:40.783086284] [4356]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 11 02:01:14.975236 apertar start-apertar-core.sh[823]: [0:04:40.783869137] [4356]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 11 02:01:14.975236 apertar start-apertar-core.sh[823]: [0:04:40.783881489] [4356]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media0 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 11 02:01:14.978213 apertar start-apertar-core.sh[823]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 11 02:01:14.978830 apertar start-apertar-core.sh[823]: [0:04:40.787463216] [4355]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 11 02:01:14.978996 apertar start-apertar-core.sh[823]: [0:04:40.787628698] [4356]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB12_1X12/RAW - Selected CFE format: 3840x2160-PC1R/RAW
+Nov 11 02:01:14.979278 apertar start-apertar-core.sh[823]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2160 format=RGGB_PISP_COMP1 stride=3840 storage_bits=12 packing=pisp_comp1 transport_bits=16
+Nov 11 02:01:14.991480 apertar start-apertar-core.sh[823]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=8294400
+Nov 11 02:01:14.994754 apertar start-apertar-core.sh[823]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 11 02:01:16.036084 apertar start-apertar-core.sh[823]: ApertarCore capture scheduling: thread=4356 nice=-5
+Nov 11 02:02:16.607316 apertar start-apertar-core.sh[823]: ApertarCore controls: applied: restarted CFexpress hat in 0 ms

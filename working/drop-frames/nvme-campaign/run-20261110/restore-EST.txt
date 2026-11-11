@@ -1,0 +1,6 @@
+night EST ended: fault: fault:   | unconfirmed: no counter or context pointed to a cause
+2026-11-11 05:37:34
+read back: fps=25.0, raw_bit_depth=12, cdng_compression=none, cdng_log=off, preview_tdn=False, fps_phase_lock=False, fps_speed_ramp=False, clear_hdr=False, resolution=3840x2160, recording_format=lossydng, ladder_enabled=False, frames_per_folder=5000, clip_merge_enabled=True, tuning_file=, lossy_dng_ratio=3to1, prores_profile=hq, prores_color_profile=davinci_intermediate, h264_resolution=1920x1080
+timers-unmask rc=0
+merge pending 10
+RESTORE INCOMPLETE: raw_bit_depth=12 (want 16); clear_hdr=False (want True); recording_format=lossydng (want cdng)

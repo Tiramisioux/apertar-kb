@@ -1,0 +1,417 @@
+spec,family,tdn,lock,web,audio,aids,estimate_fps,limit_fps,limited_by,label,note
+2kHDR16:cdng:unc,cdng-unc,0,0,0,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,0,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,0,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,0,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,1,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,1,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,1,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,0,1,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,0,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,0,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,0,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,0,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,1,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,1,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,1,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,0,1,1,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,0,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,0,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,0,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,0,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,1,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,1,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,1,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,0,1,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,0,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,0,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,0,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,0,1,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,1,0,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,1,0,1,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,1,1,0,30,30.0,sensor,at least,
+2kHDR16:cdng:unc,cdng-unc,1,1,1,1,1,30,30.0,sensor,at least,
+2kP:prores:lt,prores,0,0,0,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,0,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,0,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,0,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,1,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,1,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,1,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,0,1,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,0,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,0,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,0,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,0,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,1,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,1,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,1,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,0,1,1,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,0,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,0,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,0,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,0,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,1,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,1,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,1,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,0,1,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,0,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,0,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,0,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,0,1,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,1,0,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,1,0,1,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,1,1,0,60,60.0,sensor,at least,
+2kP:prores:lt,prores,1,1,1,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,0,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,0,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,0,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,0,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,1,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,1,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,1,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,0,1,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,0,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,0,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,0,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,0,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,1,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,1,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,1,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,0,1,1,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,0,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,0,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,0,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,0,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,1,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,1,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,1,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,0,1,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,0,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,0,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,0,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,0,1,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,1,0,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,1,0,1,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,1,1,0,60,60.0,sensor,at least,
+2kSDR12:cdng:lj,cdng-lj,1,1,1,1,1,60,60.0,sensor,at least,
+4kHDR12:cdng:unc,cdng-unc,0,0,0,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,0,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,0,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,0,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,1,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,1,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,1,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,0,1,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,0,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,0,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,0,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,0,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,1,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,1,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,1,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,0,1,1,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,0,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,0,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,0,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,0,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,1,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,1,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,1,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,0,1,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,0,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,0,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,0,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,0,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,1,0,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,1,0,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,1,1,0,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR12:cdng:unc,cdng-unc,1,1,1,1,1,24,24.99,back end,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,0,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,0,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,0,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,0,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured); cell out at 25 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,0,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,0,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,0,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,0,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,1,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,1,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,1,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,1,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,0,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,0,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,0,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,0,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,1,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,1,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,1,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,0,1,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,0,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,0,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,0,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,0,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,1,0,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,1,0,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,1,1,0,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,1,1,1,1,1,15,16.03,encoder,measured,back end: gaps at 30 fps (measured)
+4kHDR16:cdng:unc,cdng-unc,0,0,0,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,0,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,0,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,0,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,1,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,1,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,1,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,0,1,1,1,27,28.0,measured cell,measured,cell out at 28 fps (measured)
+4kHDR16:cdng:unc,cdng-unc,0,1,0,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,0,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,0,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,0,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,1,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,1,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,1,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,0,1,1,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,0,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,0,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,0,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,0,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,1,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,1,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,1,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,0,1,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,0,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,0,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,0,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,0,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,1,0,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,1,0,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,1,1,0,28,28.0,sensor,at least,
+4kHDR16:cdng:unc,cdng-unc,1,1,1,1,1,28,28.0,sensor,at least,
+4kHDR16:cdng:unc:log,log,0,0,0,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,0,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,0,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,0,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,1,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,1,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,1,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,1,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured); cell out at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,0,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,0,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,0,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,0,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,1,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,1,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,1,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,1,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,0,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,0,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,0,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,0,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,1,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,1,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,1,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,0,1,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,0,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,0,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,0,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,0,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,1,0,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,1,0,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,1,1,0,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,1,1,1,1,1,24,25.58,back end,measured,back end: gaps at 28 fps (measured)
+4kP:h264:1920x1080,h264,0,0,0,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,0,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,0,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,0,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,1,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,1,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,1,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,0,1,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,0,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,0,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,0,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,0,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,1,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,1,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,1,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,0,1,1,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,0,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,0,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,0,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,0,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,1,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,1,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,1,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,0,1,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,0,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,0,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,0,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,0,1,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,1,0,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,1,0,1,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,1,1,0,60,60.0,sensor,at least,
+4kP:h264:1920x1080,h264,1,1,1,1,1,60,60.0,sensor,at least,
+4kP:prores:hq,prores,0,0,0,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,0,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,0,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,0,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,0,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,0,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,0,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,0,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,1,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,1,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,1,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,1,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,0,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,0,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,0,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,0,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,1,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,1,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,1,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,1,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,0,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,0,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,0,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,0,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,1,0,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,1,0,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,1,1,0,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,1,1,1,29,30.05,encoder,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,0,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,0,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,1,0,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,1,1,39,40.58,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:lossydng:3to1,lossy,0,0,0,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,0,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,0,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,0,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,1,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,1,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,1,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,0,1,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,0,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,0,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,0,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,0,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,1,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,1,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,1,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,1,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,0,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,0,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,0,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,0,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,1,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,1,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,1,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,0,1,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,0,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,0,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,0,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,0,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,1,0,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,1,0,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,1,1,0,37,38.86,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,1,1,1,1,1,37,38.86,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,0,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,0,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,0,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,0,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,1,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,1,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,1,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,0,1,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,0,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,0,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,0,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,0,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,1,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,1,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,1,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,0,1,1,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,0,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,0,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,0,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,0,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,1,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,1,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,1,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,0,1,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,0,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,0,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,0,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,0,1,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,1,0,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,1,0,1,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,1,1,0,41,42.77,encoder,measured,
+4kSDR12:lossydng:5to1,lossy,1,1,1,1,1,41,42.77,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,0,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,0,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,0,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,0,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,1,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,1,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,1,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,0,1,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,0,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,0,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,0,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,0,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,1,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,1,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,1,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,0,1,1,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,0,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,0,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,0,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,0,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,1,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,1,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,1,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,0,1,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,0,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,0,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,0,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,0,1,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,1,0,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,1,0,1,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,1,1,0,41,43.24,encoder,measured,
+crop4k3SDR12:lossydng:3to1,lossy,1,1,1,1,1,41,43.24,encoder,measured,

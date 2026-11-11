@@ -1,0 +1,7 @@
+2026-11-11 02:02:25 following runner pid 4959 (night S2-S4-S5, run /home/pi/longtakes/nvme-20261110); next: S6 --go S6=unconditional
+2026-11-11 04:53:25 runner ended; waiting for a quiet camera
+2026-11-11 04:54:25 night S2-S4-S5 ended on: 2026-11-11 04:53:23 night S2,S4,S5 over: no GO-S5 within 8 h
+2026-11-11 04:54:25 restore read back (frames_per_folder=5000 merge=true); starting night S6
+GO-S6: unconditional
+night S6 started: runner pid 132063; the Pi powers off when it is over (if the restore reads back).
+follow:  cat /home/pi/longtakes/nvme-20261110/status.md

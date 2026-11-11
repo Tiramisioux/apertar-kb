@@ -1,0 +1,5 @@
+2026-11-10 23:40:40 following runner pid 57789 (night ARMS, run /home/pi/longtakes/nvme-20261110)
+2026-11-10 23:52:40 runner ended; waiting for a quiet camera
+2026-11-10 23:53:41 restore read back: frames_per_folder=5000 merge=true; RESTORE OK
+2026-11-10 23:53:41 night ARMS over; powering off through Core (power_off_system)
+{"ok":true,"powering_off":true}
