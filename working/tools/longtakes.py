@@ -1786,11 +1786,13 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         if STOP['sig']:
             outcome, ctx_drop = 'stopped_by_signal', dict(last)
         elif (CAMPAIGN['on'] and free_now is not None and 5 < time.time() - (last.get('t_unix') or time.time()) <= 45
-              and (last.get('buffer_used') or 0) >= 0.8 * (last.get('buffer_capacity') or 1e18)):
-            # Core's safety stop with a full RAM buffer: the recorder winds the queue down and Core's socket does not answer
-            # meanwhile (EST day 2026-11-11, MLV 4K 60 fps: buffer at 89 %, stop 11.6 s, no sample for 11.8 s). Wait for the
-            # sampler; the stop branch below then reads the stop as buffer_full. Not a dead medium.
-            full_wait = True
+              and last.get('state') == 'rec'):
+            # Core's socket is silent while a recording winds down (its safety stop: the recorder drains the queue first).
+            # EST day 2026-11-11, MLV 4K 60 fps: last sample at 89 % then 11.8 s silent; again at 09:51, last sample at 71 %,
+            # the safety stop 0.7 s later, 5.4 s silent. The medium is readable, so wait for the sampler; the stop branch
+            # below reads the stop (buffer flag, a full last sample, or Core's 'safety stop' journal line) as buffer_full.
+            if (last.get('buffer_used') or 0) >= 0.6 * (last.get('buffer_capacity') or 1e18):
+                full_wait = True
             continue
         elif CAMPAIGN['on'] and (free_now is None or time.time() - (last.get('t_unix') or time.time()) > 5):
             # H7: a dead medium or a sampler that stopped answering: stop the take, never call it a pass
@@ -1899,6 +1901,9 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
     except ValueError:
         fill = 0.0
     row['buffer_peak_pct'] = round(100 * fill, 1)
+    if outcome in ('stopped_externally', 'fault') and any('buffer: safety stop' in l for l in jl):
+        outcome = 'buffer_full'         # Core's own line: the RAM buffer reached its safety stop (MLV has no queue_budget)
+        kinds['buffer_full'] = 1
     if outcome == 'stopped_externally' and fill >= 0.88:
         outcome = 'buffer_full'
         kinds['buffer_full'] = 1
