@@ -1,10 +1,10 @@
 {
- "head": "NIGHT OVER (stopped by SIGTERM): safe to read; report report-S2-S4-S5.md",
+ "head": "NIGHT OVER (all stages of the night done): safe to read; report report-ARMS.md",
  "decision": "",
- "night": "S2,S4,S5",
+ "night": "ARMS",
  "current": {},
  "take_in_progress": false,
  "stop": "",
- "heartbeat_age_s": 46,
- "t": 1794341347.1285908
+ "heartbeat_age_s": 12,
+ "t": 1794351111.1328511
 }

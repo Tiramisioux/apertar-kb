@@ -132,6 +132,26 @@ For shooting (probable): this card should not be filled past ~95 % in 4K HDR16.
   at 5.7 s and 9.8 s (capture gaps, buffer 2.3 %); the arm is out at 25 and 26 fps (measured). Sound in both takes, UI
   fds 80-101. The runner was stopped by SIGTERM before its next take; restore read back OK; nothing else recorded.
 
+## Night run S2,S4,S5 then ARMS, 2026-11-10 22:48-23:53 (S2 stopped at HDR12; ARMS done; powered off)
+
+- **SDR12 uncompressed, 16:9:** 29 and 30 fps carried (3 + 5 min clean each). 30 is the mode's top, so the walk ended
+  there; the meter put capacity at 30.0 (measured). End control at 29: clean.
+- **SDR12 lossless:** pre-roll ok at 30; 29 and 30 carried (measured).
+- **HDR12:** not run. The warm-up asked for 30 fps (campaign.env `4kHDR12=30`), Core set 25 (its fps_max for 4K Clear
+  HDR 12-bit read 25), so the take was a `setup_mismatch`, which ends the night as "needs a human". S4 and S5 never
+  started (measured). Runner bug: the start fps from campaign.env is not clamped to `mode_top()` (status: edge=30,
+  top=25). Why Core caps 4K HDR12 at 25 when the SSD campaign recorded it at 25-27 fps on 2026-11-07: unconfirmed.
+- **ARMS, HDR16 lossless without Log at 25:** out. Both 3-min takes stopped on Core's buffer-full safety stop at
+  13.0 and 12.5 s, 0 frames dropped (measured). Fits the SSD campaign's 17.6-18.5 fps for this arm (probable: the
+  lossless encoder).
+- **ARMS, HDR16 uncompressed + Log at 25:** carried, 3 + 5 min clean (measured). Log at 28 and 30 dropped, so Log's
+  edge on this card is between 25 and 27 (derived).
+- Chain and power-off worked: the follower saw RESTORE OK and fpf 5000 / merge on, started ARMS at 23:40; ARMS
+  restored and powered off through Core at 23:53.
+- After the power-on (2026-11-11 01:41:54) Core's boot-config helper commented out `dtoverlay=imx283,always-on`
+  (Patrik disabled the IMX283); the next boot's IMX585 probe failed with -121 and Core found no camera. Matches the
+  hardware-log entry of 2026-11-10: with the IMX283 plugged in and no imx283 line, the IMX585 does not answer.
+
 ## Deviations from the preregistration
 
 - 2026-11-10 03:38: no drive-recovery idles between stages or after cold deletes (User: "simulate a shooting

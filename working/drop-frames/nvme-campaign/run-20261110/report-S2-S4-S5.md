@@ -1,4 +1,4 @@
-# NVMe campaign report: S2, S4, S5 (2026-11-10 21:09:07)
+# NVMe campaign report: S2, S4, S5 (2026-11-10 23:38:15)
 
 Labels: every number here is measured by the runner on this night unless it says derived. Card A936B442006AC2.
 
@@ -32,7 +32,7 @@ Labels: every number here is measured by the runner on this night unless it says
 
 ## Fix checks (whole campaign so far)
 
-- **8ec2f1a, part folder made on the writer**: 9 part boundaries crossed in 25 split takes (64146 frames); 0 drops within 64 frames after a boundary; 0 copy-slot drops in all. The buffer around a boundary (1 s before to 3 s after) rose at most 4.9 points above its take median (mean 1.19, 11 boundaries). Expectation if the fix holds: 0 boundary drops, 0 copy-slot drops (night 2 on the old binary: 3 copy-slot drops at 1 of ~40 boundaries).
+- **8ec2f1a, part folder made on the writer**: 18 part boundaries crossed in 37 split takes (134144 frames); 0 drops within 64 frames after a boundary; 0 copy-slot drops in all. The buffer around a boundary (1 s before to 3 s after) rose at most 4.9 points above its take median (mean 0.76, 20 boundaries). Expectation if the fix holds: 0 boundary drops, 0 copy-slot drops (night 2 on the old binary: 3 copy-slot drops at 1 of ~40 boundaries).
 - **e298d4a, frame index jump logged and counted**: 21 index jumps in Core's stats over the campaign; 0 takes had a numbering gap explained by them (0 frames, no picture lost); 11 takes had missing frames NOT explained by index jumps (each is a drop).
   - 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_fps28_20261110-034628: missing 1, index_jumps 1, frames 3778
   - 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_fps28_20261110-034921: missing 1, index_jumps 1, frames 4252
@@ -84,12 +84,27 @@ Directory walk share of the frame period, derived: s(t) = 5 x c x fps^2 x t (c i
 
 ## Decisions
 
-    2026-11-10 21:06:23 [S2,S4,S5] night S2,S4,S5 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 166 GB; Core pid 6958; drop-in checked; timers-mask rc=0; smart temp 33 C
-    2026-11-10 21:06:23 [S2,S4,S5] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 1.0 GB written and deleted)
-    2026-11-10 21:06:23 [S2,S4,S5] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-210623-baseline-S2_S4_S5
-    2026-11-10 21:06:39 [S2,S4,S5] 4kHDR16: walk ends, best carried fps 27 (cells 27:carried 28:out)
-    2026-11-10 21:07:00 [S2,S4,S5] 4kHDR16/lossless+log: pre-roll ok: 5.0 s at 30 fps (measured 27.7), 136 frames, 1.4 GB written and deleted, above 25.0: walked
-    2026-11-10 21:07:41 [S2,S4,S5] S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 26 fps, 180 s: drop (6.0 s, dropped 1, first drop 5.7, gap 0, boundary 0)
-    2026-11-10 21:08:26 [S2,S4,S5] S2 walk 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000 at 26 fps, 180 s: drop (10.0 s, dropped 4, first drop 9.8, gap 0, boundary 0)
-    2026-11-10 21:08:26 [S2,S4,S5] 4kHDR16/lossless+log: walk ends, best carried fps None (cells 25:out 26:out)
-    2026-11-10 21:09:07 [S2,S4,S5] RESTORE OK
+    2026-11-10 22:48:45 [S2,S4,S5] night S2,S4,S5 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 1000 GB; Core pid 621; drop-in checked; timers-mask rc=0; smart temp 34 C
+    2026-11-10 22:48:46 [S2,S4,S5] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 59 frames, 0.7 GB written and deleted)
+    2026-11-10 22:48:46 [S2,S4,S5] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261110-224846-baseline-S2_S4_S5
+    2026-11-10 22:49:05 [S2,S4,S5] 4kHDR16: walk ends, best carried fps 27 (cells 27:carried 28:out)
+    2026-11-10 22:52:41 [S2,S4,S5] S2 log30 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000 at 25 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 22:53:02 [S2,S4,S5] 4kHDR16/lossless+log: pre-roll ok: 5.0 s at 25 fps (measured 25.0), 124 frames, 1.2 GB written and deleted, not above 25.0: no walk
+    2026-11-10 22:54:56 [S2,S4,S5] S2 warmup 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 22:56:32 [S2,S4,S5] S2 meter 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 22:56:32 [S2,S4,S5] 4kSDR12 meter at 30 fps: capacity 30.0 (at least), budget 4.3 s of input
+    2026-11-10 23:00:08 [S2,S4,S5] S2 walk 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 29 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:05:44 [S2,S4,S5] S2 walk 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 29 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:09:19 [S2,S4,S5] S2 walk 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:14:56 [S2,S4,S5] S2 walk 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:14:56 [S2,S4,S5] 4kSDR12: walk ends, best carried fps 30 (cells 29:carried 30:carried)
+    2026-11-10 23:15:17 [S2,S4,S5] 4kSDR12/lossless: pre-roll ok: 5.0 s at 30 fps (measured 30.0), 149 frames, 0.9 GB written and deleted, above 29: walked
+    2026-11-10 23:18:53 [S2,S4,S5] S2 walk 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 at 29 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:24:30 [S2,S4,S5] S2 walk 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 at 29 fps, 300 s: pass_5min (300.3 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:28:06 [S2,S4,S5] S2 walk 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 180 s: pass_3min (180.2 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:33:43 [S2,S4,S5] S2 walk 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:33:43 [S2,S4,S5] 4kSDR12/lossless: walk ends, best carried fps 30 (cells 29:carried 30:carried)
+    2026-11-10 23:37:18 [S2,S4,S5] S2 ctrl-end 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 29 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-10 23:37:53 [S2,S4,S5] S2 warmup 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000 at 30 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+    2026-11-10 23:37:53 [S2,S4,S5] 4kHDR12: walk ends, best carried fps None (cells )
+    2026-11-10 23:38:15 [S2,S4,S5] RESTORE OK

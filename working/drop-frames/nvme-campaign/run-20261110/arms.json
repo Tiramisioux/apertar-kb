@@ -1,4 +1,9 @@
 {
+ "4kHDR12": {
+  "cells": {},
+  "edge": 30,
+  "top": 25
+ },
  "4kHDR16": {
   "S4": {
    "27": "stop"
@@ -9,13 +14,41 @@
    "28": "out"
   },
   "edge": 28,
-  "top": 30
+  "top": 25
  },
  "4kHDR16/lossless+log": {
   "cells": {
    "25": "out",
    "26": "out"
   },
-  "preroll": "ok: 5.0 s at 30 fps (measured 27.7), 136 frames, 1.4 GB written and deleted"
+  "preroll": "ok: 5.0 s at 25 fps (measured 25.0), 124 frames, 1.2 GB written and deleted"
+ },
+ "4kHDR16/lossless@25": {
+  "cells": {
+   "25": "out"
+  }
+ },
+ "4kHDR16/unc+log@25": {
+  "cells": {
+   "25": "carried"
+  }
+ },
+ "4kSDR12": {
+  "best": 30,
+  "cells": {
+   "29": "carried",
+   "30": "carried"
+  },
+  "edge": 29,
+  "meter_capacity": 30.0,
+  "top": 30
+ },
+ "4kSDR12/lossless": {
+  "best": 30,
+  "cells": {
+   "29": "carried",
+   "30": "carried"
+  },
+  "preroll": "ok: 5.0 s at 30 fps (measured 30.0), 149 frames, 0.9 GB written and deleted"
  }
 }
