@@ -1606,1017 +1606,6 @@
     }
    ]
   },
-  "CC-1": {
-   "verified": true,
-   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-CC-1.md",
-   "summary": "Skeptic pass on CC-1. 12 of 13 findings survive. Unchanged: F3, F4, F7, F11, F12, F13. Corrected: F1, F2, F5, F6, F9, F10. F1 rework: the IMX585 probe only tries rows from the port's own table, so the old-driver rows must be added to the probe list or table. F2 lowered to minor because the second config file belongs to the media-tune slice. F5 lowered to nit because upstream repeats the XDG rule three times itself. F6 location: the preset key is in App, not WCP. F9: only the WebUI reads ladder_text. F10 lowered to nit because the reference loop is fork-main code, not upstream. Dropped: F8, because upstream clampCaptureSettings also normalises a string (exposureMetering, CC:534-535@upstream-1.6.0). One blocker remains: F1, Core tied to the cinemate-port imx585 driver.",
-   "conforms": [],
-   "abstraction_verdicts": [],
-   "findings": [
-    {
-     "id": "CC-1-F1",
-     "title": "IMX585 1.85:1 crops rewritten to forked-driver sizes; Core tied to the cinemate-port driver",
-     "category": "removed-upstream-behaviour",
-     "severity": "blocker",
-     "where": [
-      "src/camera/CameraController.cpp:441-462@cinemate-port",
-      "src/camera/CameraController.cpp:703@cinemate-port",
-      "src/camera/CameraController.cpp:10514@cinemate-port",
-      "src/camera/CameraController.cpp:10648@cinemate-port",
-      "src/camera/CameraController.cpp:11060@cinemate-port",
-      "src/camera/CameraController.cpp:12663@cinemate-port",
-      "src/camera/CameraController.cpp:2667-2679@cinemate-port",
-      "src/camera/CameraController.cpp:7166-7190@cinemate-port",
-      "src/camera/Imx585Modes.hpp:3-16@cinemate-port"
-     ],
-     "port_way": "migratedImx585CropResolution rewrites 3840x2076->3840x2072 and 1920x1038->1920x1036 unconditionally inside clampCaptureSettings (every sensor, every load/write/set), in set_resolution, in presets and in ladder rungs. IMX585 modes come from tables copied from the cinemate-port driver, and the IMX585 startup probe only configures rows of that table.",
-     "apertar_way": "isImx585FullHdCropResolution / isImx585Raw12CropResolution list 1038 and 2076 (src/camera/CameraController.cpp:366-396@upstream-1.6.0), matching driver origin/apertar imx585.c:591, 817. Upstream retires sizes only in the per-sensor normaliser (CC:511-532@upstream-1.6.0). Capabilities are detected at run time, and validate() has the last word.",
-     "why_it_matters": "With the original Apertar driver, every saved, preset or requested 1.85:1 crop is rewritten to a size that driver lacks. The probe drops 2072/1036 on the size mismatch (CC:7187) and never tries 2076/1038, so the operator loses both 1.85:1 crops (probable, not run on a Pi). Core can only be merged together with the driver fork.",
-     "rework": "Remove the migration from clampCaptureSettings, set_resolution, presets and ladder load. Give the IMX585 table both heights for the 1.85:1 row (2072/2076 and 1036/1038), so the table probe tries both and keeps the one the driver accepts. In imx585ModeForResolution / the IMX585 case of sensorModeForRequestedResolution, map 2076<->2072 and 1038<->1036 to whichever size probedSensorModes holds. If the probe did not run, fall back to the upstream sizes. Replace migrateImx585LadderRungs with the same mapping. Cut the comment to one line of why.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "Commit 900d282 and the comment at CC:441-445 say the new driver has neither old size; not run on a Pi.",
-     "rework_risk": "The probe must try both heights per row without doubling the probe time for other rows."
-    },
-    {
-     "id": "CC-1-F2",
-     "title": "Raw buffer count reads the media tuning file and the sysfs media class",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:1456-1470@cinemate-port",
-      "src/util/MediaTune.hpp:27-28@cinemate-port",
-      "src/util/MediaProfile.hpp:126-150@cinemate-port"
-     ],
-     "port_way": "rawCameraBufferCount: the env var wins, then raw_buffers from /home/pi/apertar-media-tune.conf or the /run override, then base plus a per-filesystem extra read from sysfs. The comment cites Cinemate's profiles and says exFAT gets +2, but the table gives exFAT 0 (MediaProfile.hpp:142). MediaWriterSettings.directIo is marked 'for T24 ... unused'.",
-     "apertar_way": "h264CameraBufferCount and proresCameraBufferCount are one unsignedEnvValue line each (CC:1124-1134@upstream-1.6.0). Internal tuning is APERTAR_<AREA>_<KNOB> and stays out of operator files.",
-     "why_it_matters": "It ties the camera path to a second config file (to be judged in the media-tune slice). The comment is wrong, and a dead field carries a ticket number.",
-     "rework": "rawCameraBufferCount(bool clearHdr) { return unsignedEnvValue(\"APERTAR_RAW_CAMERA_BUFFERS\", clearHdr ? kClearHdrBufferCount : kConfiguredBufferCount, 3, 16); }. Keep a +2 for FAT/NTFS only if it is measured. Fix or remove the comment. Decide on MediaTune in its own slice.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "Commits 26da30e, 2edc6d0; MediaProfile.hpp:140-142 records exFAT measurements (C0101, C0106)."
-    },
-    {
-     "id": "CC-1-F3",
-     "title": "kActiveRequestCount removed: one request per buffer in every raw take; 135 MB of Clear HDR buffers without a board check",
-     "category": "removed-upstream-behaviour",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:1334-1338@cinemate-port",
-      "src/camera/CameraController.cpp:8379-8381@cinemate-port",
-      "src/camera/CameraController.cpp:8846-8848@cinemate-port"
-     ],
-     "port_way": "Requests = buffers: 4/4 in SDR, 8/8 in Clear HDR (8 x 16.9 MB), up to 16 through the env var. The comment names the Pi 5 CFE.",
-     "apertar_way": "kActiveRequestCount = 3 with kConfiguredBufferCount = 4 (CC:1023-1024@upstream-1.6.0), used at CC:6460-6461@upstream-1.6.0, which keeps one RAW buffer out of the queue.",
-     "why_it_matters": "Every raw take changes behaviour, but only 4K Clear HDR 16-bit was measured. Clear HDR is not gated by board in RecordingCapabilities.hpp:66-81 (confirmed), so a low-RAM Pi 4 could allocate 135 MB (probable).",
-     "rework": "Keep SDR at upstream's 4 buffers / 3 requests unless the SDR change is measured. Keep 8 for Clear HDR. Use a one-line why comment without a board name, and document the change for the original developer.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "Commit db17860: capture gaps 41 -> 1 per take, Pi, 4K Clear HDR 16-bit."
-    },
-    {
-     "id": "CC-1-F4",
-     "title": "New persisted booleans written true/false and parsed by string compare",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:885-898@cinemate-port",
-      "src/camera/CameraController.cpp:974-980@cinemate-port"
-     ],
-     "port_way": "Six keys (fps_phase_lock, preview_tdn, media_trim, fps_speed_ramp, fps_speed_ramp_keep_exposure, fps_speed_ramp_stretch_audio) are written as \"true\"/\"false\" and read with value == \"true\" || value == \"1\". media_trim reads anything but false/0 as true. fps_speed_ramp_after is \"return\"/\"stay\" backed by a bool.",
-     "apertar_way": "output << prefix << \"iso_auto=\" << s.isoAuto (writes 0/1, CC:749@upstream-1.6.0); settings.isoAuto = std::stoul(value) != 0 (CC:659-660@upstream-1.6.0). The port's own iso_auto_after_clear_hdr uses this style (CC:945@cinemate-port).",
-     "why_it_matters": "One file now holds two boolean styles.",
-     "rework": "Write << s.field and read std::stoul(value) != 0. Also accept true/false on read for files the port already wrote. Back fps_speed_ramp_after with an enum plus toString/fromString, or make it a 0/1 key.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-1-F5",
-     "title": "modeLadderPath is a line-for-line copy of persistedSettingsPath",
-     "category": "duplication",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:403-415@cinemate-port"
-     ],
-     "port_way": "A copy of the XDG/HOME/temp path function with only the file name changed, plus a 'T34:' comment.",
-     "apertar_way": "persistedSettingsPath (CC:342-353@upstream-1.6.0). Upstream itself repeats this rule (App:343, App:535, HardwareConfigStore.cpp:127@upstream-1.6.0), and it keeps separate files per concern.",
-     "why_it_matters": "Small: a second copy in the same file, next to the first.",
-     "rework": "Use persistedSettingsPath().parent_path() / \"mode_ladder.conf\", or one helper that takes the file name. Drop T34.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-1-F6",
-     "title": "conform_fps: stored, published, clamped and carried, but never read",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:172@cinemate-port",
-      "src/camera/CameraController.cpp:696-697@cinemate-port",
-      "src/camera/CameraController.cpp:817-818@cinemate-port",
-      "src/camera/CameraController.cpp:942@cinemate-port",
-      "src/camera/CameraController.cpp:11354-11364@cinemate-port",
-      "include/apertar/core/Types.hpp:135-137@cinemate-port",
-      "src/ApertarCoreApp.cpp:320@cinemate-port",
-      "src/ApertarCoreApp.cpp:7851@cinemate-port",
-      "src/ApertarCoreApp.cpp:9484@cinemate-port",
-      "src/ApertarCoreApp.cpp:13270@cinemate-port",
-      "src/ApertarCoreApp.cpp:14353-14357@cinemate-port"
-     ],
-     "port_way": "A settings field, a persisted key, a clamp with the literal 25.0, a format carry, a set_conform_fps command and a preset key in App. Types.hpp says 'nothing derives from it yet'. Neither UI has a control (WCP has 0 mentions).",
-     "apertar_way": "The settings lists are kept by hand, so each field costs three edits. Defaults come from CaptureSettings{}.field. Upstream has no unused settings.",
-     "why_it_matters": "Dead surface in the protocol, the settings file, presets and three serialisers.",
-     "rework": "Delete it from CC, Types.hpp, both App serialisers, the App command and command list, and the App preset export/import until a consumer exists.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "Types.hpp:135-137 comment; commit d7ff071."
-    },
-    {
-     "id": "CC-1-F7",
-     "title": "Ticket numbers, other-project names and history in comments and in the written ladder file",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:403@cinemate-port",
-      "src/camera/CameraController.cpp:441-445@cinemate-port",
-      "src/camera/CameraController.cpp:1108@cinemate-port",
-      "src/camera/CameraController.cpp:1461-1463@cinemate-port",
-      "src/camera/CameraController.cpp:1660@cinemate-port",
-      "include/apertar/core/Types.hpp:184-189@cinemate-port",
-      "src/camera/ModeLadder.hpp:319@cinemate-port"
-     ],
-     "port_way": "'T34:', 'cinemate-modes, the cinemate-port driver branch', 'Apertar-Beta 1.6.0 driver had...', a '---- Clip names ----' banner, 'as Cinemate's profiles do', 'CineMate Log', and '(T34)' in the header written into mode_ladder.conf.",
-     "apertar_way": "Comments are rare: one to three lines of why, with no ticket numbers and no banners (0 '// ----' banners in CC@upstream-1.6.0).",
-     "why_it_matters": "These names mean nothing to the original developer. The history narration ages badly, and the ladder file shows an internal ticket number to the operator.",
-     "rework": "Delete the banner and the ticket numbers. Cut each comment to one line of why. Name the Log feature without another product's brand. Remove T34 from the ladder file header. The same pattern (69 mentions in MediaProbe/MediaIntent/MediaProfile/LossyDngEncoder) belongs to the slop slice.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-1-F9",
-     "title": "ladder_text: a pre-formatted display line built by Core",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:185@cinemate-port",
-      "src/camera/CameraController.cpp:10911-10935@cinemate-port",
-      "include/apertar/core/Types.hpp:189@cinemate-port"
-     ],
-     "port_way": "The settings event carries a line such as 'Resolution 1 \u00b7 3840\u00d72160 \u00b7 ClearHDR16 \u00b7 \u226425 \u00b7 Uncompressed', UTF-8 glyphs included. Only the WebUI reads it (WCP:8421, 13911, 15920); the touch UI does not.",
-     "apertar_way": "No precedent. Upstream's settings event carries values only (CC:136-187@upstream-1.6.0); each client formats them.",
-     "why_it_matters": "Core takes over the WebUI's wording, and formatting is split between Core and the clients.",
-     "rework": "Publish the missing parts as scalars and compose the line in the WebUI, or keep it and document it as the only display string Core sends.",
-     "effort": "S",
-     "deliberate": "unknown"
-    },
-    {
-     "id": "CC-1-F10",
-     "title": "applyCdngLogFrame repeats the row loop of compressClearHdrFrame",
-     "category": "duplication",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:1647-1656@cinemate-port",
-      "src/camera/CameraController.cpp:1671-1680@cinemate-port"
-     ],
-     "port_way": "Two copies of the stride/size-checked loop over 16-bit rows; the inner operation differs (lut[] vs cdnglog::applyTable).",
-     "apertar_way": "compressClearHdrFrame (CC:1335-1346@main) is fork-main code; upstream has neither loop.",
-     "why_it_matters": "Two 6-line loops to keep correct.",
-     "rework": "Use one row walker that takes a per-row callable, or leave both as they are.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-1-F11",
-     "title": "{res} clip-name token labels by width only",
-     "category": "bug",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:1123-1130@cinemate-port"
-     ],
-     "port_way": "width >= 3500 gives '4K'; 1900-1999 wide gives '1080p'; otherwise '<height>p'.",
-     "apertar_way": "no precedent",
-     "why_it_matters": "An IMX283 5472x3648 or IMX477 4056x3040 take is named '4K'; 1332x990 gives '990p'. Only templates that use {res} are affected (the default is {format}_{date}_{clip}).",
-     "rework": "Label with explicit classes (UHD/DCI 4K, 5K, 6K) or emit <width>x<height>.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-1-F12",
-     "title": "Three includes above the file's own header",
-     "category": "mismatch",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:1-3@cinemate-port"
-     ],
-     "port_way": "FramePhaseLock.hpp, FpsCeiling.hpp and <optional> come before camera/CameraController.hpp.",
-     "apertar_way": "Own header first (src/camera/CameraController.cpp:1@upstream-1.6.0), then project headers, then std headers.",
-     "why_it_matters": "Breaks the file's include order.",
-     "rework": "Move them into the project and std groups.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-1-F13",
-     "title": "Small inconsistencies: namespace spelling, member/key names, constant token, lone assert",
-     "category": "slop",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:660@cinemate-port",
-      "src/camera/CameraController.cpp:180@cinemate-port",
-      "src/camera/CameraController.cpp:1157@cinemate-port",
-      "src/camera/CameraController.cpp:43@cinemate-port",
-      "src/camera/CameraController.cpp:4596@cinemate-port",
-      "src/camera/CameraController.cpp:2268@cinemate-port"
-     ],
-     "port_way": "imx283:: vs apertar::imx585:: (both namespaces are apertar::x); JSON key ladder_resolution from member ladderRung; a {cam} token that is always 'cam0'; <cassert> for one assert; #endif followed directly by enum class.",
-     "apertar_way": "One namespace style; wire names match members; upstream uses only static_assert (CC:1697@upstream-1.6.0).",
-     "why_it_matters": "Small reading friction.",
-     "rework": "Use the short namespace form for both tables, rename the member to ladderResolution, drop {cam}, replace the assert with an explicit check or remove it, and add a blank line after the #endif.",
-     "effort": "S",
-     "deliberate": "no"
-    }
-   ]
-  },
-  "CC-3": {
-   "verified": true,
-   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-CC-3.md",
-   "summary": "Skeptic pass on CC-3: all 13 findings survive, 6 corrected. F1: upstream path is src/util/RecordingFailure.hpp; upstream has mutable function statics (Mpu6050 liveConfiguredKey) but no callback registries or object pointers in globals. F2: the media tune file is per take only for sync_ms; writeback is read once per process; MediaProfile.hpp is port code. F7 is worse than reported: the TDN-stripped tuning also feeds recorded H.264 and the derived ProRes ISP tuning, not only the monitor. F6: wording and clip ids corrected. F11 narrowed to the sensor-identity check; the table probe stays. F10 adds the misplaced member comment at :5591. F3, F4, F5, F8, F9, F12, F13 confirmed as stated. No findings were dropped and none were added.",
-   "conforms": [],
-   "abstraction_verdicts": [],
-   "findings": [
-    {
-     "id": "CC-3-F1",
-     "title": "Safety stop, flush abort, buffer gauge and buffer setting are process-wide globals and std::function registries shared by CC and App",
-     "category": "mismatch",
-     "severity": "major",
-     "where": [
-      "src/camera/CameraController.cpp:4182@cinemate-port",
-      "src/camera/CameraController.cpp:4594@cinemate-port",
-      "src/camera/CameraController.cpp:4611-4636@cinemate-port",
-      "src/camera/CameraController.cpp:5011-5022@cinemate-port",
-      "src/util/BufferBudget.hpp:224-300@cinemate-port",
-      "src/ApertarCoreApp.cpp:291-295@cinemate-port",
-      "src/ApertarCoreApp.cpp:7988@cinemate-port"
-     ],
-     "port_way": "frameBufferGauge(), bufferbudget::safetyStopState(), flushAbortFunction() (holds the queue's [this]), safetyStopHook() (assigned by App) and bufferSettingStorage() are function-local statics holding per-take mutable state. App assigns the hook and calls abortSafetyStopFlush() without going through the controller. A lock-order comment is what keeps it safe.",
-     "apertar_way": "App reaches the camera only through CameraController methods (S7). Callbacks go into the constructor and live as members (CameraController.hpp:19-21, 111-112@upstream-1.6.0). A background condition that ends a take is latched and polled by App's 1 s supervisor (src/util/RecordingFailure.hpp, CameraController.cpp:8519-8534, ApertarCoreApp.cpp:7031-7034@upstream-1.6.0; N4). Upstream statics hold caches or one-off values (captureSettingsPersister, cachedPiSerial, Mpu6050RecordingSession.cpp:1228), never a callback registry or an object pointer.",
-     "why_it_matters": "Queue state lives in three places. App changes the recorder outside the controller lock. CameraController.hpp does not show that the safety stop or the flush abort exist. The original developer will read this as hidden coupling.",
-     "rework": "Move the gauge atomics into DngRecordingQueue members and read them through CameraSession and the existing CameraController::frameBufferStatus(). Latch safetyStopRequested_ in the queue and expose CameraController::takeSafetyStopRequest(), polled by App's supervisor loop; if 1 s is too slow, pass a std::function<void()> into the CameraController constructor. Add a public CameraController::abortSafetyFlush() that forwards to the recorder without the controller mutex, and say so in the header. Delete flushAbortMutex, flushAbortFunction, registerFlushAbort, unregisterFlushAbort and safetyStopHook. bufferSettingStorage becomes a controller member. BufferBudget.hpp keeps only the pure planning math (S4).",
-     "rework_risk": "The abort runs while stop() drains, so the new method must not take CameraController::mutex_.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "d44b177 and c5db8b2 describe the safety stop and the flush abort; the global shape is not discussed."
-    },
-    {
-     "id": "CC-3-F2",
-     "title": "Recorder reads apertar-hardware.conf [storage] at every take, and a media tune file",
-     "category": "mismatch",
-     "severity": "major",
-     "where": [
-      "src/camera/CameraController.cpp:2988-3006@cinemate-port",
-      "src/camera/CameraController.cpp:4297@cinemate-port",
-      "src/camera/CameraController.cpp:4364@cinemate-port",
-      "src/camera/CameraController.cpp:4718@cinemate-port",
-      "src/camera/CameraController.cpp:1467@cinemate-port",
-      "src/camera/CameraController.cpp:5498-5536@cinemate-port",
-      "src/util/MediaTune.hpp:27-28@cinemate-port",
-      "src/cdng/CdngEncoder.cpp:91@cinemate-port"
-     ],
-     "port_way": "At each take loadBufferConf() opens APERTAR_HARDWARE_CONFIG, or apertar-hardware.conf under /home/pi or /boot, and parses [storage] buffer, buffer_stop_percent, ram fraction/floor/max and frames_per_folder. mediaTuneForConfiguredRoot() reads ~/apertar-media-tune.conf plus a /run override: per take for sync_ms (:4364), once per process for writeback (:4718, static const), and also for the raw buffer count and DONTNEED. Every site uses env > file > default.",
-     "apertar_way": "S22: the camera side never reads apertar-hardware.conf (0 hits in src/camera@upstream-1.6.0). S20/S7/I1/S8: operator camera settings persist in camera_settings.conf through one setter per command, gated on recording. N11 and 5.12: recorder tuning is env-only (APERTAR_CDNG_QUEUE_FRAMES, CameraController.cpp:3329-3330@upstream-1.6.0), and a config file for recorder tuning is deliberately absent.",
-     "why_it_matters": "Frames/RAM, the stop percent and frames per folder are operator choices made in the UI, yet they are stored in the hardware file and re-read from disk inside the recorder. The recorder now has four config sources.",
-     "rework": "Add CaptureSettings::bufferMode (an enum with toString), bufferStopPercent and framesPerFolder, persisted in camera_settings.conf. Add setters setBufferMode and setFramesPerFolder, refused while recording, that end in applySettingsLocked(next,false). planQueueBuffer and startAtFolder read settings_. Ram fraction, floor and max stay env-only. Delete loadBufferConf, bufferbudget::parseBufferConf and the [storage] keys in HardwareConfigText.hpp. Replace the MediaTune file layer with per-class defaults in MediaProfile.hpp (itself port code, 26da30e) plus env overrides.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "2edc6d0: 'the camera's tuning per storage medium belongs in one readable file next to the hardware conf'. The upstream rule was not weighed."
-    },
-    {
-     "id": "CC-3-F7",
-     "title": "Preview temporal denoise off by default: the stock tuning is no longer loaded as is, and recorded H.264 and ProRes change too",
-     "category": "removed-upstream-behaviour",
-     "severity": "major",
-     "where": [
-      "src/camera/CameraController.cpp:7306-7320@cinemate-port",
-      "src/camera/CameraController.cpp:7326@cinemate-port",
-      "src/camera/CameraController.cpp:7401@cinemate-port",
-      "src/camera/CameraController.cpp:7412@cinemate-port"
-     ],
-     "port_way": "Unless settings.previewTdn is set (default off), loadablePath() loads tuning::previewTuningPath(), a cached copy of the resolved tuning without the rpi.denoise tdn blocks, on every sensor and board. The ProRes ISP tuning is derived from this stripped copy (makeProresIspTuning(activePath, ...)), and H.264 is encoded from the same ISP output.",
-     "apertar_way": "applyProcessTuningFile(tuningPath) loads the resolved file unchanged, and ProRes is derived from tuningPath (CameraController.cpp:5350@upstream-1.6.0). Derived tunings exist only for the ProRes ISP log (ProresIspProfile.hpp:7, N13).",
-     "why_it_matters": "After the merge every user gets a noisier monitor image and noisier H.264 and ProRes recordings. The change fixes a load problem measured only on IMX585 Clear HDR 16-bit 4K, and the commit marks that measurement 'probable'. The commit says only that DNGs are unaffected, which is true; it does not mention H.264 or ProRes.",
-     "rework": "Default previewTdn=true, the upstream look. Turn it off by operator choice, or automatically only on the IMX585 Clear HDR 16-bit path and only for raw formats (cDNG/MLV). Keep the derived-file mechanism.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "e625c68: 'a persisted setting preview_tdn (default off)', with measurements marked probable and 'the recorded DNGs are raw and do not change'."
-    },
-    {
-     "id": "CC-3-F5",
-     "title": "Raw copy pool kept between takes; upstream freed it at stop",
-     "category": "removed-upstream-behaviour",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4502@cinemate-port",
-      "src/camera/CameraController.cpp:4596-4606@cinemate-port",
-      "src/camera/CameraController.cpp:4892-4899@cinemate-port",
-      "src/camera/CameraController.cpp:4935-4944@cinemate-port",
-      "src/camera/CameraController.cpp:5547-5550@cinemate-port"
-     ],
-     "port_way": "stop() no longer clears rawPool_. trimRawPoolToIdle keeps min(queue, max(workers+2, 4)) full-frame copies, which is 6 x 16.6 MB at 16-bit 4K with 4 writers. warmRawPool tops the pool up before each take.",
-     "apertar_way": "stop(): queue_.clear(); rawPool_.clear(); pooledRawBytes_ = 0; expectedRawBufferSize_ = 0; (CameraController.cpp:3486-3489@upstream-1.6.0)",
-     "why_it_matters": "About 100 MB stays held while idle at 16-bit 4K. On 1-2 GB Pi 4, CM4 and Pi 3 boards this competes with preview and the UI (pi-compat, probable).",
-     "rework": "Keep warmRawPool, which allocates outside the lock at take start. Restore the upstream clear at stop, or keep the idle pool only when MemTotal >= 4 GB. Remove APERTAR_RAW_POOL_WARM.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "4abbef0 commit message and the in-code comment."
-    },
-    {
-     "id": "CC-3-F3",
-     "title": "Sync thread waits on the writers' cv_; enqueue's notify_one can wake it instead of a writer",
-     "category": "bug",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4743-4746@cinemate-port",
-      "src/camera/CameraController.cpp:5010@cinemate-port",
-      "src/camera/CameraController.cpp:5256@cinemate-port",
-      "src/camera/CameraController.cpp:5366@cinemate-port"
-     ],
-     "port_way": "syncLoop runs cv_.wait_for(lock, interval, [this]{return stopping_;}) on the cv_ the DNG and MLV writers wait on (predicate stopping_ || !queue_.empty()). enqueue calls cv_.notify_one().",
-     "apertar_way": "I16: one cv per worker set, and each waiter's predicate matches what is notified (CameraController.cpp:3922-3927@upstream-1.6.0).",
-     "why_it_matters": "Failing case: all writers are idle and a frame is queued. notify_one wakes the sync thread, which goes back to sleep, and the frame waits for the next enqueue. MLV, with one writer, is the worst case. The queue runs one frame deeper than it needs to.",
-     "rework": "Give syncLoop its own syncCv_, notified in stop() and failRecording; or use notify_all in enqueue.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-3-F4",
-     "title": "Detached writers outlive the queue: the destructor does not wait for liveWorkers_",
-     "category": "bug",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4208-4212@cinemate-port",
-      "src/camera/CameraController.cpp:4441-4446@cinemate-port",
-      "src/camera/CameraController.cpp:4489-4500@cinemate-port",
-      "src/camera/CameraController.cpp:4691-4707@cinemate-port"
-     ],
-     "port_way": "A dead-medium stop detaches blocked writers. The second stop() from ~DngRecordingQueue returns early because active_ is false, workers_ is cleared and stopping_ has been reset. spawnWorker's Exit destructor and the writer loop later dereference this (exitMutex_, mutex_).",
-     "apertar_way": "Every writer is joined in stop() (CameraController.cpp:3404-3409@upstream-1.6.0).",
-     "why_it_matters": "Failing case: pull the card mid-take, stop, then quit Core or reconfigure the session before the kernel fails the I/O. The thread then returns into freed memory (probable).",
-     "rework": "In the destructor, wait on exitCv_ for liveWorkers_==0 with a bound and log if the bound runs out. Or move the state the threads touch into a shared_ptr block that each thread captures.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-3-F8",
-     "title": "Write-stall watchdog classes a slow but live medium as Removed",
-     "category": "bug",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4834-4842@cinemate-port",
-      "src/camera/CameraController.cpp:4476-4483@cinemate-port",
-      "src/camera/CameraController.cpp:5424-5432@cinemate-port",
-      "src/camera/CameraController.cpp:5372-5377@cinemate-port"
-     ],
-     "port_way": "A full queue with no write for 5 s (APERTAR_WRITE_STALL_MS), or the same stall during a user stop, calls failRecording(..., MediaFault::Removed). That sets mediumGone_: the MLV header patch is skipped (abandon()), syncToMedium is skipped and writers may be detached.",
-     "apertar_way": "N4: a write failure ends the take with its first error. No 'medium gone' state exists upstream.",
-     "why_it_matters": "Failing case: an untrimmed NVMe that is alive but stalls for 5-10 s, as d44b177 documents. The take ends as removed, and the MLV keeps the frame count it had at open.",
-     "rework": "Add MediaFault::Stalled. It ends the take but does not set mediumGone_. Removed stays for the mount watcher.",
-     "effort": "S",
-     "deliberate": "unknown",
-     "deliberate_evidence": "a3ac8da chose Removed after a card-pull test. The slow-drive case is not discussed, although d44b177 describes multi-second NVMe stalls."
-    },
-    {
-     "id": "CC-3-F6",
-     "title": "Per-file writeback, a 1 s fsync sweep and syncfs at stop reverse upstream's 'clip frames are not synced'",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4715-4729@cinemate-port",
-      "src/camera/CameraController.cpp:4743-4790@cinemate-port",
-      "src/camera/CameraController.cpp:4795-4809@cinemate-port"
-     ],
-     "port_way": "sync_file_range(WRITE) after each DNG. A separate thread fsyncs the written files, the part folders and the clip folder every APERTAR_MEDIA_SYNC_MS, with an optional DONTNEED. syncfs runs at a normal stop. None of this runs on the writer path.",
-     "apertar_way": "No precedent in the take path; upstream CC has no fsync or syncfs. N10: AtomicStillFile.hpp:31-32@upstream-1.6.0 'Keep this out of the continuous recording path: syncing each video frame would destroy throughput.'",
-     "why_it_matters": "It reverses a stated upstream intent. Keep it, because the measurements support it, but the original developer must be told why.",
-     "rework": "Keep it and document it as a decision with the pull-test and A/B numbers. Simplify to one mode: writeback per frame plus the folder fsync tick. Drop the DONTNEED=sync branch and give the thread its own cv (F3).",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "441e42a, 4ce382e, 7d9dd60: C0105 (a pull lost an already-stopped clip), C0001 (12 gaps with syncfs), C0005 (782 drops with syncfs plus writeback), C0004 (none with writeback alone)."
-    },
-    {
-     "id": "CC-3-F11",
-     "title": "Probe identifies IMX585 by a properties::Model substring instead of SensorFamily",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:7152-7158@cinemate-port"
-     ],
-     "port_way": "modelName = lowercase(properties::Model); tableProbe = modelName.find(\"imx585\"). For IMX585 only the Imx585Modes table rows are configured, each still validated; advertised sizes that are not in the table are never seen.",
-     "apertar_way": "S11: sensorFamily_ = detectSensorFamily(camera_->id()) (CameraController.cpp:5375@upstream-1.6.0), with switch (family) in free functions. Upstream reads properties::Model only to pick the default tuning (CameraController.cpp:5323@upstream-1.6.0).",
-     "why_it_matters": "It is a second way to tell sensors apart in the same file (otherSensorSubdevPresent uses detectSensorFamily). A driver mode missing from the table leaves no trace.",
-     "rework": "tableProbe = detectSensorFamily(camera->id()) == SensorFamily::Imx585. Optionally log advertised sizes that are not in the table. The table-row probe itself stays.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "caa0153 'imx585 modes from tables, not whitelists'"
-    },
-    {
-     "id": "CC-3-F12",
-     "title": "Safety stop ends the take; record during the flush discards queued frames",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:5011-5022@cinemate-port",
-      "src/camera/CameraController.cpp:4611-4624@cinemate-port"
-     ],
-     "port_way": "In ram mode the take ends cleanly when the buffer reaches 90 % of its budget. Pressing record during the drain discards the remaining queued frames of the previous clip.",
-     "apertar_way": "No precedent. N3: a dropped frame is reported and does not stop the take.",
-     "why_it_matters": "It changes intent, but it is opt-in: frames mode (the default) keeps upstream behaviour. The discard loses frames that were already captured.",
-     "rework": "Keep the feature. Re-shape it per F1 and document the discard in the handoff.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "d44b177; c5db8b2, recorded in fork-log.md:138 as owner decision 2026-11-01."
-    },
-    {
-     "id": "CC-3-F9",
-     "title": "A/B and experiment env knobs left in the recorder",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4892-4899@cinemate-port",
-      "src/camera/CameraController.cpp:4715-4719@cinemate-port",
-      "src/camera/CameraController.cpp:4763-4764@cinemate-port",
-      "src/camera/CameraController.cpp:4468@cinemate-port",
-      "src/camera/CameraController.cpp:5500-5536@cinemate-port"
-     ],
-     "port_way": "APERTAR_RAW_POOL_WARM ('restores the old pool rule for the A/B'), APERTAR_DNG_WRITEBACK, APERTAR_DNG_DONTNEED (three modes), APERTAR_WRITE_STALL_MS, APERTAR_DEAD_MEDIUM_STOP_MS, APERTAR_CDNG_BUFFER, APERTAR_CDNG_BUFFER_STOP_PERCENT (overrides a conf key), APERTAR_CDNG_QUEUE_RAM_FRACTION/_FLOOR_MB/_MAX_FRACTION.",
-     "apertar_way": "I9: one env knob per tuning value, read where it is used, with a default and bounds (APERTAR_CDNG_QUEUE_FRAMES, CameraController.cpp:3329-3330@upstream-1.6.0). The form conforms; the number of knobs and their A/B purpose do not.",
-     "why_it_matters": "Knobs kept only to A/B one change make the recorder harder to read, and some override file keys.",
-     "rework": "Remove APERTAR_RAW_POOL_WARM, the DONTNEED=sync mode and APERTAR_CDNG_BUFFER_STOP_PERCENT. Keep the rest as env-only knobs (after F2).",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "4abbef0 and 0ed07ea commit text."
-    },
-    {
-     "id": "CC-3-F10",
-     "title": "Comments with ticket numbers, clip ids, dates and a commit sha; misplaced member comment; assert",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:4674@cinemate-port",
-      "src/camera/CameraController.cpp:4678@cinemate-port",
-      "src/camera/CameraController.cpp:4714@cinemate-port",
-      "src/camera/CameraController.cpp:4734@cinemate-port",
-      "src/camera/CameraController.cpp:4888@cinemate-port",
-      "src/camera/CameraController.cpp:5546@cinemate-port",
-      "src/camera/CameraController.cpp:5591@cinemate-port",
-      "src/camera/CameraController.cpp:4596@cinemate-port"
-     ],
-     "port_way": "'(T31)', '(C0001, 2026-10-26)', '(C0010, 2026-10-26)', '(kb dng-chain, R3/R7)', '(the rule since db17860)', 'for the A/B', 'CineMate Log'. The writtenFiles_ member (:5591) also carries lastWriteProgressNs_'s comment. assert(!queue_.empty() || queuedBytes_ == 0). Many 3-6 line comments narrate measurements.",
-     "apertar_way": "I19: rare one-to-three-line comments that state a constraint, with no ticket numbers, dates or authors. Upstream Core has 0 runtime assert( calls (only 2 static_assert).",
-     "why_it_matters": "The ids and dates mean nothing to the original developer, and the comments read as history.",
-     "rework": "Strip ids, dates and shas. Keep one constraint line per comment and move measurements to the KB and commit messages. Fix the misplaced member comment and delete the assert.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-3-F13",
-     "title": "otherSensorSubdevPresent copies openImx585Subdev's sysfs walk",
-     "category": "duplication",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:6955-6972@cinemate-port",
-      "src/camera/CameraController.cpp:6985-7002@cinemate-port"
-     ],
-     "port_way": "Two loops over /sys/class/video4linux/v4l-subdev*/name. imx585SubdevPresent opens and closes the device only to test that it exists.",
-     "apertar_way": "No precedent: openImx585Subdev exists only in fork main (CameraController.cpp:5340@main).",
-     "why_it_matters": "Small duplication in sensor detection.",
-     "rework": "Use one helper that returns the SensorFamily values found on subdevs, and call it from both checks.",
-     "effort": "S",
-     "deliberate": "no"
-    }
-   ]
-  },
-  "CC-5": {
-   "verified": true,
-   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-CC-5.md",
-   "summary": "Skeptic pass on CC-5. No finding was dropped outright. 8 stand and 5 were corrected. The corrections:\n- F2: the \"mismatch\" claim is wrong. Upstream already has applySettingsLocked(..., bool commit = true) (CameraController.hpp:92@upstream-1.6.0). Upstream applyCapturePreset passes commit=false and then persists and emits itself (CC:8627-8638), and the port copies this pattern. The conv-core-camera S8 entry misquotes the signature. What survives is a crash-only leak of the mid-ramp FPS, now filed as bug/nit.\n- F1: downgraded from major to minor and narrowed. The five setter gates use upstream's own gate shape. The seven rewrites are one-line helper calls. Moving either into applySettingsLocked would need a caller flag and would break the order setFps depends on (rewrite first, then shutter rescale). The 16-bit exception depends on a value, not on call order. What survives is the override bookkeeping: ten writes plus the setRawBitDepth exception.\n- F3: the still-mode half is dropped. restoreModeGeometryLocked does not touch the shutter. Only the setRecordingFormat profile swap remains.\n- F7: upstream does run shell strings through popen (App:1501-1505), so the shell is not a second launch style. The detached double fork with no waiter is. Default on is the user's own choice (ca7b7c2), so the default is not a rework item.\n- F10: there are more readers than listed, including CdngEncoder.cpp:91. Effort raised to M.\n\nLine nits fixed: F11 banner at line 9742, F12 range.",
-   "conforms": [],
-   "abstraction_verdicts": [],
-   "findings": [
-    {
-     "id": "CC-5-F1",
-     "title": "Clear HDR ladder override kept by ten scattered writes and a 16-bit exception in setRawBitDepth",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10679@cinemate-port",
-      "src/camera/CameraController.cpp:10711@cinemate-port",
-      "src/camera/CameraController.cpp:11084@cinemate-port",
-      "src/camera/CameraController.cpp:11092@cinemate-port",
-      "src/camera/CameraController.cpp:11383@cinemate-port",
-      "src/camera/CameraController.cpp:11593@cinemate-port",
-      "src/camera/CameraController.cpp:11608-11612@cinemate-port",
-      "src/camera/CameraController.cpp:11656-11662@cinemate-port",
-      "src/camera/CameraController.cpp:11943@cinemate-port"
-     ],
-     "port_way": "setClearHdr sets ladderOverride_ when the ladder was active. setResolution, setFps (not in a take), setModeLadder, setRecordingFormat, setRawBitDepth (twice) and setFpsSpeedRamp clear it by hand, and it is rolled back in two places. setRawBitDepth keeps it for a 16-bit request in Clear HDR because 'the hardware clear_hdr action and the touch UI send it right after set_clear_hdr'. The 5 refusal gates and 7 ladderRewriteLocked calls are one-line helper calls in upstream's gate shape and are not part of this finding.",
-     "apertar_way": "No precedent for a flag that one setter sets and six others clear. Upstream keeps cross-setting rules in values passed through the sanitiser (S15, setFps src/camera/CameraController.cpp:7740-7770@upstream-1.6.0). No setter comment refers to another client's next command. Setter gates themselves are upstream style (if (recording_) {setErrorLocked; return false;} CC:7714-7717@upstream-1.6.0).",
-     "why_it_matters": "To change any of six setters the original developer has to know the override rule. The 16-bit exception is justified by client behaviour, not by camera state.",
-     "rework": "Add a helper endLadderOverrideLocked(next), called from applySettingsLocked. It clears ladderOverride_ when not recording and next.fps, next.resolution or next.recordingFormat differ from settings_. Keep explicit clears only where no mode value changes (setModeLadder, setFpsSpeedRamp Ramp-ready), and keep the set and rollback in setClearHdr. Bit-depth changes no longer clear the override (Clear HDR 16<->12 stays a manual hold), so the setRawBitDepth exception and its two writes are deleted. Gates and rewrites stay in the setters.",
-     "rework_risk": "Rollback paths in setModeLadder (:11090-11094) and setClearHdr (:11657-11662). Needs a Pi check of Clear HDR toggles from the dial and the touch UI with the ladder on.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "09256a7 'an active ladder blocks manual resolution, bit depth and Clear HDR' (User changed his mind 2026-10-28); d44b177 'Clear HDR over the Mode Ladder'; fork-log says not yet run on the camera"
-    },
-    {
-     "id": "CC-5-F2",
-     "title": "A mid-ramp FPS can be written to camera_settings.conf by another setter during a take",
-     "category": "bug",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:10777-10780@cinemate-port",
-      "src/camera/CameraController.cpp:10812-10815@cinemate-port",
-      "src/camera/CameraController.cpp:12795@cinemate-port"
-     ],
-     "port_way": "Ramp steps call applySettingsLocked(next, reconfigure, false) and emit the event themselves. Any other setter in the take (set_iso, set_wb) commits through persistSettingsLocked, which writes the current mid-ramp fps. restoreFpsAfterRampLocked writes the file again at stop.",
-     "apertar_way": "The commit flag itself conforms: applySettingsLocked(..., bool commit = true) at src/camera/CameraController.hpp:92@upstream-1.6.0. applyCapturePreset passes false and persists/emits afterwards (src/camera/CameraController.cpp:8627-8638@upstream-1.6.0).",
-     "why_it_matters": "A crash or power loss during a ramp take leaves the mid-ramp FPS on disk as the operator's FPS.",
-     "rework": "In persistSettingsLocked, write rampTakeBaseFps_ as fps while recording_ && rampTakeChanged_. Then delete the 'write once more' branch in restoreFpsAfterRampLocked. Keep the commit flag.",
-     "effort": "S",
-     "deliberate": "no",
-     "deliberate_evidence": "faa2958 makes the step take-scoped on purpose; the leak through other setters is not intended (restoreFpsAfterRampLocked comment admits it)."
-    },
-    {
-     "id": "CC-5-F3",
-     "title": "rampNominalShutterUs_ survives a record-format switch",
-     "category": "bug",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10751-10755@cinemate-port",
-      "src/camera/CameraController.cpp:11356@cinemate-port"
-     ],
-     "port_way": "The keep-exposure nominal is set at the first FPS step. It is reset only by setShutterUs (:11201), setShutterAuto (:11211), setFpsSpeedRamp (:11936) and preset load (:12665). setRecordingFormat loads the saved profile (next = saved->second, :11356) without resetting it.",
-     "apertar_way": "no precedent",
-     "why_it_matters": "Ramp on with shutter=exposure, cDNG shutter 20000 us, then set_fps 30 (nominal becomes 20000). Next, set_record_format mlv with a 10000 us profile. Then set_fps 25 sets min(20000, 40000) = 20000, which overwrites the MLV profile's shutter.",
-     "rework": "Reset rampNominalShutterUs_ = 0 in setRecordingFormat when a saved profile is loaded. Alternatively, make the nominal take-scoped: set it in the take and clear it in restoreFpsAfterRampLocked.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-5-F4",
-     "title": "ladderOverride_ not persisted: after a restart a held Clear HDR mode sits outside the ladder and manual mode is refused (probable)",
-     "category": "bug",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10508-10514@cinemate-port",
-      "src/camera/CameraController.hpp:245-249@cinemate-port"
-     ],
-     "port_way": "The override is a plain member. The constructor loads mode_ladder.conf after the settings, and neither the constructor nor start() calls ladderRewriteLocked.",
-     "apertar_way": "no precedent",
-     "why_it_matters": "Read from code, not run: ladder on and Clear HDR held by override, then restart. State becomes ladder_active=true, ladder_rung=0, and set_resolution/set_raw_bit_depth are refused with kLadderOwnsMode until an FPS or Clear HDR change. Settle it with get_state before and after a Core restart on the Pi.",
-     "rework": "With F1's value-shaped clear in place, derive the override at load: if the Clear HDR mode differs from the rung for fps, the override is on. Or call ladderRewriteLocked once at start.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-5-F5",
-     "title": "setModeLadder returns JSON and error through out-parameters, bypasses setErrorLocked; dry run inside a setter",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:11045-11102@cinemate-port",
-      "src/ApertarCoreApp.cpp:14093-14107@cinemate-port"
-     ],
-     "port_way": "bool setModeLadder(optional rungs, optional enabled, optional rampReady, bool dryRun, std::string *json, std::string *error). Errors go to *error and lastError_ is not set. The port's previewClipName and applyLadderToPreset also take *error.",
-     "apertar_way": "S7/I1: bool setters with setErrorLocked(\"...\"); return false; and lastError(). App replies settingsBody(camera_.settings()) or camera_.lastError() (src/ApertarCoreApp.cpp:9242-9249@upstream-1.6.0). Upstream CameraController.hpp has no std::string *error parameter. Read-only data has its own getter (sensorModes()).",
-     "why_it_matters": "App needs a special reply path, and the error never reaches lastError().",
-     "rework": "Change to bool setModeLadder(rungs, enabled, rampReady) using setErrorLocked. Add std::string modeLadderPreviewJson(rungs, enabled, rampReady) const for dry_run. App replies with modeLadderJson() + settingsBody after success.",
-     "effort": "S",
-     "deliberate": "unknown"
-    },
-    {
-     "id": "CC-5-F6",
-     "title": "setResolution refuses an IMX585 size the current class lacks; upstream sanitises silently",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10656-10664@cinemate-port"
-     ],
-     "port_way": "When apertar::imx585::find(classFor(bits, clearHdr), w, h) fails, setErrorLocked('<size> is not a mode of the IMX585 at N-bit.').",
-     "apertar_way": "validateResolution rejects only unknown sizes ('Unsupported resolution.', src/camera/CameraController.cpp:8767@upstream-1.6.0). A known size is sanitised and the reply carries the effective value (I2, setResolution :7719-7737).",
-     "why_it_matters": "It adds a second size policy beside the sanitiser, which still maps bit-depth and Clear HDR changes to the nearest row.",
-     "rework": "Owner decision. Either document it as a deliberate IMX585-only refusal, or let sanitizeSettingsForSensor pick the nearest row as it does for bit depth and Clear HDR.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "caa0153 'Explicit set_resolution refuses a size the class lacks; bit depth and Clear HDR changes take the nearest row.'"
-    },
-    {
-     "id": "CC-5-F7",
-     "title": "Experimental audio stretch needs uninstalled rubberband-cli and is launched as a detached double fork of sh -c",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:9933-10007@cinemate-port",
-      "include/apertar/core/Types.hpp:149@cinemate-port"
-     ],
-     "port_way": "fpsSpeedRampStretchAudio=true by default. launchAudioStretch builds a shell string (nice/rubberband/mv/rm/echo), double-forks, calls setsid and execl('/bin/sh','sh','-c',...), and nobody waits for the grandchild. There is no install step, README line or dependency check for rubberband (git grep hits CC only).",
-     "apertar_way": "External programs run as waited children: ffmpeg fork+execv(argv) (src/camera/CameraController.cpp:4154-4161@upstream-1.6.0), zip (src/ApertarCoreApp.cpp:6227-6258), aplay execvp (src/audio/AudioRecordingSession.cpp:287). Shell strings go through popen with the output read (src/ApertarCoreApp.cpp:1501-1505). Nothing upstream is detached. N8: the operator gets a sentence naming what is missing.",
-     "why_it_matters": "On a stock install, every ramp take with FPS changes logs a rubberband failure and nothing tells the operator. A detached process that nothing tracks can outlive a stop or a media unmount.",
-     "rework": "Launch rubberband with execv and an argv vector, no shell. Do the rename and cleanup in a joined std::thread member that waits for the child (I16). Check for rubberband when the option is switched on and refuse with a sentence if it is missing. Default true is the user's choice (ca7b7c2); keep it unless the owner changes it.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "ca7b7c2 'labelled experimental, on by default ... Needs rubberband-cli'"
-    },
-    {
-     "id": "CC-5-F8",
-     "title": "Journal line per ramp setter call and per applied transition",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10772-10775@cinemate-port",
-      "src/camera/CameraController.cpp:9847-9850@cinemate-port"
-     ],
-     "port_way": "Every set_fps in a ramp take logs 'fps ramp: a -> b fps shutter_us= policy='. Every applied transition logs 'frame= frame_us= delta_us= ... lag_frames= superseded='.",
-     "apertar_way": "I7: no line for a setter call or a control change (no std::cerr in src/camera/CameraController.cpp:7609-8489@upstream-1.6.0); one line each at take start and stop (CC:3353-3374, 3416-3423@upstream-1.6.0).",
-     "why_it_matters": "A dial sweep floods the journal, and the same data is already in fps-ramp.txt and the stop stats line (CC:9876-9877).",
-     "rework": "Delete the setter line. Rate-limit the transition line with n == 1 || n % 30 == 0 (I8), or drop it.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "faa2958; comment says lag_frames sizes the grace window on the Pi"
-    },
-    {
-     "id": "CC-5-F9",
-     "title": "Dropped-frame count published in recording_health",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10490-10493@cinemate-port",
-      "src/camera/CameraController.cpp:10050@cinemate-port"
-     ],
-     "port_way": "recording_health adds recording_dropped_frames:N; markDropped(count).",
-     "apertar_way": "N3 'one warning per clip, not a counter'; only recording_has_dropped_frames leaves Core (src/camera/CameraController.cpp:7580-7584@upstream-1.6.0).",
-     "why_it_matters": "It departs from a stated upstream intent. It is additive, so unmodified UIs ignore it.",
-     "rework": "Keep it, and document it as a deliberate departure from N3.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "64bbbaa 'the user wants the number'"
-    },
-    {
-     "id": "CC-5-F10",
-     "title": "configuredMediaRoot() is a mutable process-wide global written by CameraController::start",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:10543@cinemate-port",
-      "src/util/MediaProfile.hpp:214-234@cinemate-port",
-      "src/camera/CameraController.cpp:1466-1467@cinemate-port",
-      "src/camera/CameraController.cpp:4364@cinemate-port",
-      "src/camera/CameraController.cpp:4718@cinemate-port",
-      "src/cdng/CdngEncoder.cpp:91@cinemate-port"
-     ],
-     "port_way": "configuredMediaRoot() = mediaRoot; the buffer-count and media-tune helpers read the global, including the encoder and a function-local static.",
-     "apertar_way": "The media root is the controller member mediaRoot_, passed as an argument (start(const std::string &mediaRoot, ...) CC:3268, startRecording(mediaRoot, ...) CC:5526@upstream-1.6.0). I17 statics are for one-off process values only.",
-     "why_it_matters": "It creates hidden coupling between the controller, the util headers and the encoder. It is the same pattern as CC-3-F1.",
-     "rework": "Pass mediaRoot_ into CameraSession start/reconfigure and on to mediaExtraRawBuffersFor(root) / mediaTuneFor(root). Give the encoder its MediaTune at construction. Delete the global.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "26da30e (first adds it; comment 'has no other way to the path'); 2edc6d0 extends it"
-    },
-    {
-     "id": "CC-5-F11",
-     "title": "Ticket numbers, Cinemate references, commit ids and dates in comments; // ---- banners",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.cpp:9742@cinemate-port",
-      "src/camera/CameraController.cpp:9931@cinemate-port",
-      "src/camera/CameraController.cpp:10726@cinemate-port",
-      "src/camera/CameraController.cpp:10823@cinemate-port",
-      "src/camera/CameraController.cpp:10900@cinemate-port",
-      "src/camera/CameraController.cpp:1108@cinemate-port",
-      "src/camera/CameraController.cpp:12039@cinemate-port"
-     ],
-     "port_way": "T31, T34, T23/T29, T28, 'request 19', 'decision 9', 'Cinemate ff59dd8', 'Cinemate's shutter_a_sync_mode', 'measured 2026-10-28'; four // ---- banners.",
-     "apertar_way": "I19: no ticket numbers, author or date. There are 0 // ---- banners in CC@upstream-1.6.0.",
-     "why_it_matters": "These references mean nothing to the original developer.",
-     "rework": "Delete the tags, dates, commit ids, Cinemate names and banners. Keep the 'why' sentences.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-5-F12",
-     "title": "FPS refusal names a socket command and offers ramping to H.264/ProRes takes",
-     "category": "mismatch",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:10691-10697@cinemate-port"
-     ],
-     "port_way": "'Stop recording before changing FPS, or enable FPS ramping (set_fps_speed_ramp) for cDNG/MLV takes.' is shown before the format check.",
-     "apertar_way": "'Stop recording before changing FPS so video and audio keep the same timeline.' (src/camera/CameraController.cpp:7744@upstream-1.6.0); I5: no identifiers.",
-     "why_it_matters": "An H.264 operator is told to enable a feature that cannot work in H.264.",
-     "rework": "Check the format first. Keep the upstream sentence for processed formats and when ramp is off. For raw takes, say '... or turn on Speed Ramp.'",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "CC-5-F13",
-     "title": "Mono flag expression repeated at each sanitiser call",
-     "category": "duplication",
-     "severity": "nit",
-     "where": [
-      "src/camera/CameraController.cpp:10655@cinemate-port",
-      "src/camera/CameraController.cpp:10669@cinemate-port",
-      "src/camera/CameraController.cpp:10713@cinemate-port",
-      "src/camera/CameraController.cpp:10797@cinemate-port",
-      "src/camera/CameraController.cpp:10840@cinemate-port",
-      "src/camera/CameraController.cpp:11599@cinemate-port",
-      "src/camera/CameraController.cpp:11644@cinemate-port",
-      "src/camera/CameraController.cpp:12861@cinemate-port"
-     ],
-     "port_way": "(!simulateCamera_ && session_ && session_->monochromeSensor()) is written inline 8 times.",
-     "apertar_way": "Upstream computes sensorFamily once per setter as a local (src/camera/CameraController.cpp:7722-7724@upstream-1.6.0).",
-     "why_it_matters": "The long expression adds noise to every sanitiser call.",
-     "rework": "Add a local const bool monochrome next to sensorFamily in each setter.",
-     "effort": "S",
-     "deliberate": "no"
-    }
-   ]
-  },
-  "Camera-headers": {
-   "verified": true,
-   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-Camera-headers.md",
-   "summary": "Skeptic pass on 16 findings: 8 stand (F2, F4, F6, F11, F12, F13, F14, F16), 7 are corrected and 1 is dropped. Dropped: F8. Upstream replies already carry arrays of objects (`modes`, App:10042-10048@upstream-1.6.0). Main corrections: F1 option A (pipeline disable_tdn) is withdrawn because it stalls the PiSP back end (pisp.cpp:1659-1663@6b0b49f, and the KB says this in many places). The KB had itself recommended the libyaml route modelled on makeProresIspTuning (dng-chain/F/F6.md:243, V-F6.md:36), and the port did not follow it. F3: the \"60 fps does not fit storage\" evidence is about uncompressed, not lossless. F5 and F9 were deliberate per design-T34.md. F9 shrinks: upstream CaptureSettings does hold runtime state, so only ladderText and ladderCount stay foreign. F10 loses its legacy-list part, which follows upstream's own pattern, and drops to nit. F7: setClipNameTemplate already uses setErrorLocked. F15 is scoped to the port-wide test decision. F2 is confirmed and widened: the ProRes/log derived tuning is also built from the stripped copy (CC.cpp:7411).",
-   "conforms": [],
-   "abstraction_verdicts": [],
-   "findings": [
-    {
-     "id": "Camera-headers-F1",
-     "title": "TDN strip: own JSON parser, atomic writer and sidecar where upstream derives tuning files with libyaml",
-     "category": "mismatch",
-     "severity": "major",
-     "where": [
-      "src/camera/TuningTdnStrip.hpp:43-249@cinemate-port",
-      "src/camera/TuningTdnStrip.hpp:350-378@cinemate-port",
-      "src/camera/TuningTdnStrip.hpp:380-449@cinemate-port",
-      "tools/tuning_tdn_strip_test.cpp@cinemate-port"
-     ],
-     "port_way": "A header-only recursive-descent JSON parser (tdn_detail::Parser/Node/Member) cuts tdn members by byte offsets. It has its own temp+rename writer and a .src sidecar with size+mtime. Cache $HOME/.cache/apertar-core/tuning. 451 lines.",
-     "apertar_way": "src/color/ProresIspProfile.hpp:7@upstream-1.6.0 'Writes an internal derived tuning, never the user's selected source file.' ProresIspProfile.cpp:13 #include <yaml.h>. algorithm()/member() at :72-87, Edit byte ranges applied back to front at :89-90 and :221. Cache $HOME/.cache/apertar-prores at :230. 'if (previous!=text && !settingsFile::atomicWrite(path,text))' at :233.",
-     "why_it_matters": "The original developer finds two tuning-JSON editors, two cache dirs and two atomic writers. The parser is 200 lines of new code to maintain beside the libyaml path upstream already requires.",
-     "rework": "Add bool makePreviewTuning(const std::string &source, std::string &destination, std::string &error) to src/color/ProresIspProfile.cpp, or to a sibling .cpp in src/color/ with the helpers moved to a shared internal header. Reuse libyaml algorithm(\"rpi.denoise\"), member() and Edit. Following KB V-F6.md:36, replace each rpi.denoise mapping node with its content minus tdn (one replace per node), so no comma surgery is needed. Write with settingsFile::atomicWrite only when the content changed, and drop the sidecar. Keep the fall-back-to-source rule and the call site. Delete TuningTdnStrip.hpp, and turn its test into a check of the new function or delete it. Do NOT use the pipeline disable_tdn option: it stalls the back end (pisp.cpp:1659-1663@6b0b49f).",
-     "rework_risk": "The output is no longer byte-identical to the KB tool's _notdn files. On the Pi, check that rpi.denoise still loads with SDN/CDN on their *_no_tdn values (denoise.cpp:54-69).",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "Commit e625c68. KB clearhdr16-preview.md and dng-chain-answer.md:35-40 weigh the TDN cost. The KB recommended the libyaml derivation modelled on makeProresIspTuning (dng-chain/F/F6.md:243 item 3a, V-F6.md:36 row 7). The port did not follow it, and no note says why."
-    },
-    {
-     "id": "Camera-headers-F2",
-     "title": "preview_tdn defaults to off and the stripped tuning reaches H.264/ProRes recordings and processed stills",
-     "category": "bug",
-     "severity": "major",
-     "where": [
-      "include/apertar/core/Types.hpp:139@cinemate-port",
-      "src/camera/CameraController.cpp:7306-7326@cinemate-port",
-      "src/camera/CameraController.cpp:7411@cinemate-port",
-      "src/camera/TuningTdnStrip.hpp:3-6@cinemate-port"
-     ],
-     "port_way": "bool previewTdn = false ('Off (default) is much faster; the raw DNGs never change'). loadablePath() gives every camera start the copy without tdn, whatever recordingFormat or photo mode is set. The ProRes/log derived tuning is then built from that stripped copy (makeProresIspTuning(activePath, ...)).",
-     "apertar_way": "The tuning file as resolved drives every stream (CC.cpp:5265-5268, :5347-5361@upstream-1.6.0). H.264 and ProRes record ISP outputs (conv-core-camera 5.4), and so do JPEG/PNG/TIFF stills.",
-     "why_it_matters": "Failing input: fresh settings, set_record_format h264 or prores, then record. The file is encoded from an ISP without temporal denoise, while upstream records with it. The code path is confirmed; the visible noise change is probable. The header and Types.hpp comments say only monitoring is affected, which is wrong for these formats.",
-     "rework": "In loadablePath, strip only for RAW takes: !settings.previewTdn && !isProcessedVideoFormat(settings.recordingFormat) && !settings.photoModeEnabled. The other option is to default previewTdn = true (upstream behaviour). Correct both comments.",
-     "effort": "S",
-     "deliberate": "unknown",
-     "deliberate_evidence": "The default off is deliberate (commit e625c68, Types.hpp comment). Neither the commit nor the KB weighs the processed formats."
-    },
-    {
-     "id": "Camera-headers-F3",
-     "title": "IMX585 lossless cDNG 30 fps cap lifted by default",
-     "category": "removed-upstream-behaviour",
-     "severity": "major",
-     "where": [
-      "src/camera/FpsCeiling.hpp:27-45@cinemate-port",
-      "src/camera/CameraController.cpp:3115-3142@cinemate-port"
-     ],
-     "port_way": "losslessImx585Fps returns the mode's maximum. Only APERTAR_LOSSLESS_FPS_LIMIT=30 restores the cap. The comment says the encoder measures ~69 fps, so '30 was a policy, not a limit'.",
-     "apertar_way": "CC.cpp:2470-2490@upstream-1.6.0 enforceLosslessCaptureLimits: 'const double maximumFps = imx585 ? 30.0 : ...', applied in the sanitise chain (I2).",
-     "why_it_matters": "An upstream product limit changes by default. The only on-camera datum is one 2 s 4K 60 fps lossless pre-roll with 0 skips (KB dng-chain-answer.md:30). Lossless is CPU-tight (:156), and no counted take exists at 50 or 60 fps.",
-     "rework": "Keep 30.0 as the default in losslessMaximumFps/enforceLosslessCaptureLimits. APERTAR_LOSSLESS_FPS_LIMIT=<n> raises it, within the mode maximum, for bench work (I9, N11). Delete losslessImx585Fps. Raise the default only after counted takes.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "Commit d44b177: 'Lossless JPEG on the IMX585 is no longer capped at 30 fps'. Comment at CC.cpp:3133-3134."
-    },
-    {
-     "id": "Camera-headers-F4",
-     "title": "FPS ceiling: the probe beats the hard-coded table by default",
-     "category": "removed-upstream-behaviour",
-     "severity": "major",
-     "where": [
-      "src/camera/FpsCeiling.hpp:12-19@cinemate-port",
-      "src/camera/CameraController.cpp:3397-3423@cinemate-port"
-     ],
-     "port_way": "resolveSensorMaxFps returns the probed value when there is one, and the table is only a fallback. APERTAR_FPS_LIMIT=table restores min(table, probed). 4K SDR rises from 30 to 60.",
-     "apertar_way": "Hard-coded tables with validate() as the last word (N7). IMX585 3840x2160 = 30.0 (CC.cpp:2669-2671@upstream-1.6.0). Fork main f60e301 added the probe as min(table, probed): 'SDR limits unchanged (the probe only lowers them)' and 'Recording at 30 fps still loses ~20 %'.",
-     "why_it_matters": "Operators are offered frame rates that have not been shown to record without drops. 4K 12-bit uncompressed at 60 fps (746 MB/s) does not fit the drive (KB dng-chain-answer.md:156).",
-     "rework": "Keep main's min(table, probed) default. Raise individual rows in tableMaximumFpsForResolution once takes prove them. Make probe-only opt-in with APERTAR_FPS_LIMIT=probe. The IMX283 floor rule stays.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "Commit d44b177: 'Max fps: read from the sensor probe at startup (4K SDR 60, it was capped at 30 by a table)'."
-    },
-    {
-     "id": "Camera-headers-F5",
-     "title": "Mode ladder persists in its own mode_ladder.conf",
-     "category": "mismatch",
-     "severity": "major",
-     "where": [
-      "src/camera/ModeLadder.hpp:316-342@cinemate-port",
-      "src/camera/CameraController.cpp:403-414@cinemate-port",
-      "src/camera/CameraController.cpp:10513-10514@cinemate-port",
-      "src/camera/CameraController.cpp:10939@cinemate-port",
-      "src/camera/CameraController.hpp:248@cinemate-port"
-     ],
-     "port_way": "A second Core-written settings file, ~/.config/apertar-core/mode_ladder.conf, with enabled, ramp_ready, resolutions and the legacy rungs key. It has its own parser and writer and is held in modeLadder_ outside CaptureSettings.",
-     "apertar_way": "S20: camera settings live in camera_settings.conf as key=value, written only by Core through the debounced persister (CC.cpp:742-889@upstream-1.6.0). Camera-wide keys are carried across format profiles (tuning_file, CC.cpp:7939-7955@upstream-1.6.0). The port already extends this pattern for previewTdn, cdngLog and clipNameTemplate (CC.cpp:11338-11372@cinemate-port).",
-     "why_it_matters": "It is a parallel persistence path that the persister does not cover, and it is written synchronously under the controller mutex (KB design/critique-code.md:273). The original developer has to learn a second settings file.",
-     "rework": "Add camera-wide keys mode_ladder_enabled, mode_ladder_ramp_ready and mode_ladder_resolutions (the existing comma text) to the else-if load chain (I15) and the writer. Hold them in CaptureSettings like tuningFile and carry them in the block at CC.cpp:11338-11372. On first start, read an existing mode_ladder.conf once to migrate it, then stop reading it. Delete fileText, modeLadderPath, saveModeLadderLocked, the rungs key, and parseFile once the migration is done.",
-     "rework_risk": "The owner's camera has a mode_ladder.conf, so a one-time migration is needed.",
-     "effort": "M",
-     "deliberate": "yes",
-     "deliberate_evidence": "ramp-ladder/design/design-T34.md:280-293 (3.3) rejected UI.conf and per-format profile keys and chose a new file. It did not weigh camera-wide keys in camera_settings.conf."
-    },
-    {
-     "id": "Camera-headers-F6",
-     "title": "Rung::compression is a free string mixing record format and compression",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/ModeLadder.hpp:22-44@cinemate-port",
-      "src/camera/ModeLadder.hpp:160-166@cinemate-port"
-     ],
-     "port_way": "std::string compression = \"\" | none | lossless_jpeg | lossy_3to1 | lossy_5to1, compared as strings. Lossy implies the LossyDng format.",
-     "apertar_way": "S13/I11: each sub-option is its own enum (RecordingFormat, CdngCompression, LossyDngRatio, Types.hpp:45-68@upstream-1.6.0) with toString/toWireValue.",
-     "why_it_matters": "String compares are spread through the ladder code, and the wire words partly duplicate the existing toString values.",
-     "rework": "Use enum class RungRecord {Default, Uncompressed, Lossless, Lossy3, Lossy5}, or optional<RecordingFormat> + CdngCompression + LossyDngRatio, parsed from the existing wire words.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "Camera-headers-F7",
-     "title": "Ladder setters and clip-name preview return errors and data through out-params instead of bool + lastError()",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "src/camera/CameraController.hpp:92@cinemate-port",
-      "src/camera/CameraController.hpp:102-109@cinemate-port",
-      "src/camera/CameraController.cpp:11835-11856@cinemate-port"
-     ],
-     "port_way": "setModeLadder(optional<string>, optional<bool>, optional<bool>, bool dryRun, string *json, string *error); applyLadderToPreset(..., string *error) const; previewClipName(value, string *example, string *error) const. setClipNameTemplate(value, string *stored) already reports errors via setErrorLocked, so only its *stored is redundant.",
-     "apertar_way": "S7/I1: bool set...(value), with errors via setErrorLocked/lastError() (CC.hpp:85@upstream-1.6.0). App replies settingsBody(camera_.settings()).",
-     "why_it_matters": "The public surface gets a second error channel and a second setter shape.",
-     "rework": "Use bool setModeLadder(const std::string &resolutions, bool enabled, bool rampReady) and bool validateModeLadder(...) for the dry run. Report errors via setErrorLocked, joining multiple validation errors; the full list stays in modeLadderJson(), which already exists. App builds the reply from camera_.modeLadderJson(). Drop *stored, since App can read camera_.settings().clipNameTemplate.",
-     "rework_risk": "applyLadderToPreset and previewClipName are const, so lastError_ must become mutable or the functions non-const.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "Camera-headers-F9",
-     "title": "Display text and redundant ladder fields in CaptureSettings",
-     "category": "mismatch",
-     "severity": "minor",
-     "where": [
-      "include/apertar/core/Types.hpp:181-189@cinemate-port"
-     ],
-     "port_way": "Nine runtime ladder fields in CaptureSettings, serialised in all three state writers. Among them are ladderText (a UTF-8 display line with '\u00b7', '\u00d7', '\u2264') and ladderCount (= ladderTops.size()).",
-     "apertar_way": "Upstream CaptureSettings does carry runtime state (whiteBalanceMeasured, previewExposureReference, timelapseExposureLimitUs, Types.hpp:139-150@upstream-1.6.0), so numeric ladder state there fits the pattern. Upstream Core sends no display sentences; clients build labels. Under I13 each field costs three serialiser edits.",
-     "why_it_matters": "Core composes non-ASCII UI text, and one redundant field sits in three hand-kept lists.",
-     "rework": "Drop ladderText and ladderCount. The WebUI builds the line from ladder_rung, ladder_tops and the get_mode_ladder reply (WCP:8392, :8421, :15920 already have the data). Keep the other fields.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "design-T34.md:336-345 (3.6) chose derived, never-persisted fields after exposureCompensationAvailable."
-    },
-    {
-     "id": "Camera-headers-F10",
-     "title": "Sensor tables: own Size types and two nearest-mode metrics",
-     "category": "duplication",
-     "severity": "nit",
-     "where": [
-      "src/camera/Imx283Modes.hpp:19-22,114-135@cinemate-port",
-      "src/camera/Imx585Modes.hpp:34-38,236-252@cinemate-port"
-     ],
-     "port_way": "imx283::Size and imx585::Size sit beside Resolution. Nearest mode is squared Euclidean for IMX283 and Manhattan for IMX585.",
-     "apertar_way": "Sensor facts use Resolution from Types.hpp (CC.cpp:355-396@upstream-1.6.0). Pure helper headers are allowed (S4).",
-     "why_it_matters": "Three size types and two distance rules for the same job.",
-     "rework": "Use Resolution in both headers and pick one distance rule. Keep isImx585LegacyCropResolution and the alias map: they follow upstream's isImx585FullHdCropResolution shape and keep other sensors' compatibility.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "Camera-headers-F11",
-     "title": "Env-var parsing re-implemented three times",
-     "category": "duplication",
-     "severity": "minor",
-     "where": [
-      "src/camera/Imx585Modes.hpp:105-114@cinemate-port",
-      "src/camera/FpsCeiling.hpp:29-38@cinemate-port",
-      "src/camera/CameraController.cpp:8909-8922@cinemate-port"
-     ],
-     "port_way": "minModeWidth() calls getenv/strtoll on every find/offered/nearest through a default argument. parseLosslessFpsLimit uses strtod. The phase-lock tuning has its own lambda.",
-     "apertar_way": "unsignedEnvValue(name, default, min, max) and boolEnvValue at CC.cpp:1027-1061@upstream-1.6.0 (port :1341-1357), read once in function-local statics (I9, I17).",
-     "why_it_matters": "Three parsers with different rules for one convention, and repeated getenv in lookup paths.",
-     "rework": "In CC.cpp, read the width once with static const unsigned w = unsignedEnvValue(\"APERTAR_IMX585_MIN_MODE_WIDTH\", 1280, 0, 65535) and pass it as a parameter, with no default argument that reads the environment. Add doubleEnvValue beside the two helpers for the lossless limit and the phase-lock gains.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "Camera-headers-F12",
-     "title": "Ticket numbers, Cinemate narration and a stale comment in code and in the user's config file",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "src/camera/ModeLadder.hpp:1,319@cinemate-port",
-      "include/apertar/core/Types.hpp:141,181-189@cinemate-port",
-      "src/camera/CameraController.hpp:102,180,243,248@cinemate-port",
-      "src/camera/CameraController.cpp:403,8902,8907-8908,9063-9067@cinemate-port",
-      "src/camera/FramePhaseLock.hpp:9-26,48@cinemate-port",
-      "src/camera/Imx283Modes.hpp:1-2@cinemate-port",
-      "src/camera/Imx585Modes.hpp:3,16@cinemate-port"
-     ],
-     "port_way": "fileText writes '# Apertar mode ladder (T34).' into the user's file. Comments name the cinemate-port branches and say 'as Cinemate's libcamera does', 'qbc libcamera' and 'CineMate Log'. Decision::pushDuration says {d, d}, but the controller pins {d, d+1} (CC.cpp:9069, and the header's own line 17). The overview comment sits above PhaseLockStatus instead of FramePhaseLock.",
-     "apertar_way": "I19: comments are rare, say why, and carry no ticket numbers or history. Upstream src/include mention neither Cinemate nor T-numbers.",
-     "why_it_matters": "The original developer meets internal numbers and another project's history, and one comment contradicts the code.",
-     "rework": "Remove T-numbers everywhere, including the fileText string (moot if F5 lands). Replace the Cinemate and branch references with the driver's facts. Fix {d, d} to {d, d+1} and move the overview comment above struct FramePhaseLock.",
-     "effort": "S",
-     "deliberate": "no"
-    },
-    {
-     "id": "Camera-headers-F13",
-     "title": "conformFps is persisted and settable but has no effect and no UI",
-     "category": "slop",
-     "severity": "minor",
-     "where": [
-      "include/apertar/core/Types.hpp:135-137@cinemate-port",
-      "src/camera/CameraController.cpp:172,696-697,817-818,942,11354,11364,11806-11812@cinemate-port",
-      "src/ApertarCoreApp.cpp:320,7851,9484,13270,14356@cinemate-port",
-      "src/web/WebControlPage.cpp:19111@cinemate-port"
-     ],
-     "port_way": "The field comment says 'nothing derives from it yet'. It has set_conform_fps, state keys, a preset key and a persisted key. No reader in src, and 0 hits in Apertar-UI.",
-     "apertar_way": "Every upstream setting drives behaviour. There is no precedent for a stored placeholder.",
-     "why_it_matters": "It is dead protocol and persistence surface.",
-     "rework": "Remove the field, the command, the state keys, the preset key and the persisted key until a feature reads them.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "Types.hpp comment; commit d7ff071."
-    },
-    {
-     "id": "Camera-headers-F14",
-     "title": "Compatibility for spellings that never shipped; CdngLog::Auto means On",
-     "category": "slop",
-     "severity": "nit",
-     "where": [
-      "include/apertar/core/Types.hpp:59-62,326-346@cinemate-port",
-      "src/camera/ModeLadder.hpp:168,337@cinemate-port"
-     ],
-     "port_way": "\"on\", \"12\", \"10\" and \"8\" map to Auto. The ladder accepts log10/log8, and the file reads the old key rungs.",
-     "apertar_way": "I15 keeps retired keys that users had. These spellings were never in an Apertar release; fork main has no cdng_log at all.",
-     "why_it_matters": "It is port-internal history in the code, and the enum name misleads.",
-     "rework": "Use enum class CdngLog {Off, On} with wire values off/on, accepting 'auto' only if the owner's installed settings hold it. Drop 12/10/8, log10/log8 and rungs.",
-     "effort": "S",
-     "deliberate": "yes"
-    },
-    {
-     "id": "Camera-headers-F15",
-     "title": "Host tests of this unit: three styles, no build hook; phase-lock simulator only in the KB",
-     "category": "new-ground",
-     "severity": "minor",
-     "where": [
-      "tools/fps_ceiling_test.cpp@cinemate-port",
-      "tools/imx283_modes_test.cpp@cinemate-port",
-      "tools/imx585_modes_test.cpp@cinemate-port",
-      "tools/tuning_tdn_strip_test.cpp@cinemate-port"
-     ],
-     "port_way": "These are 4 of the port's 20 tools/*_test files. Each is built by hand from a comment line, using check(), a CHECK macro or expectStrip. All four compile and pass here.",
-     "apertar_way": "no precedent (S24: no tests, no tools/ upstream)",
-     "why_it_matters": "New infrastructure without a home or a build entry. The most delicate pure logic (FramePhaseLock) has its simulator in apertar-kb/working/tools/phase_lock_sim.cpp, not beside the header.",
-     "rework": "Follow the port-wide test decision: one tests/ folder, one check helper, an opt-in APERTARCORE_BUILD_TESTS option (OFF) and one README line. For this unit: bring the four tests into that style, move the phase-lock simulator in as a test, delete tuning_tdn_strip_test when F1 lands and fps_ceiling_test when F16 lands.",
-     "effort": "S",
-     "deliberate": "yes",
-     "deliberate_evidence": "The header comments name their tests, and the fork-log records the runs."
-    },
-    {
-     "id": "Camera-headers-F16",
-     "title": "FpsCeiling.hpp splits one-line rules into a header for a test",
-     "category": "new-ground",
-     "severity": "nit",
-     "where": [
-      "src/camera/FpsCeiling.hpp:1-47@cinemate-port"
-     ],
-     "port_way": "namespace apertar::fpsceiling with resolveSensorMaxFps, applyBackendCap, parseLosslessFpsLimit and losslessImx585Fps.",
-     "apertar_way": "S3/S4: most pure logic stays in CC.cpp next to its callers (maximumSupportedFpsForResolution, CC.cpp:2629@upstream-1.6.0).",
-     "why_it_matters": "After F3/F4/F11 the rules are std::min calls, so a separate header is over-built.",
-     "rework": "Fold the remaining logic into CC.cpp beside maximumSupportedFpsForResolution, and delete the header and fps_ceiling_test.cpp.",
-     "effort": "S",
-     "deliberate": "yes"
-    }
-   ]
-  },
   "App-2": {
    "verified": true,
    "report": "/home/user/apertar-kb/working/merge-review/raw/rev-App-2.md",
@@ -8274,6 +7263,1338 @@
      "apertar_way": "no precedent",
      "why_it_matters": "Over-built generality; a control that cannot change anything.",
      "rework": "Drop the select and the constant; title the row 'Tally light'.",
+     "effort": "S",
+     "deliberate": "no"
+    }
+   ]
+  },
+  "CC-1": {
+   "verified": true,
+   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-CC-1.md",
+   "summary": "Skeptic pass on CC-1. 12 of 13 findings survive. Unchanged: F3, F4, F7, F11, F12, F13. Corrected: F1, F2, F5, F6, F9, F10. F1 rework: the IMX585 probe only tries rows from the port's own table, so the old-driver rows must be added to the probe list or table. F2 lowered to minor because the second config file belongs to the media-tune slice. F5 lowered to nit because upstream repeats the XDG rule three times itself. F6 location: the preset key is in App, not WCP. F9: only the WebUI reads ladder_text. F10 lowered to nit because the reference loop is fork-main code, not upstream. Dropped: F8, because upstream clampCaptureSettings also normalises a string (exposureMetering, CC:534-535@upstream-1.6.0). One blocker remains: F1, Core tied to the cinemate-port imx585 driver.",
+   "conforms": [],
+   "abstraction_verdicts": [],
+   "findings": [
+    {
+     "id": "CC-1-F1",
+     "title": "IMX585 1.85:1 crops rewritten to forked-driver sizes; Core tied to the cinemate-port driver",
+     "category": "removed-upstream-behaviour",
+     "severity": "blocker",
+     "where": [
+      "src/camera/CameraController.cpp:441-462@cinemate-port",
+      "src/camera/CameraController.cpp:703@cinemate-port",
+      "src/camera/CameraController.cpp:10514@cinemate-port",
+      "src/camera/CameraController.cpp:10648@cinemate-port",
+      "src/camera/CameraController.cpp:11060@cinemate-port",
+      "src/camera/CameraController.cpp:12663@cinemate-port",
+      "src/camera/CameraController.cpp:2667-2679@cinemate-port",
+      "src/camera/CameraController.cpp:7166-7190@cinemate-port",
+      "src/camera/Imx585Modes.hpp:3-16@cinemate-port"
+     ],
+     "port_way": "migratedImx585CropResolution rewrites 3840x2076->3840x2072 and 1920x1038->1920x1036 unconditionally inside clampCaptureSettings (every sensor, every load/write/set), in set_resolution, in presets and in ladder rungs. IMX585 modes come from tables copied from the cinemate-port driver, and the IMX585 startup probe only configures rows of that table.",
+     "apertar_way": "isImx585FullHdCropResolution / isImx585Raw12CropResolution list 1038 and 2076 (src/camera/CameraController.cpp:366-396@upstream-1.6.0), matching driver origin/apertar imx585.c:591, 817. Upstream retires sizes only in the per-sensor normaliser (CC:511-532@upstream-1.6.0). Capabilities are detected at run time, and validate() has the last word.",
+     "why_it_matters": "With the original Apertar driver, every saved, preset or requested 1.85:1 crop is rewritten to a size that driver lacks. The probe drops 2072/1036 on the size mismatch (CC:7187) and never tries 2076/1038, so the operator loses both 1.85:1 crops (probable, not run on a Pi). Core can only be merged together with the driver fork.",
+     "rework": "Remove the migration from clampCaptureSettings, set_resolution, presets and ladder load. Give the IMX585 table both heights for the 1.85:1 row (2072/2076 and 1036/1038), so the table probe tries both and keeps the one the driver accepts. In imx585ModeForResolution / the IMX585 case of sensorModeForRequestedResolution, map 2076<->2072 and 1038<->1036 to whichever size probedSensorModes holds. If the probe did not run, fall back to the upstream sizes. Replace migrateImx585LadderRungs with the same mapping. Cut the comment to one line of why.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "Commit 900d282 and the comment at CC:441-445 say the new driver has neither old size; not run on a Pi.",
+     "rework_risk": "The probe must try both heights per row without doubling the probe time for other rows."
+    },
+    {
+     "id": "CC-1-F2",
+     "title": "Raw buffer count reads the media tuning file and the sysfs media class",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:1456-1470@cinemate-port",
+      "src/util/MediaTune.hpp:27-28@cinemate-port",
+      "src/util/MediaProfile.hpp:126-150@cinemate-port"
+     ],
+     "port_way": "rawCameraBufferCount: the env var wins, then raw_buffers from /home/pi/apertar-media-tune.conf or the /run override, then base plus a per-filesystem extra read from sysfs. The comment cites Cinemate's profiles and says exFAT gets +2, but the table gives exFAT 0 (MediaProfile.hpp:142). MediaWriterSettings.directIo is marked 'for T24 ... unused'.",
+     "apertar_way": "h264CameraBufferCount and proresCameraBufferCount are one unsignedEnvValue line each (CC:1124-1134@upstream-1.6.0). Internal tuning is APERTAR_<AREA>_<KNOB> and stays out of operator files.",
+     "why_it_matters": "It ties the camera path to a second config file (to be judged in the media-tune slice). The comment is wrong, and a dead field carries a ticket number.",
+     "rework": "rawCameraBufferCount(bool clearHdr) { return unsignedEnvValue(\"APERTAR_RAW_CAMERA_BUFFERS\", clearHdr ? kClearHdrBufferCount : kConfiguredBufferCount, 3, 16); }. Keep a +2 for FAT/NTFS only if it is measured. Fix or remove the comment. Decide on MediaTune in its own slice.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "Commits 26da30e, 2edc6d0; MediaProfile.hpp:140-142 records exFAT measurements (C0101, C0106)."
+    },
+    {
+     "id": "CC-1-F3",
+     "title": "kActiveRequestCount removed: one request per buffer in every raw take; 135 MB of Clear HDR buffers without a board check",
+     "category": "removed-upstream-behaviour",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:1334-1338@cinemate-port",
+      "src/camera/CameraController.cpp:8379-8381@cinemate-port",
+      "src/camera/CameraController.cpp:8846-8848@cinemate-port"
+     ],
+     "port_way": "Requests = buffers: 4/4 in SDR, 8/8 in Clear HDR (8 x 16.9 MB), up to 16 through the env var. The comment names the Pi 5 CFE.",
+     "apertar_way": "kActiveRequestCount = 3 with kConfiguredBufferCount = 4 (CC:1023-1024@upstream-1.6.0), used at CC:6460-6461@upstream-1.6.0, which keeps one RAW buffer out of the queue.",
+     "why_it_matters": "Every raw take changes behaviour, but only 4K Clear HDR 16-bit was measured. Clear HDR is not gated by board in RecordingCapabilities.hpp:66-81 (confirmed), so a low-RAM Pi 4 could allocate 135 MB (probable).",
+     "rework": "Keep SDR at upstream's 4 buffers / 3 requests unless the SDR change is measured. Keep 8 for Clear HDR. Use a one-line why comment without a board name, and document the change for the original developer.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "Commit db17860: capture gaps 41 -> 1 per take, Pi, 4K Clear HDR 16-bit."
+    },
+    {
+     "id": "CC-1-F4",
+     "title": "New persisted booleans written true/false and parsed by string compare",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:885-898@cinemate-port",
+      "src/camera/CameraController.cpp:974-980@cinemate-port"
+     ],
+     "port_way": "Six keys (fps_phase_lock, preview_tdn, media_trim, fps_speed_ramp, fps_speed_ramp_keep_exposure, fps_speed_ramp_stretch_audio) are written as \"true\"/\"false\" and read with value == \"true\" || value == \"1\". media_trim reads anything but false/0 as true. fps_speed_ramp_after is \"return\"/\"stay\" backed by a bool.",
+     "apertar_way": "output << prefix << \"iso_auto=\" << s.isoAuto (writes 0/1, CC:749@upstream-1.6.0); settings.isoAuto = std::stoul(value) != 0 (CC:659-660@upstream-1.6.0). The port's own iso_auto_after_clear_hdr uses this style (CC:945@cinemate-port).",
+     "why_it_matters": "One file now holds two boolean styles.",
+     "rework": "Write << s.field and read std::stoul(value) != 0. Also accept true/false on read for files the port already wrote. Back fps_speed_ramp_after with an enum plus toString/fromString, or make it a 0/1 key.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-1-F5",
+     "title": "modeLadderPath is a line-for-line copy of persistedSettingsPath",
+     "category": "duplication",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:403-415@cinemate-port"
+     ],
+     "port_way": "A copy of the XDG/HOME/temp path function with only the file name changed, plus a 'T34:' comment.",
+     "apertar_way": "persistedSettingsPath (CC:342-353@upstream-1.6.0). Upstream itself repeats this rule (App:343, App:535, HardwareConfigStore.cpp:127@upstream-1.6.0), and it keeps separate files per concern.",
+     "why_it_matters": "Small: a second copy in the same file, next to the first.",
+     "rework": "Use persistedSettingsPath().parent_path() / \"mode_ladder.conf\", or one helper that takes the file name. Drop T34.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-1-F6",
+     "title": "conform_fps: stored, published, clamped and carried, but never read",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:172@cinemate-port",
+      "src/camera/CameraController.cpp:696-697@cinemate-port",
+      "src/camera/CameraController.cpp:817-818@cinemate-port",
+      "src/camera/CameraController.cpp:942@cinemate-port",
+      "src/camera/CameraController.cpp:11354-11364@cinemate-port",
+      "include/apertar/core/Types.hpp:135-137@cinemate-port",
+      "src/ApertarCoreApp.cpp:320@cinemate-port",
+      "src/ApertarCoreApp.cpp:7851@cinemate-port",
+      "src/ApertarCoreApp.cpp:9484@cinemate-port",
+      "src/ApertarCoreApp.cpp:13270@cinemate-port",
+      "src/ApertarCoreApp.cpp:14353-14357@cinemate-port"
+     ],
+     "port_way": "A settings field, a persisted key, a clamp with the literal 25.0, a format carry, a set_conform_fps command and a preset key in App. Types.hpp says 'nothing derives from it yet'. Neither UI has a control (WCP has 0 mentions).",
+     "apertar_way": "The settings lists are kept by hand, so each field costs three edits. Defaults come from CaptureSettings{}.field. Upstream has no unused settings.",
+     "why_it_matters": "Dead surface in the protocol, the settings file, presets and three serialisers.",
+     "rework": "Delete it from CC, Types.hpp, both App serialisers, the App command and command list, and the App preset export/import until a consumer exists.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "Types.hpp:135-137 comment; commit d7ff071."
+    },
+    {
+     "id": "CC-1-F7",
+     "title": "Ticket numbers, other-project names and history in comments and in the written ladder file",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:403@cinemate-port",
+      "src/camera/CameraController.cpp:441-445@cinemate-port",
+      "src/camera/CameraController.cpp:1108@cinemate-port",
+      "src/camera/CameraController.cpp:1461-1463@cinemate-port",
+      "src/camera/CameraController.cpp:1660@cinemate-port",
+      "include/apertar/core/Types.hpp:184-189@cinemate-port",
+      "src/camera/ModeLadder.hpp:319@cinemate-port"
+     ],
+     "port_way": "'T34:', 'cinemate-modes, the cinemate-port driver branch', 'Apertar-Beta 1.6.0 driver had...', a '---- Clip names ----' banner, 'as Cinemate's profiles do', 'CineMate Log', and '(T34)' in the header written into mode_ladder.conf.",
+     "apertar_way": "Comments are rare: one to three lines of why, with no ticket numbers and no banners (0 '// ----' banners in CC@upstream-1.6.0).",
+     "why_it_matters": "These names mean nothing to the original developer. The history narration ages badly, and the ladder file shows an internal ticket number to the operator.",
+     "rework": "Delete the banner and the ticket numbers. Cut each comment to one line of why. Name the Log feature without another product's brand. Remove T34 from the ladder file header. The same pattern (69 mentions in MediaProbe/MediaIntent/MediaProfile/LossyDngEncoder) belongs to the slop slice.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-1-F9",
+     "title": "ladder_text: a pre-formatted display line built by Core",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:185@cinemate-port",
+      "src/camera/CameraController.cpp:10911-10935@cinemate-port",
+      "include/apertar/core/Types.hpp:189@cinemate-port"
+     ],
+     "port_way": "The settings event carries a line such as 'Resolution 1 \u00b7 3840\u00d72160 \u00b7 ClearHDR16 \u00b7 \u226425 \u00b7 Uncompressed', UTF-8 glyphs included. Only the WebUI reads it (WCP:8421, 13911, 15920); the touch UI does not.",
+     "apertar_way": "No precedent. Upstream's settings event carries values only (CC:136-187@upstream-1.6.0); each client formats them.",
+     "why_it_matters": "Core takes over the WebUI's wording, and formatting is split between Core and the clients.",
+     "rework": "Publish the missing parts as scalars and compose the line in the WebUI, or keep it and document it as the only display string Core sends.",
+     "effort": "S",
+     "deliberate": "unknown"
+    },
+    {
+     "id": "CC-1-F10",
+     "title": "applyCdngLogFrame repeats the row loop of compressClearHdrFrame",
+     "category": "duplication",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:1647-1656@cinemate-port",
+      "src/camera/CameraController.cpp:1671-1680@cinemate-port"
+     ],
+     "port_way": "Two copies of the stride/size-checked loop over 16-bit rows; the inner operation differs (lut[] vs cdnglog::applyTable).",
+     "apertar_way": "compressClearHdrFrame (CC:1335-1346@main) is fork-main code; upstream has neither loop.",
+     "why_it_matters": "Two 6-line loops to keep correct.",
+     "rework": "Use one row walker that takes a per-row callable, or leave both as they are.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-1-F11",
+     "title": "{res} clip-name token labels by width only",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:1123-1130@cinemate-port"
+     ],
+     "port_way": "width >= 3500 gives '4K'; 1900-1999 wide gives '1080p'; otherwise '<height>p'.",
+     "apertar_way": "no precedent",
+     "why_it_matters": "An IMX283 5472x3648 or IMX477 4056x3040 take is named '4K'; 1332x990 gives '990p'. Only templates that use {res} are affected (the default is {format}_{date}_{clip}).",
+     "rework": "Label with explicit classes (UHD/DCI 4K, 5K, 6K) or emit <width>x<height>.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-1-F12",
+     "title": "Three includes above the file's own header",
+     "category": "mismatch",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:1-3@cinemate-port"
+     ],
+     "port_way": "FramePhaseLock.hpp, FpsCeiling.hpp and <optional> come before camera/CameraController.hpp.",
+     "apertar_way": "Own header first (src/camera/CameraController.cpp:1@upstream-1.6.0), then project headers, then std headers.",
+     "why_it_matters": "Breaks the file's include order.",
+     "rework": "Move them into the project and std groups.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-1-F13",
+     "title": "Small inconsistencies: namespace spelling, member/key names, constant token, lone assert",
+     "category": "slop",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:660@cinemate-port",
+      "src/camera/CameraController.cpp:180@cinemate-port",
+      "src/camera/CameraController.cpp:1157@cinemate-port",
+      "src/camera/CameraController.cpp:43@cinemate-port",
+      "src/camera/CameraController.cpp:4596@cinemate-port",
+      "src/camera/CameraController.cpp:2268@cinemate-port"
+     ],
+     "port_way": "imx283:: vs apertar::imx585:: (both namespaces are apertar::x); JSON key ladder_resolution from member ladderRung; a {cam} token that is always 'cam0'; <cassert> for one assert; #endif followed directly by enum class.",
+     "apertar_way": "One namespace style; wire names match members; upstream uses only static_assert (CC:1697@upstream-1.6.0).",
+     "why_it_matters": "Small reading friction.",
+     "rework": "Use the short namespace form for both tables, rename the member to ladderResolution, drop {cam}, replace the assert with an explicit check or remove it, and add a blank line after the #endif.",
+     "effort": "S",
+     "deliberate": "no"
+    }
+   ]
+  },
+  "CC-3": {
+   "verified": true,
+   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-CC-3.md",
+   "summary": "Skeptic pass on CC-3: all 13 findings survive, 6 corrected. F1: upstream path is src/util/RecordingFailure.hpp; upstream has mutable function statics (Mpu6050 liveConfiguredKey) but no callback registries or object pointers in globals. F2: the media tune file is per take only for sync_ms; writeback is read once per process; MediaProfile.hpp is port code. F7 is worse than reported: the TDN-stripped tuning also feeds recorded H.264 and the derived ProRes ISP tuning, not only the monitor. F6: wording and clip ids corrected. F11 narrowed to the sensor-identity check; the table probe stays. F10 adds the misplaced member comment at :5591. F3, F4, F5, F8, F9, F12, F13 confirmed as stated. No findings were dropped and none were added.",
+   "conforms": [],
+   "abstraction_verdicts": [],
+   "findings": [
+    {
+     "id": "CC-3-F1",
+     "title": "Safety stop, flush abort, buffer gauge and buffer setting are process-wide globals and std::function registries shared by CC and App",
+     "category": "mismatch",
+     "severity": "major",
+     "where": [
+      "src/camera/CameraController.cpp:4182@cinemate-port",
+      "src/camera/CameraController.cpp:4594@cinemate-port",
+      "src/camera/CameraController.cpp:4611-4636@cinemate-port",
+      "src/camera/CameraController.cpp:5011-5022@cinemate-port",
+      "src/util/BufferBudget.hpp:224-300@cinemate-port",
+      "src/ApertarCoreApp.cpp:291-295@cinemate-port",
+      "src/ApertarCoreApp.cpp:7988@cinemate-port"
+     ],
+     "port_way": "frameBufferGauge(), bufferbudget::safetyStopState(), flushAbortFunction() (holds the queue's [this]), safetyStopHook() (assigned by App) and bufferSettingStorage() are function-local statics holding per-take mutable state. App assigns the hook and calls abortSafetyStopFlush() without going through the controller. A lock-order comment is what keeps it safe.",
+     "apertar_way": "App reaches the camera only through CameraController methods (S7). Callbacks go into the constructor and live as members (CameraController.hpp:19-21, 111-112@upstream-1.6.0). A background condition that ends a take is latched and polled by App's 1 s supervisor (src/util/RecordingFailure.hpp, CameraController.cpp:8519-8534, ApertarCoreApp.cpp:7031-7034@upstream-1.6.0; N4). Upstream statics hold caches or one-off values (captureSettingsPersister, cachedPiSerial, Mpu6050RecordingSession.cpp:1228), never a callback registry or an object pointer.",
+     "why_it_matters": "Queue state lives in three places. App changes the recorder outside the controller lock. CameraController.hpp does not show that the safety stop or the flush abort exist. The original developer will read this as hidden coupling.",
+     "rework": "Move the gauge atomics into DngRecordingQueue members and read them through CameraSession and the existing CameraController::frameBufferStatus(). Latch safetyStopRequested_ in the queue and expose CameraController::takeSafetyStopRequest(), polled by App's supervisor loop; if 1 s is too slow, pass a std::function<void()> into the CameraController constructor. Add a public CameraController::abortSafetyFlush() that forwards to the recorder without the controller mutex, and say so in the header. Delete flushAbortMutex, flushAbortFunction, registerFlushAbort, unregisterFlushAbort and safetyStopHook. bufferSettingStorage becomes a controller member. BufferBudget.hpp keeps only the pure planning math (S4).",
+     "rework_risk": "The abort runs while stop() drains, so the new method must not take CameraController::mutex_.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "d44b177 and c5db8b2 describe the safety stop and the flush abort; the global shape is not discussed."
+    },
+    {
+     "id": "CC-3-F2",
+     "title": "Recorder reads apertar-hardware.conf [storage] at every take, and a media tune file",
+     "category": "mismatch",
+     "severity": "major",
+     "where": [
+      "src/camera/CameraController.cpp:2988-3006@cinemate-port",
+      "src/camera/CameraController.cpp:4297@cinemate-port",
+      "src/camera/CameraController.cpp:4364@cinemate-port",
+      "src/camera/CameraController.cpp:4718@cinemate-port",
+      "src/camera/CameraController.cpp:1467@cinemate-port",
+      "src/camera/CameraController.cpp:5498-5536@cinemate-port",
+      "src/util/MediaTune.hpp:27-28@cinemate-port",
+      "src/cdng/CdngEncoder.cpp:91@cinemate-port"
+     ],
+     "port_way": "At each take loadBufferConf() opens APERTAR_HARDWARE_CONFIG, or apertar-hardware.conf under /home/pi or /boot, and parses [storage] buffer, buffer_stop_percent, ram fraction/floor/max and frames_per_folder. mediaTuneForConfiguredRoot() reads ~/apertar-media-tune.conf plus a /run override: per take for sync_ms (:4364), once per process for writeback (:4718, static const), and also for the raw buffer count and DONTNEED. Every site uses env > file > default.",
+     "apertar_way": "S22: the camera side never reads apertar-hardware.conf (0 hits in src/camera@upstream-1.6.0). S20/S7/I1/S8: operator camera settings persist in camera_settings.conf through one setter per command, gated on recording. N11 and 5.12: recorder tuning is env-only (APERTAR_CDNG_QUEUE_FRAMES, CameraController.cpp:3329-3330@upstream-1.6.0), and a config file for recorder tuning is deliberately absent.",
+     "why_it_matters": "Frames/RAM, the stop percent and frames per folder are operator choices made in the UI, yet they are stored in the hardware file and re-read from disk inside the recorder. The recorder now has four config sources.",
+     "rework": "Add CaptureSettings::bufferMode (an enum with toString), bufferStopPercent and framesPerFolder, persisted in camera_settings.conf. Add setters setBufferMode and setFramesPerFolder, refused while recording, that end in applySettingsLocked(next,false). planQueueBuffer and startAtFolder read settings_. Ram fraction, floor and max stay env-only. Delete loadBufferConf, bufferbudget::parseBufferConf and the [storage] keys in HardwareConfigText.hpp. Replace the MediaTune file layer with per-class defaults in MediaProfile.hpp (itself port code, 26da30e) plus env overrides.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "2edc6d0: 'the camera's tuning per storage medium belongs in one readable file next to the hardware conf'. The upstream rule was not weighed."
+    },
+    {
+     "id": "CC-3-F7",
+     "title": "Preview temporal denoise off by default: the stock tuning is no longer loaded as is, and recorded H.264 and ProRes change too",
+     "category": "removed-upstream-behaviour",
+     "severity": "major",
+     "where": [
+      "src/camera/CameraController.cpp:7306-7320@cinemate-port",
+      "src/camera/CameraController.cpp:7326@cinemate-port",
+      "src/camera/CameraController.cpp:7401@cinemate-port",
+      "src/camera/CameraController.cpp:7412@cinemate-port"
+     ],
+     "port_way": "Unless settings.previewTdn is set (default off), loadablePath() loads tuning::previewTuningPath(), a cached copy of the resolved tuning without the rpi.denoise tdn blocks, on every sensor and board. The ProRes ISP tuning is derived from this stripped copy (makeProresIspTuning(activePath, ...)), and H.264 is encoded from the same ISP output.",
+     "apertar_way": "applyProcessTuningFile(tuningPath) loads the resolved file unchanged, and ProRes is derived from tuningPath (CameraController.cpp:5350@upstream-1.6.0). Derived tunings exist only for the ProRes ISP log (ProresIspProfile.hpp:7, N13).",
+     "why_it_matters": "After the merge every user gets a noisier monitor image and noisier H.264 and ProRes recordings. The change fixes a load problem measured only on IMX585 Clear HDR 16-bit 4K, and the commit marks that measurement 'probable'. The commit says only that DNGs are unaffected, which is true; it does not mention H.264 or ProRes.",
+     "rework": "Default previewTdn=true, the upstream look. Turn it off by operator choice, or automatically only on the IMX585 Clear HDR 16-bit path and only for raw formats (cDNG/MLV). Keep the derived-file mechanism.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "e625c68: 'a persisted setting preview_tdn (default off)', with measurements marked probable and 'the recorded DNGs are raw and do not change'."
+    },
+    {
+     "id": "CC-3-F5",
+     "title": "Raw copy pool kept between takes; upstream freed it at stop",
+     "category": "removed-upstream-behaviour",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4502@cinemate-port",
+      "src/camera/CameraController.cpp:4596-4606@cinemate-port",
+      "src/camera/CameraController.cpp:4892-4899@cinemate-port",
+      "src/camera/CameraController.cpp:4935-4944@cinemate-port",
+      "src/camera/CameraController.cpp:5547-5550@cinemate-port"
+     ],
+     "port_way": "stop() no longer clears rawPool_. trimRawPoolToIdle keeps min(queue, max(workers+2, 4)) full-frame copies, which is 6 x 16.6 MB at 16-bit 4K with 4 writers. warmRawPool tops the pool up before each take.",
+     "apertar_way": "stop(): queue_.clear(); rawPool_.clear(); pooledRawBytes_ = 0; expectedRawBufferSize_ = 0; (CameraController.cpp:3486-3489@upstream-1.6.0)",
+     "why_it_matters": "About 100 MB stays held while idle at 16-bit 4K. On 1-2 GB Pi 4, CM4 and Pi 3 boards this competes with preview and the UI (pi-compat, probable).",
+     "rework": "Keep warmRawPool, which allocates outside the lock at take start. Restore the upstream clear at stop, or keep the idle pool only when MemTotal >= 4 GB. Remove APERTAR_RAW_POOL_WARM.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "4abbef0 commit message and the in-code comment."
+    },
+    {
+     "id": "CC-3-F3",
+     "title": "Sync thread waits on the writers' cv_; enqueue's notify_one can wake it instead of a writer",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4743-4746@cinemate-port",
+      "src/camera/CameraController.cpp:5010@cinemate-port",
+      "src/camera/CameraController.cpp:5256@cinemate-port",
+      "src/camera/CameraController.cpp:5366@cinemate-port"
+     ],
+     "port_way": "syncLoop runs cv_.wait_for(lock, interval, [this]{return stopping_;}) on the cv_ the DNG and MLV writers wait on (predicate stopping_ || !queue_.empty()). enqueue calls cv_.notify_one().",
+     "apertar_way": "I16: one cv per worker set, and each waiter's predicate matches what is notified (CameraController.cpp:3922-3927@upstream-1.6.0).",
+     "why_it_matters": "Failing case: all writers are idle and a frame is queued. notify_one wakes the sync thread, which goes back to sleep, and the frame waits for the next enqueue. MLV, with one writer, is the worst case. The queue runs one frame deeper than it needs to.",
+     "rework": "Give syncLoop its own syncCv_, notified in stop() and failRecording; or use notify_all in enqueue.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-3-F4",
+     "title": "Detached writers outlive the queue: the destructor does not wait for liveWorkers_",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4208-4212@cinemate-port",
+      "src/camera/CameraController.cpp:4441-4446@cinemate-port",
+      "src/camera/CameraController.cpp:4489-4500@cinemate-port",
+      "src/camera/CameraController.cpp:4691-4707@cinemate-port"
+     ],
+     "port_way": "A dead-medium stop detaches blocked writers. The second stop() from ~DngRecordingQueue returns early because active_ is false, workers_ is cleared and stopping_ has been reset. spawnWorker's Exit destructor and the writer loop later dereference this (exitMutex_, mutex_).",
+     "apertar_way": "Every writer is joined in stop() (CameraController.cpp:3404-3409@upstream-1.6.0).",
+     "why_it_matters": "Failing case: pull the card mid-take, stop, then quit Core or reconfigure the session before the kernel fails the I/O. The thread then returns into freed memory (probable).",
+     "rework": "In the destructor, wait on exitCv_ for liveWorkers_==0 with a bound and log if the bound runs out. Or move the state the threads touch into a shared_ptr block that each thread captures.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-3-F8",
+     "title": "Write-stall watchdog classes a slow but live medium as Removed",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4834-4842@cinemate-port",
+      "src/camera/CameraController.cpp:4476-4483@cinemate-port",
+      "src/camera/CameraController.cpp:5424-5432@cinemate-port",
+      "src/camera/CameraController.cpp:5372-5377@cinemate-port"
+     ],
+     "port_way": "A full queue with no write for 5 s (APERTAR_WRITE_STALL_MS), or the same stall during a user stop, calls failRecording(..., MediaFault::Removed). That sets mediumGone_: the MLV header patch is skipped (abandon()), syncToMedium is skipped and writers may be detached.",
+     "apertar_way": "N4: a write failure ends the take with its first error. No 'medium gone' state exists upstream.",
+     "why_it_matters": "Failing case: an untrimmed NVMe that is alive but stalls for 5-10 s, as d44b177 documents. The take ends as removed, and the MLV keeps the frame count it had at open.",
+     "rework": "Add MediaFault::Stalled. It ends the take but does not set mediumGone_. Removed stays for the mount watcher.",
+     "effort": "S",
+     "deliberate": "unknown",
+     "deliberate_evidence": "a3ac8da chose Removed after a card-pull test. The slow-drive case is not discussed, although d44b177 describes multi-second NVMe stalls."
+    },
+    {
+     "id": "CC-3-F6",
+     "title": "Per-file writeback, a 1 s fsync sweep and syncfs at stop reverse upstream's 'clip frames are not synced'",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4715-4729@cinemate-port",
+      "src/camera/CameraController.cpp:4743-4790@cinemate-port",
+      "src/camera/CameraController.cpp:4795-4809@cinemate-port"
+     ],
+     "port_way": "sync_file_range(WRITE) after each DNG. A separate thread fsyncs the written files, the part folders and the clip folder every APERTAR_MEDIA_SYNC_MS, with an optional DONTNEED. syncfs runs at a normal stop. None of this runs on the writer path.",
+     "apertar_way": "No precedent in the take path; upstream CC has no fsync or syncfs. N10: AtomicStillFile.hpp:31-32@upstream-1.6.0 'Keep this out of the continuous recording path: syncing each video frame would destroy throughput.'",
+     "why_it_matters": "It reverses a stated upstream intent. Keep it, because the measurements support it, but the original developer must be told why.",
+     "rework": "Keep it and document it as a decision with the pull-test and A/B numbers. Simplify to one mode: writeback per frame plus the folder fsync tick. Drop the DONTNEED=sync branch and give the thread its own cv (F3).",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "441e42a, 4ce382e, 7d9dd60: C0105 (a pull lost an already-stopped clip), C0001 (12 gaps with syncfs), C0005 (782 drops with syncfs plus writeback), C0004 (none with writeback alone)."
+    },
+    {
+     "id": "CC-3-F11",
+     "title": "Probe identifies IMX585 by a properties::Model substring instead of SensorFamily",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:7152-7158@cinemate-port"
+     ],
+     "port_way": "modelName = lowercase(properties::Model); tableProbe = modelName.find(\"imx585\"). For IMX585 only the Imx585Modes table rows are configured, each still validated; advertised sizes that are not in the table are never seen.",
+     "apertar_way": "S11: sensorFamily_ = detectSensorFamily(camera_->id()) (CameraController.cpp:5375@upstream-1.6.0), with switch (family) in free functions. Upstream reads properties::Model only to pick the default tuning (CameraController.cpp:5323@upstream-1.6.0).",
+     "why_it_matters": "It is a second way to tell sensors apart in the same file (otherSensorSubdevPresent uses detectSensorFamily). A driver mode missing from the table leaves no trace.",
+     "rework": "tableProbe = detectSensorFamily(camera->id()) == SensorFamily::Imx585. Optionally log advertised sizes that are not in the table. The table-row probe itself stays.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "caa0153 'imx585 modes from tables, not whitelists'"
+    },
+    {
+     "id": "CC-3-F12",
+     "title": "Safety stop ends the take; record during the flush discards queued frames",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:5011-5022@cinemate-port",
+      "src/camera/CameraController.cpp:4611-4624@cinemate-port"
+     ],
+     "port_way": "In ram mode the take ends cleanly when the buffer reaches 90 % of its budget. Pressing record during the drain discards the remaining queued frames of the previous clip.",
+     "apertar_way": "No precedent. N3: a dropped frame is reported and does not stop the take.",
+     "why_it_matters": "It changes intent, but it is opt-in: frames mode (the default) keeps upstream behaviour. The discard loses frames that were already captured.",
+     "rework": "Keep the feature. Re-shape it per F1 and document the discard in the handoff.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "d44b177; c5db8b2, recorded in fork-log.md:138 as owner decision 2026-11-01."
+    },
+    {
+     "id": "CC-3-F9",
+     "title": "A/B and experiment env knobs left in the recorder",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4892-4899@cinemate-port",
+      "src/camera/CameraController.cpp:4715-4719@cinemate-port",
+      "src/camera/CameraController.cpp:4763-4764@cinemate-port",
+      "src/camera/CameraController.cpp:4468@cinemate-port",
+      "src/camera/CameraController.cpp:5500-5536@cinemate-port"
+     ],
+     "port_way": "APERTAR_RAW_POOL_WARM ('restores the old pool rule for the A/B'), APERTAR_DNG_WRITEBACK, APERTAR_DNG_DONTNEED (three modes), APERTAR_WRITE_STALL_MS, APERTAR_DEAD_MEDIUM_STOP_MS, APERTAR_CDNG_BUFFER, APERTAR_CDNG_BUFFER_STOP_PERCENT (overrides a conf key), APERTAR_CDNG_QUEUE_RAM_FRACTION/_FLOOR_MB/_MAX_FRACTION.",
+     "apertar_way": "I9: one env knob per tuning value, read where it is used, with a default and bounds (APERTAR_CDNG_QUEUE_FRAMES, CameraController.cpp:3329-3330@upstream-1.6.0). The form conforms; the number of knobs and their A/B purpose do not.",
+     "why_it_matters": "Knobs kept only to A/B one change make the recorder harder to read, and some override file keys.",
+     "rework": "Remove APERTAR_RAW_POOL_WARM, the DONTNEED=sync mode and APERTAR_CDNG_BUFFER_STOP_PERCENT. Keep the rest as env-only knobs (after F2).",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "4abbef0 and 0ed07ea commit text."
+    },
+    {
+     "id": "CC-3-F10",
+     "title": "Comments with ticket numbers, clip ids, dates and a commit sha; misplaced member comment; assert",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4674@cinemate-port",
+      "src/camera/CameraController.cpp:4678@cinemate-port",
+      "src/camera/CameraController.cpp:4714@cinemate-port",
+      "src/camera/CameraController.cpp:4734@cinemate-port",
+      "src/camera/CameraController.cpp:4888@cinemate-port",
+      "src/camera/CameraController.cpp:5546@cinemate-port",
+      "src/camera/CameraController.cpp:5591@cinemate-port",
+      "src/camera/CameraController.cpp:4596@cinemate-port"
+     ],
+     "port_way": "'(T31)', '(C0001, 2026-10-26)', '(C0010, 2026-10-26)', '(kb dng-chain, R3/R7)', '(the rule since db17860)', 'for the A/B', 'CineMate Log'. The writtenFiles_ member (:5591) also carries lastWriteProgressNs_'s comment. assert(!queue_.empty() || queuedBytes_ == 0). Many 3-6 line comments narrate measurements.",
+     "apertar_way": "I19: rare one-to-three-line comments that state a constraint, with no ticket numbers, dates or authors. Upstream Core has 0 runtime assert( calls (only 2 static_assert).",
+     "why_it_matters": "The ids and dates mean nothing to the original developer, and the comments read as history.",
+     "rework": "Strip ids, dates and shas. Keep one constraint line per comment and move measurements to the KB and commit messages. Fix the misplaced member comment and delete the assert.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-3-F13",
+     "title": "otherSensorSubdevPresent copies openImx585Subdev's sysfs walk",
+     "category": "duplication",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:6955-6972@cinemate-port",
+      "src/camera/CameraController.cpp:6985-7002@cinemate-port"
+     ],
+     "port_way": "Two loops over /sys/class/video4linux/v4l-subdev*/name. imx585SubdevPresent opens and closes the device only to test that it exists.",
+     "apertar_way": "No precedent: openImx585Subdev exists only in fork main (CameraController.cpp:5340@main).",
+     "why_it_matters": "Small duplication in sensor detection.",
+     "rework": "Use one helper that returns the SensorFamily values found on subdevs, and call it from both checks.",
+     "effort": "S",
+     "deliberate": "no"
+    }
+   ]
+  },
+  "CC-5": {
+   "verified": true,
+   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-CC-5.md",
+   "summary": "Skeptic pass on CC-5. No finding was dropped outright. 8 stand and 5 were corrected. The corrections:\n- F2: the \"mismatch\" claim is wrong. Upstream already has applySettingsLocked(..., bool commit = true) (CameraController.hpp:92@upstream-1.6.0). Upstream applyCapturePreset passes commit=false and then persists and emits itself (CC:8627-8638), and the port copies this pattern. The conv-core-camera S8 entry misquotes the signature. What survives is a crash-only leak of the mid-ramp FPS, now filed as bug/nit.\n- F1: downgraded from major to minor and narrowed. The five setter gates use upstream's own gate shape. The seven rewrites are one-line helper calls. Moving either into applySettingsLocked would need a caller flag and would break the order setFps depends on (rewrite first, then shutter rescale). The 16-bit exception depends on a value, not on call order. What survives is the override bookkeeping: ten writes plus the setRawBitDepth exception.\n- F3: the still-mode half is dropped. restoreModeGeometryLocked does not touch the shutter. Only the setRecordingFormat profile swap remains.\n- F7: upstream does run shell strings through popen (App:1501-1505), so the shell is not a second launch style. The detached double fork with no waiter is. Default on is the user's own choice (ca7b7c2), so the default is not a rework item.\n- F10: there are more readers than listed, including CdngEncoder.cpp:91. Effort raised to M.\n\nLine nits fixed: F11 banner at line 9742, F12 range.",
+   "conforms": [],
+   "abstraction_verdicts": [],
+   "findings": [
+    {
+     "id": "CC-5-F1",
+     "title": "Clear HDR ladder override kept by ten scattered writes and a 16-bit exception in setRawBitDepth",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10679@cinemate-port",
+      "src/camera/CameraController.cpp:10711@cinemate-port",
+      "src/camera/CameraController.cpp:11084@cinemate-port",
+      "src/camera/CameraController.cpp:11092@cinemate-port",
+      "src/camera/CameraController.cpp:11383@cinemate-port",
+      "src/camera/CameraController.cpp:11593@cinemate-port",
+      "src/camera/CameraController.cpp:11608-11612@cinemate-port",
+      "src/camera/CameraController.cpp:11656-11662@cinemate-port",
+      "src/camera/CameraController.cpp:11943@cinemate-port"
+     ],
+     "port_way": "setClearHdr sets ladderOverride_ when the ladder was active. setResolution, setFps (not in a take), setModeLadder, setRecordingFormat, setRawBitDepth (twice) and setFpsSpeedRamp clear it by hand, and it is rolled back in two places. setRawBitDepth keeps it for a 16-bit request in Clear HDR because 'the hardware clear_hdr action and the touch UI send it right after set_clear_hdr'. The 5 refusal gates and 7 ladderRewriteLocked calls are one-line helper calls in upstream's gate shape and are not part of this finding.",
+     "apertar_way": "No precedent for a flag that one setter sets and six others clear. Upstream keeps cross-setting rules in values passed through the sanitiser (S15, setFps src/camera/CameraController.cpp:7740-7770@upstream-1.6.0). No setter comment refers to another client's next command. Setter gates themselves are upstream style (if (recording_) {setErrorLocked; return false;} CC:7714-7717@upstream-1.6.0).",
+     "why_it_matters": "To change any of six setters the original developer has to know the override rule. The 16-bit exception is justified by client behaviour, not by camera state.",
+     "rework": "Add a helper endLadderOverrideLocked(next), called from applySettingsLocked. It clears ladderOverride_ when not recording and next.fps, next.resolution or next.recordingFormat differ from settings_. Keep explicit clears only where no mode value changes (setModeLadder, setFpsSpeedRamp Ramp-ready), and keep the set and rollback in setClearHdr. Bit-depth changes no longer clear the override (Clear HDR 16<->12 stays a manual hold), so the setRawBitDepth exception and its two writes are deleted. Gates and rewrites stay in the setters.",
+     "rework_risk": "Rollback paths in setModeLadder (:11090-11094) and setClearHdr (:11657-11662). Needs a Pi check of Clear HDR toggles from the dial and the touch UI with the ladder on.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "09256a7 'an active ladder blocks manual resolution, bit depth and Clear HDR' (User changed his mind 2026-10-28); d44b177 'Clear HDR over the Mode Ladder'; fork-log says not yet run on the camera"
+    },
+    {
+     "id": "CC-5-F2",
+     "title": "A mid-ramp FPS can be written to camera_settings.conf by another setter during a take",
+     "category": "bug",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:10777-10780@cinemate-port",
+      "src/camera/CameraController.cpp:10812-10815@cinemate-port",
+      "src/camera/CameraController.cpp:12795@cinemate-port"
+     ],
+     "port_way": "Ramp steps call applySettingsLocked(next, reconfigure, false) and emit the event themselves. Any other setter in the take (set_iso, set_wb) commits through persistSettingsLocked, which writes the current mid-ramp fps. restoreFpsAfterRampLocked writes the file again at stop.",
+     "apertar_way": "The commit flag itself conforms: applySettingsLocked(..., bool commit = true) at src/camera/CameraController.hpp:92@upstream-1.6.0. applyCapturePreset passes false and persists/emits afterwards (src/camera/CameraController.cpp:8627-8638@upstream-1.6.0).",
+     "why_it_matters": "A crash or power loss during a ramp take leaves the mid-ramp FPS on disk as the operator's FPS.",
+     "rework": "In persistSettingsLocked, write rampTakeBaseFps_ as fps while recording_ && rampTakeChanged_. Then delete the 'write once more' branch in restoreFpsAfterRampLocked. Keep the commit flag.",
+     "effort": "S",
+     "deliberate": "no",
+     "deliberate_evidence": "faa2958 makes the step take-scoped on purpose; the leak through other setters is not intended (restoreFpsAfterRampLocked comment admits it)."
+    },
+    {
+     "id": "CC-5-F3",
+     "title": "rampNominalShutterUs_ survives a record-format switch",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10751-10755@cinemate-port",
+      "src/camera/CameraController.cpp:11356@cinemate-port"
+     ],
+     "port_way": "The keep-exposure nominal is set at the first FPS step. It is reset only by setShutterUs (:11201), setShutterAuto (:11211), setFpsSpeedRamp (:11936) and preset load (:12665). setRecordingFormat loads the saved profile (next = saved->second, :11356) without resetting it.",
+     "apertar_way": "no precedent",
+     "why_it_matters": "Ramp on with shutter=exposure, cDNG shutter 20000 us, then set_fps 30 (nominal becomes 20000). Next, set_record_format mlv with a 10000 us profile. Then set_fps 25 sets min(20000, 40000) = 20000, which overwrites the MLV profile's shutter.",
+     "rework": "Reset rampNominalShutterUs_ = 0 in setRecordingFormat when a saved profile is loaded. Alternatively, make the nominal take-scoped: set it in the take and clear it in restoreFpsAfterRampLocked.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-5-F4",
+     "title": "ladderOverride_ not persisted: after a restart a held Clear HDR mode sits outside the ladder and manual mode is refused (probable)",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10508-10514@cinemate-port",
+      "src/camera/CameraController.hpp:245-249@cinemate-port"
+     ],
+     "port_way": "The override is a plain member. The constructor loads mode_ladder.conf after the settings, and neither the constructor nor start() calls ladderRewriteLocked.",
+     "apertar_way": "no precedent",
+     "why_it_matters": "Read from code, not run: ladder on and Clear HDR held by override, then restart. State becomes ladder_active=true, ladder_rung=0, and set_resolution/set_raw_bit_depth are refused with kLadderOwnsMode until an FPS or Clear HDR change. Settle it with get_state before and after a Core restart on the Pi.",
+     "rework": "With F1's value-shaped clear in place, derive the override at load: if the Clear HDR mode differs from the rung for fps, the override is on. Or call ladderRewriteLocked once at start.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-5-F5",
+     "title": "setModeLadder returns JSON and error through out-parameters, bypasses setErrorLocked; dry run inside a setter",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:11045-11102@cinemate-port",
+      "src/ApertarCoreApp.cpp:14093-14107@cinemate-port"
+     ],
+     "port_way": "bool setModeLadder(optional rungs, optional enabled, optional rampReady, bool dryRun, std::string *json, std::string *error). Errors go to *error and lastError_ is not set. The port's previewClipName and applyLadderToPreset also take *error.",
+     "apertar_way": "S7/I1: bool setters with setErrorLocked(\"...\"); return false; and lastError(). App replies settingsBody(camera_.settings()) or camera_.lastError() (src/ApertarCoreApp.cpp:9242-9249@upstream-1.6.0). Upstream CameraController.hpp has no std::string *error parameter. Read-only data has its own getter (sensorModes()).",
+     "why_it_matters": "App needs a special reply path, and the error never reaches lastError().",
+     "rework": "Change to bool setModeLadder(rungs, enabled, rampReady) using setErrorLocked. Add std::string modeLadderPreviewJson(rungs, enabled, rampReady) const for dry_run. App replies with modeLadderJson() + settingsBody after success.",
+     "effort": "S",
+     "deliberate": "unknown"
+    },
+    {
+     "id": "CC-5-F6",
+     "title": "setResolution refuses an IMX585 size the current class lacks; upstream sanitises silently",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10656-10664@cinemate-port"
+     ],
+     "port_way": "When apertar::imx585::find(classFor(bits, clearHdr), w, h) fails, setErrorLocked('<size> is not a mode of the IMX585 at N-bit.').",
+     "apertar_way": "validateResolution rejects only unknown sizes ('Unsupported resolution.', src/camera/CameraController.cpp:8767@upstream-1.6.0). A known size is sanitised and the reply carries the effective value (I2, setResolution :7719-7737).",
+     "why_it_matters": "It adds a second size policy beside the sanitiser, which still maps bit-depth and Clear HDR changes to the nearest row.",
+     "rework": "Owner decision. Either document it as a deliberate IMX585-only refusal, or let sanitizeSettingsForSensor pick the nearest row as it does for bit depth and Clear HDR.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "caa0153 'Explicit set_resolution refuses a size the class lacks; bit depth and Clear HDR changes take the nearest row.'"
+    },
+    {
+     "id": "CC-5-F7",
+     "title": "Experimental audio stretch needs uninstalled rubberband-cli and is launched as a detached double fork of sh -c",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:9933-10007@cinemate-port",
+      "include/apertar/core/Types.hpp:149@cinemate-port"
+     ],
+     "port_way": "fpsSpeedRampStretchAudio=true by default. launchAudioStretch builds a shell string (nice/rubberband/mv/rm/echo), double-forks, calls setsid and execl('/bin/sh','sh','-c',...), and nobody waits for the grandchild. There is no install step, README line or dependency check for rubberband (git grep hits CC only).",
+     "apertar_way": "External programs run as waited children: ffmpeg fork+execv(argv) (src/camera/CameraController.cpp:4154-4161@upstream-1.6.0), zip (src/ApertarCoreApp.cpp:6227-6258), aplay execvp (src/audio/AudioRecordingSession.cpp:287). Shell strings go through popen with the output read (src/ApertarCoreApp.cpp:1501-1505). Nothing upstream is detached. N8: the operator gets a sentence naming what is missing.",
+     "why_it_matters": "On a stock install, every ramp take with FPS changes logs a rubberband failure and nothing tells the operator. A detached process that nothing tracks can outlive a stop or a media unmount.",
+     "rework": "Launch rubberband with execv and an argv vector, no shell. Do the rename and cleanup in a joined std::thread member that waits for the child (I16). Check for rubberband when the option is switched on and refuse with a sentence if it is missing. Default true is the user's choice (ca7b7c2); keep it unless the owner changes it.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "ca7b7c2 'labelled experimental, on by default ... Needs rubberband-cli'"
+    },
+    {
+     "id": "CC-5-F8",
+     "title": "Journal line per ramp setter call and per applied transition",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10772-10775@cinemate-port",
+      "src/camera/CameraController.cpp:9847-9850@cinemate-port"
+     ],
+     "port_way": "Every set_fps in a ramp take logs 'fps ramp: a -> b fps shutter_us= policy='. Every applied transition logs 'frame= frame_us= delta_us= ... lag_frames= superseded='.",
+     "apertar_way": "I7: no line for a setter call or a control change (no std::cerr in src/camera/CameraController.cpp:7609-8489@upstream-1.6.0); one line each at take start and stop (CC:3353-3374, 3416-3423@upstream-1.6.0).",
+     "why_it_matters": "A dial sweep floods the journal, and the same data is already in fps-ramp.txt and the stop stats line (CC:9876-9877).",
+     "rework": "Delete the setter line. Rate-limit the transition line with n == 1 || n % 30 == 0 (I8), or drop it.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "faa2958; comment says lag_frames sizes the grace window on the Pi"
+    },
+    {
+     "id": "CC-5-F9",
+     "title": "Dropped-frame count published in recording_health",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10490-10493@cinemate-port",
+      "src/camera/CameraController.cpp:10050@cinemate-port"
+     ],
+     "port_way": "recording_health adds recording_dropped_frames:N; markDropped(count).",
+     "apertar_way": "N3 'one warning per clip, not a counter'; only recording_has_dropped_frames leaves Core (src/camera/CameraController.cpp:7580-7584@upstream-1.6.0).",
+     "why_it_matters": "It departs from a stated upstream intent. It is additive, so unmodified UIs ignore it.",
+     "rework": "Keep it, and document it as a deliberate departure from N3.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "64bbbaa 'the user wants the number'"
+    },
+    {
+     "id": "CC-5-F10",
+     "title": "configuredMediaRoot() is a mutable process-wide global written by CameraController::start",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:10543@cinemate-port",
+      "src/util/MediaProfile.hpp:214-234@cinemate-port",
+      "src/camera/CameraController.cpp:1466-1467@cinemate-port",
+      "src/camera/CameraController.cpp:4364@cinemate-port",
+      "src/camera/CameraController.cpp:4718@cinemate-port",
+      "src/cdng/CdngEncoder.cpp:91@cinemate-port"
+     ],
+     "port_way": "configuredMediaRoot() = mediaRoot; the buffer-count and media-tune helpers read the global, including the encoder and a function-local static.",
+     "apertar_way": "The media root is the controller member mediaRoot_, passed as an argument (start(const std::string &mediaRoot, ...) CC:3268, startRecording(mediaRoot, ...) CC:5526@upstream-1.6.0). I17 statics are for one-off process values only.",
+     "why_it_matters": "It creates hidden coupling between the controller, the util headers and the encoder. It is the same pattern as CC-3-F1.",
+     "rework": "Pass mediaRoot_ into CameraSession start/reconfigure and on to mediaExtraRawBuffersFor(root) / mediaTuneFor(root). Give the encoder its MediaTune at construction. Delete the global.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "26da30e (first adds it; comment 'has no other way to the path'); 2edc6d0 extends it"
+    },
+    {
+     "id": "CC-5-F11",
+     "title": "Ticket numbers, Cinemate references, commit ids and dates in comments; // ---- banners",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:9742@cinemate-port",
+      "src/camera/CameraController.cpp:9931@cinemate-port",
+      "src/camera/CameraController.cpp:10726@cinemate-port",
+      "src/camera/CameraController.cpp:10823@cinemate-port",
+      "src/camera/CameraController.cpp:10900@cinemate-port",
+      "src/camera/CameraController.cpp:1108@cinemate-port",
+      "src/camera/CameraController.cpp:12039@cinemate-port"
+     ],
+     "port_way": "T31, T34, T23/T29, T28, 'request 19', 'decision 9', 'Cinemate ff59dd8', 'Cinemate's shutter_a_sync_mode', 'measured 2026-10-28'; four // ---- banners.",
+     "apertar_way": "I19: no ticket numbers, author or date. There are 0 // ---- banners in CC@upstream-1.6.0.",
+     "why_it_matters": "These references mean nothing to the original developer.",
+     "rework": "Delete the tags, dates, commit ids, Cinemate names and banners. Keep the 'why' sentences.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-5-F12",
+     "title": "FPS refusal names a socket command and offers ramping to H.264/ProRes takes",
+     "category": "mismatch",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:10691-10697@cinemate-port"
+     ],
+     "port_way": "'Stop recording before changing FPS, or enable FPS ramping (set_fps_speed_ramp) for cDNG/MLV takes.' is shown before the format check.",
+     "apertar_way": "'Stop recording before changing FPS so video and audio keep the same timeline.' (src/camera/CameraController.cpp:7744@upstream-1.6.0); I5: no identifiers.",
+     "why_it_matters": "An H.264 operator is told to enable a feature that cannot work in H.264.",
+     "rework": "Check the format first. Keep the upstream sentence for processed formats and when ramp is off. For raw takes, say '... or turn on Speed Ramp.'",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "CC-5-F13",
+     "title": "Mono flag expression repeated at each sanitiser call",
+     "category": "duplication",
+     "severity": "nit",
+     "where": [
+      "src/camera/CameraController.cpp:10655@cinemate-port",
+      "src/camera/CameraController.cpp:10669@cinemate-port",
+      "src/camera/CameraController.cpp:10713@cinemate-port",
+      "src/camera/CameraController.cpp:10797@cinemate-port",
+      "src/camera/CameraController.cpp:10840@cinemate-port",
+      "src/camera/CameraController.cpp:11599@cinemate-port",
+      "src/camera/CameraController.cpp:11644@cinemate-port",
+      "src/camera/CameraController.cpp:12861@cinemate-port"
+     ],
+     "port_way": "(!simulateCamera_ && session_ && session_->monochromeSensor()) is written inline 8 times.",
+     "apertar_way": "Upstream computes sensorFamily once per setter as a local (src/camera/CameraController.cpp:7722-7724@upstream-1.6.0).",
+     "why_it_matters": "The long expression adds noise to every sanitiser call.",
+     "rework": "Add a local const bool monochrome next to sensorFamily in each setter.",
+     "effort": "S",
+     "deliberate": "no"
+    }
+   ]
+  },
+  "Camera-headers": {
+   "verified": true,
+   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-Camera-headers.md",
+   "summary": "Skeptic pass on 16 findings: 8 stand (F2, F4, F6, F11, F12, F13, F14, F16), 7 are corrected and 1 is dropped. Dropped: F8. Upstream replies already carry arrays of objects (`modes`, App:10042-10048@upstream-1.6.0). Main corrections: F1 option A (pipeline disable_tdn) is withdrawn because it stalls the PiSP back end (pisp.cpp:1659-1663@6b0b49f, and the KB says this in many places). The KB had itself recommended the libyaml route modelled on makeProresIspTuning (dng-chain/F/F6.md:243, V-F6.md:36), and the port did not follow it. F3: the \"60 fps does not fit storage\" evidence is about uncompressed, not lossless. F5 and F9 were deliberate per design-T34.md. F9 shrinks: upstream CaptureSettings does hold runtime state, so only ladderText and ladderCount stay foreign. F10 loses its legacy-list part, which follows upstream's own pattern, and drops to nit. F7: setClipNameTemplate already uses setErrorLocked. F15 is scoped to the port-wide test decision. F2 is confirmed and widened: the ProRes/log derived tuning is also built from the stripped copy (CC.cpp:7411).",
+   "conforms": [],
+   "abstraction_verdicts": [],
+   "findings": [
+    {
+     "id": "Camera-headers-F1",
+     "title": "TDN strip: own JSON parser, atomic writer and sidecar where upstream derives tuning files with libyaml",
+     "category": "mismatch",
+     "severity": "major",
+     "where": [
+      "src/camera/TuningTdnStrip.hpp:43-249@cinemate-port",
+      "src/camera/TuningTdnStrip.hpp:350-378@cinemate-port",
+      "src/camera/TuningTdnStrip.hpp:380-449@cinemate-port",
+      "tools/tuning_tdn_strip_test.cpp@cinemate-port"
+     ],
+     "port_way": "A header-only recursive-descent JSON parser (tdn_detail::Parser/Node/Member) cuts tdn members by byte offsets. It has its own temp+rename writer and a .src sidecar with size+mtime. Cache $HOME/.cache/apertar-core/tuning. 451 lines.",
+     "apertar_way": "src/color/ProresIspProfile.hpp:7@upstream-1.6.0 'Writes an internal derived tuning, never the user's selected source file.' ProresIspProfile.cpp:13 #include <yaml.h>. algorithm()/member() at :72-87, Edit byte ranges applied back to front at :89-90 and :221. Cache $HOME/.cache/apertar-prores at :230. 'if (previous!=text && !settingsFile::atomicWrite(path,text))' at :233.",
+     "why_it_matters": "The original developer finds two tuning-JSON editors, two cache dirs and two atomic writers. The parser is 200 lines of new code to maintain beside the libyaml path upstream already requires.",
+     "rework": "Add bool makePreviewTuning(const std::string &source, std::string &destination, std::string &error) to src/color/ProresIspProfile.cpp, or to a sibling .cpp in src/color/ with the helpers moved to a shared internal header. Reuse libyaml algorithm(\"rpi.denoise\"), member() and Edit. Following KB V-F6.md:36, replace each rpi.denoise mapping node with its content minus tdn (one replace per node), so no comma surgery is needed. Write with settingsFile::atomicWrite only when the content changed, and drop the sidecar. Keep the fall-back-to-source rule and the call site. Delete TuningTdnStrip.hpp, and turn its test into a check of the new function or delete it. Do NOT use the pipeline disable_tdn option: it stalls the back end (pisp.cpp:1659-1663@6b0b49f).",
+     "rework_risk": "The output is no longer byte-identical to the KB tool's _notdn files. On the Pi, check that rpi.denoise still loads with SDN/CDN on their *_no_tdn values (denoise.cpp:54-69).",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "Commit e625c68. KB clearhdr16-preview.md and dng-chain-answer.md:35-40 weigh the TDN cost. The KB recommended the libyaml derivation modelled on makeProresIspTuning (dng-chain/F/F6.md:243 item 3a, V-F6.md:36 row 7). The port did not follow it, and no note says why."
+    },
+    {
+     "id": "Camera-headers-F2",
+     "title": "preview_tdn defaults to off and the stripped tuning reaches H.264/ProRes recordings and processed stills",
+     "category": "bug",
+     "severity": "major",
+     "where": [
+      "include/apertar/core/Types.hpp:139@cinemate-port",
+      "src/camera/CameraController.cpp:7306-7326@cinemate-port",
+      "src/camera/CameraController.cpp:7411@cinemate-port",
+      "src/camera/TuningTdnStrip.hpp:3-6@cinemate-port"
+     ],
+     "port_way": "bool previewTdn = false ('Off (default) is much faster; the raw DNGs never change'). loadablePath() gives every camera start the copy without tdn, whatever recordingFormat or photo mode is set. The ProRes/log derived tuning is then built from that stripped copy (makeProresIspTuning(activePath, ...)).",
+     "apertar_way": "The tuning file as resolved drives every stream (CC.cpp:5265-5268, :5347-5361@upstream-1.6.0). H.264 and ProRes record ISP outputs (conv-core-camera 5.4), and so do JPEG/PNG/TIFF stills.",
+     "why_it_matters": "Failing input: fresh settings, set_record_format h264 or prores, then record. The file is encoded from an ISP without temporal denoise, while upstream records with it. The code path is confirmed; the visible noise change is probable. The header and Types.hpp comments say only monitoring is affected, which is wrong for these formats.",
+     "rework": "In loadablePath, strip only for RAW takes: !settings.previewTdn && !isProcessedVideoFormat(settings.recordingFormat) && !settings.photoModeEnabled. The other option is to default previewTdn = true (upstream behaviour). Correct both comments.",
+     "effort": "S",
+     "deliberate": "unknown",
+     "deliberate_evidence": "The default off is deliberate (commit e625c68, Types.hpp comment). Neither the commit nor the KB weighs the processed formats."
+    },
+    {
+     "id": "Camera-headers-F3",
+     "title": "IMX585 lossless cDNG 30 fps cap lifted by default",
+     "category": "removed-upstream-behaviour",
+     "severity": "major",
+     "where": [
+      "src/camera/FpsCeiling.hpp:27-45@cinemate-port",
+      "src/camera/CameraController.cpp:3115-3142@cinemate-port"
+     ],
+     "port_way": "losslessImx585Fps returns the mode's maximum. Only APERTAR_LOSSLESS_FPS_LIMIT=30 restores the cap. The comment says the encoder measures ~69 fps, so '30 was a policy, not a limit'.",
+     "apertar_way": "CC.cpp:2470-2490@upstream-1.6.0 enforceLosslessCaptureLimits: 'const double maximumFps = imx585 ? 30.0 : ...', applied in the sanitise chain (I2).",
+     "why_it_matters": "An upstream product limit changes by default. The only on-camera datum is one 2 s 4K 60 fps lossless pre-roll with 0 skips (KB dng-chain-answer.md:30). Lossless is CPU-tight (:156), and no counted take exists at 50 or 60 fps.",
+     "rework": "Keep 30.0 as the default in losslessMaximumFps/enforceLosslessCaptureLimits. APERTAR_LOSSLESS_FPS_LIMIT=<n> raises it, within the mode maximum, for bench work (I9, N11). Delete losslessImx585Fps. Raise the default only after counted takes.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "Commit d44b177: 'Lossless JPEG on the IMX585 is no longer capped at 30 fps'. Comment at CC.cpp:3133-3134."
+    },
+    {
+     "id": "Camera-headers-F4",
+     "title": "FPS ceiling: the probe beats the hard-coded table by default",
+     "category": "removed-upstream-behaviour",
+     "severity": "major",
+     "where": [
+      "src/camera/FpsCeiling.hpp:12-19@cinemate-port",
+      "src/camera/CameraController.cpp:3397-3423@cinemate-port"
+     ],
+     "port_way": "resolveSensorMaxFps returns the probed value when there is one, and the table is only a fallback. APERTAR_FPS_LIMIT=table restores min(table, probed). 4K SDR rises from 30 to 60.",
+     "apertar_way": "Hard-coded tables with validate() as the last word (N7). IMX585 3840x2160 = 30.0 (CC.cpp:2669-2671@upstream-1.6.0). Fork main f60e301 added the probe as min(table, probed): 'SDR limits unchanged (the probe only lowers them)' and 'Recording at 30 fps still loses ~20 %'.",
+     "why_it_matters": "Operators are offered frame rates that have not been shown to record without drops. 4K 12-bit uncompressed at 60 fps (746 MB/s) does not fit the drive (KB dng-chain-answer.md:156).",
+     "rework": "Keep main's min(table, probed) default. Raise individual rows in tableMaximumFpsForResolution once takes prove them. Make probe-only opt-in with APERTAR_FPS_LIMIT=probe. The IMX283 floor rule stays.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "Commit d44b177: 'Max fps: read from the sensor probe at startup (4K SDR 60, it was capped at 30 by a table)'."
+    },
+    {
+     "id": "Camera-headers-F5",
+     "title": "Mode ladder persists in its own mode_ladder.conf",
+     "category": "mismatch",
+     "severity": "major",
+     "where": [
+      "src/camera/ModeLadder.hpp:316-342@cinemate-port",
+      "src/camera/CameraController.cpp:403-414@cinemate-port",
+      "src/camera/CameraController.cpp:10513-10514@cinemate-port",
+      "src/camera/CameraController.cpp:10939@cinemate-port",
+      "src/camera/CameraController.hpp:248@cinemate-port"
+     ],
+     "port_way": "A second Core-written settings file, ~/.config/apertar-core/mode_ladder.conf, with enabled, ramp_ready, resolutions and the legacy rungs key. It has its own parser and writer and is held in modeLadder_ outside CaptureSettings.",
+     "apertar_way": "S20: camera settings live in camera_settings.conf as key=value, written only by Core through the debounced persister (CC.cpp:742-889@upstream-1.6.0). Camera-wide keys are carried across format profiles (tuning_file, CC.cpp:7939-7955@upstream-1.6.0). The port already extends this pattern for previewTdn, cdngLog and clipNameTemplate (CC.cpp:11338-11372@cinemate-port).",
+     "why_it_matters": "It is a parallel persistence path that the persister does not cover, and it is written synchronously under the controller mutex (KB design/critique-code.md:273). The original developer has to learn a second settings file.",
+     "rework": "Add camera-wide keys mode_ladder_enabled, mode_ladder_ramp_ready and mode_ladder_resolutions (the existing comma text) to the else-if load chain (I15) and the writer. Hold them in CaptureSettings like tuningFile and carry them in the block at CC.cpp:11338-11372. On first start, read an existing mode_ladder.conf once to migrate it, then stop reading it. Delete fileText, modeLadderPath, saveModeLadderLocked, the rungs key, and parseFile once the migration is done.",
+     "rework_risk": "The owner's camera has a mode_ladder.conf, so a one-time migration is needed.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "ramp-ladder/design/design-T34.md:280-293 (3.3) rejected UI.conf and per-format profile keys and chose a new file. It did not weigh camera-wide keys in camera_settings.conf."
+    },
+    {
+     "id": "Camera-headers-F6",
+     "title": "Rung::compression is a free string mixing record format and compression",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/ModeLadder.hpp:22-44@cinemate-port",
+      "src/camera/ModeLadder.hpp:160-166@cinemate-port"
+     ],
+     "port_way": "std::string compression = \"\" | none | lossless_jpeg | lossy_3to1 | lossy_5to1, compared as strings. Lossy implies the LossyDng format.",
+     "apertar_way": "S13/I11: each sub-option is its own enum (RecordingFormat, CdngCompression, LossyDngRatio, Types.hpp:45-68@upstream-1.6.0) with toString/toWireValue.",
+     "why_it_matters": "String compares are spread through the ladder code, and the wire words partly duplicate the existing toString values.",
+     "rework": "Use enum class RungRecord {Default, Uncompressed, Lossless, Lossy3, Lossy5}, or optional<RecordingFormat> + CdngCompression + LossyDngRatio, parsed from the existing wire words.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Camera-headers-F7",
+     "title": "Ladder setters and clip-name preview return errors and data through out-params instead of bool + lastError()",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.hpp:92@cinemate-port",
+      "src/camera/CameraController.hpp:102-109@cinemate-port",
+      "src/camera/CameraController.cpp:11835-11856@cinemate-port"
+     ],
+     "port_way": "setModeLadder(optional<string>, optional<bool>, optional<bool>, bool dryRun, string *json, string *error); applyLadderToPreset(..., string *error) const; previewClipName(value, string *example, string *error) const. setClipNameTemplate(value, string *stored) already reports errors via setErrorLocked, so only its *stored is redundant.",
+     "apertar_way": "S7/I1: bool set...(value), with errors via setErrorLocked/lastError() (CC.hpp:85@upstream-1.6.0). App replies settingsBody(camera_.settings()).",
+     "why_it_matters": "The public surface gets a second error channel and a second setter shape.",
+     "rework": "Use bool setModeLadder(const std::string &resolutions, bool enabled, bool rampReady) and bool validateModeLadder(...) for the dry run. Report errors via setErrorLocked, joining multiple validation errors; the full list stays in modeLadderJson(), which already exists. App builds the reply from camera_.modeLadderJson(). Drop *stored, since App can read camera_.settings().clipNameTemplate.",
+     "rework_risk": "applyLadderToPreset and previewClipName are const, so lastError_ must become mutable or the functions non-const.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Camera-headers-F9",
+     "title": "Display text and redundant ladder fields in CaptureSettings",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "include/apertar/core/Types.hpp:181-189@cinemate-port"
+     ],
+     "port_way": "Nine runtime ladder fields in CaptureSettings, serialised in all three state writers. Among them are ladderText (a UTF-8 display line with '\u00b7', '\u00d7', '\u2264') and ladderCount (= ladderTops.size()).",
+     "apertar_way": "Upstream CaptureSettings does carry runtime state (whiteBalanceMeasured, previewExposureReference, timelapseExposureLimitUs, Types.hpp:139-150@upstream-1.6.0), so numeric ladder state there fits the pattern. Upstream Core sends no display sentences; clients build labels. Under I13 each field costs three serialiser edits.",
+     "why_it_matters": "Core composes non-ASCII UI text, and one redundant field sits in three hand-kept lists.",
+     "rework": "Drop ladderText and ladderCount. The WebUI builds the line from ladder_rung, ladder_tops and the get_mode_ladder reply (WCP:8392, :8421, :15920 already have the data). Keep the other fields.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "design-T34.md:336-345 (3.6) chose derived, never-persisted fields after exposureCompensationAvailable."
+    },
+    {
+     "id": "Camera-headers-F10",
+     "title": "Sensor tables: own Size types and two nearest-mode metrics",
+     "category": "duplication",
+     "severity": "nit",
+     "where": [
+      "src/camera/Imx283Modes.hpp:19-22,114-135@cinemate-port",
+      "src/camera/Imx585Modes.hpp:34-38,236-252@cinemate-port"
+     ],
+     "port_way": "imx283::Size and imx585::Size sit beside Resolution. Nearest mode is squared Euclidean for IMX283 and Manhattan for IMX585.",
+     "apertar_way": "Sensor facts use Resolution from Types.hpp (CC.cpp:355-396@upstream-1.6.0). Pure helper headers are allowed (S4).",
+     "why_it_matters": "Three size types and two distance rules for the same job.",
+     "rework": "Use Resolution in both headers and pick one distance rule. Keep isImx585LegacyCropResolution and the alias map: they follow upstream's isImx585FullHdCropResolution shape and keep other sensors' compatibility.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Camera-headers-F11",
+     "title": "Env-var parsing re-implemented three times",
+     "category": "duplication",
+     "severity": "minor",
+     "where": [
+      "src/camera/Imx585Modes.hpp:105-114@cinemate-port",
+      "src/camera/FpsCeiling.hpp:29-38@cinemate-port",
+      "src/camera/CameraController.cpp:8909-8922@cinemate-port"
+     ],
+     "port_way": "minModeWidth() calls getenv/strtoll on every find/offered/nearest through a default argument. parseLosslessFpsLimit uses strtod. The phase-lock tuning has its own lambda.",
+     "apertar_way": "unsignedEnvValue(name, default, min, max) and boolEnvValue at CC.cpp:1027-1061@upstream-1.6.0 (port :1341-1357), read once in function-local statics (I9, I17).",
+     "why_it_matters": "Three parsers with different rules for one convention, and repeated getenv in lookup paths.",
+     "rework": "In CC.cpp, read the width once with static const unsigned w = unsignedEnvValue(\"APERTAR_IMX585_MIN_MODE_WIDTH\", 1280, 0, 65535) and pass it as a parameter, with no default argument that reads the environment. Add doubleEnvValue beside the two helpers for the lossless limit and the phase-lock gains.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Camera-headers-F12",
+     "title": "Ticket numbers, Cinemate narration and a stale comment in code and in the user's config file",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/camera/ModeLadder.hpp:1,319@cinemate-port",
+      "include/apertar/core/Types.hpp:141,181-189@cinemate-port",
+      "src/camera/CameraController.hpp:102,180,243,248@cinemate-port",
+      "src/camera/CameraController.cpp:403,8902,8907-8908,9063-9067@cinemate-port",
+      "src/camera/FramePhaseLock.hpp:9-26,48@cinemate-port",
+      "src/camera/Imx283Modes.hpp:1-2@cinemate-port",
+      "src/camera/Imx585Modes.hpp:3,16@cinemate-port"
+     ],
+     "port_way": "fileText writes '# Apertar mode ladder (T34).' into the user's file. Comments name the cinemate-port branches and say 'as Cinemate's libcamera does', 'qbc libcamera' and 'CineMate Log'. Decision::pushDuration says {d, d}, but the controller pins {d, d+1} (CC.cpp:9069, and the header's own line 17). The overview comment sits above PhaseLockStatus instead of FramePhaseLock.",
+     "apertar_way": "I19: comments are rare, say why, and carry no ticket numbers or history. Upstream src/include mention neither Cinemate nor T-numbers.",
+     "why_it_matters": "The original developer meets internal numbers and another project's history, and one comment contradicts the code.",
+     "rework": "Remove T-numbers everywhere, including the fileText string (moot if F5 lands). Replace the Cinemate and branch references with the driver's facts. Fix {d, d} to {d, d+1} and move the overview comment above struct FramePhaseLock.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Camera-headers-F13",
+     "title": "conformFps is persisted and settable but has no effect and no UI",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "include/apertar/core/Types.hpp:135-137@cinemate-port",
+      "src/camera/CameraController.cpp:172,696-697,817-818,942,11354,11364,11806-11812@cinemate-port",
+      "src/ApertarCoreApp.cpp:320,7851,9484,13270,14356@cinemate-port",
+      "src/web/WebControlPage.cpp:19111@cinemate-port"
+     ],
+     "port_way": "The field comment says 'nothing derives from it yet'. It has set_conform_fps, state keys, a preset key and a persisted key. No reader in src, and 0 hits in Apertar-UI.",
+     "apertar_way": "Every upstream setting drives behaviour. There is no precedent for a stored placeholder.",
+     "why_it_matters": "It is dead protocol and persistence surface.",
+     "rework": "Remove the field, the command, the state keys, the preset key and the persisted key until a feature reads them.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "Types.hpp comment; commit d7ff071."
+    },
+    {
+     "id": "Camera-headers-F14",
+     "title": "Compatibility for spellings that never shipped; CdngLog::Auto means On",
+     "category": "slop",
+     "severity": "nit",
+     "where": [
+      "include/apertar/core/Types.hpp:59-62,326-346@cinemate-port",
+      "src/camera/ModeLadder.hpp:168,337@cinemate-port"
+     ],
+     "port_way": "\"on\", \"12\", \"10\" and \"8\" map to Auto. The ladder accepts log10/log8, and the file reads the old key rungs.",
+     "apertar_way": "I15 keeps retired keys that users had. These spellings were never in an Apertar release; fork main has no cdng_log at all.",
+     "why_it_matters": "It is port-internal history in the code, and the enum name misleads.",
+     "rework": "Use enum class CdngLog {Off, On} with wire values off/on, accepting 'auto' only if the owner's installed settings hold it. Drop 12/10/8, log10/log8 and rungs.",
+     "effort": "S",
+     "deliberate": "yes"
+    },
+    {
+     "id": "Camera-headers-F15",
+     "title": "Host tests of this unit: three styles, no build hook; phase-lock simulator only in the KB",
+     "category": "new-ground",
+     "severity": "minor",
+     "where": [
+      "tools/fps_ceiling_test.cpp@cinemate-port",
+      "tools/imx283_modes_test.cpp@cinemate-port",
+      "tools/imx585_modes_test.cpp@cinemate-port",
+      "tools/tuning_tdn_strip_test.cpp@cinemate-port"
+     ],
+     "port_way": "These are 4 of the port's 20 tools/*_test files. Each is built by hand from a comment line, using check(), a CHECK macro or expectStrip. All four compile and pass here.",
+     "apertar_way": "no precedent (S24: no tests, no tools/ upstream)",
+     "why_it_matters": "New infrastructure without a home or a build entry. The most delicate pure logic (FramePhaseLock) has its simulator in apertar-kb/working/tools/phase_lock_sim.cpp, not beside the header.",
+     "rework": "Follow the port-wide test decision: one tests/ folder, one check helper, an opt-in APERTARCORE_BUILD_TESTS option (OFF) and one README line. For this unit: bring the four tests into that style, move the phase-lock simulator in as a test, delete tuning_tdn_strip_test when F1 lands and fps_ceiling_test when F16 lands.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "The header comments name their tests, and the fork-log records the runs."
+    },
+    {
+     "id": "Camera-headers-F16",
+     "title": "FpsCeiling.hpp splits one-line rules into a header for a test",
+     "category": "new-ground",
+     "severity": "nit",
+     "where": [
+      "src/camera/FpsCeiling.hpp:1-47@cinemate-port"
+     ],
+     "port_way": "namespace apertar::fpsceiling with resolveSensorMaxFps, applyBackendCap, parseLosslessFpsLimit and losslessImx585Fps.",
+     "apertar_way": "S3/S4: most pure logic stays in CC.cpp next to its callers (maximumSupportedFpsForResolution, CC.cpp:2629@upstream-1.6.0).",
+     "why_it_matters": "After F3/F4/F11 the rules are std::min calls, so a separate header is over-built.",
+     "rework": "Fold the remaining logic into CC.cpp beside maximumSupportedFpsForResolution, and delete the header and fps_ceiling_test.cpp.",
+     "effort": "S",
+     "deliberate": "yes"
+    }
+   ]
+  },
+  "Media-fault-tune": {
+   "verified": false,
+   "report": "/home/user/apertar-kb/working/merge-review/raw/rev-Media-fault-tune.md",
+   "summary": "The core of this unit fits Apertar. Pull detection, the errno fault classes, the bounded stop on a dead medium, the record gate guard in handleCommand, the flat media event and state fields, and the UI follow-up all match upstream patterns or have a real reason to exist. Four parts are foreign and should be cut or reshaped:\n- the media tuning file, its tmpfs override and the 487-line Python CLI, which wrap env vars that already exist (C1-I22, I1);\n- the kernel-tuning root helper: a shell script in Core, sudoers allowing any arguments, no timeout or lock, a pi-owned parent of the root state dir, never installed or measured (S7, I6, S9);\n- a process-global media snapshot and configuredMediaRoot used as a hidden channel from App to CameraController (C1-S19);\n- an eject-intent /run protocol that nothing in Apertar reads.\nSmaller items:\n- The writer table halves writers for vfat, ntfs and other filesystems, which changes upstream defaults without a measurement.\n- The record gate reads env switches in the command plane and also gates stills at 1 GiB free.\n- The CfeHat reader lives in util instead of src/hardware and defaults to off.\n- get_state emits media_state twice.\n- Two probable bugs: surprise removal acts on a single HAT read, and a user stop on a slow but alive medium can be judged removed after 5 s.\n- Many ticket, critic and Cinemate-hash references in comments.\nNo protocol break: all wire changes are additive.",
+   "conforms": [
+    "Record gate is one guard at the top of handleCommand covering socket, WebUI and hardware (C1-S04): src/ApertarCoreApp.cpp:12597-12600@cinemate-port",
+    "Refusals are operator sentences (C1-I07, C1-N02): src/ApertarCoreApp.cpp:11359-11384@cinemate-port",
+    "'media' event is built at the emit site, event first, flat scalars (C1-I20, C1-S12): src/ApertarCoreApp.cpp:10824-10835@cinemate-port",
+    "New get_state and /api/state fields are additive flat scalars; an unmodified UI ignores the new event (C1-I09, C1-N11): App.cpp:9555-9562, ui-upstream ApertarControlBridge.cpp:1182-1197",
+    "Logs use the 'ApertarCore media ...' prefix with one key=value line per change (I3, C1-I13): App.cpp:10902-10910",
+    "Watcher is an App-owned std::thread member with start/stop (C1-S17): App.cpp:8044",
+    "Helper is probed with std::filesystem::exists, sudo -n, and a one-time journal line when missing (C1-N13, S8): App.cpp:11411-11419",
+    "HAT is read via raw /dev/i2c-N + I2C_SMBUS ioctl with the same key aliases as the upstream python helper (HW-I6, HW-I1): CfeHat.hpp:224-244, App.cpp:5334-5340",
+    "Fault reporting extends checkRecordingFailure rather than adding a second path (C1-N05): CameraController.cpp:12456-12490",
+    "UI passes Core media state through a bridge signal wired in main.cpp; behaviour is unchanged without Core's fields: Apertar-UI 160898c",
+    "UI automounter change reuses upstream helpers and log prefix (removePcieDevice extracted from unmountPcie): Apertar-UI dc471c1",
+    "MediaFault.hpp follows the small header-only util precedent of RecordingFailure.hpp (C1-S06)"
+   ],
+   "abstraction_verdicts": [
+    {
+     "name": "MediaFault.hpp (errno -> fault class)",
+     "verdict": "keep",
+     "reason": "Its nearest precedent is src/util/RecordingFailure.hpp. It is small and pure and is used by the CC, MLV and lossy writers. Only the Cinemate references need trimming."
+    },
+    {
+     "name": "MediaProbe.hpp probe (evaluateMediaProbe, probeMediaRoot, mount id)",
+     "verdict": "simplify",
+     "reason": "It fills a real gap: upstream isMountedPath stays true for a pulled drive. Remove the process-global cache (F3) and share the mount parser with App (F12)."
+    },
+    {
+     "name": "MediaIntent.hpp eject-intent flag protocol",
+     "verdict": "rework-to-upstream-pattern",
+     "reason": "Nothing in Apertar reads it; Apertar's automounter is HAT-driven. Delete it (F4)."
+    },
+    {
+     "name": "CfeHat.hpp / CfeHatReader",
+     "verdict": "simplify",
+     "reason": "The raw ioctl shape conforms (HW-I6). Move it to src/hardware with its own loadConfig, default enabled, read once (HW-S1/S2/N1)."
+    },
+    {
+     "name": "MediaProfile.hpp (class/fs classification + writer table)",
+     "verdict": "simplify",
+     "reason": "Classification for logs is fine. The writer table must not change upstream defaults (F5). Drop the configuredMediaRoot helpers (F3)."
+    },
+    {
+     "name": "MediaTune.hpp INI resolver with base + override files",
+     "verdict": "rework-to-upstream-pattern",
+     "reason": "Upstream uses env vars at the point of use for engineering knobs (C1-I22, I1); a second config system is foreign (F1)."
+    },
+    {
+     "name": "Media watcher thread runMediaWatcher",
+     "verdict": "simplify",
+     "reason": "A thread is justified because statvfs can block (C1-S17/S20). It now also drives trim, merge, pre-roll, playback yield and frame-slot trimming; those belong to their own supervision."
+    },
+    {
+     "name": "Process-global cached snapshot + configuredMediaRoot()",
+     "verdict": "rework-to-upstream-pattern",
+     "reason": "A cross-module global channel breaks C1-S19. Push the profile into CameraController instead."
+    },
+    {
+     "name": "Root helper scripts/apertar-media-tune + sudoers + tmpfiles",
+     "verdict": "rework-to-upstream-pattern",
+     "reason": "It is unmeasured and off by default; drop it. If it is re-added, use the S7/I6 shape: C++ helper in UI/src, verb-listed sudoers in UI/systemd, timeout, lstat and flock."
+    },
+    {
+     "name": "scripts/apertar-tune Python CLI",
+     "verdict": "rework-to-upstream-pattern",
+     "reason": "It is a test-rig tool and duplicates the key table; remove it from the repo with F1 (S10: bash scripts only)."
+    },
+    {
+     "name": "Dead-medium writer detach (liveWorkers_, exitCv_, mediumGone_)",
+     "verdict": "keep",
+     "reason": "No upstream precedent, but a bounded stop on a pulled drive is a real need. Fix the stall misjudgement in F10."
+    }
+   ],
+   "findings": [
+    {
+     "id": "Media-fault-tune-F1",
+     "title": "Media tuning file + tmpfs override + Python CLI form a second config system for developer knobs",
+     "category": "mismatch",
+     "severity": "major",
+     "where": [
+      "src/util/MediaTune.hpp:8-28@cinemate-port",
+      "scripts/apertar-tune:69-81@cinemate-port",
+      "config/apertar-media-tune.conf:144-174@cinemate-port",
+      "README.md:337-357@cinemate-port",
+      "src/camera/CameraController.cpp:1467,4364,4718@cinemate-port",
+      "src/cdng/CdngEncoder.cpp:91@cinemate-port"
+     ],
+     "port_way": "Two INI files (/home/pi/apertar-media-tune.conf, /run/apertar-media/media-tune.override.conf) with 8 keys and a 4-level section lookup. Precedence: env > override > base > code. A 487-line Python editor. The key table is written three times. README documents the knobs for operators. The template sets [default] raw_buffers=8, so `init` doubles SDR raw buffers.",
+     "apertar_way": "Capture-pipeline engineering knobs are APERTAR_* env vars read at the point of use, clamped, not settings, not in README (C1-I22, I1). Example: core-upstream/src/camera/CameraController.cpp:3330@upstream-1.6.0 `maxQueuedFrames_ = unsignedEnvValue(\"APERTAR_CDNG_QUEUE_FRAMES\", defaultQueueFrames, 4, 64);`. Scripts are bash (S10). No shared INI parser (HW-S2).",
+     "why_it_matters": "A third config surface whose job is A/B measurement on test nights. It needs a tmpfiles rule and a Python tool, and it duplicates the key table. The env vars it wraps already exist and still win.",
+     "rework": "Delete MediaTune.hpp, scripts/apertar-tune, config/apertar-media-tune.conf, the override path and README:339. Read sites go back to env only: CdngEncoder dontneed (APERTAR_DNG_DONTNEED), CC:4718 boolEnvValue(\"APERTAR_DNG_WRITEBACK\", true), CC:4364 APERTAR_MEDIA_SYNC_MS, rawCameraBufferCount unsignedEnvValue(\"APERTAR_RAW_CAMERA_BUFFERS\", base, 3, 16). Drop tune_override= from the clip log line. Move the env table to a developer note. Keep the A/B tooling in the test-rig or KB repo.",
+     "rework_risk": "Test scripts that write the override file must go back to systemd drop-ins. No change on a stock image, where the base file is absent.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "KB working/drop-frames/media-tune-file.md: asked for by Patrik 2026-11-02 so 'a test night needs no systemd drop-in'."
+    },
+    {
+     "id": "Media-fault-tune-F2",
+     "title": "Kernel tuning root helper is a shell script in Core with open sudoers, no timeout, no lock and a pi-owned state parent",
+     "category": "security",
+     "severity": "major",
+     "where": [
+      "scripts/apertar-media-tune:1-112@cinemate-port",
+      "config/apertar-media.sudoers:3@cinemate-port",
+      "config/apertar-media.tmpfiles.conf:3-5@cinemate-port",
+      "src/ApertarCoreApp.cpp:11396-11429@cinemate-port"
+     ],
+     "port_way": "POSIX sh helper takes apply|restore <rootdisk> <class> <fs> and writes queue knobs, global vm.dirty_* and nvme_core APST. Sudoers: `pi ALL=(root) NOPASSWD: /usr/local/libexec/apertar-media-tune` (any arguments). Originals are saved in root-owned tune/ inside the pi-owned /run/apertar-media. Called as plain `sudo -n` on the media watcher thread. Off by default and never installed or measured.",
+     "apertar_way": "S7/I6/N7/S9: a single-file Qt-free C++ helper in UI/src, called as `/usr/bin/timeout 6s /usr/bin/sudo -n /usr/local/libexec/apertar-standby-usb <verb>` (core-upstream/src/ApertarCoreApp.cpp:1541-1550@upstream-1.6.0, 'Fixed executable and arguments only'). The sudoers file lists each verb (ui-upstream/systemd/apertar-standby-usb.sudoers:1). The helper checks euid, lstat on a root-owned /run/apertar-<name> and flock (UI/src/StandbyUsbPower.cpp:15-23,241-273). System files live in UI/systemd.",
+     "why_it_matters": "pi can rename the root-owned tune/ (its parent is pi-owned) and plant saved values that restore writes as root to /proc/sys/vm and the queue (probable). Without a timeout, a hang blocks pull detection. dirty_bytes of 1 GiB is half the RAM of a 2 GB Pi 5/CM5. The code comment says 16-bit 4K25 ran clean without the helper.",
+     "rework": "Drop the feature from the merge. Delete scripts/apertar-media-tune, config/apertar-media.sudoers, config/apertar-media.tmpfiles.conf, ApertarCoreApp::applyMediaTuning and its two calls in runMediaWatcher, and the kernel_tune key. If it is re-added after a measurement, follow recipe R3: Apertar-UI/src/MediaTune.cpp -> apertar-media-tune with literal verbs and no path argument (it derives the disk from the /media/RAW mount itself), a root-owned /run/apertar-media-tune with lstat and flock, UI/systemd/apertar-media-tune.sudoers listing each verb, and a timeout on the caller.",
+     "rework_risk": "None for camera behaviour; the feature is off by default.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "26da30e/ebdcd08 messages: made opt-in after testing; KB: kernel_tune stays off until B3."
+    },
+    {
+     "id": "Media-fault-tune-F3",
+     "title": "Process-global media snapshot and configuredMediaRoot() act as a hidden channel from App to CameraController",
+     "category": "mismatch",
+     "severity": "major",
+     "where": [
+      "src/util/MediaProbe.hpp:257-290@cinemate-port",
+      "src/util/MediaProfile.hpp:212-234@cinemate-port",
+      "src/camera/CameraController.cpp:1467,7735,10543@cinemate-port",
+      "src/cdng/CdngEncoder.cpp:91@cinemate-port",
+      "src/ApertarCoreApp.cpp:10889@cinemate-port"
+     ],
+     "port_way": "A static mutex and a static optional<MediaSnapshot> are written by App's watcher thread and read by CameraController and CdngEncoder. CameraController sets a static string configuredMediaRoot that free functions read. If the watcher has not run yet, a blocking probe runs instead.",
+     "apertar_way": "Parts talk to App only through std::function callbacks; no part holds App state (C1-S19). The controller already owns the root: core-upstream/src/camera/CameraController.cpp:8247@upstream-1.6.0 `session_->startRecording(mediaRoot_, settings_, ...)`. Function-local statics are only private caches within one file (core-upstream/src/ApertarCoreApp.cpp:2269,2788; C1-I19).",
+     "why_it_matters": "Buffer count, writer topology and page-cache mode depend on a global that another class's thread fills. A reader of rawCameraBufferCount cannot see where the value comes from.",
+     "rework": "Add CameraController::setMediaProfile(const MediaProfile&), stored under the controller mutex and called from runMediaWatcher where mediaProfile_ changes (App:10935-10940). Change rawCameraBufferCount(bool clearHdr, unsigned extra) to take the extra from that copy. recorder_.setMediaProfile at CC:7735 uses the same copy. Pass dontneed to CdngEncoder through its options. Delete cachedMediaSnapshot*, updateCachedMediaSnapshot, configuredMediaRoot, mediaExtraRawBuffersForConfiguredRoot and mediaTuneForConfiguredRoot.",
+     "rework_risk": "Order at start-up: the controller must have a profile before the first configure. Default to no profile, which gives the upstream values.",
+     "effort": "M",
+     "deliberate": "yes",
+     "deliberate_evidence": "Comments 'critic Y8': configure time must not block on a dead device."
+    },
+    {
+     "id": "Media-fault-tune-F4",
+     "title": "Eject-intent flag protocol has no reader in Apertar",
+     "category": "slop",
+     "severity": "major",
+     "where": [
+      "src/util/MediaIntent.hpp:1-67@cinemate-port",
+      "src/ApertarCoreApp.cpp:4355,4385-4392,10917@cinemate-port",
+      "config/apertar-media.tmpfiles.conf:4@cinemate-port"
+     ],
+     "port_way": "Core writes /run/apertar-media/eject/<dev> before an eject and clears it on mount or removal, so that 'an automounter that treats udev change like add' does not remount (Cinemate f01b6cd).",
+     "apertar_way": "Apertar's automounter is driven by the HAT button, not by udev (ui-upstream/src/CfeAutomounter.cpp:544-553@upstream-1.6.0), and its runtime dir is /run/apertar-cfe (:40). Nothing in Apertar-UI or upstream reads /run/apertar-media/eject.",
+     "why_it_matters": "It is dead code for a Cinemate problem. Without the tmpfiles rule, every eject logs a warning about a remount risk that does not exist on Apertar.",
+     "rework": "Delete MediaIntent.hpp, the three call sites, blockDeviceNodeExists and the eject line of the tmpfiles file.",
+     "rework_risk": "none",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "438a342 message and header comment cite the Cinemate automounter."
+    },
+    {
+     "id": "Media-fault-tune-F5",
+     "title": "Writer table changes upstream writer, queue and buffer defaults for vfat, ntfs and other filesystems without measurement",
+     "category": "removed-upstream-behaviour",
+     "severity": "minor",
+     "where": [
+      "src/util/MediaProfile.hpp:129-150@cinemate-port",
+      "src/camera/CameraController.cpp:4315-4330@cinemate-port"
+     ],
+     "port_way": "vfat/ntfs/ntfs-fuse get {2 workers, queue 16, +2 raw buffers}. 'Other' (btrfs, xfs, f2fs) gets 2 workers and known()=true. ext4 and exFAT stay {4,12,0}.",
+     "apertar_way": "core-main/src/camera/CameraController.cpp:3433@main (identical to upstream): `normalWorkerCount = std::max(2u, std::min(4u, hardwareThreads))`, queue 12, raw buffers fixed.",
+     "why_it_matters": "The port halves writers on FAT32/NTFS/other with Cinemate's values, which dropped frames when measured on exFAT (MediaProfile.hpp:140-141). The rows are unmeasured.",
+     "rework": "Make every row equal the upstream default, or remove writerSettingsFor and keep MediaProfile for class/fs logging only. Delete the unused directIo field. Fix the stale comment at CC:4316-4318.",
+     "rework_risk": "none known",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "Header: 'starting points for the measurement in T29'; exFAT row reverted after C0106."
+    },
+    {
+     "id": "Media-fault-tune-F6",
+     "title": "Record gate reads env switches in the command plane; the 1 GiB floor also gates stills; an unmounted media root is refused",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/ApertarCoreApp.cpp:11330-11384@cinemate-port",
+      "src/ApertarCoreApp.cpp:12597-12600@cinemate-port"
+     ],
+     "port_way": "handleCommand refuses record_start, capture_photo and timelapse_start through mediaGateError(). APERTAR_MEDIA_REQUIRE_MOUNT=0 bypasses it. APERTAR_MEDIA_MIN_FREE_MB sets the floor (default 1024).",
+     "apertar_way": "Guard shape conforms (C1-S04), and the Sound Recorder precedent exists (core-upstream/src/ApertarCoreApp.cpp:8351-8354 'Sound Recorder needs mounted media.'). But C1-S24: the command plane reads no APERTAR_* switch; launch options are Options members (options_.simulateCamera). Upstream records video and stills until the write fails.",
+     "why_it_matters": "A hidden env switch in the command plane. A card with 900 MB free can no longer take a DNG still.",
+     "rework": "Add a --allow-unmounted-media Options member with a usage line and README row. Make the floor a constant and apply it to record_start and timelapse_start only. Refuse capture_photo only when the medium is not mounted, removed or in error.",
+     "rework_risk": "Dev machines using the env var need the flag.",
+     "effort": "S",
+     "deliberate": "yes",
+     "deliberate_evidence": "438a342 message (record gate)."
+    },
+    {
+     "id": "Media-fault-tune-F7",
+     "title": "CfeHat reader sits in src/util, is parsed by an App free function, reloads on save and defaults to off",
+     "category": "mismatch",
+     "severity": "minor",
+     "where": [
+      "src/util/CfeHat.hpp:1-75@cinemate-port",
+      "src/ApertarCoreApp.cpp:5298-5345@cinemate-port",
+      "src/ApertarCoreApp.cpp:10869-10875@cinemate-port"
+     ],
+     "port_way": "Header-only CfeHatReader in util; loadCfeHatConfig in App; reread when cfeHatGeneration_ changes (T39); enabled only when the [cfexpress_hat] section exists.",
+     "apertar_way": "Device classes are src/hardware/<Device>.{hpp,cpp} with their own static loadConfig() (HW-S1, HW-S2). Wiring is read once at start (HW-N1). Upstream defaults the HAT to enabled: core-upstream/src/ApertarCoreApp.cpp:3394 `CFE_HAT_ENABLED = True`; ui-upstream/src/CfeAutomounter.cpp:106 `bool enabled = true;`.",
+     "why_it_matters": "A hardware reader outside the hardware layer, with a different default from the two upstream readers of the same HAT.",
+     "rework": "Move it to src/hardware/CfeHatSlot.{hpp,cpp} with static Config loadConfig() (enabled=true by default) and list it in add_executable. Read the config once at start. Drop the cfeHatGeneration_ reload or argue it against HW-N1.",
+     "rework_risk": "With default on, rigs without a HAT get failed reads, which map to Unknown (harmless).",
+     "effort": "S",
+     "deliberate": "unknown"
+    },
+    {
+     "id": "Media-fault-tune-F8",
+     "title": "Socket get_state emits media_state twice",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/ApertarCoreApp.cpp:12944@cinemate-port",
+      "src/ApertarCoreApp.cpp:12961@cinemate-port"
+     ],
+     "port_way": "Two `\"media_state\"` members in one object, built from two separate snapshot reads.",
+     "apertar_way": "One flat object, each key once (C1-I09).",
+     "why_it_matters": "QJsonDocument keeps the last value and a find-based flat parser takes the first; they can differ.",
+     "rework": "Delete line 12944.",
+     "rework_risk": "none",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Media-fault-tune-F9",
+     "title": "Automounter unmounts and PCIe-removes the drive on one HAT read",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "Apertar-UI/src/CfeAutomounter.cpp:549-550@cinemate-port",
+      "Apertar-UI/src/CfeAutomounter.cpp:402-420@cinemate-port"
+     ],
+     "port_way": "`if (!lastInsert && insert && m_mounted) handleSurpriseRemoval();` with no debounce.",
+     "apertar_way": "Upstream acts on a single read only for the eject-button edge (ui-upstream/src/CfeAutomounter.cpp:551-552). The port's Core reader needs two agreeing reads because 'a glitch must not end a take' (CfeHat.hpp:35-36).",
+     "why_it_matters": "Failing input (probable): one I2C read with bit 0 set during a take lazily unmounts and removes the recording drive.",
+     "rework": "Call handleSurpriseRemoval only after the slot reads empty on two consecutive 100 ms polls.",
+     "rework_risk": "Adds 100 ms to real pull handling.",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Media-fault-tune-F10",
+     "title": "A user stop on a slow but alive medium is judged 'removed' after 5 s without progress",
+     "category": "bug",
+     "severity": "minor",
+     "where": [
+      "src/camera/CameraController.cpp:4466-4486@cinemate-port"
+     ],
+     "port_way": "While stop() waits for writers, a 5 s stall (APERTAR_WRITE_STALL_MS) calls failRecording(..., MediaFault::Removed). The take is then abandoned: no rename, no fsync.",
+     "apertar_way": "Upstream joins all workers unconditionally; no precedent.",
+     "why_it_matters": "Probable: a USB HDD or SD card that pauses for more than 5 s at stop leaves an unfinalised clip although the medium is alive.",
+     "rework": "In stop(), treat a stall as Removed only when the media watcher also reports Removed or Error (via mediumDead); otherwise keep waiting.",
+     "rework_risk": "A truly hung device waits until the watcher sees it (NVMe timeout).",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Media-fault-tune-F11",
+     "title": "Ticket ids, critic ids, dates, Cinemate hashes and stale claims in comments; the named host test is missing",
+     "category": "slop",
+     "severity": "minor",
+     "where": [
+      "src/util/MediaProfile.hpp:21,25,133,141,221@cinemate-port",
+      "src/util/MediaProbe.hpp:23,179@cinemate-port",
+      "src/util/MediaTune.hpp:5,11@cinemate-port",
+      "src/util/MediaIntent.hpp:14@cinemate-port",
+      "scripts/apertar-media-tune:8,11,20@cinemate-port",
+      "src/ApertarCoreApp.cpp:10869,10901,10914,10938,10966,10976@cinemate-port",
+      "src/camera/CameraController.cpp:4316-4318@cinemate-port"
+     ],
+     "port_way": "Comments cite T24/T29/T39/T47/T48, critic Y1/Y8/S11, s2 \u00a71, R4, C0106/C0101, dates and Cinemate commits. MediaTune.hpp names tools/media_tune_test.cpp, which is absent. The helper describes O_DIRECT that the fork does not carry. A comment says exFAT gets 2 workers.",
+     "apertar_way": "Comments are rare sentences giving a hazard or reason; no tickets (C1-I14).",
+     "why_it_matters": "Meaningless or misleading to the original developer.",
+     "rework": "Rewrite each as a one-line reason or delete it; drop the test-file reference and the O_DIRECT sentence.",
+     "rework_risk": "none",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Media-fault-tune-F12",
+     "title": "Second mount-table parser beside App's isMountedPath and mountedDeviceForPath",
+     "category": "duplication",
+     "severity": "nit",
+     "where": [
+      "src/util/MediaProbe.hpp:81-130,154-175@cinemate-port",
+      "src/ApertarCoreApp.cpp:2327,2397,2414@cinemate-port"
+     ],
+     "port_way": "decodeMountField, normalizeMountPathForProbe and findMountEntry, plus rootDiskForDevice parsed by string rules.",
+     "apertar_way": "core-upstream/src/ApertarCoreApp.cpp:2014-2045 isMountedPath/mountedDeviceForPath; :3312 parentDriveForDevice via `lsblk -no PKNAME`.",
+     "why_it_matters": "Two parsers for the same file in one process.",
+     "rework": "Make findMountEntry the single parser and turn isMountedPath/mountedDeviceForPath into thin wrappers over it.",
+     "rework_risk": "low",
+     "effort": "S",
+     "deliberate": "no"
+    },
+    {
+     "id": "Media-fault-tune-F13",
+     "title": "Tune summary is logged only for the first resolution; docs disagree on when the files are read",
+     "category": "bug",
+     "severity": "nit",
+     "where": [
+      "src/util/MediaProfile.hpp:172-181@cinemate-port",
+      "scripts/apertar-tune:12@cinemate-port",
+      "config/apertar-media-tune.conf:139@cinemate-port"
+     ],
+     "port_way": "std::call_once logs the first resolution, which is often 'unknown/none' before a medium is mounted. The CLI says the files are read 'once, at start'; the conf file and README say 'at start and when a take starts'. The C++ parser treats lines before any header as [default]; the Python editor does not.",
+     "apertar_way": "no precedent",
+     "why_it_matters": "The log claims to show the values in effect but does not. Moot if F1 is applied.",
+     "rework": "Resolved by F1. Otherwise log once per profile change.",
+     "rework_risk": "none",
      "effort": "S",
      "deliberate": "no"
     }

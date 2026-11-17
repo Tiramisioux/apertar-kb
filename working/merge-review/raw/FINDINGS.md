@@ -340,6 +340,24 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | HW-input-classes-F10 | nit | slop | S | no | Comments narrate Cinemate provenance and WebUI features inside src/hardware | src/hardware/ButtonGesture.hpp:2-3@cinemate-port; src/hardware/GpioInput.cpp:623,662,667,735@cinemate-port |
 | HW-input-classes-F11 | nit | duplication | S | no | Seen-key suffixes chosen by static_cast of the gesture enum into parallel arrays, three copies | src/hardware/GpioInput.cpp:643-645@cinemate-port; src/hardware/Pcf8574Input.cpp:458-459@cinemate-port |
 
+## Unit Media-fault-tune (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-fault-tune.md)
+
+| id | sev | category | effort | deliberate | title | where |
+| --- | --- | --- | --- | --- | --- | --- |
+| Media-fault-tune-F1 | major | mismatch | M | yes | Media tuning file + tmpfs override + Python CLI form a second config system for developer knobs | src/util/MediaTune.hpp:8-28@cinemate-port; scripts/apertar-tune:69-81@cinemate-port |
+| Media-fault-tune-F2 | major | security | S | yes | Kernel tuning root helper is a shell script in Core with open sudoers, no timeout, no lock and a pi-owned state parent | scripts/apertar-media-tune:1-112@cinemate-port; config/apertar-media.sudoers:3@cinemate-port |
+| Media-fault-tune-F3 | major | mismatch | M | yes | Process-global media snapshot and configuredMediaRoot() act as a hidden channel from App to CameraController | src/util/MediaProbe.hpp:257-290@cinemate-port; src/util/MediaProfile.hpp:212-234@cinemate-port |
+| Media-fault-tune-F4 | major | slop | S | yes | Eject-intent flag protocol has no reader in Apertar | src/util/MediaIntent.hpp:1-67@cinemate-port; src/ApertarCoreApp.cpp:4355,4385-4392,10917@cinemate-port |
+| Media-fault-tune-F5 | minor | removed-upstream-behaviour | S | yes | Writer table changes upstream writer, queue and buffer defaults for vfat, ntfs and other filesystems without measurement | src/util/MediaProfile.hpp:129-150@cinemate-port; src/camera/CameraController.cpp:4315-4330@cinemate-port |
+| Media-fault-tune-F6 | minor | mismatch | S | yes | Record gate reads env switches in the command plane; the 1 GiB floor also gates stills; an unmounted media root is refused | src/ApertarCoreApp.cpp:11330-11384@cinemate-port; src/ApertarCoreApp.cpp:12597-12600@cinemate-port |
+| Media-fault-tune-F7 | minor | mismatch | S | unknown | CfeHat reader sits in src/util, is parsed by an App free function, reloads on save and defaults to off | src/util/CfeHat.hpp:1-75@cinemate-port; src/ApertarCoreApp.cpp:5298-5345@cinemate-port |
+| Media-fault-tune-F8 | minor | bug | S | no | Socket get_state emits media_state twice | src/ApertarCoreApp.cpp:12944@cinemate-port; src/ApertarCoreApp.cpp:12961@cinemate-port |
+| Media-fault-tune-F9 | minor | bug | S | no | Automounter unmounts and PCIe-removes the drive on one HAT read | Apertar-UI/src/CfeAutomounter.cpp:549-550@cinemate-port; Apertar-UI/src/CfeAutomounter.cpp:402-420@cinemate-port |
+| Media-fault-tune-F10 | minor | bug | S | no | A user stop on a slow but alive medium is judged 'removed' after 5 s without progress | src/camera/CameraController.cpp:4466-4486@cinemate-port |
+| Media-fault-tune-F11 | minor | slop | S | no | Ticket ids, critic ids, dates, Cinemate hashes and stale claims in comments; the named host test is missing | src/util/MediaProfile.hpp:21,25,133,141,221@cinemate-port; src/util/MediaProbe.hpp:23,179@cinemate-port |
+| Media-fault-tune-F12 | nit | duplication | S | no | Second mount-table parser beside App's isMountedPath and mountedDeviceForPath | src/util/MediaProbe.hpp:81-130,154-175@cinemate-port; src/ApertarCoreApp.cpp:2327,2397,2414@cinemate-port |
+| Media-fault-tune-F13 | nit | bug | S | no | Tune summary is logged only for the first resolution; docs disagree on when the files are read | src/util/MediaProfile.hpp:172-181@cinemate-port; scripts/apertar-tune:12@cinemate-port |
+
 ## Unit Playback (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Playback.md)
 
 | id | sev | category | effort | deliberate | title | where |

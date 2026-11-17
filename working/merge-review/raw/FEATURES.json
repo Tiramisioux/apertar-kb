@@ -5309,2184 +5309,6 @@
   "removed_or_narrowed": [],
   "board_assumptions": []
  },
- "CC-3": {
-  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-CC-3.md",
-  "summary": "Slice CC-3 (new lines 4584-7264) is mostly the tail of DngRecordingQueue plus the H.264 finalize, the sensor probe and CameraSession::start. About 1684 of 2681 lines are still upstream-1.6.0, about 440 are fork-main Clear HDR and probe code, and about 560 are port work. The port work is the drop-frames line (RAM write buffer, safety stop, trim), the media-fault line (yanked drive, sync thread, writeback, stall watchdog, media profile and tune file), the raw copy hand-off, the raw pool warm-keep, split clips, composed clip names, speed-ramp numbering, binning per mode, IMX585 modes from tables, Clear HDR cleared on a non-585 bus, and Preview TDN. Most of it extends the upstream queue in place, but it adds a parallel set of header-only modules, global function-local singletons (safety-stop state, flush-abort registry, safety-stop hook, buffer gauge) and extra worker threads that upstream has no equivalent for. fork-log has no row for caa0153, e625c68 or c48e693. Several rows are Pi-built but not tested, and 26da30e is recorded as built and not tested. Nothing in the slice touches gpiochip, I2C, RP1, PCIe or the fan. It assumes Linux-only syscalls, a hardcoded /home/pi path for the tune file, MemAvailable-driven RAM budgets, and IMX585 subdev names.",
-  "features": [
-   {
-    "name": "Survive a pulled or unmounted recording drive",
-    "operator_gets": "A take ends with a classified media fault and a message instead of hanging; stop is bounded; MLV and H.264 files are left as they are on a dead medium.",
-    "relation_to_upstream": "extends an upstream function in place (stop, both workerLoops, failRecording, H264 finalize) and adds a parallel path beside upstream code (MediaFault classes, mediumGone_, liveWorkers_ with detached writers)",
-    "commits": [
-     "438a342",
-     "e8bb1b7",
-     "0b1632f",
-     "a3ac8da"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp",
-     "src/util/MediaFault.hpp"
-    ],
-    "state_fields": [
-     "media_alive",
-     "media fault"
-    ],
-    "tested": "fork-log: built on Pi 2026-10-26 22:27-22:51; pull test C0011 258/281 frames readable",
-    "env_vars": [],
-    "commands": [],
-    "config_keys": [],
-    "ui_elements": []
-   },
-   {
-    "name": "Write-stall watchdog",
-    "operator_gets": "If the queue is full and no frame has been written for 5 s the take ends as media removed.",
-    "relation_to_upstream": "adds a parallel path beside upstream code (hasCapacityForFrame extended)",
-    "commits": [
-     "a3ac8da"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "env_vars": [
-     "APERTAR_WRITE_STALL_MS"
-    ],
-    "tested": "built on Pi, not separately tested",
-    "commands": [],
-    "config_keys": [],
-    "state_fields": [],
-    "ui_elements": []
-   },
-   {
-    "name": "Once-a-second sync thread and per-frame writeback",
-    "operator_gets": "A pulled card keeps all but about the last second of frames; the sync no longer causes queue drops.",
-    "relation_to_upstream": "entirely new area (upstream has no fsync, syncfs or sync_file_range)",
-    "commits": [
-     "4ce382e",
-     "7d9dd60",
-     "5b68f1f",
-     "441e42a",
-     "0ed07ea"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "env_vars": [
-     "APERTAR_DNG_WRITEBACK",
-     "APERTAR_DNG_DONTNEED",
-     "APERTAR_MEDIA_SYNC_MS"
-    ],
-    "tested": "Pi runs C0004 clean, C0005 782 drops with syncfs, C0007 3 min clean, pull test C0011",
-    "commands": [],
-    "config_keys": [
-     "apertar-media-tune.conf: writeback, sync_ms, dontneed"
-    ],
-    "state_fields": [],
-    "ui_elements": []
-   },
-   {
-    "name": "Media profile and media tuning file",
-    "operator_gets": "Workers, queue depth and raw buffers follow the recording medium (NVMe, USB, SD) and filesystem; a tune file with a test-night override.",
-    "relation_to_upstream": "entirely new area",
-    "commits": [
-     "26da30e",
-     "2edc6d0"
-    ],
-    "files": [
-     "src/util/MediaProfile.hpp",
-     "src/util/MediaTune.hpp",
-     "config/apertar-media-tune.conf",
-     "scripts/apertar-media-tune"
-    ],
-    "config_keys": [
-     "/home/pi/apertar-media-tune.conf",
-     "/run/apertar-media/media-tune.override.conf"
-    ],
-    "tested": "26da30e built 23:04, not tested; 2edc6d0 built on Pi 2026-11-02, Core not restarted at log time",
-    "env_vars": [],
-    "commands": [],
-    "state_fields": [],
-    "ui_elements": [
-     "Performance card (WebUI System pane, other unit)"
-    ]
-   },
-   {
-    "name": "RAM write buffer mode",
-    "operator_gets": "The write queue can be limited by bytes (a share of free RAM) instead of a frame count, with the plan logged and the buffer setting shown.",
-    "relation_to_upstream": "adds a parallel path beside upstream code (queue_ frame limit kept as default mode)",
-    "commits": [
-     "d44b177"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp",
-     "src/util/BufferBudget.hpp"
-    ],
-    "env_vars": [
-     "APERTAR_CDNG_BUFFER",
-     "APERTAR_CDNG_QUEUE_RAM_FRACTION",
-     "APERTAR_CDNG_QUEUE_RAM_FLOOR_MB",
-     "APERTAR_CDNG_QUEUE_RAM_MAX_FRACTION"
-    ],
-    "config_keys": [
-     "apertar-hardware.conf [storage] buffer and queue ram fraction/floor/max keys"
-    ],
-    "commands": [
-     "set_buffer_mode (in ApertarCoreApp, other unit)"
-    ],
-    "state_fields": [
-     "buffer setting and note"
-    ],
-    "tested": "Pi, per fork-log drop-frames row",
-    "ui_elements": []
-   },
-   {
-    "name": "Buffer safety stop and record-during-flush",
-    "operator_gets": "At 90 percent of the buffer in ram mode the take ends cleanly with every queued frame written; pressing record during the drain discards the old clip's queue and starts at once.",
-    "relation_to_upstream": "entirely new area",
-    "commits": [
-     "d44b177",
-     "c5db8b2"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp",
-     "src/util/BufferBudget.hpp",
-     "src/ApertarCoreApp.cpp"
-    ],
-    "env_vars": [
-     "APERTAR_CDNG_BUFFER_STOP_PERCENT"
-    ],
-    "config_keys": [
-     "[storage] buffer_stop_percent"
-    ],
-    "state_fields": [
-     "buffer_safety_stop",
-     "buffer_flush_discarded",
-     "discarded_on_stop"
-    ],
-    "commands": [],
-    "tested": "owner decision 2026-11-01 for c5db8b2; Pi per log",
-    "ui_elements": [
-     "red buffer bar (other unit)"
-    ]
-   },
-   {
-    "name": "Buffer level gauge",
-    "operator_gets": "A live buffer level (frames or bytes) for the state, the buffer event, /api/buffer and the red bar.",
-    "relation_to_upstream": "entirely new area",
-    "commits": [
-     "d44b177"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "commands": [
-     "GET /api/buffer (other unit)"
-    ],
-    "state_fields": [
-     "buffer used/capacity"
-    ],
-    "ui_elements": [
-     "red buffer bar"
-    ],
-    "tested": "Pi per log",
-    "env_vars": [],
-    "config_keys": []
-   },
-   {
-    "name": "Raw copy hand-off",
-    "operator_gets": "Frames leave libcamera's completion thread without copying there, so fewer capture drops; a new drop reason copy-slot.",
-    "relation_to_upstream": "adds a parallel path beside upstream code",
-    "commits": [
-     "fc7eb16",
-     "db17860",
-     "d9f00d4"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "env_vars": [
-     "APERTAR_RAW_COPY_WORKERS"
-    ],
-    "tested": "fc7eb16 recorded as not wired in yet; wiring is at CC:8731 and 9505 outside this slice",
-    "commands": [],
-    "config_keys": [],
-    "state_fields": [
-     "dropped_copy_slot in the stop log line"
-    ],
-    "ui_elements": []
-   },
-   {
-    "name": "Raw pool kept and warmed",
-    "operator_gets": "First frames of a take no longer stall on 16.6 MB allocations.",
-    "relation_to_upstream": "replaces upstream code (pool is no longer cleared at stop and start)",
-    "commits": [
-     "4abbef0"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "env_vars": [
-     "APERTAR_RAW_POOL_WARM"
-    ],
-    "tested": "Pi 2026-11-01 per log",
-    "commands": [],
-    "config_keys": [],
-    "state_fields": [],
-    "ui_elements": []
-   },
-   {
-    "name": "CineMate Log in files",
-    "operator_gets": "Log curve applied to cDNG, lossless and Lossy DNG frames on the copy, with Log tags written.",
-    "relation_to_upstream": "adds a parallel path beside upstream code (beside compressClearHdrFrame)",
-    "commits": [
-     "d44b177"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp",
-     "src/cdng/LogCurve.hpp"
-    ],
-    "tested": "Pi per log",
-    "env_vars": [],
-    "commands": [],
-    "config_keys": [],
-    "state_fields": [],
-    "ui_elements": []
-   },
-   {
-    "name": "Split take into part folders",
-    "operator_gets": "Frames go into part_NNN folders every N frames; part folders are fsynced.",
-    "relation_to_upstream": "adds a parallel path beside upstream code",
-    "commits": [
-     "d7dd337"
-    ],
-    "files": [
-     "src/cdng/FramePath.hpp",
-     "src/camera/CameraController.cpp",
-     "tools/frame_path_test.cpp"
-    ],
-    "env_vars": [
-     "APERTAR_CDNG_FRAMES_PER_FOLDER"
-    ],
-    "config_keys": [
-     "[storage] frames_per_folder"
-    ],
-    "commands": [
-     "set_frames_per_folder"
-    ],
-    "state_fields": [
-     "frames_per_folder"
-    ],
-    "tested": "built on Pi; host test frame_path_test",
-    "ui_elements": [
-     "Performance-card field"
-    ]
-   },
-   {
-    "name": "Composed clip names",
-    "operator_gets": "Clip folder name comes from a template with a sensor token; default keeps the old name.",
-    "relation_to_upstream": "replaces upstream code (allocateClipFolder prefix switch)",
-    "commits": [
-     "014a2bf"
-    ],
-    "files": [
-     "src/util/ClipName.hpp",
-     "src/camera/CameraController.cpp",
-     "tools/clip_name_test.cpp"
-    ],
-    "commands": [
-     "set_clip_name_template",
-     "preview_clip_name"
-    ],
-    "ui_elements": [
-     "WebUI pill composer"
-    ],
-    "tested": "host test clip_name_test",
-    "env_vars": [],
-    "config_keys": [],
-    "state_fields": []
-   },
-   {
-    "name": "Speed ramp numbering",
-    "operator_gets": "Frames of a ramping take are numbered by count, not elapsed time.",
-    "relation_to_upstream": "extends an upstream function in place (nextFrameIndex)",
-    "commits": [
-     "faa2958"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "tested": "2026-10-28 C0030-C0032",
-    "env_vars": [],
-    "commands": [
-     "set_fps_speed_ramp"
-    ],
-    "config_keys": [],
-    "state_fields": [],
-    "ui_elements": []
-   },
-   {
-    "name": "Binning per sensor mode and IMX585 modes from tables",
-    "operator_gets": "Sensor mode list and state show binning and its source; IMX585 modes come from tables instead of whitelists.",
-    "relation_to_upstream": "extends an upstream function in place (fork-main probeSensorModes)",
-    "commits": [
-     "4ab1057",
-     "caa0153"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp",
-     "src/camera/Imx585Modes.hpp"
-    ],
-    "commands": [
-     "list_sensor_modes"
-    ],
-    "state_fields": [
-     "sensor_binning",
-     "sensor_binning_source",
-     "sensor_crop",
-     "binning",
-     "binning_source"
-    ],
-    "tested": "4ab1057 built and running 21:39, list_sensor_modes verified; caa0153 no fork-log row",
-    "env_vars": [],
-    "config_keys": [],
-    "ui_elements": []
-   },
-   {
-    "name": "Clear HDR cleared when another sensor is on the bus; Preview TDN off",
-    "operator_gets": "A Clear HDR setting from an IMX585 no longer fails start on an IMX283 or other sensor; preview uses a tuning copy without temporal denoise unless switched on.",
-    "relation_to_upstream": "extends an upstream function in place (CameraSession::start)",
-    "commits": [
-     "c48e693",
-     "e625c68"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp",
-     "src/camera/TuningTdnStrip.hpp"
-    ],
-    "config_keys": [
-     "preview_tdn in camera_settings.conf"
-    ],
-    "tested": "c48e693 desk only (host tests, Pi -fsyntax-only); e625c68 not read",
-    "env_vars": [],
-    "commands": [],
-    "state_fields": [
-     "preview_tdn"
-    ],
-    "ui_elements": []
-   }
-  ],
-  "upstream_code_changed": [
-   {
-    "region": "DngRecordingQueue::stop() tail",
-    "where": "CameraController.cpp:4584-4612",
-    "change": "Raw pool no longer cleared; gauge and safety flag reset; assert added; flush-abort unregistered before mutex_",
-    "kind": "behaviour-changed"
-   },
-   {
-    "region": "DngRecordingQueue::Stats",
-    "where": "CameraController.cpp:4195-4205",
-    "change": "Five new counters",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "nextFrameIndex",
-    "where": "CameraController.cpp:4670-4680",
-    "change": "countOnly flag",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "hasCapacityForFrame",
-    "where": "CameraController.cpp:4787-4825",
-    "change": "ram-mode check, skipped-after-failure count, stall watchdog",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "acquireRawBuffer",
-    "where": "CameraController.cpp:4846-4870",
-    "change": "pool-miss allocation moved outside mutex_",
-    "kind": "rewritten"
-   },
-   {
-    "region": "enqueue",
-    "where": "CameraController.cpp:4980-5025",
-    "change": "part folder, byte accounting, gauge, safety-stop trigger, framepath",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "allocateClipFolder(settings)",
-    "where": "CameraController.cpp:5200-5210",
-    "change": "prefix switch and loop replaced by nextClipFolderName",
-    "kind": "rewritten"
-   },
-   {
-    "region": "DNG workerLoop",
-    "where": "CameraController.cpp:5239-5314",
-    "change": "Log in lossy encoder, writeback, written-file list, fault classification",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "MLV workerLoop",
-    "where": "CameraController.cpp:5361-5410",
-    "change": "abandon on dead medium, errno propagation",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "failRecording",
-    "where": "CameraController.cpp:5420-5445",
-    "change": "takes a MediaFault, sets flags, counts discarded frames, resets gauge",
-    "kind": "rewritten"
-   },
-   {
-    "region": "recycleRawBuffer",
-    "where": "CameraController.cpp:5448-5470",
-    "change": "retain cap guard and ram budget check",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "preferredRawPoolSize",
-    "where": "CameraController.cpp:5560-5580",
-    "change": "old rule renamed idleRawPoolSize; new function unbounded in ram mode while active",
-    "kind": "moved"
-   },
-   {
-    "region": "H264PreviewRecorder finalize",
-    "where": "CameraController.cpp:6465-6487",
-    "change": "skips rename/copy when mediumDead_",
-    "kind": "behaviour-changed"
-   },
-   {
-    "region": "probeSensorModes",
-    "where": "CameraController.cpp:7142-7236",
-    "change": "IMX585 table-driven loop; crop read replaced by binningFromProperties",
-    "kind": "rewritten"
-   },
-   {
-    "region": "CameraSession::start",
-    "where": "CameraController.cpp:7274-7345",
-    "change": "Clear HDR cleared for foreign sensor; Preview TDN tuning copy",
-    "kind": "extended-in-place"
-   }
-  ],
-  "new_abstractions": [
-   {
-    "name": "bufferbudget namespace",
-    "purpose": "RAM plan, stop percent, safety-stop atomics, flush-abort registry, setting snapshot, [storage] parser",
-    "files": [
-     "src/util/BufferBudget.hpp"
-    ],
-    "upstream_equivalent": "none; upstream queue is frame-count only (core-upstream CameraController.cpp:3330 APERTAR_CDNG_QUEUE_FRAMES)",
-    "used_by": "CameraController.cpp, ApertarCoreApp.cpp"
-   },
-   {
-    "name": "Function-local static singletons (safetyStopState, flushAbortFunction, safetyStopHook, frameBufferGauge)",
-    "purpose": "Share live buffer and safety-stop state between the queue and ApertarCoreApp without a controller lock",
-    "files": [
-     "src/util/BufferBudget.hpp",
-     "src/camera/CameraController.cpp:4182"
-    ],
-    "upstream_equivalent": "none found; upstream keeps state in class members and callbacks like setErrorCallback",
-    "used_by": "queue, ApertarCoreApp"
-   },
-   {
-    "name": "Sync thread (syncLoop)",
-    "purpose": "fsync written files and folder every second",
-    "files": [
-     "src/camera/CameraController.cpp:4743"
-    ],
-    "upstream_equivalent": "none (no fsync in upstream CameraController.cpp)",
-    "used_by": "DngRecordingQueue"
-   },
-   {
-    "name": "Copy workers (copyLoop, PendingCopy, enqueueCopy)",
-    "purpose": "Copy frames off libcamera's completion thread and release the request",
-    "files": [
-     "src/camera/CameraController.cpp:5032-5088"
-    ],
-    "upstream_equivalent": "none; upstream copies in the completion handler path",
-    "used_by": "CameraSession completion handler (CC:9505)"
-   },
-   {
-    "name": "spawnWorker with liveWorkers_ and exitCv_",
-    "purpose": "Count writer threads that may be left behind after a dead-medium stop",
-    "files": [
-     "src/camera/CameraController.cpp:4691"
-    ],
-    "upstream_equivalent": "workers_ vector joined in stop() (core-upstream CameraController.cpp:3249 class)",
-    "used_by": "DngRecordingQueue"
-   },
-   {
-    "name": "MediaFault / MediaProfile / MediaTune headers",
-    "purpose": "Fault classes, medium class, per-medium tuning with file and /run override",
-    "files": [
-     "src/util/MediaFault.hpp",
-     "src/util/MediaProfile.hpp",
-     "src/util/MediaTune.hpp"
-    ],
-    "upstream_equivalent": "none",
-    "used_by": "queue, ApertarCoreApp"
-   },
-   {
-    "name": "FramePath / ClipName headers",
-    "purpose": "Part folder paths; clip name template parser",
-    "files": [
-     "src/cdng/FramePath.hpp",
-     "src/util/ClipName.hpp"
-    ],
-    "upstream_equivalent": "none; ClipName replaces inline prefix switch in allocateClipFolder (core-upstream)",
-    "used_by": "queue, playback, CameraController"
-   },
-   {
-    "name": "CdngLogTake and applyCdngLogFrame",
-    "purpose": "Per-take Log tables applied on the copy",
-    "files": [
-     "src/camera/CameraController.cpp:1662-1700",
-     "src/cdng/LogCurve.hpp"
-    ],
-    "upstream_equivalent": "none",
-    "used_by": "copy worker, LossyDngEncoder"
-   },
-   {
-    "name": "Imx585Modes table and tuning::previewTuningPath",
-    "purpose": "IMX585 mode table for probe and session; stripped tuning copy for Preview TDN",
-    "files": [
-     "src/camera/Imx585Modes.hpp",
-     "src/camera/TuningTdnStrip.hpp"
-    ],
-    "upstream_equivalent": "upstream whitelists inside CameraController.cpp (imx585ModeForResolution family); upstream has tuning:: namespace functions",
-    "used_by": "probe, CameraSession::start"
-   },
-   {
-    "name": "Host unit tests",
-    "purpose": "buffer_budget, frame_path, clip_name, storage_buffer_conf, tuning_tdn_strip, imx585_modes tests",
-    "files": [
-     "tools/*_test.cpp"
-    ],
-    "upstream_equivalent": "none (upstream Core has no unit tests)",
-    "used_by": "developer only"
-   }
-  ],
-  "removed_or_narrowed": [
-   {
-    "what": "Raw pool clearing at take stop and start",
-    "where": "DngRecordingQueue::stop / startAtFolder",
-    "effect": "Idle pool of full-frame copies (workers+2, at least 4, 16.6 MB each at 16-bit 4K) stays allocated between takes"
-   },
-   {
-    "what": "Hand-written clip folder prefix switch (cDNG_, MLV_, H264_, cDNG_5to1_, cDNG_3to1_, ProRes_)",
-    "where": "allocateClipFolder",
-    "effect": "Replaced by template expansion; default template is claimed to reproduce the old names, not verified in this stage"
-   },
-   {
-    "what": "Probe of every size libcamera advertises for IMX585",
-    "where": "probeSensorModes",
-    "effect": "Only table rows are probed; 10-bit under Clear HDR and 16-bit SDR skipped"
-   },
-   {
-    "what": "Saved Clear HDR setting on a non-IMX585 bus",
-    "where": "CameraSession::start",
-    "effect": "Cleared in memory at start; saved choice not rewritten"
-   },
-   {
-    "what": "Stock tuning file as loaded by libcamera",
-    "where": "CameraSession::start",
-    "effect": "Preview loads a stripped copy without tdn blocks by default"
-   }
-  ],
-  "board_assumptions": [
-   {
-    "what": "Linux-only syscalls: sync_file_range, syncfs, O_DIRECTORY, DMA_BUF_IOCTL_SYNC, /sys/class/video4linux, /proc/meminfo",
-    "where": "DngRecordingQueue, otherSensorSubdevPresent"
-   },
-   {
-    "what": "Hardcoded /home/pi/apertar-media-tune.conf and /run/apertar-media/ override path",
-    "where": "src/util/MediaTune.hpp:27-28"
-   },
-   {
-    "what": "Four-core worker sizing (min of 4 and hardware threads); one copy worker by default",
-    "where": "startAtFolder, copy worker env APERTAR_RAW_COPY_WORKERS"
-   },
-   {
-    "what": "Frame size 16.6 MB (16-bit 4K IMX585) in comments and pool sizing",
-    "where": "DngRecordingQueue pool and warm code"
-   },
-   {
-    "what": "RAM plan from MemAvailable and MemTotal, floor 512 MB, cap 50 percent of MemTotal; same plan on 4, 8 and 16 GB boards",
-    "where": "planQueueBuffer"
-   },
-   {
-    "what": "NVMe and CFexpress HAT slot classes in media profile",
-    "where": "src/util/MediaProfile.hpp, CfeHat.hpp (read only by name here)"
-   },
-   {
-    "what": "IMX585 specifics: subdev name match, wide_dynamic_range, mode tables; other families via detectSensorFamily",
-    "where": "imx585SubdevPresent, otherSensorSubdevPresent, probeSensorModes"
-   },
-   {
-    "what": "No gpiochip numbering, I2C bus numbers, RP1, PCIe or fan references in this slice",
-    "where": "whole slice"
-   }
-  ]
- },
- "CC-5": {
-  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-CC-5.md",
-  "summary": "CC-5 (CameraController.cpp 9732-11567) is mostly two port features: speed ramping (faa2958, ca7b7c2) and the Mode Ladder (0041ba0 plus follow-ups). Around them sit Clear HDR ISO/WB hold, set_iso_auto enabled=false, a Log switch, format-carry-over of settings, IMX585/IMX283 table checks, pre-roll/phase-lock members and a libcamera-off stub. The pre-roll and probe logic itself lies outside this slice. About 925 of the 1836 lines are unchanged upstream. setFps, setIsoAuto, setClearHdr, setRawBitDepth and setRecordingFormat were reworked in place. New header-only ModeLadder.hpp, mode_ladder.conf and a detached rubberband child process have no upstream counterpart.",
-  "features": [
-   {
-    "name": "Speed ramping (FPS change during cDNG/MLV take)",
-    "operator_gets": "Change FPS while recording raw; shutter keeps angle or exposure; take ends at its start rate or stays; fps-ramp.txt written in the clip folder.",
-    "relation_to_upstream": "extends an upstream function in place (setFps rewritten and split into applyFpsStepLocked) plus entirely new ramp engine",
-    "commits": [
-     "faa2958",
-     "92b4be3",
-     "4f7975f"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:9742-9911",
-     "src/camera/CameraController.cpp:10686-10820",
-     "<clip folder>/fps-ramp.txt"
-    ],
-    "commands": [
-     "set_fps (allowed during raw take when ramp on)",
-     "set_fps_speed_ramp enabled= [shutter=angle|exposure]"
-    ],
-    "state_fields": [
-     "fps_speed_ramp",
-     "fps_speed_ramp_keep_exposure",
-     "fps_speed_ramp_stretch_audio",
-     "fps_speed_ramp_after"
-    ],
-    "env_vars": [
-     "APERTAR_FPS_RAMP_GRACE_FRAMES"
-    ],
-    "tested": "fork-log: 2026-10-28 takes C0030-C0032 on the camera; 4f7975f built clean"
-   },
-   {
-    "name": "Experimental stretched WAV after ramp take",
-    "operator_gets": "<clip>_stretched.wav conformed to the timeline with pitch kept, written in the background after the take.",
-    "relation_to_upstream": "entirely new area (detached fork/sh child running rubberband)",
-    "commits": [
-     "ca7b7c2",
-     "b858d04"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:9912-10001",
-     "<clip>_stretched.wav",
-     "/tmp/apertar-stretch-<clip>.map"
-    ],
-    "state_fields": [
-     "fps_speed_ramp_stretch_audio"
-    ],
-    "tested": "fork-log: ca7b7c2 tested 2026-10-28 (hardware-log); b858d04 built, needs restart"
-   },
-   {
-    "name": "Capture-gap estimator ignores ramp frames; dropped-frame count",
-    "operator_gets": "No false drop warnings during a ramp; recording_dropped_frames number in the recording_health event.",
-    "relation_to_upstream": "extends an upstream function in place (trackRecordingCadence, markDropped signature)",
-    "commits": [
-     "faa2958",
-     "64bbbaa"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:10005-10066",
-     "src/camera/CameraController.cpp:10494-10496"
-    ],
-    "state_fields": [
-     "recording_dropped_frames"
-    ],
-    "tested": "faa2958 tested; 64bbbaa on drop-frames branch, Pi"
-   },
-   {
-    "name": "Mode Ladder (FPS picks sensor mode between takes)",
-    "operator_gets": "An ordered list of resolutions with bit depth, Clear HDR, compression and FPS ceiling; the camera switches mode by FPS, ceiling per rung in a take, presets must match the rung.",
-    "relation_to_upstream": "adds a parallel path beside upstream code (hooks into setResolution, setFps, setRecordingFormat, setRawBitDepth, setClearHdr, setStillExposureMode) plus new header-only module",
-    "commits": [
-     "0041ba0",
-     "e16033e",
-     "3cae990",
-     "ab972fe",
-     "a7b6f82",
-     "caa0153",
-     "a47dc28"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:10509-10514",
-     "src/camera/CameraController.cpp:10823-11134",
-     "src/camera/ModeLadder.hpp",
-     "~/.config/apertar-core/mode_ladder.conf"
-    ],
-    "commands": [
-     "get_mode_ladder",
-     "set_mode_ladder rungs= enabled= ramp_ready= dry_run="
-    ],
-    "state_fields": [
-     "fps_take_max",
-     "ladder_active",
-     "ladder_rung",
-     "ladder_ramp_ready",
-     "ladder_enabled",
-     "ladder_override",
-     "ladder_count",
-     "ladder_tops",
-     "ladder_text",
-     "fps_max (rewritten by ladder)"
-    ],
-    "config_keys": [
-     "mode_ladder.conf (own file in XDG config dir)"
-    ],
-    "tested": "fork-log: 0041ba0 tested 2026-10-28 (socket, two takes, presets); e16033e built not tested; 3cae990 built; Clear HDR over ladder not yet run on camera"
-   },
-   {
-    "name": "Ladder blocks manual mode and compression commands; Clear HDR override",
-    "operator_gets": "While the ladder is on, set_resolution, set_raw_bit_depth, set_cdng_compression, set_lossy_dng_ratio and cDNG/lossy format switch return a message to turn the ladder off; set_clear_hdr holds the mode as an override until fps/format/etc. change.",
-    "relation_to_upstream": "extends an upstream function in place (refusals added at top of seven setters)",
-    "commits": [
-     "09256a7",
-     "3cae990",
-     "d44b177"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:3061-3068",
-     "src/camera/CameraController.cpp:10643",
-     "src/camera/CameraController.cpp:11297-11406"
-    ],
-    "commands": [
-     "set_resolution",
-     "set_raw_bit_depth",
-     "set_clear_hdr",
-     "set_cdng_compression",
-     "set_lossy_dng_ratio",
-     "set_record_format"
-    ],
-    "state_fields": [
-     "ladder_override"
-    ],
-    "tested": "fork-log: 09256a7 built; Clear HDR over ladder not yet run on camera"
-   },
-   {
-    "name": "Clear HDR holds ISO and WB; set_iso_auto enabled=false locks gain",
-    "operator_gets": "Auto ISO/WB switch off at the values in use when Clear HDR starts and return in SDR; Auto ISO off locks at the measured gain; auto is refused in Clear HDR.",
-    "relation_to_upstream": "rewrites upstream code (setIsoAuto signature now takes bool; setClearHdr, setWhiteBalanceAuto extended)",
-    "commits": [
-     "8175273",
-     "646a194",
-     "e5757d7"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:11062-11108",
-     "src/camera/CameraController.cpp:11167-11199",
-     "src/camera/CameraController.cpp:11409-11424"
-    ],
-    "commands": [
-     "set_iso_auto enabled=false"
-    ],
-    "state_fields": [
-     "iso_actual",
-     "iso_auto_after_clear_hdr",
-     "wb_auto_after_clear_hdr"
-    ],
-    "config_keys": [
-     "[camera] clear_hdr_iso_max_12bit=720",
-     "[camera] clear_hdr_iso_max_16bit=1585 (read elsewhere)"
-    ],
-    "tested": "fork-log: tested in preview/on camera 2026-10-28 (hardware-log)"
-   },
-   {
-    "name": "Log (CineMate Log) switch",
-    "operator_gets": "Log on/off applied to cDNG and lossy DNG; refused in H.264, ProRes and MLV.",
-    "relation_to_upstream": "entirely new area",
-    "commits": [
-     "d44b177"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:11306-11332"
-    ],
-    "commands": [
-     "set_cdng_log"
-    ],
-    "state_fields": [
-     "cdng_log"
-    ],
-    "tested": "fork-log: drop-frames, Pi not yet run on camera"
-   },
-   {
-    "name": "Settings carried across recording-format profiles",
-    "operator_gets": "Speed ramp switch/policy/stretch/after-take, phase lock, preview TDN, drive trim, Log, conform fps and clip-name template stay on when the format changes.",
-    "relation_to_upstream": "extends an upstream function in place (setRecordingFormat profile swap)",
-    "commits": [
-     "92b4be3",
-     "117065d",
-     "d44b177",
-     "ce0bd90",
-     "e625c68",
-     "d7ff071",
-     "014a2bf"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:11241-11266"
-    ],
-    "state_fields": [
-     "fps_speed_ramp*",
-     "fps_phase_lock",
-     "preview_tdn",
-     "media_trim_enabled",
-     "cdng_log",
-     "conform_fps",
-     "clip_name_template"
-    ],
-    "tested": "ramp, phase lock, conform fps tested 2026-10-28 (hardware-log); trim and TDN Pi only"
-   },
-   {
-    "name": "Pre-roll, phase-lock and binning members; libcamera-off stub",
-    "operator_gets": "Members and sampler only in this slice; behind them storage pre-roll, frame-rate phase lock, sensor_binning in state, and a --simulate build without libcamera.",
-    "relation_to_upstream": "extends an upstream function in place (CameraSession members)",
-    "commits": [
-     "d44b177",
-     "80ddac1",
-     "3a18db0",
-     "4ab1057",
-     "5f5cea2"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:10327-10360",
-     "src/camera/CameraController.cpp:10399",
-     "src/camera/CameraController.cpp:10441-10447"
-    ],
-    "state_fields": [
-     "fps_phase_lock_*",
-     "sensor_binning*"
-    ],
-    "tested": "80ddac1 and 3a18db0 built, no test recorded; pre-roll not yet run on camera; 5f5cea2 built with libcamera ON and OFF"
-   },
-   {
-    "name": "IMX585/IMX283 table checks and crop-size migration",
-    "operator_gets": "set_resolution must be a mode of the current bit depth/Clear HDR class with a clear error; old 3840x2076/1920x1038 clients keep working; mono flag reaches the sanitiser.",
-    "relation_to_upstream": "extends an upstream function in place (setResolution, every sanitizeSettingsForSensor call gets a third argument)",
-    "commits": [
-     "caa0153",
-     "a47dc28",
-     "900d282"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:10569-10600",
-     "src/camera/CameraController.cpp:10960-11019",
-     "src/camera/Imx585Modes.hpp",
-     "src/camera/Imx283Modes.hpp"
-    ],
-    "commands": [
-     "set_resolution",
-     "list_sensor_modes"
-    ],
-    "tested": "fork-log: not yet run on the camera"
-   },
-   {
-    "name": "Shutdown closes a ramp take; media root global",
-    "operator_gets": "fps-ramp.txt is written and the start rate persisted when Core stops mid-take; media root published to a global for the media profile.",
-    "relation_to_upstream": "extends an upstream function in place (start, stop)",
-    "commits": [
-     "faa2958",
-     "26da30e"
-    ],
-    "files": [
-     "src/camera/CameraController.cpp:10541-10583"
-    ],
-    "tested": "faa2958 tested; 26da30e built, not tested"
-   }
-  ],
-  "upstream_code_changed": [
-   {
-    "region": "trackRecordingCadence",
-    "where": "src/camera/CameraController.cpp:10005-10066",
-    "change": "Early return inside ramp grace; markDropped() now takes the estimated count",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "CameraSession members",
-    "where": "src/camera/CameraController.cpp:10317-10447",
-    "change": "Preroll atomics, phase-lock state, 16-deep pin history, sensorBinning_, ramp state, libcamera-off #else stub members",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "CameraController ctor",
-    "where": "src/camera/CameraController.cpp:10482-10514",
-    "change": "recording_health lambda carries dropped-frame count; mode_ladder.conf loaded after settings",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "CameraController::start / stop",
-    "where": "src/camera/CameraController.cpp:10541-10583",
-    "change": "configuredMediaRoot() set; stop() closes a ramp take and restores start FPS",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "CameraController::setResolution",
-    "where": "src/camera/CameraController.cpp:10633-10666",
-    "change": "Ladder refusal, alias migration, IMX585 table check, mono flag, ladderOverride_ reset",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "CameraController::setFps",
-    "where": "src/camera/CameraController.cpp:10674-10757",
-    "change": "Upstream refused any FPS change while recording; port allows raw ramp takes, rewrites rung via ladder, clamps to rung ceiling, and moves the apply body into new applyFpsStepLocked",
-    "kind": "rewritten"
-   },
-   {
-    "region": "CameraController::setIso / setIsoAuto",
-    "where": "src/camera/CameraController.cpp:11062-11108",
-    "change": "setIsoAuto() became setIsoAuto(bool enabled) with lock-at-measured-gain path and Clear HDR refusal; setIso clears iso_auto_after_clear_hdr",
-    "kind": "rewritten"
-   },
-   {
-    "region": "setShutterUs / setShutterAuto",
-    "where": "src/camera/CameraController.cpp:11201-11211",
-    "change": "Reset rampNominalShutterUs_",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "setStillExposureMode",
-    "where": "src/camera/CameraController.cpp:11213-11219",
-    "change": "Leaving photo mode calls ladderRewriteLocked",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "setWhiteBalanceKelvin / setWhiteBalanceAuto",
-    "where": "src/camera/CameraController.cpp:11185-11199",
-    "change": "Clear after-Clear-HDR flag; refuse auto in Clear HDR",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "setRecordingFormat",
-    "where": "src/camera/CameraController.cpp:11224-11290",
-    "change": "Ladder refusal for cDNG/lossy switch; 11 settings carried across profile swap; ladder rewrite and override reset",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "setCdngCompression / setLossyDngRatio",
-    "where": "src/camera/CameraController.cpp:11297-11349",
-    "change": "Refused while ladder active",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "setRawBitDepth",
-    "where": "src/camera/CameraController.cpp:11363-11406",
-    "change": "Ladder refusal; mono flag; override reset except 16-bit following Clear HDR",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "setClearHdr",
-    "where": "src/camera/CameraController.cpp:11409-11460",
-    "change": "Compression fix before sanitiser, hold measured ISO/WB, ladder override with rollback",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "every sanitizeSettingsForSensor call in the slice",
-    "where": "src/camera/CameraController.cpp:10586-11439",
-    "change": "Third argument (monochromeSensor) added at all call sites",
-    "kind": "behaviour-changed"
-   }
-  ],
-  "new_abstractions": [
-   {
-    "name": "apertar::ladder / ModeLadder.hpp",
-    "purpose": "Header-only pure logic for the FPS-to-sensor-mode ladder: parse, validate, choose rung, JSON",
-    "files": [
-     "src/camera/ModeLadder.hpp"
-    ],
-    "used_by": "CameraController ladder methods, set_mode_ladder / get_mode_ladder",
-    "upstream_equivalent": "none (upstream picks mode in sanitizeSettingsForSensor with no ladder data)"
-   },
-   {
-    "name": "mode_ladder.conf / modeLadderPath()",
-    "purpose": "Separate persisted file for the ladder in the XDG config dir",
-    "files": [
-     "src/camera/CameraController.cpp:404"
-    ],
-    "used_by": "CameraController ctor and saveModeLadderLocked",
-    "upstream_equivalent": "camera_settings.conf via settingsFile (one file); no second config file upstream"
-   },
-   {
-    "name": "Speed-ramp engine (FpsRampEvent, noteFpsChange, inFpsRampGrace, stampFpsRampEvents, pairFpsRampEvents, writeFpsRampLog, rampMutex_)",
-    "purpose": "Grace window, per-change journal and fps-ramp.txt for FPS changes inside a take",
-    "files": [
-     "src/camera/CameraController.cpp:9742-9911"
-    ],
-    "used_by": "CameraSession requestComplete and stop path",
-    "upstream_equivalent": "none"
-   },
-   {
-    "name": "Audio stretch child process (PendingAudioStretch, launchAudioStretch, wavSampleRate, shellQuote)",
-    "purpose": "Detached double-fork /bin/sh running rubberband with a timemap after the take",
-    "files": [
-     "src/camera/CameraController.cpp:2896-2925",
-     "src/camera/CameraController.cpp:9939-10001"
-    ],
-    "used_by": "CameraSession stop path",
-    "upstream_equivalent": "none in this slice (upstream uses in-process worker threads; fork/exec elsewhere unconfirmed: grep fork() @upstream)"
-   },
-   {
-    "name": "Storage pre-roll sampler (prerollFpsOverride_, prerollMeasuring_, prerollFrames_, noteFrameForPreroll ...)",
-    "purpose": "Measure the take's real frame period for storage pre-roll",
-    "files": [
-     "src/camera/CameraController.cpp:10327-10360"
-    ],
-    "used_by": "setPrerollFps / prerollMeasure at CC:7839-7875 and 12046-12180",
-    "upstream_equivalent": "none"
-   },
-   {
-    "name": "CameraController ladder and ramp methods (applyFpsStepLocked, restoreFpsAfterRampLocked, ladderStatesLocked, ladderRewriteLocked, ladderActiveForLocked, fillLadderFieldsLocked, fillRungExtrasLocked, modeLadderJsonLocked, setModeLadder, applyLadderToPreset)",
-    "purpose": "Controller-side glue between sanitiser, camera and ladder/ramp state",
-    "files": [
-     "src/camera/CameraController.cpp:10690-11134",
-     "src/camera/CameraController.hpp:245-249"
-    ],
-    "used_by": "setters and App commands",
-    "upstream_equivalent": "none; upstream setFps is inline"
-   },
-   {
-    "name": "Imx585Modes.hpp / Imx283Modes.hpp mode tables",
-    "purpose": "Per-sensor mode tables replace whitelists; feed ladder pool and setResolution checks",
-    "files": [
-     "src/camera/Imx585Modes.hpp",
-     "src/camera/Imx283Modes.hpp"
-    ],
-    "used_by": "setResolution, fillRungExtrasLocked, modeLadderJsonLocked",
-    "upstream_equivalent": "whitelists inside sanitizeSettingsForSensor @upstream-1.6.0"
-   }
-  ],
-  "removed_or_narrowed": [
-   {
-    "what": "Unconditional refusal of FPS change while recording",
-    "where": "CameraController.cpp:10686-10698",
-    "effect": "Raw takes may change FPS when ramp is on; H.264/ProRes/photo keep the refusal with new text"
-   },
-   {
-    "what": "Manual set_resolution, set_raw_bit_depth, set_cdng_compression, set_lossy_dng_ratio, cDNG/lossy format switch",
-    "where": "CameraController.cpp:10643, 11297, 11345, 11370, 11220",
-    "effect": "Refused while the Mode Ladder is enabled and usable"
-   },
-   {
-    "what": "Auto ISO and auto WB in Clear HDR",
-    "where": "CameraController.cpp:11101-11104, 11196-11199",
-    "effect": "Refused in Clear HDR (upstream behaviour unconfirmed)"
-   },
-   {
-    "what": "setIsoAuto() no-argument signature",
-    "where": "CameraController.cpp:11079",
-    "effect": "Replaced by setIsoAuto(bool); all callers changed"
-   },
-   {
-    "what": "Old IMX585 resolutions (3840x2076, 1920x1038, 1332x990, 2028x1080 ...)",
-    "where": "CameraController.cpp:10569, imx585AliasResolution",
-    "effect": "Aliased or migrated to table modes; widths under 1280 hidden"
-   },
-   {
-    "what": "Per-format-profile values for ramp, phase lock, TDN, trim, Log, conform fps, clip name",
-    "where": "CameraController.cpp:11241-11266",
-    "effect": "One camera-wide value overrides what a saved format profile held"
-   },
-   {
-    "what": "Capture-gap drop detection inside ramp grace window",
-    "where": "CameraController.cpp:10013-10020",
-    "effect": "Real drops inside the grace window are not counted"
-   }
-  ],
-  "board_assumptions": [
-   {
-    "what": "Request queue depth by filesystem: 4 on ext4, 6 on exFAT/NTFS, 8-10 with Clear HDR; ramp grace = N+6 frames, at least 10",
-    "where": "CameraController.cpp:9744-9760"
-   },
-   {
-    "what": "At most 16 raw buffers (phase-lock pin history std::array of 16)",
-    "where": "CameraController.cpp:10351-10359"
-   },
-   {
-    "what": "Lossy cDNG needs Pi 5-class hardware (pre-existing upstream check, unchanged)",
-    "where": "CameraController.cpp:11267-11270"
-   },
-   {
-    "what": "libcamera Raspberry Pi pipeline: DelayedControls two-frame delay, IPA limitExposureTime behaviour",
-    "where": "CameraController.cpp:9744-9760, 10735-10740"
-   },
-   {
-    "what": "Ladder pool and editor extras only for IMX585 and IMX283 sensor families",
-    "where": "CameraController.cpp:10960-11019"
-   },
-   {
-    "what": "rubberband-cli, nice and /bin/sh installed; temp dir used for stretch map",
-    "where": "CameraController.cpp:9939-10001"
-   },
-   {
-    "what": "No RP1, PCIe, gpiochip, I2C bus, fan or RAM-size reference in this slice",
-    "where": "CameraController.cpp:9732-11567"
-   }
-  ]
- },
- "Camera-headers": {
-  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-Camera-headers.md",
-  "summary": "The port adds 6 new header-only modules in src/camera (FpsCeiling, FramePhaseLock, Imx283Modes, Imx585Modes, ModeLadder, TuningTdnStrip) and extends ScalerCropGeometry.hpp by one function. It adds roughly 40 members and helpers to CameraController.hpp and 95 lines to Types.hpp (CdngLog, 12 persisted and 14 runtime CaptureSettings fields). It adds 4 host tests in tools/, which have no upstream precedent (upstream has no tools/ or tests) and no CMake hook. Nothing upstream is deleted from these headers. One original signature changed: setIsoAuto(bool enabled = true). Upstream holds sensor facts as constexpr arrays and isImx585/isImx294 free functions inside CameraController.cpp, plus a SensorFamily enum. The port moves IMX283 and IMX585 facts into std-only headers, and the old isImx585* functions still exist in CC.cpp beside the new tables. ModeLadder.hpp is new ground: it has its own config file (mode_ladder.conf) and builds nested JSON by string concatenation, where upstream replies are flat scalars. The fork-log marks nearly all of this as desk-tested or built on the Pi, with the ladder WebUI untested and nothing run on the camera since the drop-frames merge.",
-  "features": [
-   {
-    "name": "Sensor-probe FPS ceiling (probe wins, table is fallback)",
-    "operator_gets": "4K SDR can now go to 60 fps (was 30); IMX585 lossless cDNG is no longer capped at 30; fps_max and iso_max appear in the state.",
-    "relation_to_upstream": "extends main's probedMaximumFps rule (min(table, probed), CC.cpp@main:2767) by moving it into FpsCeiling.hpp and flipping it to probe-wins",
-    "commits": [
-     "d44b177",
-     "97adea0",
-     "bcedbe5",
-     "6d217c7"
-    ],
-    "files": [
-     "src/camera/FpsCeiling.hpp",
-     "tools/fps_ceiling_test.cpp"
-    ],
-    "commands": [
-     "list_sensor_modes (from main f60e301)"
-    ],
-    "state_fields": [
-     "fps_max",
-     "iso_max"
-    ],
-    "env_vars": [
-     "APERTAR_FPS_LIMIT=table",
-     "APERTAR_LOSSLESS_FPS_LIMIT=<n>"
-    ],
-    "tested": "Host test only; fork-log:138 says not yet run on the camera."
-   },
-   {
-    "name": "Frame-rate phase lock (off by default)",
-    "operator_gets": "Optional lock of the sensor's frame cadence to the Pi clock, so audio and picture do not drift in long takes.",
-    "relation_to_upstream": "entirely new area; upstream sets FrameDurationLimits once (CC.cpp@upstream:2030) and has no cadence control",
-    "commits": [
-     "80ddac1",
-     "8f7dc39",
-     "3a18db0",
-     "114bfb9",
-     "117065d",
-     "69a700e",
-     "f4a1393"
-    ],
-    "files": [
-     "src/camera/FramePhaseLock.hpp",
-     "src/camera/CameraController.hpp"
-    ],
-    "commands": [
-     "set_fps_phase_lock"
-    ],
-    "state_fields": [
-     "fps_phase_lock",
-     "fps_phase_lock_active",
-     "fps_phase_lock_err_us",
-     "fps_phase_lock_dur_us",
-     "fps_phase_lock_pushes",
-     "fps_phase_lock_saturated"
-    ],
-    "config_keys": [
-     "camera_settings.conf: fps_phase_lock"
-    ],
-    "ui_elements": [
-     "WebUI Performance card toggle"
-    ],
-    "tested": "Built on the Pi 2026-11-04. No host test in the repo; the simulator is working/tools/phase_lock_sim.cpp (17 checks). Not measured on the rig."
-   },
-   {
-    "name": "IMX585 modes from tables",
-    "operator_gets": "The IMX585 size list is offered per class (SDR 12, SDR 10, Clear HDR 12, Clear HDR 16), narrow modes under 1280 px are hidden, and mono is recognised.",
-    "relation_to_upstream": "replaces upstream whitelist functions in part; the old isImx585*Resolution functions are still present at port CC.cpp:435-492",
-    "commits": [
-     "caa0153",
-     "900d282"
-    ],
-    "files": [
-     "src/camera/Imx585Modes.hpp",
-     "tools/imx585_modes_test.cpp",
-     "src/web/WebControlPage.cpp"
-    ],
-    "commands": [
-     "list_sensor_modes"
-    ],
-    "state_fields": [
-     "sensor_mono",
-     "raw_width/raw_height (ladder JSON)"
-    ],
-    "env_vars": [
-     "APERTAR_IMX585_MIN_MODE_WIDTH"
-    ],
-    "ui_elements": [
-     "WebUI family pills",
-     "ratio row"
-    ],
-    "tested": "imx585_modes_test, 44 CHECKs, desk; Pi probe per table row; not run on the camera."
-   },
-   {
-    "name": "IMX283 sensor family",
-    "operator_gets": "IMX283 (5472x3648) works as a further sensor with 57 modes, active-picture sizes, and a crop that skips the optical-black columns.",
-    "relation_to_upstream": "extends upstream's SensorFamily enum (Imx294/Imx477/Imx585) with Imx283, but keeps the facts in a header where upstream keeps them in CameraController.cpp",
-    "commits": [
-     "c48e693",
-     "a47dc28"
-    ],
-    "files": [
-     "src/camera/Imx283Modes.hpp",
-     "src/camera/ScalerCropGeometry.hpp",
-     "tools/imx283_modes_test.cpp"
-    ],
-    "commands": [
-     "list_sensor_modes"
-    ],
-    "ui_elements": [
-     "WebUI bases/ratios"
-    ],
-    "tested": "imx283_modes_test (table typed twice, 218 lines); commit says desk only."
-   },
-   {
-    "name": "Mode ladder (T34)",
-    "operator_gets": "The FPS setting picks the sensor mode, bit depth, compression and Log between takes; Ramp-ready mode; an editor with dry-run messages.",
-    "relation_to_upstream": "entirely new area, with its own config file beside camera_settings.conf and a nested-JSON reply builder; upstream replies are flat scalars",
-    "commits": [
-     "88e644d",
-     "0041ba0",
-     "a7b6f82",
-     "cdf83cd",
-     "3cae990",
-     "09256a7",
-     "e16033e",
-     "62c1711"
-    ],
-    "files": [
-     "src/camera/ModeLadder.hpp",
-     "src/camera/CameraController.hpp",
-     "include/apertar/core/Types.hpp"
-    ],
-    "commands": [
-     "get_mode_ladder",
-     "set_mode_ladder"
-    ],
-    "state_fields": [
-     "ladder_enabled",
-     "ladder_count",
-     "ladder_text",
-     "ladder_tops",
-     "ladder_resolution",
-     "ladder_rung",
-     "ladder_ramp_ready",
-     "ladder_override",
-     "ladder_active",
-     "fps_take_max"
-    ],
-    "config_keys": [
-     "~/.config/apertar-core/mode_ladder.conf: enabled, ramp_ready, resolutions (old key rungs)"
-    ],
-    "ui_elements": [
-     "WebUI Modes pane (Mode Ladder card)",
-     "touch UI ladderActive and 'set by Mode Ladder' field"
-    ],
-    "tested": "Socket-tested twice on 2026-10-28 (fork-log:87); WebUI built but not tested (fork-log:94, 96). The ladder's host test is outside the repo."
-   },
-   {
-    "name": "CineMate Log (CdngLog)",
-    "operator_gets": "cDNG and Lossy DNG can store the sensor data one bit depth lower through a log curve.",
-    "relation_to_upstream": "extends the CdngCompression enum/toString pattern in Types.hpp",
-    "commits": [
-     "d44b177"
-    ],
-    "files": [
-     "include/apertar/core/Types.hpp"
-    ],
-    "commands": [
-     "set_cdng_log"
-    ],
-    "state_fields": [
-     "cdng_log",
-     "cdng_log_bits",
-     "cdng_log_available",
-     "cdng_log_applied"
-    ],
-    "config_keys": [
-     "camera_settings.conf: cdng_log"
-    ],
-    "tested": "tools/log_curve_test.cpp (outside this unit); not run on the camera."
-   },
-   {
-    "name": "Preview temporal denoise switch",
-    "operator_gets": "A switch (off by default) that gives libcamera a copy of the tuning file without the tdn denoise member. The preview ISP gets faster at 4K Clear HDR 16-bit and the DNGs do not change.",
-    "relation_to_upstream": "adds a parallel path beside upstream's DefaultTuningSelection.hpp, with its own JSON parser",
-    "commits": [
-     "e625c68"
-    ],
-    "files": [
-     "src/camera/TuningTdnStrip.hpp",
-     "tools/tuning_tdn_strip_test.cpp"
-    ],
-    "commands": [
-     "set_preview_tdn"
-    ],
-    "state_fields": [
-     "preview_tdn",
-     "tuning_file_active"
-    ],
-    "config_keys": [
-     "camera_settings.conf: preview_tdn"
-    ],
-    "ui_elements": [
-     "WebUI Performance card"
-    ],
-    "tested": "Host test with golden-file byte compare; Pi only, built 2026-11-04."
-   },
-   {
-    "name": "Binning per sensor mode and for the current mode",
-    "operator_gets": "Sensor mode list and state show binning (driver, inferred or unknown) and the crop of the current mode.",
-    "relation_to_upstream": "extends main's startup probe (f60e301) with two struct fields and a SensorBinning struct",
-    "commits": [
-     "4ab1057"
-    ],
-    "files": [
-     "src/camera/CameraController.hpp"
-    ],
-    "commands": [
-     "list_sensor_modes"
-    ],
-    "state_fields": [
-     "sensor_binning",
-     "sensor_binning_source",
-     "sensor_crop"
-    ],
-    "tested": "fork-log:36: built and running, list_sensor_modes and get_state verified."
-   },
-   {
-    "name": "Speed ramping (FPS change during a take) and related Types.hpp fields",
-    "operator_gets": "FPS can change during a cDNG/MLV take; shutter policy, optional stretched WAV and what happens to FPS after the take.",
-    "relation_to_upstream": "entirely new area; only its API surface sits in this unit",
-    "commits": [
-     "faa2958",
-     "ca7b7c2"
-    ],
-    "files": [
-     "include/apertar/core/Types.hpp",
-     "src/camera/CameraController.hpp"
-    ],
-    "commands": [
-     "set_fps_speed_ramp"
-    ],
-    "state_fields": [
-     "fps_speed_ramp",
-     "fps_speed_ramp_keep_exposure",
-     "fps_speed_ramp_stretch_audio",
-     "fps_speed_ramp_after"
-    ],
-    "config_keys": [
-     "camera_settings.conf: fps_speed_ramp, fps_speed_ramp_keep_exposure, fps_speed_ramp_stretch_audio, fps_speed_ramp_after"
-    ],
-    "ui_elements": [
-     "WebUI Speed Ramp card"
-    ],
-    "tested": "Tested 2026-10-28 per fork-log (rows near :63); not verified line by line."
-   },
-   {
-    "name": "Settings API surface for clip names, conform fps, media trim, buffer bar, storage pre-roll and media faults",
-    "operator_gets": "Composable clip names, a project conform rate, drive trim, a write-buffer bar with a safety stop, a storage pre-roll speed test, and survival of a yanked drive.",
-    "relation_to_upstream": "extends CameraController and CaptureSettings in place; the implementations belong to other units",
-    "commits": [
-     "014a2bf",
-     "d7ff071",
-     "ce0bd90",
-     "d44b177",
-     "438a342",
-     "fb557e9",
-     "64bbbaa"
-    ],
-    "files": [
-     "src/camera/CameraController.hpp",
-     "include/apertar/core/Types.hpp"
-    ],
-    "commands": [
-     "set_clip_name_template",
-     "preview_clip_name",
-     "set_conform_fps",
-     "set_media_trim",
-     "set_buffer_mode",
-     "set_storage_preroll",
-     "storage_preroll"
-    ],
-    "state_fields": [
-     "clip_name_template",
-     "clip_name_example",
-     "conform_fps",
-     "buffer fields",
-     "dropped frame count"
-    ],
-    "config_keys": [
-     "camera_settings.conf: clip_name_template, conform_fps, media_trim",
-     "[storage]",
-     "[media]"
-    ],
-    "env_vars": [
-     "APERTAR_MEDIA_TRIM=0",
-     "APERTAR_WEB_PREVIEW_RECORDING_FPS"
-    ],
-    "ui_elements": [
-     "WebUI pill composer",
-     "Performance card",
-     "buffer bar"
-    ],
-    "tested": "fork-log:138 and :156; Pi built, not run on the camera."
-   },
-   {
-    "name": "Clear HDR holds ISO and white balance; iso_actual",
-    "operator_gets": "Auto ISO and auto white balance stop in Clear HDR and come back afterwards; the state shows the gain in use.",
-    "relation_to_upstream": "extends setIsoAuto (signature changed) and CaptureSettings",
-    "commits": [
-     "8175273",
-     "646a194"
-    ],
-    "files": [
-     "src/camera/CameraController.hpp",
-     "include/apertar/core/Types.hpp"
-    ],
-    "commands": [
-     "set_iso_auto enabled=false"
-    ],
-    "state_fields": [
-     "iso_actual",
-     "iso_auto_after_clear_hdr"
-    ],
-    "config_keys": [
-     "camera_settings.conf: iso_auto_after_clear_hdr"
-    ],
-    "tested": "Not stated in the commit subjects or the fork-log rows read."
-   }
-  ],
-  "upstream_code_changed": [
-   {
-    "region": "CameraController::setIsoAuto",
-    "where": "src/camera/CameraController.hpp",
-    "change": "signature changed from setIsoAuto() to setIsoAuto(bool enabled = true); false locks the gain in use",
-    "kind": "behaviour-changed"
-   },
-   {
-    "region": "struct CameraController::SensorMode",
-    "where": "src/camera/CameraController.hpp",
-    "change": "added binning and binningSource (struct itself comes from fork main f60e301)",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "struct CaptureSettings",
-    "where": "include/apertar/core/Types.hpp",
-    "change": "12 persisted fields and 14 runtime fields added, including std::vector ladderTops and std::string ladderText; persisted and runtime fields now mix",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "struct AudioRecordingOptions",
-    "where": "include/apertar/core/Types.hpp",
-    "change": "added fpsRamp",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "ScalerCropGeometry.hpp (centeredRawWindowScalerCrop, centeredPreviewScalerCrop)",
-    "where": "src/camera/ScalerCropGeometry.hpp",
-    "change": "both functions untouched; activeAreaScalerCrop added (28 lines)",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "CameraController private section",
-    "where": "src/camera/CameraController.hpp",
-    "change": "about 20 new helper declarations and 15 members (ladder, ramp, pre-roll, media fault, Log-applied tracking); still one class with one mutex_",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "Types.hpp includes and enums",
-    "where": "include/apertar/core/Types.hpp",
-    "change": "added <vector>, enum class CdngLog, and five free inline functions (toString, cdngLogFromString, cdngLogStoredBits, cdngLogAvailable, cdngLogBits)",
-    "kind": "extended-in-place"
-   }
-  ],
-  "new_abstractions": [
-   {
-    "name": "apertar::fpsceiling",
-    "purpose": "Pure rules for the maximum FPS: probe vs table, back-end cap, IMX585 lossless override",
-    "upstream_equivalent": "none; main has the rule inline in probedMaximumFps/maximumSupportedFpsForResolution (CC.cpp@main:2692, 2767)",
-    "files": [
-     "src/camera/FpsCeiling.hpp"
-    ],
-    "used_by": "CameraController.cpp:3121-3488, 8634; tools/fps_ceiling_test.cpp"
-   },
-   {
-    "name": "FramePhaseLock and PhaseLockStatus",
-    "purpose": "Pure PI servo state machine for frame cadence on SensorTimestamp, plus a status snapshot for the state output",
-    "upstream_equivalent": "none; upstream sets FrameDurationLimits once at CC.cpp@upstream:2030",
-    "files": [
-     "src/camera/FramePhaseLock.hpp"
-    ],
-    "used_by": "CameraSession in CameraController.cpp (stepFramePhaseLock, phaseLockStatus); ApertarCoreApp.cpp state output"
-   },
-   {
-    "name": "apertar::imx585 (Mode, Class, Rows, offered, find, nearest, transportFor, activeFor)",
-    "purpose": "Table-driven IMX585 mode data with width policy",
-    "upstream_equivalent": "free functions isImx585*Resolution and constexpr arrays inside CameraController.cpp (CC.cpp@upstream:360-398, kImx477Modes :2309)",
-    "files": [
-     "src/camera/Imx585Modes.hpp"
-    ],
-    "used_by": "CameraController.cpp, WebControlPage.cpp, tools/imx585_modes_test.cpp"
-   },
-   {
-    "name": "apertar::imx283",
-    "purpose": "Table of 57 IMX283 modes with active/transport sizes and normalise()",
-    "upstream_equivalent": "isImx294Resolution and friends in CameraController.cpp (CC.cpp@upstream:462-527)",
-    "files": [
-     "src/camera/Imx283Modes.hpp"
-    ],
-    "used_by": "CameraController.cpp:656-713, 2272+; tools/imx283_modes_test.cpp"
-   },
-   {
-    "name": "apertar::ladder (Rung, Ladder, RungState, PoolEntry, parseRungs, validate, toJson, fileText, parseFile)",
-    "purpose": "Mode ladder logic, validation, nested JSON reply writer and mode_ladder.conf reader/writer",
-    "upstream_equivalent": "none; settings persistence upstream goes through camera_settings.conf in CC.cpp, replies are flat scalar JSON",
-    "files": [
-     "src/camera/ModeLadder.hpp"
-    ],
-    "used_by": "CameraController.hpp/.cpp (modeLadder_, ladder helpers), ApertarCoreApp.cpp get/set_mode_ladder, tools/log_curve_test.cpp"
-   },
-   {
-    "name": "NativeScalerCrop / activeAreaScalerCrop",
-    "purpose": "Crop that skips IMX283 leading-left and trailing-bottom optical black, from the runtime ScalerCropMaximum",
-    "upstream_equivalent": "centeredRawWindowScalerCrop / centeredPreviewScalerCrop in the same upstream file",
-    "files": [
-     "src/camera/ScalerCropGeometry.hpp"
-    ],
-    "used_by": "CameraController.cpp:2492; tools/imx283_modes_test.cpp"
-   },
-   {
-    "name": "apertar::tuning::stripTdn / previewTuningPath and tdn_detail::Parser",
-    "purpose": "Hand-written JSON parser that removes the tdn member of every rpi.denoise config, plus a validated cached copy under $HOME/.cache/apertar-core/tuning with a .src sidecar",
-    "upstream_equivalent": "DefaultTuningSelection.hpp (Pipeline, compatibleFile, default tuning directories, libyaml-based validation)",
-    "files": [
-     "src/camera/TuningTdnStrip.hpp"
-    ],
-    "used_by": "CameraController.cpp (Preview TDN path); tools/tuning_tdn_strip_test.cpp"
-   },
-   {
-    "name": "CdngLog enum and cdngLog* free functions",
-    "purpose": "Log setting and the stored bit-depth rule (16->12, 12->10, 10->8)",
-    "upstream_equivalent": "CdngCompression enum with toString in the same Types.hpp",
-    "files": [
-     "include/apertar/core/Types.hpp"
-    ],
-    "used_by": "CameraController.cpp, ModeLadder.hpp, ApertarCoreApp.cpp state output"
-   },
-   {
-    "name": "FrameBufferStatus and StoragePrerollResult",
-    "purpose": "Plain result structs for the write-buffer bar and the storage pre-roll",
-    "upstream_equivalent": "none (MediaWriteStatus is the nearest existing status struct)",
-    "files": [
-     "src/camera/CameraController.hpp"
-    ],
-    "used_by": "ApertarCoreApp.cpp buffer bar and pre-roll thread"
-   },
-   {
-    "name": "tools/*_test.cpp host tests (imx283, imx585, fps_ceiling, tuning_tdn_strip)",
-    "purpose": "Compile-with-g++ unit tests of the pure headers; three different check styles; not wired into CMake",
-    "upstream_equivalent": "none; upstream Core has no tests and no tools/ directory",
-    "files": [
-     "tools/imx283_modes_test.cpp",
-     "tools/imx585_modes_test.cpp",
-     "tools/fps_ceiling_test.cpp",
-     "tools/tuning_tdn_strip_test.cpp"
-    ],
-    "used_by": "manual runs only"
-   }
-  ],
-  "removed_or_narrowed": [
-   {
-    "what": "Modes narrower than 1280 px on the IMX585",
-    "where": "Imx585Modes.hpp minModeWidth()",
-    "effect": "hidden by default from find/nearest/offered; env APERTAR_IMX585_MIN_MODE_WIDTH=0 shows them"
-   },
-   {
-    "what": "1x1 1920x1080 Clear HDR 16-bit IMX585 row",
-    "where": "Imx585Modes.hpp shadowed()",
-    "effect": "not offered; the binned row answers every lookup"
-   },
-   {
-    "what": "fps_max = min(table, probed) and the IMX585 lossless 30 fps cap",
-    "where": "FpsCeiling.hpp",
-    "effect": "probe wins; the old values come back only with APERTAR_FPS_LIMIT=table or APERTAR_LOSSLESS_FPS_LIMIT=30"
-   },
-   {
-    "what": "Manual resolution, bit depth and Clear HDR while the ladder is on",
-    "where": "commit 09256a7, flags in CameraController.hpp (ladderActive)",
-    "effect": "those commands are refused or return quietly while the ladder is active"
-   },
-   {
-    "what": "Cdng Log legacy values 12, 10, 8",
-    "where": "Types.hpp cdngLogFromString",
-    "effect": "all collapse to Auto; explicit target depth is gone"
-   },
-   {
-    "what": "IMX283 requests for 1920x1080 / 3840x2160 (and padded forms)",
-    "where": "Imx283Modes.hpp normalise()",
-    "effect": "mapped to 2736x1540 (12-bit) or 3840x2160 (10-bit), other sizes snap to the nearest mode"
-   }
-  ],
-  "board_assumptions": [
-   {
-    "what": "Pi 5 / CM5 only: phase lock reads SensorTimestamp stamped at CSI-2 frame start by the RP1 CFE driver, in the CLOCK_BOOTTIME domain",
-    "where": "src/camera/FramePhaseLock.hpp header comment; working/phaselock-answer.md:33"
-   },
-   {
-    "what": "PiSP pipeline assumed for the TDN strip (rpi.denoise tdn is a PiSP tuning member); Vc4 is only handled by compatibleFile's pipeline check, behaviour on Pi 4 not confirmed",
-    "where": "src/camera/TuningTdnStrip.hpp (uses Pipeline from DefaultTuningSelection.hpp)"
-   },
-   {
-    "what": "Sensor probe numbers come from IMX585 on Pi 5 at link 891 MHz with rp1-clk-333mhz; the 16-bit Clear HDR optical-black rows (+40 / +20) match that driver",
-    "where": "src/camera/Imx585Modes.hpp, working/ramp-mode-ladder.md:12"
-   },
-   {
-    "what": "HOME is set for the service user; cache lives at $HOME/.cache/apertar-core/tuning; the ladder file uses XDG_CONFIG_HOME or HOME/.config/apertar-core, else a temp dir",
-    "where": "TuningTdnStrip.hpp:404; CameraController.cpp:404-414"
-   },
-   {
-    "what": "IMX283 modes are those of the cinemate-port driver with experimental_modes=0 (57 modes); a stock driver would differ",
-    "where": "src/camera/Imx283Modes.hpp header"
-   },
-   {
-    "what": "Phase-lock gains (kp 0.06, ki 0.0015, deadband 6 us, clamp 150 us) taken from Cinemate's IMX585 tuning at 24/25 fps; other sensors unmeasured",
-    "where": "src/camera/FramePhaseLock.hpp Tuning"
-   },
-   {
-    "what": "No core count, RAM size, gpiochip, I2C bus, PCIe or fan assumption in these headers (grep found none)",
-    "where": "all seven headers"
-   }
-  ]
- },
- "Media-fault-tune": {
-  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-Media-fault-tune.md",
-  "summary": "The port adds about 1100 lines of header-only code in src/util (MediaFault, MediaProbe, MediaIntent, CfeHat, MediaProfile, MediaTune), and a media watcher thread in the App. It also adds a record gate, a bounded dead-medium stop in the recorder, a root tuning helper with sudoers and tmpfiles, a Python CLI (apertar-tune), and two UI commits. Upstream has none of these. It reads mount state with isMountedPath inside the state builders, joins writers unconditionally, and has no record gate. It does already have a CFE HAT reader (the UI automounter, and a Python helper inside App.cpp). Findings that matter for stage 2: the eject-intent flag has a writer in Core and no reader anywhere, because the UI automounter never checks it. apertar-media-tune, its sudoers and its tmpfiles file have no documented install step, and the override directory only exists after the tmpfiles rule is installed. The get_state JSON emits media_state twice. tools/media_tune_test.cpp is named in a header but does not exist. Tuning keys and ranges are written three times (C++, Python, conf template). Tests recorded: pull tests on the Pi on 2026-10-26 and 2026-11-03 for the fault latch and fsync work; MediaTune and apertar-tune were tested at the desk only; MediaProfile was built on the Pi but not tested; the UI commits were built on the Pi, with no test result recorded.",
-  "features": [
-   {
-    "name": "F1 Dead-medium handling during a take",
-    "operator_gets": "A pulled or lost recording drive ends the take with a named fault (media_removed, media_full, media_read_only, media_permission, write_error). Files up to the pull are kept, and record_stop returns within about 2 s instead of hanging.",
-    "relation_to_upstream": "rewrites upstream code (recorder stop() join, writer error paths in DNG, MLV, lossy DNG and audio) and adds a MediaFault classifier. Upstream joins every writer unconditionally and has RecordingFailure.hpp as the nearest precedent.",
-    "commits": [
-     "438a342",
-     "e8bb1b7",
-     "0b1632f",
-     "a3ac8da"
-    ],
-    "files": [
-     "src/util/MediaFault.hpp",
-     "src/camera/CameraController.cpp",
-     "src/camera/CameraController.hpp",
-     "src/mlv/MlvEncoder.cpp",
-     "src/lossydng/LossyDngEncoder.cpp",
-     "src/audio/AudioRecordingSession.cpp"
-    ],
-    "commands": [],
-    "state_fields": [
-     "recording_fault"
-    ],
-    "env_vars": [
-     "APERTAR_DEAD_MEDIUM_STOP_MS (default 2000)",
-     "APERTAR_WRITE_STALL_MS (default 5000)"
-    ],
-    "tested": "Commit messages say 'desk only' for 438a342 and 'pi build (see next run)' for the rest. The fork-log records builds on 2026-10-26. The pull test on the Pi on 2026-10-26 22:46 found the bugs fixed in a3ac8da. Later pull tests (C0010, C0011) cover the fsync work."
-   },
-   {
-    "name": "F2 Media watcher thread and record gate",
-    "operator_gets": "record_start, capture_photo and timelapse_start are refused with a reason when media is missing, pulled, not answering, or under 1 GiB free. The touch UI and WebUI show MEDIA REMOVED or MEDIA ERROR.",
-    "relation_to_upstream": "adds a parallel path beside upstream code. Upstream calls isMountedPath inside each state builder and has no media thread and no record gate. The watcher also triggers trim, clip merge, pre-roll and tuning.",
-    "commits": [
-     "438a342",
-     "a3ac8da",
-     "70e8376",
-     "3c4f07d"
-    ],
-    "files": [
-     "src/ApertarCoreApp.cpp",
-     "src/ApertarCoreApp.hpp",
-     "src/util/MediaProbe.hpp"
-    ],
-    "commands": [
-     "event media {state,mounted,device,fstype,free_bytes,total_bytes,errno}",
-     "get_state (socket): added recording_fault, media_state, media_alive (media_state emitted twice)",
-     "record_start, capture_photo and timelapse_start gated in handleCommand (App.cpp:12597)",
-     "/api/state: media_state, media_alive, media_device, media_fstype, media_class, media_profile, recording_fault"
-    ],
-    "state_fields": [
-     "media_state",
-     "media_alive",
-     "media_device",
-     "media_fstype",
-     "media_class",
-     "media_profile",
-     "recording_fault"
-    ],
-    "env_vars": [
-     "APERTAR_MEDIA_REQUIRE_MOUNT=0 (turns the gate off)",
-     "APERTAR_MEDIA_MIN_FREE_MB (default 1024)"
-    ],
-    "ui_elements": [
-     "WebUI recordingStatus text 'MEDIA REMOVED'",
-     "WebUI hasMedia from media_alive",
-     "storage label 'Media Removed' / 'Media Error'"
-    ],
-    "tested": "438a342 says 'desk only'. Later commits say 'pi build'. The Pi pull test on 2026-10-26 exercised it. The 1 GiB floor and the gate on other commands have no recorded test."
-   },
-   {
-    "name": "F3 CFexpress slot bit in the media probe",
-    "operator_gets": "Pulling the CFexpress card is seen at once, not after the NVMe I/O timeout. A pulled and re-inserted card stays 'removed' until it is remounted or the Pi reboots.",
-    "relation_to_upstream": "adds a parallel path beside upstream code. The same I2C status byte is read by UI CfeAutomounter.cpp (I2cHat) and by a Python helper embedded in App.cpp. This is a third reader, in C++ inside Core. Config reuses the existing [cfexpress_hat] section.",
-    "commits": [
-     "0b1632f",
-     "a3ac8da"
-    ],
-    "files": [
-     "src/util/CfeHat.hpp",
-     "src/util/MediaProbe.hpp",
-     "src/ApertarCoreApp.cpp"
-    ],
-    "commands": [],
-    "state_fields": [
-     "hat_card and pulled in the media state log line",
-     "MediaSnapshot.card",
-     "MediaSnapshot.pulledSinceMount"
-    ],
-    "config_keys": [
-     "apertar-hardware.conf:[cfexpress_hat] enabled/bus/address (section already existed upstream; new C++ reader loadCfeHatConfig, reloaded through cfeHatGeneration_)"
-    ],
-    "tested": "Tested on the Pi on 2026-10-26 (a3ac8da message: pull and re-insert at 22:46-22:47). The Pi 4 / CM4 case is not tested."
-   },
-   {
-    "name": "F4 Eject intent flag file",
-    "operator_gets": "Intended: an eject done in Core is not undone by an automounter that remounts on the udev 'change' event. Today it only writes the flag.",
-    "relation_to_upstream": "entirely new area. No upstream equivalent.",
-    "commits": [
-     "438a342"
-    ],
-    "files": [
-     "src/util/MediaIntent.hpp",
-     "src/ApertarCoreApp.cpp"
-    ],
-    "commands": [
-     "eject_media and mount_media now write and clear the flag"
-    ],
-    "env_vars": [
-     "APERTAR_MEDIA_RUN_DIR (default /run/apertar-media)"
-    ],
-    "tested": "Not tested. Grep of Apertar-UI/src finds no reader of /run/apertar-media/eject, so the flag has no effect today."
-   },
-   {
-    "name": "F5 Media profile (class and filesystem to writers, queue, extra raw buffers)",
-    "operator_gets": "Writer count, queue depth and camera buffer count follow the mounted medium (ext4 and exFAT 4/12/+0; FAT and NTFS 2/16/+2). The clip log line reports the class and filesystem.",
-    "relation_to_upstream": "extends upstream functions in place: rawCameraBufferCount, the uncompressed worker count and queue depth in the recorder, the CdngEncoder page-cache mode. Upstream picks these from the recording format and four-core caps only. The env overrides are kept.",
-    "commits": [
-     "26da30e",
-     "0358fcf"
-    ],
-    "files": [
-     "src/util/MediaProfile.hpp",
-     "src/camera/CameraController.cpp",
-     "src/cdng/CdngEncoder.cpp"
-    ],
-    "state_fields": [
-     "media_class",
-     "media_profile"
-    ],
-    "env_vars": [
-     "APERTAR_RAW_CAMERA_BUFFERS",
-     "APERTAR_CDNG_UNCOMPRESSED_WORKERS",
-     "APERTAR_CDNG_QUEUE_FRAMES (all existed upstream; defaults now come from the profile)"
-    ],
-    "tested": "26da30e is 'built, not tested'. 0358fcf records the exFAT row measured on the Pi (C0106 lost 166 frames with 2/16/+2; C0101 held 10 min with 4/12/0). The FAT, NTFS and 'other' rows are not measured. The code comment calls them starting points."
-   },
-   {
-    "name": "F6 Kernel tuning helper (opt-in)",
-    "operator_gets": "With APERTAR_MEDIA_TUNE=1 or kernel_tune=on, Core applies dirty-page, scheduler, queue-depth and NVMe power-state settings for the recording drive on mount and restores them when the drive goes away.",
-    "relation_to_upstream": "adds a parallel path beside upstream code. Upstream has two root helpers called with 'sudo -n /usr/local/libexec/...' (standby-usb, standby-low-power), which is the same calling pattern. Upstream has no sudoers or tmpfiles files in config/.",
-    "commits": [
-     "26da30e",
-     "ebdcd08"
-    ],
-    "files": [
-     "scripts/apertar-media-tune",
-     "config/apertar-media.sudoers",
-     "config/apertar-media.tmpfiles.conf",
-     "src/ApertarCoreApp.cpp (applyMediaTuning)"
-    ],
-    "config_keys": [
-     "apertar-media-tune.conf [..] kernel_tune"
-    ],
-    "env_vars": [
-     "APERTAR_MEDIA_TUNE"
-    ],
-    "tested": "26da30e: 'added but not installed'. ebdcd08: tested that no helper call happens after restart. No test of an applied tuning is recorded."
-   },
-   {
-    "name": "F7 Media tuning file and override",
-    "operator_gets": "Write-path knobs (dontneed, writeback, sync_ms, raw_buffers, extra_raw_buffers, workers, queue, kernel_tune) per medium in ~/apertar-media-tune.conf. A RAM-only override in /run/apertar-media/media-tune.override.conf removes the need for systemd drop-ins on test nights.",
-    "relation_to_upstream": "adds a parallel path beside upstream code. Upstream uses env vars (unsignedEnvValue, 34 getenv sites), camera_settings.conf (SettingsFile.hpp) and apertar-hardware.conf (hwconf in the App). This is a third config file with its own parser.",
-    "commits": [
-     "2edc6d0"
-    ],
-    "files": [
-     "src/util/MediaTune.hpp",
-     "config/apertar-media-tune.conf",
-     "README.md",
-     "src/util/MediaProfile.hpp"
-    ],
-    "config_keys": [
-     "/home/pi/apertar-media-tune.conf [default|fs|class|class.fs] dontneed|writeback|sync_ms|raw_buffers|extra_raw_buffers|workers|queue|kernel_tune",
-     "/run/apertar-media/media-tune.override.conf (same format)"
-    ],
-    "env_vars": [
-     "APERTAR_DNG_DONTNEED",
-     "APERTAR_DNG_WRITEBACK",
-     "APERTAR_MEDIA_SYNC_MS (now fall back to the file)"
-    ],
-    "tested": "Desk only: a host test of 46 checks, named in the header as tools/media_tune_test.cpp, which is not in the repo. Built on the Pi on 2026-11-02; Core had not been restarted on it at the time of the fork-log entry."
-   },
-   {
-    "name": "F8 apertar-tune CLI",
-    "operator_gets": "`apertar-tune show|set|unset|clear|init` edits the override file with validation and an atomic write, and prints the journal's 'media tune' lines.",
-    "relation_to_upstream": "entirely new area. Upstream scripts/ holds only start-apertar-core.sh.",
-    "commits": [
-     "46d0e8c"
-    ],
-    "files": [
-     "scripts/apertar-tune"
-    ],
-    "commands": [
-     "apertar-tune show",
-     "apertar-tune set KEY=VALUE [--section S]",
-     "apertar-tune unset KEY",
-     "apertar-tune clear",
-     "apertar-tune init [--from PATH]"
-    ],
-    "tested": "Desk only (py_compile, set, replace, unset, clear, init, every validation error). It is on the Pi. Its docstring says Core reads files only at start; the conf header and README say at start and at take start."
-   },
-   {
-    "name": "F9 Touch UI follows Core media state",
-    "operator_gets": "MEDIA REMOVED or MEDIA ERROR shows on the touch UI and HDMI when Core's watcher says the medium is gone. Without Core's fields the UI behaves as before.",
-    "relation_to_upstream": "extends an upstream function in place (MediaStatusBridge::updateStatus, ApertarControlBridge::applyCoreMessage and applyCoreState).",
-    "commits": [
-     "UI 160898c"
-    ],
-    "files": [
-     "Apertar-UI src/ApertarControlBridge.cpp",
-     "src/ApertarControlBridge.hpp",
-     "src/MediaStatusBridge.cpp",
-     "src/MediaStatusBridge.hpp",
-     "src/main.cpp"
-    ],
-    "state_fields": [
-     "media_state",
-     "media_alive",
-     "event media"
-    ],
-    "ui_elements": [
-     "status text MEDIA REMOVED",
-     "status text MEDIA ERROR",
-     "signal coreMediaStateChanged",
-     "slot setCoreMediaState"
-    ],
-    "tested": "Pi build recorded. The commit was written after the 2026-10-26 pull test, which found the original bug. No later test is recorded."
-   },
-   {
-    "name": "F10 UI automounter releases a pulled card",
-    "operator_gets": "After a card is pulled while mounted, the automounter lazily unmounts it and removes the PCIe device. Re-inserting then remounts without a reboot, and Core's stuck writers fail at once.",
-    "relation_to_upstream": "extends an upstream function in place. It adds handleSurpriseRemoval to upstream's Automounter and moves the PCIe-remove code out of unmountPcie into removePcieDevice.",
-    "commits": [
-     "UI dc471c1"
-    ],
-    "files": [
-     "Apertar-UI src/CfeAutomounter.cpp"
-    ],
-    "tested": "'pi build (see next run)'. The bug was observed on the Pi on 2026-10-26. No test of the fix is recorded."
-   },
-   {
-    "name": "F11 noatime on Core's own mounts",
-    "operator_gets": "Mounts made by Core (mount_media, the reinsert watcher) carry noatime, so a DNG per frame does not cost an inode update.",
-    "relation_to_upstream": "extends an upstream function in place: mountDeviceAtMediaPath and the Python reinsert helper in the App. Behaviour change on mounts only.",
-    "commits": [
-     "26da30e"
-    ],
-    "files": [
-     "src/ApertarCoreApp.cpp"
-    ],
-    "tested": "Built, no test recorded."
-   }
-  ],
-  "upstream_code_changed": [
-   {
-    "region": "rawCameraBufferCount",
-    "where": "src/camera/CameraController.cpp:1457-1470",
-    "change": "base + profile extra buffers, or the tune file's raw_buffers; env var still wins",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "uncompressed worker count and queue depth",
-    "where": "src/camera/CameraController.cpp:4315-4330",
-    "change": "env > media profile > format default (was max(2,min(4,threads)) and 12/24)",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "recorder startAtFolder",
-    "where": "src/camera/CameraController.cpp:4225-4252",
-    "change": "refuses while writers from a dead-medium stop remain; resets fault, mediumGone and write-progress",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "recorder stop()",
-    "where": "src/camera/CameraController.cpp:4440-4520",
-    "change": "bounded wait (2 s) on a dead medium, 5 s stall detection, detach of stuck writers, 'dead-medium stages' log",
-    "kind": "rewritten"
-   },
-   {
-    "region": "writer error handling (DNG queue, MLV, lossy DNG, audio)",
-    "where": "CameraController.cpp:5290-5440, MlvEncoder.cpp, LossyDngEncoder.cpp, AudioRecordingSession.cpp",
-    "change": "errno classified; first fault latched; a gone medium is abandoned without rename or fsync; audio leaves raw PCM",
-    "kind": "rewritten"
-   },
-   {
-    "region": "failRecording and checkRecordingFailure",
-    "where": "CameraController.cpp:5424, 12456",
-    "change": "carry MediaFault; session stop gets mediumGone; fault name stored",
-    "kind": "behaviour-changed"
-   },
-   {
-    "region": "record start",
-    "where": "CameraController.cpp:7735",
-    "change": "sets the media profile from the cached snapshot; sets configuredMediaRoot()",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "dngPageCacheDrop",
-    "where": "src/cdng/CdngEncoder.cpp:85-110",
-    "change": "without APERTAR_DNG_DONTNEED the tune file's dontneed decides",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "sync interval and writeback switch",
-    "where": "CameraController.cpp:4365, 4718",
-    "change": "env > tune file > default",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "audio capture ring default",
-    "where": "src/audio/AudioRecordingSession.cpp",
-    "change": "APERTAR_AUDIO_BUFFER_MS default back to 100 ms; writer drains without touching a gone medium",
-    "kind": "behaviour-changed"
-   },
-   {
-    "region": "state builders",
-    "where": "src/ApertarCoreApp.cpp:9313, 9555-9562, 12943-12962",
-    "change": "new media and fault fields; get_state emits media_state twice",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "storage label",
-    "where": "src/ApertarCoreApp.cpp:9316-9326",
-    "change": "'Media Removed' or 'Media Error' from the watcher",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "handleCommand",
-    "where": "src/ApertarCoreApp.cpp:12597-12599",
-    "change": "media gate before capture_photo, record_start and timelapse_start",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "ejectMediaAtPath and mountMediaDeviceAtPath",
-    "where": "src/ApertarCoreApp.cpp:4355, 4389",
-    "change": "write and clear the eject-intent flag",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "mount commands and embedded Python reinsert watcher",
-    "where": "src/ApertarCoreApp.cpp:4208-4212, 4279-4286",
-    "change": "mount options gain noatime",
-    "kind": "behaviour-changed"
-   },
-   {
-    "region": "WebUI media status",
-    "where": "src/web/WebControlPage.cpp:10891, 14405, 15255, 15392",
-    "change": "hasMedia from media_alive; status text 'MEDIA REMOVED'; controls disabled without media",
-    "kind": "extended-in-place"
-   },
-   {
-    "region": "UI CfeAutomounter::unmountPcie",
-    "where": "Apertar-UI src/CfeAutomounter.cpp",
-    "change": "PCIe-remove code extracted to removePcieDevice; new handleSurpriseRemoval on the slot's removal edge",
-    "kind": "moved"
-   },
-   {
-    "region": "UI ApertarControlBridge, MediaStatusBridge, main.cpp",
-    "where": "Apertar-UI src/",
-    "change": "core media state signal and slot; updateStatus skips QStorageInfo when Core says removed or error",
-    "kind": "extended-in-place"
-   }
-  ],
-  "new_abstractions": [
-   {
-    "name": "Six header-only media modules in namespace apertar",
-    "purpose": "Classify faults, probe the medium, hold the eject flag, read the HAT, profile the medium, resolve the tune files (about 1100 lines)",
-    "files": [
-     "src/util/MediaFault.hpp",
-     "src/util/MediaProbe.hpp",
-     "src/util/MediaIntent.hpp",
-     "src/util/CfeHat.hpp",
-     "src/util/MediaProfile.hpp",
-     "src/util/MediaTune.hpp"
-    ],
-    "used_by": "ApertarCoreApp.cpp, CameraController.cpp, CdngEncoder.cpp, MlvEncoder.cpp",
-    "upstream_equivalent": "upstream src/util has four small headers (AtomicStillFile, RecordingDropWarning, RecordingFailure, SettingsFile). Mount handling is free functions in ApertarCoreApp.cpp (isMountedPath :2014, mountedDeviceForPath :2031). RecordingFailure.hpp is the nearest precedent. There are no mediafault:: or mediaprobe:: namespaces; only apertar::mediatune exists."
-   },
-   {
-    "name": "runMediaWatcher thread",
-    "purpose": "Probes the media root every 1 s (250 ms while recording), publishes the media event, ends a take on a dead medium, and triggers trim, clip merge, pre-roll and kernel tuning on a mount change",
-    "files": [
-     "src/ApertarCoreApp.cpp:10855",
-     "src/ApertarCoreApp.hpp"
-    ],
-    "used_by": "ApertarCoreApp (record gate, state builders, playback hold)",
-    "upstream_equivalent": "none. Upstream calls isMountedPath inside the state builders and has no media thread."
-   },
-   {
-    "name": "Process-global media snapshot cache and configuredMediaRoot()",
-    "purpose": "Lets configure-time code in CameraController and CdngEncoder read media state without a lock on the App or a blocking statvfs",
-    "files": [
-     "src/util/MediaProbe.hpp",
-     "src/util/MediaProfile.hpp"
-    ],
-    "used_by": "CameraController.cpp, CdngEncoder.cpp",
-    "upstream_equivalent": "none. Upstream passes the media root as an App option."
-   },
-   {
-    "name": "MediaTune INI resolver (base file plus override file)",
-    "purpose": "Per-medium write-path knobs with section precedence class.fs > fs > class > default",
-    "files": [
-     "src/util/MediaTune.hpp",
-     "config/apertar-media-tune.conf",
-     "scripts/apertar-tune"
-    ],
-    "used_by": "MediaProfile.hpp, CameraController.cpp, CdngEncoder.cpp, ApertarCoreApp.cpp (kernel_tune)",
-    "upstream_equivalent": "env vars through unsignedEnvValue (34 getenv sites), camera_settings.conf through util/SettingsFile.hpp, apertar-hardware.conf through hwconf in ApertarCoreApp.cpp"
-   },
-   {
-    "name": "Root helper apertar-media-tune with sudoers and tmpfiles",
-    "purpose": "Kernel-side block-queue and vm.dirty tuning for the recording drive",
-    "files": [
-     "scripts/apertar-media-tune",
-     "config/apertar-media.sudoers",
-     "config/apertar-media.tmpfiles.conf"
-    ],
-    "used_by": "ApertarCoreApp::applyMediaTuning (sudo -n /usr/local/libexec/apertar-media-tune)",
-    "upstream_equivalent": "upstream's apertar-standby-usb and apertar-standby-low-power helpers, called with 'sudo -n /usr/local/libexec/...' (ApertarCoreApp.cpp:1544, 1549). Upstream config/ has no sudoers or tmpfiles file."
-   },
-   {
-    "name": "scripts/apertar-tune Python CLI",
-    "purpose": "Edit the override file from the shell; it duplicates the C++ key table and ranges",
-    "files": [
-     "scripts/apertar-tune"
-    ],
-    "used_by": "the operator",
-    "upstream_equivalent": "none. Upstream scripts/ holds only start-apertar-core.sh."
-   },
-   {
-    "name": "Eject-intent flag-file protocol",
-    "purpose": "Tell an automounter that an unmount was deliberate",
-    "files": [
-     "src/util/MediaIntent.hpp"
-    ],
-    "used_by": "ApertarCoreApp.cpp (writes and clears only)",
-    "upstream_equivalent": "none. Upstream ejectMediaAtPath does not signal the automounter."
-   },
-   {
-    "name": "Dead-medium writer detach (liveWorkers_, exitCv_, mediumGone_) in the recorder",
-    "purpose": "Bound record_stop when writers are stuck in write() on a vanished device",
-    "files": [
-     "src/camera/CameraController.cpp"
-    ],
-    "used_by": "recorder stop() and startAtFolder",
-    "upstream_equivalent": "upstream stop() joins every writer."
-   },
-   {
-    "name": "CfeHatReader (C++, I2C SMBus)",
-    "purpose": "Read the HAT slot bit from the watcher and the Hardware card",
-    "files": [
-     "src/util/CfeHat.hpp"
-    ],
-    "used_by": "runMediaWatcher, cfeHatPeripheralJson",
-    "upstream_equivalent": "UI CfeAutomounter.cpp I2cHat class (:393) and the Python helper embedded in ApertarCoreApp.cpp (:3394). This is a third reader of the same byte."
-   }
-  ],
-  "removed_or_narrowed": [
-   {
-    "what": "Unconditional record_start",
-    "where": "ApertarCoreApp.cpp handleCommand",
-    "effect": "record_start, capture_photo and timelapse_start are refused when media is missing, pulled, errored or under 1 GiB free (APERTAR_MEDIA_MIN_FREE_MB). Upstream had no media gate."
-   },
-   {
-    "what": "Writer join on stop",
-    "where": "CameraController.cpp stop()",
-    "effect": "After a dead-medium stop, stuck writer threads may be detached and the next take is refused until they return."
-   },
-   {
-    "what": "exFAT writer table row",
-    "where": "MediaProfile.hpp",
-    "effect": "Reverted to 4/12/+0 (0358fcf). FAT and NTFS keep 2/16/+2. Filesystem 'other' gives 2 workers, below the old 4 on a four-core board (unconfirmed on hardware)."
-   },
-   {
-    "what": "Audio capture ring 1000 ms",
-    "where": "AudioRecordingSession.cpp",
-    "effect": "Default back to 100 ms. The writer thread from the same port stays."
-   },
-   {
-    "what": "media_mounted as the UI's truth",
-    "where": "WebControlPage.cpp, MediaStatusBridge.cpp",
-    "effect": "Still emitted. The UI prefers media_alive when it is present."
-   },
-   {
-    "what": "Direct-I/O flag",
-    "where": "MediaProfile.hpp MediaWriterSettings.directIo",
-    "effect": "Field exists but is unused; the code comment says the direct-I/O work (T24) is not in this fork."
-   }
-  ],
-  "board_assumptions": [
-   {
-    "what": "Pi 5 / CM5 with a CFexpress HAT on NVMe over PCIe: a Pi 5 cannot hot-plug NVMe, so a pulled card needs a PCIe remove and rescan, and the watcher latches 'pulled' until a new mount id",
-    "where": "MediaProbe.hpp, ApertarCoreApp.cpp:10863, UI CfeAutomounter.cpp handleSurpriseRemoval"
-   },
-   {
-    "what": "HAT on I2C bus 10, address 0x34 by default (configurable in [cfexpress_hat]); status byte bit 0 = no card, bit 1 = eject held, 0x69 = nothing to report",
-    "where": "CfeHat.hpp:21; the same defaults exist upstream in CfeAutomounter.cpp:38 and the App's Python helper"
-   },
-   {
-    "what": "Four cores: writers capped at min(4, hardware_concurrency); the compressed-DNG queue of 24 applies only with 4 or more threads",
-    "where": "CameraController.cpp:4315-4329"
-   },
-   {
-    "what": "Storage class from sysfs: nvme* = pi-nvme, mmcblk* = sd-card, '/usb' in the realpath = USB (uas or usb-storage by driver)",
-    "where": "MediaProfile.hpp classifyMediaClass"
-   },
-   {
-    "what": "NVMe controller state read from /sys/block/<disk>/device/state; APST disabled through nvme_core default_ps_max_latency_us for pi-nvme only",
-    "where": "MediaProbe.hpp; scripts/apertar-media-tune"
-   },
-   {
-    "what": "User 'pi', /home/pi paths, udisksctl and 'sudo -n' (also true upstream for apertar-hardware.conf)",
-    "where": "MediaTune.hpp:27, config/apertar-media.sudoers, ApertarCoreApp.cpp"
-   },
-   {
-    "what": "Media root /media/RAW as the default recording target",
-    "where": "MediaProfile.hpp configuredMediaRoot()"
-   },
-   {
-    "what": "RAM size, gpiochip numbering, RP1 as such and fan: no assumption in this unit",
-    "where": "-"
-   },
-   {
-    "what": "Pi 4 / CM4 and earlier: no PCIe NVMe, so USB and SD classes apply and the HAT reader stays off unless [cfexpress_hat] exists in the hardware file. Probable, not tested.",
-    "where": "ApertarCoreApp.cpp:5318 (enabled only when the section is present)"
-   }
-  ]
- },
  "App-4": {
   "report": "/home/user/apertar-kb/working/merge-review/raw/inv-App-4.md",
   "summary": "App-4 is a single added block of about 1750 lines (port lines 10813-12557) plus six insertions in handleCommand's head (12559-12620). The block holds 7 new worker threads (media watcher, buffer events, buffer safety stop, storage pre-roll, drive trim, clip merge, controls worker), the media record gate, playback hold rule, media profile and tuning helper calls, and the Controls-page backend (a second, pre-lock command dispatcher with get_controls, controls_history, controls_last_input, scan_i2c, list_actions; test_input; applyHardwareText restarting driver groups on save). No upstream code is removed. The only original code touched is handleCommand's head, extended in place: pre-lock dispatch, yield-window open, delete/pre-roll refusals, media gate, waitForMediaTrim/waitForClipMerge. Blame: d44b177 (19-commit squash, 537 lines), dcf09ee 348, ba0658d 317, 438a342 111, c34f844 68, 0a98868 67, 26da30e 55, 166cc4d 46, f5a61b8 44, f91fafa 42, 1319967 25. All fork-only; most Pi-tested only, 26da30e recorded \"not tested\". Upstream has no watcher, trim, merge, pre-roll, buffer events or controls worker, and no repo-side root helper scripts (it does call sudo -n libexec helpers for standby). Board assumptions are heavy: CFexpress hat on I2C bus 10 addr 0x34, NVMe over PCIe sysfs, exFAT, /home/pi paths, /usr/local/libexec helpers, 28-line header GPIO chip, I2C default bus 1, systemd unit names. The hint's \"boot config\" does not appear in this slice.",
@@ -16410,6 +14232,2184 @@
    {
     "what": "Hint text points to System > Boot Config (Display) and config.txt, which exists only in the port",
     "where": "src/web/WebControlPage.cpp:18156"
+   }
+  ]
+ },
+ "CC-3": {
+  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-CC-3.md",
+  "summary": "Slice CC-3 (new lines 4584-7264) is mostly the tail of DngRecordingQueue plus the H.264 finalize, the sensor probe and CameraSession::start. About 1684 of 2681 lines are still upstream-1.6.0, about 440 are fork-main Clear HDR and probe code, and about 560 are port work. The port work is the drop-frames line (RAM write buffer, safety stop, trim), the media-fault line (yanked drive, sync thread, writeback, stall watchdog, media profile and tune file), the raw copy hand-off, the raw pool warm-keep, split clips, composed clip names, speed-ramp numbering, binning per mode, IMX585 modes from tables, Clear HDR cleared on a non-585 bus, and Preview TDN. Most of it extends the upstream queue in place, but it adds a parallel set of header-only modules, global function-local singletons (safety-stop state, flush-abort registry, safety-stop hook, buffer gauge) and extra worker threads that upstream has no equivalent for. fork-log has no row for caa0153, e625c68 or c48e693. Several rows are Pi-built but not tested, and 26da30e is recorded as built and not tested. Nothing in the slice touches gpiochip, I2C, RP1, PCIe or the fan. It assumes Linux-only syscalls, a hardcoded /home/pi path for the tune file, MemAvailable-driven RAM budgets, and IMX585 subdev names.",
+  "features": [
+   {
+    "name": "Survive a pulled or unmounted recording drive",
+    "operator_gets": "A take ends with a classified media fault and a message instead of hanging; stop is bounded; MLV and H.264 files are left as they are on a dead medium.",
+    "relation_to_upstream": "extends an upstream function in place (stop, both workerLoops, failRecording, H264 finalize) and adds a parallel path beside upstream code (MediaFault classes, mediumGone_, liveWorkers_ with detached writers)",
+    "commits": [
+     "438a342",
+     "e8bb1b7",
+     "0b1632f",
+     "a3ac8da"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp",
+     "src/util/MediaFault.hpp"
+    ],
+    "state_fields": [
+     "media_alive",
+     "media fault"
+    ],
+    "tested": "fork-log: built on Pi 2026-10-26 22:27-22:51; pull test C0011 258/281 frames readable",
+    "env_vars": [],
+    "commands": [],
+    "config_keys": [],
+    "ui_elements": []
+   },
+   {
+    "name": "Write-stall watchdog",
+    "operator_gets": "If the queue is full and no frame has been written for 5 s the take ends as media removed.",
+    "relation_to_upstream": "adds a parallel path beside upstream code (hasCapacityForFrame extended)",
+    "commits": [
+     "a3ac8da"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "env_vars": [
+     "APERTAR_WRITE_STALL_MS"
+    ],
+    "tested": "built on Pi, not separately tested",
+    "commands": [],
+    "config_keys": [],
+    "state_fields": [],
+    "ui_elements": []
+   },
+   {
+    "name": "Once-a-second sync thread and per-frame writeback",
+    "operator_gets": "A pulled card keeps all but about the last second of frames; the sync no longer causes queue drops.",
+    "relation_to_upstream": "entirely new area (upstream has no fsync, syncfs or sync_file_range)",
+    "commits": [
+     "4ce382e",
+     "7d9dd60",
+     "5b68f1f",
+     "441e42a",
+     "0ed07ea"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "env_vars": [
+     "APERTAR_DNG_WRITEBACK",
+     "APERTAR_DNG_DONTNEED",
+     "APERTAR_MEDIA_SYNC_MS"
+    ],
+    "tested": "Pi runs C0004 clean, C0005 782 drops with syncfs, C0007 3 min clean, pull test C0011",
+    "commands": [],
+    "config_keys": [
+     "apertar-media-tune.conf: writeback, sync_ms, dontneed"
+    ],
+    "state_fields": [],
+    "ui_elements": []
+   },
+   {
+    "name": "Media profile and media tuning file",
+    "operator_gets": "Workers, queue depth and raw buffers follow the recording medium (NVMe, USB, SD) and filesystem; a tune file with a test-night override.",
+    "relation_to_upstream": "entirely new area",
+    "commits": [
+     "26da30e",
+     "2edc6d0"
+    ],
+    "files": [
+     "src/util/MediaProfile.hpp",
+     "src/util/MediaTune.hpp",
+     "config/apertar-media-tune.conf",
+     "scripts/apertar-media-tune"
+    ],
+    "config_keys": [
+     "/home/pi/apertar-media-tune.conf",
+     "/run/apertar-media/media-tune.override.conf"
+    ],
+    "tested": "26da30e built 23:04, not tested; 2edc6d0 built on Pi 2026-11-02, Core not restarted at log time",
+    "env_vars": [],
+    "commands": [],
+    "state_fields": [],
+    "ui_elements": [
+     "Performance card (WebUI System pane, other unit)"
+    ]
+   },
+   {
+    "name": "RAM write buffer mode",
+    "operator_gets": "The write queue can be limited by bytes (a share of free RAM) instead of a frame count, with the plan logged and the buffer setting shown.",
+    "relation_to_upstream": "adds a parallel path beside upstream code (queue_ frame limit kept as default mode)",
+    "commits": [
+     "d44b177"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp",
+     "src/util/BufferBudget.hpp"
+    ],
+    "env_vars": [
+     "APERTAR_CDNG_BUFFER",
+     "APERTAR_CDNG_QUEUE_RAM_FRACTION",
+     "APERTAR_CDNG_QUEUE_RAM_FLOOR_MB",
+     "APERTAR_CDNG_QUEUE_RAM_MAX_FRACTION"
+    ],
+    "config_keys": [
+     "apertar-hardware.conf [storage] buffer and queue ram fraction/floor/max keys"
+    ],
+    "commands": [
+     "set_buffer_mode (in ApertarCoreApp, other unit)"
+    ],
+    "state_fields": [
+     "buffer setting and note"
+    ],
+    "tested": "Pi, per fork-log drop-frames row",
+    "ui_elements": []
+   },
+   {
+    "name": "Buffer safety stop and record-during-flush",
+    "operator_gets": "At 90 percent of the buffer in ram mode the take ends cleanly with every queued frame written; pressing record during the drain discards the old clip's queue and starts at once.",
+    "relation_to_upstream": "entirely new area",
+    "commits": [
+     "d44b177",
+     "c5db8b2"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp",
+     "src/util/BufferBudget.hpp",
+     "src/ApertarCoreApp.cpp"
+    ],
+    "env_vars": [
+     "APERTAR_CDNG_BUFFER_STOP_PERCENT"
+    ],
+    "config_keys": [
+     "[storage] buffer_stop_percent"
+    ],
+    "state_fields": [
+     "buffer_safety_stop",
+     "buffer_flush_discarded",
+     "discarded_on_stop"
+    ],
+    "commands": [],
+    "tested": "owner decision 2026-11-01 for c5db8b2; Pi per log",
+    "ui_elements": [
+     "red buffer bar (other unit)"
+    ]
+   },
+   {
+    "name": "Buffer level gauge",
+    "operator_gets": "A live buffer level (frames or bytes) for the state, the buffer event, /api/buffer and the red bar.",
+    "relation_to_upstream": "entirely new area",
+    "commits": [
+     "d44b177"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "commands": [
+     "GET /api/buffer (other unit)"
+    ],
+    "state_fields": [
+     "buffer used/capacity"
+    ],
+    "ui_elements": [
+     "red buffer bar"
+    ],
+    "tested": "Pi per log",
+    "env_vars": [],
+    "config_keys": []
+   },
+   {
+    "name": "Raw copy hand-off",
+    "operator_gets": "Frames leave libcamera's completion thread without copying there, so fewer capture drops; a new drop reason copy-slot.",
+    "relation_to_upstream": "adds a parallel path beside upstream code",
+    "commits": [
+     "fc7eb16",
+     "db17860",
+     "d9f00d4"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "env_vars": [
+     "APERTAR_RAW_COPY_WORKERS"
+    ],
+    "tested": "fc7eb16 recorded as not wired in yet; wiring is at CC:8731 and 9505 outside this slice",
+    "commands": [],
+    "config_keys": [],
+    "state_fields": [
+     "dropped_copy_slot in the stop log line"
+    ],
+    "ui_elements": []
+   },
+   {
+    "name": "Raw pool kept and warmed",
+    "operator_gets": "First frames of a take no longer stall on 16.6 MB allocations.",
+    "relation_to_upstream": "replaces upstream code (pool is no longer cleared at stop and start)",
+    "commits": [
+     "4abbef0"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "env_vars": [
+     "APERTAR_RAW_POOL_WARM"
+    ],
+    "tested": "Pi 2026-11-01 per log",
+    "commands": [],
+    "config_keys": [],
+    "state_fields": [],
+    "ui_elements": []
+   },
+   {
+    "name": "CineMate Log in files",
+    "operator_gets": "Log curve applied to cDNG, lossless and Lossy DNG frames on the copy, with Log tags written.",
+    "relation_to_upstream": "adds a parallel path beside upstream code (beside compressClearHdrFrame)",
+    "commits": [
+     "d44b177"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp",
+     "src/cdng/LogCurve.hpp"
+    ],
+    "tested": "Pi per log",
+    "env_vars": [],
+    "commands": [],
+    "config_keys": [],
+    "state_fields": [],
+    "ui_elements": []
+   },
+   {
+    "name": "Split take into part folders",
+    "operator_gets": "Frames go into part_NNN folders every N frames; part folders are fsynced.",
+    "relation_to_upstream": "adds a parallel path beside upstream code",
+    "commits": [
+     "d7dd337"
+    ],
+    "files": [
+     "src/cdng/FramePath.hpp",
+     "src/camera/CameraController.cpp",
+     "tools/frame_path_test.cpp"
+    ],
+    "env_vars": [
+     "APERTAR_CDNG_FRAMES_PER_FOLDER"
+    ],
+    "config_keys": [
+     "[storage] frames_per_folder"
+    ],
+    "commands": [
+     "set_frames_per_folder"
+    ],
+    "state_fields": [
+     "frames_per_folder"
+    ],
+    "tested": "built on Pi; host test frame_path_test",
+    "ui_elements": [
+     "Performance-card field"
+    ]
+   },
+   {
+    "name": "Composed clip names",
+    "operator_gets": "Clip folder name comes from a template with a sensor token; default keeps the old name.",
+    "relation_to_upstream": "replaces upstream code (allocateClipFolder prefix switch)",
+    "commits": [
+     "014a2bf"
+    ],
+    "files": [
+     "src/util/ClipName.hpp",
+     "src/camera/CameraController.cpp",
+     "tools/clip_name_test.cpp"
+    ],
+    "commands": [
+     "set_clip_name_template",
+     "preview_clip_name"
+    ],
+    "ui_elements": [
+     "WebUI pill composer"
+    ],
+    "tested": "host test clip_name_test",
+    "env_vars": [],
+    "config_keys": [],
+    "state_fields": []
+   },
+   {
+    "name": "Speed ramp numbering",
+    "operator_gets": "Frames of a ramping take are numbered by count, not elapsed time.",
+    "relation_to_upstream": "extends an upstream function in place (nextFrameIndex)",
+    "commits": [
+     "faa2958"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "tested": "2026-10-28 C0030-C0032",
+    "env_vars": [],
+    "commands": [
+     "set_fps_speed_ramp"
+    ],
+    "config_keys": [],
+    "state_fields": [],
+    "ui_elements": []
+   },
+   {
+    "name": "Binning per sensor mode and IMX585 modes from tables",
+    "operator_gets": "Sensor mode list and state show binning and its source; IMX585 modes come from tables instead of whitelists.",
+    "relation_to_upstream": "extends an upstream function in place (fork-main probeSensorModes)",
+    "commits": [
+     "4ab1057",
+     "caa0153"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp",
+     "src/camera/Imx585Modes.hpp"
+    ],
+    "commands": [
+     "list_sensor_modes"
+    ],
+    "state_fields": [
+     "sensor_binning",
+     "sensor_binning_source",
+     "sensor_crop",
+     "binning",
+     "binning_source"
+    ],
+    "tested": "4ab1057 built and running 21:39, list_sensor_modes verified; caa0153 no fork-log row",
+    "env_vars": [],
+    "config_keys": [],
+    "ui_elements": []
+   },
+   {
+    "name": "Clear HDR cleared when another sensor is on the bus; Preview TDN off",
+    "operator_gets": "A Clear HDR setting from an IMX585 no longer fails start on an IMX283 or other sensor; preview uses a tuning copy without temporal denoise unless switched on.",
+    "relation_to_upstream": "extends an upstream function in place (CameraSession::start)",
+    "commits": [
+     "c48e693",
+     "e625c68"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp",
+     "src/camera/TuningTdnStrip.hpp"
+    ],
+    "config_keys": [
+     "preview_tdn in camera_settings.conf"
+    ],
+    "tested": "c48e693 desk only (host tests, Pi -fsyntax-only); e625c68 not read",
+    "env_vars": [],
+    "commands": [],
+    "state_fields": [
+     "preview_tdn"
+    ],
+    "ui_elements": []
+   }
+  ],
+  "upstream_code_changed": [
+   {
+    "region": "DngRecordingQueue::stop() tail",
+    "where": "CameraController.cpp:4584-4612",
+    "change": "Raw pool no longer cleared; gauge and safety flag reset; assert added; flush-abort unregistered before mutex_",
+    "kind": "behaviour-changed"
+   },
+   {
+    "region": "DngRecordingQueue::Stats",
+    "where": "CameraController.cpp:4195-4205",
+    "change": "Five new counters",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "nextFrameIndex",
+    "where": "CameraController.cpp:4670-4680",
+    "change": "countOnly flag",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "hasCapacityForFrame",
+    "where": "CameraController.cpp:4787-4825",
+    "change": "ram-mode check, skipped-after-failure count, stall watchdog",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "acquireRawBuffer",
+    "where": "CameraController.cpp:4846-4870",
+    "change": "pool-miss allocation moved outside mutex_",
+    "kind": "rewritten"
+   },
+   {
+    "region": "enqueue",
+    "where": "CameraController.cpp:4980-5025",
+    "change": "part folder, byte accounting, gauge, safety-stop trigger, framepath",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "allocateClipFolder(settings)",
+    "where": "CameraController.cpp:5200-5210",
+    "change": "prefix switch and loop replaced by nextClipFolderName",
+    "kind": "rewritten"
+   },
+   {
+    "region": "DNG workerLoop",
+    "where": "CameraController.cpp:5239-5314",
+    "change": "Log in lossy encoder, writeback, written-file list, fault classification",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "MLV workerLoop",
+    "where": "CameraController.cpp:5361-5410",
+    "change": "abandon on dead medium, errno propagation",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "failRecording",
+    "where": "CameraController.cpp:5420-5445",
+    "change": "takes a MediaFault, sets flags, counts discarded frames, resets gauge",
+    "kind": "rewritten"
+   },
+   {
+    "region": "recycleRawBuffer",
+    "where": "CameraController.cpp:5448-5470",
+    "change": "retain cap guard and ram budget check",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "preferredRawPoolSize",
+    "where": "CameraController.cpp:5560-5580",
+    "change": "old rule renamed idleRawPoolSize; new function unbounded in ram mode while active",
+    "kind": "moved"
+   },
+   {
+    "region": "H264PreviewRecorder finalize",
+    "where": "CameraController.cpp:6465-6487",
+    "change": "skips rename/copy when mediumDead_",
+    "kind": "behaviour-changed"
+   },
+   {
+    "region": "probeSensorModes",
+    "where": "CameraController.cpp:7142-7236",
+    "change": "IMX585 table-driven loop; crop read replaced by binningFromProperties",
+    "kind": "rewritten"
+   },
+   {
+    "region": "CameraSession::start",
+    "where": "CameraController.cpp:7274-7345",
+    "change": "Clear HDR cleared for foreign sensor; Preview TDN tuning copy",
+    "kind": "extended-in-place"
+   }
+  ],
+  "new_abstractions": [
+   {
+    "name": "bufferbudget namespace",
+    "purpose": "RAM plan, stop percent, safety-stop atomics, flush-abort registry, setting snapshot, [storage] parser",
+    "files": [
+     "src/util/BufferBudget.hpp"
+    ],
+    "upstream_equivalent": "none; upstream queue is frame-count only (core-upstream CameraController.cpp:3330 APERTAR_CDNG_QUEUE_FRAMES)",
+    "used_by": "CameraController.cpp, ApertarCoreApp.cpp"
+   },
+   {
+    "name": "Function-local static singletons (safetyStopState, flushAbortFunction, safetyStopHook, frameBufferGauge)",
+    "purpose": "Share live buffer and safety-stop state between the queue and ApertarCoreApp without a controller lock",
+    "files": [
+     "src/util/BufferBudget.hpp",
+     "src/camera/CameraController.cpp:4182"
+    ],
+    "upstream_equivalent": "none found; upstream keeps state in class members and callbacks like setErrorCallback",
+    "used_by": "queue, ApertarCoreApp"
+   },
+   {
+    "name": "Sync thread (syncLoop)",
+    "purpose": "fsync written files and folder every second",
+    "files": [
+     "src/camera/CameraController.cpp:4743"
+    ],
+    "upstream_equivalent": "none (no fsync in upstream CameraController.cpp)",
+    "used_by": "DngRecordingQueue"
+   },
+   {
+    "name": "Copy workers (copyLoop, PendingCopy, enqueueCopy)",
+    "purpose": "Copy frames off libcamera's completion thread and release the request",
+    "files": [
+     "src/camera/CameraController.cpp:5032-5088"
+    ],
+    "upstream_equivalent": "none; upstream copies in the completion handler path",
+    "used_by": "CameraSession completion handler (CC:9505)"
+   },
+   {
+    "name": "spawnWorker with liveWorkers_ and exitCv_",
+    "purpose": "Count writer threads that may be left behind after a dead-medium stop",
+    "files": [
+     "src/camera/CameraController.cpp:4691"
+    ],
+    "upstream_equivalent": "workers_ vector joined in stop() (core-upstream CameraController.cpp:3249 class)",
+    "used_by": "DngRecordingQueue"
+   },
+   {
+    "name": "MediaFault / MediaProfile / MediaTune headers",
+    "purpose": "Fault classes, medium class, per-medium tuning with file and /run override",
+    "files": [
+     "src/util/MediaFault.hpp",
+     "src/util/MediaProfile.hpp",
+     "src/util/MediaTune.hpp"
+    ],
+    "upstream_equivalent": "none",
+    "used_by": "queue, ApertarCoreApp"
+   },
+   {
+    "name": "FramePath / ClipName headers",
+    "purpose": "Part folder paths; clip name template parser",
+    "files": [
+     "src/cdng/FramePath.hpp",
+     "src/util/ClipName.hpp"
+    ],
+    "upstream_equivalent": "none; ClipName replaces inline prefix switch in allocateClipFolder (core-upstream)",
+    "used_by": "queue, playback, CameraController"
+   },
+   {
+    "name": "CdngLogTake and applyCdngLogFrame",
+    "purpose": "Per-take Log tables applied on the copy",
+    "files": [
+     "src/camera/CameraController.cpp:1662-1700",
+     "src/cdng/LogCurve.hpp"
+    ],
+    "upstream_equivalent": "none",
+    "used_by": "copy worker, LossyDngEncoder"
+   },
+   {
+    "name": "Imx585Modes table and tuning::previewTuningPath",
+    "purpose": "IMX585 mode table for probe and session; stripped tuning copy for Preview TDN",
+    "files": [
+     "src/camera/Imx585Modes.hpp",
+     "src/camera/TuningTdnStrip.hpp"
+    ],
+    "upstream_equivalent": "upstream whitelists inside CameraController.cpp (imx585ModeForResolution family); upstream has tuning:: namespace functions",
+    "used_by": "probe, CameraSession::start"
+   },
+   {
+    "name": "Host unit tests",
+    "purpose": "buffer_budget, frame_path, clip_name, storage_buffer_conf, tuning_tdn_strip, imx585_modes tests",
+    "files": [
+     "tools/*_test.cpp"
+    ],
+    "upstream_equivalent": "none (upstream Core has no unit tests)",
+    "used_by": "developer only"
+   }
+  ],
+  "removed_or_narrowed": [
+   {
+    "what": "Raw pool clearing at take stop and start",
+    "where": "DngRecordingQueue::stop / startAtFolder",
+    "effect": "Idle pool of full-frame copies (workers+2, at least 4, 16.6 MB each at 16-bit 4K) stays allocated between takes"
+   },
+   {
+    "what": "Hand-written clip folder prefix switch (cDNG_, MLV_, H264_, cDNG_5to1_, cDNG_3to1_, ProRes_)",
+    "where": "allocateClipFolder",
+    "effect": "Replaced by template expansion; default template is claimed to reproduce the old names, not verified in this stage"
+   },
+   {
+    "what": "Probe of every size libcamera advertises for IMX585",
+    "where": "probeSensorModes",
+    "effect": "Only table rows are probed; 10-bit under Clear HDR and 16-bit SDR skipped"
+   },
+   {
+    "what": "Saved Clear HDR setting on a non-IMX585 bus",
+    "where": "CameraSession::start",
+    "effect": "Cleared in memory at start; saved choice not rewritten"
+   },
+   {
+    "what": "Stock tuning file as loaded by libcamera",
+    "where": "CameraSession::start",
+    "effect": "Preview loads a stripped copy without tdn blocks by default"
+   }
+  ],
+  "board_assumptions": [
+   {
+    "what": "Linux-only syscalls: sync_file_range, syncfs, O_DIRECTORY, DMA_BUF_IOCTL_SYNC, /sys/class/video4linux, /proc/meminfo",
+    "where": "DngRecordingQueue, otherSensorSubdevPresent"
+   },
+   {
+    "what": "Hardcoded /home/pi/apertar-media-tune.conf and /run/apertar-media/ override path",
+    "where": "src/util/MediaTune.hpp:27-28"
+   },
+   {
+    "what": "Four-core worker sizing (min of 4 and hardware threads); one copy worker by default",
+    "where": "startAtFolder, copy worker env APERTAR_RAW_COPY_WORKERS"
+   },
+   {
+    "what": "Frame size 16.6 MB (16-bit 4K IMX585) in comments and pool sizing",
+    "where": "DngRecordingQueue pool and warm code"
+   },
+   {
+    "what": "RAM plan from MemAvailable and MemTotal, floor 512 MB, cap 50 percent of MemTotal; same plan on 4, 8 and 16 GB boards",
+    "where": "planQueueBuffer"
+   },
+   {
+    "what": "NVMe and CFexpress HAT slot classes in media profile",
+    "where": "src/util/MediaProfile.hpp, CfeHat.hpp (read only by name here)"
+   },
+   {
+    "what": "IMX585 specifics: subdev name match, wide_dynamic_range, mode tables; other families via detectSensorFamily",
+    "where": "imx585SubdevPresent, otherSensorSubdevPresent, probeSensorModes"
+   },
+   {
+    "what": "No gpiochip numbering, I2C bus numbers, RP1, PCIe or fan references in this slice",
+    "where": "whole slice"
+   }
+  ]
+ },
+ "CC-5": {
+  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-CC-5.md",
+  "summary": "CC-5 (CameraController.cpp 9732-11567) is mostly two port features: speed ramping (faa2958, ca7b7c2) and the Mode Ladder (0041ba0 plus follow-ups). Around them sit Clear HDR ISO/WB hold, set_iso_auto enabled=false, a Log switch, format-carry-over of settings, IMX585/IMX283 table checks, pre-roll/phase-lock members and a libcamera-off stub. The pre-roll and probe logic itself lies outside this slice. About 925 of the 1836 lines are unchanged upstream. setFps, setIsoAuto, setClearHdr, setRawBitDepth and setRecordingFormat were reworked in place. New header-only ModeLadder.hpp, mode_ladder.conf and a detached rubberband child process have no upstream counterpart.",
+  "features": [
+   {
+    "name": "Speed ramping (FPS change during cDNG/MLV take)",
+    "operator_gets": "Change FPS while recording raw; shutter keeps angle or exposure; take ends at its start rate or stays; fps-ramp.txt written in the clip folder.",
+    "relation_to_upstream": "extends an upstream function in place (setFps rewritten and split into applyFpsStepLocked) plus entirely new ramp engine",
+    "commits": [
+     "faa2958",
+     "92b4be3",
+     "4f7975f"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:9742-9911",
+     "src/camera/CameraController.cpp:10686-10820",
+     "<clip folder>/fps-ramp.txt"
+    ],
+    "commands": [
+     "set_fps (allowed during raw take when ramp on)",
+     "set_fps_speed_ramp enabled= [shutter=angle|exposure]"
+    ],
+    "state_fields": [
+     "fps_speed_ramp",
+     "fps_speed_ramp_keep_exposure",
+     "fps_speed_ramp_stretch_audio",
+     "fps_speed_ramp_after"
+    ],
+    "env_vars": [
+     "APERTAR_FPS_RAMP_GRACE_FRAMES"
+    ],
+    "tested": "fork-log: 2026-10-28 takes C0030-C0032 on the camera; 4f7975f built clean"
+   },
+   {
+    "name": "Experimental stretched WAV after ramp take",
+    "operator_gets": "<clip>_stretched.wav conformed to the timeline with pitch kept, written in the background after the take.",
+    "relation_to_upstream": "entirely new area (detached fork/sh child running rubberband)",
+    "commits": [
+     "ca7b7c2",
+     "b858d04"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:9912-10001",
+     "<clip>_stretched.wav",
+     "/tmp/apertar-stretch-<clip>.map"
+    ],
+    "state_fields": [
+     "fps_speed_ramp_stretch_audio"
+    ],
+    "tested": "fork-log: ca7b7c2 tested 2026-10-28 (hardware-log); b858d04 built, needs restart"
+   },
+   {
+    "name": "Capture-gap estimator ignores ramp frames; dropped-frame count",
+    "operator_gets": "No false drop warnings during a ramp; recording_dropped_frames number in the recording_health event.",
+    "relation_to_upstream": "extends an upstream function in place (trackRecordingCadence, markDropped signature)",
+    "commits": [
+     "faa2958",
+     "64bbbaa"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:10005-10066",
+     "src/camera/CameraController.cpp:10494-10496"
+    ],
+    "state_fields": [
+     "recording_dropped_frames"
+    ],
+    "tested": "faa2958 tested; 64bbbaa on drop-frames branch, Pi"
+   },
+   {
+    "name": "Mode Ladder (FPS picks sensor mode between takes)",
+    "operator_gets": "An ordered list of resolutions with bit depth, Clear HDR, compression and FPS ceiling; the camera switches mode by FPS, ceiling per rung in a take, presets must match the rung.",
+    "relation_to_upstream": "adds a parallel path beside upstream code (hooks into setResolution, setFps, setRecordingFormat, setRawBitDepth, setClearHdr, setStillExposureMode) plus new header-only module",
+    "commits": [
+     "0041ba0",
+     "e16033e",
+     "3cae990",
+     "ab972fe",
+     "a7b6f82",
+     "caa0153",
+     "a47dc28"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:10509-10514",
+     "src/camera/CameraController.cpp:10823-11134",
+     "src/camera/ModeLadder.hpp",
+     "~/.config/apertar-core/mode_ladder.conf"
+    ],
+    "commands": [
+     "get_mode_ladder",
+     "set_mode_ladder rungs= enabled= ramp_ready= dry_run="
+    ],
+    "state_fields": [
+     "fps_take_max",
+     "ladder_active",
+     "ladder_rung",
+     "ladder_ramp_ready",
+     "ladder_enabled",
+     "ladder_override",
+     "ladder_count",
+     "ladder_tops",
+     "ladder_text",
+     "fps_max (rewritten by ladder)"
+    ],
+    "config_keys": [
+     "mode_ladder.conf (own file in XDG config dir)"
+    ],
+    "tested": "fork-log: 0041ba0 tested 2026-10-28 (socket, two takes, presets); e16033e built not tested; 3cae990 built; Clear HDR over ladder not yet run on camera"
+   },
+   {
+    "name": "Ladder blocks manual mode and compression commands; Clear HDR override",
+    "operator_gets": "While the ladder is on, set_resolution, set_raw_bit_depth, set_cdng_compression, set_lossy_dng_ratio and cDNG/lossy format switch return a message to turn the ladder off; set_clear_hdr holds the mode as an override until fps/format/etc. change.",
+    "relation_to_upstream": "extends an upstream function in place (refusals added at top of seven setters)",
+    "commits": [
+     "09256a7",
+     "3cae990",
+     "d44b177"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:3061-3068",
+     "src/camera/CameraController.cpp:10643",
+     "src/camera/CameraController.cpp:11297-11406"
+    ],
+    "commands": [
+     "set_resolution",
+     "set_raw_bit_depth",
+     "set_clear_hdr",
+     "set_cdng_compression",
+     "set_lossy_dng_ratio",
+     "set_record_format"
+    ],
+    "state_fields": [
+     "ladder_override"
+    ],
+    "tested": "fork-log: 09256a7 built; Clear HDR over ladder not yet run on camera"
+   },
+   {
+    "name": "Clear HDR holds ISO and WB; set_iso_auto enabled=false locks gain",
+    "operator_gets": "Auto ISO/WB switch off at the values in use when Clear HDR starts and return in SDR; Auto ISO off locks at the measured gain; auto is refused in Clear HDR.",
+    "relation_to_upstream": "rewrites upstream code (setIsoAuto signature now takes bool; setClearHdr, setWhiteBalanceAuto extended)",
+    "commits": [
+     "8175273",
+     "646a194",
+     "e5757d7"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:11062-11108",
+     "src/camera/CameraController.cpp:11167-11199",
+     "src/camera/CameraController.cpp:11409-11424"
+    ],
+    "commands": [
+     "set_iso_auto enabled=false"
+    ],
+    "state_fields": [
+     "iso_actual",
+     "iso_auto_after_clear_hdr",
+     "wb_auto_after_clear_hdr"
+    ],
+    "config_keys": [
+     "[camera] clear_hdr_iso_max_12bit=720",
+     "[camera] clear_hdr_iso_max_16bit=1585 (read elsewhere)"
+    ],
+    "tested": "fork-log: tested in preview/on camera 2026-10-28 (hardware-log)"
+   },
+   {
+    "name": "Log (CineMate Log) switch",
+    "operator_gets": "Log on/off applied to cDNG and lossy DNG; refused in H.264, ProRes and MLV.",
+    "relation_to_upstream": "entirely new area",
+    "commits": [
+     "d44b177"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:11306-11332"
+    ],
+    "commands": [
+     "set_cdng_log"
+    ],
+    "state_fields": [
+     "cdng_log"
+    ],
+    "tested": "fork-log: drop-frames, Pi not yet run on camera"
+   },
+   {
+    "name": "Settings carried across recording-format profiles",
+    "operator_gets": "Speed ramp switch/policy/stretch/after-take, phase lock, preview TDN, drive trim, Log, conform fps and clip-name template stay on when the format changes.",
+    "relation_to_upstream": "extends an upstream function in place (setRecordingFormat profile swap)",
+    "commits": [
+     "92b4be3",
+     "117065d",
+     "d44b177",
+     "ce0bd90",
+     "e625c68",
+     "d7ff071",
+     "014a2bf"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:11241-11266"
+    ],
+    "state_fields": [
+     "fps_speed_ramp*",
+     "fps_phase_lock",
+     "preview_tdn",
+     "media_trim_enabled",
+     "cdng_log",
+     "conform_fps",
+     "clip_name_template"
+    ],
+    "tested": "ramp, phase lock, conform fps tested 2026-10-28 (hardware-log); trim and TDN Pi only"
+   },
+   {
+    "name": "Pre-roll, phase-lock and binning members; libcamera-off stub",
+    "operator_gets": "Members and sampler only in this slice; behind them storage pre-roll, frame-rate phase lock, sensor_binning in state, and a --simulate build without libcamera.",
+    "relation_to_upstream": "extends an upstream function in place (CameraSession members)",
+    "commits": [
+     "d44b177",
+     "80ddac1",
+     "3a18db0",
+     "4ab1057",
+     "5f5cea2"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:10327-10360",
+     "src/camera/CameraController.cpp:10399",
+     "src/camera/CameraController.cpp:10441-10447"
+    ],
+    "state_fields": [
+     "fps_phase_lock_*",
+     "sensor_binning*"
+    ],
+    "tested": "80ddac1 and 3a18db0 built, no test recorded; pre-roll not yet run on camera; 5f5cea2 built with libcamera ON and OFF"
+   },
+   {
+    "name": "IMX585/IMX283 table checks and crop-size migration",
+    "operator_gets": "set_resolution must be a mode of the current bit depth/Clear HDR class with a clear error; old 3840x2076/1920x1038 clients keep working; mono flag reaches the sanitiser.",
+    "relation_to_upstream": "extends an upstream function in place (setResolution, every sanitizeSettingsForSensor call gets a third argument)",
+    "commits": [
+     "caa0153",
+     "a47dc28",
+     "900d282"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:10569-10600",
+     "src/camera/CameraController.cpp:10960-11019",
+     "src/camera/Imx585Modes.hpp",
+     "src/camera/Imx283Modes.hpp"
+    ],
+    "commands": [
+     "set_resolution",
+     "list_sensor_modes"
+    ],
+    "tested": "fork-log: not yet run on the camera"
+   },
+   {
+    "name": "Shutdown closes a ramp take; media root global",
+    "operator_gets": "fps-ramp.txt is written and the start rate persisted when Core stops mid-take; media root published to a global for the media profile.",
+    "relation_to_upstream": "extends an upstream function in place (start, stop)",
+    "commits": [
+     "faa2958",
+     "26da30e"
+    ],
+    "files": [
+     "src/camera/CameraController.cpp:10541-10583"
+    ],
+    "tested": "faa2958 tested; 26da30e built, not tested"
+   }
+  ],
+  "upstream_code_changed": [
+   {
+    "region": "trackRecordingCadence",
+    "where": "src/camera/CameraController.cpp:10005-10066",
+    "change": "Early return inside ramp grace; markDropped() now takes the estimated count",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "CameraSession members",
+    "where": "src/camera/CameraController.cpp:10317-10447",
+    "change": "Preroll atomics, phase-lock state, 16-deep pin history, sensorBinning_, ramp state, libcamera-off #else stub members",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "CameraController ctor",
+    "where": "src/camera/CameraController.cpp:10482-10514",
+    "change": "recording_health lambda carries dropped-frame count; mode_ladder.conf loaded after settings",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "CameraController::start / stop",
+    "where": "src/camera/CameraController.cpp:10541-10583",
+    "change": "configuredMediaRoot() set; stop() closes a ramp take and restores start FPS",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "CameraController::setResolution",
+    "where": "src/camera/CameraController.cpp:10633-10666",
+    "change": "Ladder refusal, alias migration, IMX585 table check, mono flag, ladderOverride_ reset",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "CameraController::setFps",
+    "where": "src/camera/CameraController.cpp:10674-10757",
+    "change": "Upstream refused any FPS change while recording; port allows raw ramp takes, rewrites rung via ladder, clamps to rung ceiling, and moves the apply body into new applyFpsStepLocked",
+    "kind": "rewritten"
+   },
+   {
+    "region": "CameraController::setIso / setIsoAuto",
+    "where": "src/camera/CameraController.cpp:11062-11108",
+    "change": "setIsoAuto() became setIsoAuto(bool enabled) with lock-at-measured-gain path and Clear HDR refusal; setIso clears iso_auto_after_clear_hdr",
+    "kind": "rewritten"
+   },
+   {
+    "region": "setShutterUs / setShutterAuto",
+    "where": "src/camera/CameraController.cpp:11201-11211",
+    "change": "Reset rampNominalShutterUs_",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "setStillExposureMode",
+    "where": "src/camera/CameraController.cpp:11213-11219",
+    "change": "Leaving photo mode calls ladderRewriteLocked",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "setWhiteBalanceKelvin / setWhiteBalanceAuto",
+    "where": "src/camera/CameraController.cpp:11185-11199",
+    "change": "Clear after-Clear-HDR flag; refuse auto in Clear HDR",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "setRecordingFormat",
+    "where": "src/camera/CameraController.cpp:11224-11290",
+    "change": "Ladder refusal for cDNG/lossy switch; 11 settings carried across profile swap; ladder rewrite and override reset",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "setCdngCompression / setLossyDngRatio",
+    "where": "src/camera/CameraController.cpp:11297-11349",
+    "change": "Refused while ladder active",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "setRawBitDepth",
+    "where": "src/camera/CameraController.cpp:11363-11406",
+    "change": "Ladder refusal; mono flag; override reset except 16-bit following Clear HDR",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "setClearHdr",
+    "where": "src/camera/CameraController.cpp:11409-11460",
+    "change": "Compression fix before sanitiser, hold measured ISO/WB, ladder override with rollback",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "every sanitizeSettingsForSensor call in the slice",
+    "where": "src/camera/CameraController.cpp:10586-11439",
+    "change": "Third argument (monochromeSensor) added at all call sites",
+    "kind": "behaviour-changed"
+   }
+  ],
+  "new_abstractions": [
+   {
+    "name": "apertar::ladder / ModeLadder.hpp",
+    "purpose": "Header-only pure logic for the FPS-to-sensor-mode ladder: parse, validate, choose rung, JSON",
+    "files": [
+     "src/camera/ModeLadder.hpp"
+    ],
+    "used_by": "CameraController ladder methods, set_mode_ladder / get_mode_ladder",
+    "upstream_equivalent": "none (upstream picks mode in sanitizeSettingsForSensor with no ladder data)"
+   },
+   {
+    "name": "mode_ladder.conf / modeLadderPath()",
+    "purpose": "Separate persisted file for the ladder in the XDG config dir",
+    "files": [
+     "src/camera/CameraController.cpp:404"
+    ],
+    "used_by": "CameraController ctor and saveModeLadderLocked",
+    "upstream_equivalent": "camera_settings.conf via settingsFile (one file); no second config file upstream"
+   },
+   {
+    "name": "Speed-ramp engine (FpsRampEvent, noteFpsChange, inFpsRampGrace, stampFpsRampEvents, pairFpsRampEvents, writeFpsRampLog, rampMutex_)",
+    "purpose": "Grace window, per-change journal and fps-ramp.txt for FPS changes inside a take",
+    "files": [
+     "src/camera/CameraController.cpp:9742-9911"
+    ],
+    "used_by": "CameraSession requestComplete and stop path",
+    "upstream_equivalent": "none"
+   },
+   {
+    "name": "Audio stretch child process (PendingAudioStretch, launchAudioStretch, wavSampleRate, shellQuote)",
+    "purpose": "Detached double-fork /bin/sh running rubberband with a timemap after the take",
+    "files": [
+     "src/camera/CameraController.cpp:2896-2925",
+     "src/camera/CameraController.cpp:9939-10001"
+    ],
+    "used_by": "CameraSession stop path",
+    "upstream_equivalent": "none in this slice (upstream uses in-process worker threads; fork/exec elsewhere unconfirmed: grep fork() @upstream)"
+   },
+   {
+    "name": "Storage pre-roll sampler (prerollFpsOverride_, prerollMeasuring_, prerollFrames_, noteFrameForPreroll ...)",
+    "purpose": "Measure the take's real frame period for storage pre-roll",
+    "files": [
+     "src/camera/CameraController.cpp:10327-10360"
+    ],
+    "used_by": "setPrerollFps / prerollMeasure at CC:7839-7875 and 12046-12180",
+    "upstream_equivalent": "none"
+   },
+   {
+    "name": "CameraController ladder and ramp methods (applyFpsStepLocked, restoreFpsAfterRampLocked, ladderStatesLocked, ladderRewriteLocked, ladderActiveForLocked, fillLadderFieldsLocked, fillRungExtrasLocked, modeLadderJsonLocked, setModeLadder, applyLadderToPreset)",
+    "purpose": "Controller-side glue between sanitiser, camera and ladder/ramp state",
+    "files": [
+     "src/camera/CameraController.cpp:10690-11134",
+     "src/camera/CameraController.hpp:245-249"
+    ],
+    "used_by": "setters and App commands",
+    "upstream_equivalent": "none; upstream setFps is inline"
+   },
+   {
+    "name": "Imx585Modes.hpp / Imx283Modes.hpp mode tables",
+    "purpose": "Per-sensor mode tables replace whitelists; feed ladder pool and setResolution checks",
+    "files": [
+     "src/camera/Imx585Modes.hpp",
+     "src/camera/Imx283Modes.hpp"
+    ],
+    "used_by": "setResolution, fillRungExtrasLocked, modeLadderJsonLocked",
+    "upstream_equivalent": "whitelists inside sanitizeSettingsForSensor @upstream-1.6.0"
+   }
+  ],
+  "removed_or_narrowed": [
+   {
+    "what": "Unconditional refusal of FPS change while recording",
+    "where": "CameraController.cpp:10686-10698",
+    "effect": "Raw takes may change FPS when ramp is on; H.264/ProRes/photo keep the refusal with new text"
+   },
+   {
+    "what": "Manual set_resolution, set_raw_bit_depth, set_cdng_compression, set_lossy_dng_ratio, cDNG/lossy format switch",
+    "where": "CameraController.cpp:10643, 11297, 11345, 11370, 11220",
+    "effect": "Refused while the Mode Ladder is enabled and usable"
+   },
+   {
+    "what": "Auto ISO and auto WB in Clear HDR",
+    "where": "CameraController.cpp:11101-11104, 11196-11199",
+    "effect": "Refused in Clear HDR (upstream behaviour unconfirmed)"
+   },
+   {
+    "what": "setIsoAuto() no-argument signature",
+    "where": "CameraController.cpp:11079",
+    "effect": "Replaced by setIsoAuto(bool); all callers changed"
+   },
+   {
+    "what": "Old IMX585 resolutions (3840x2076, 1920x1038, 1332x990, 2028x1080 ...)",
+    "where": "CameraController.cpp:10569, imx585AliasResolution",
+    "effect": "Aliased or migrated to table modes; widths under 1280 hidden"
+   },
+   {
+    "what": "Per-format-profile values for ramp, phase lock, TDN, trim, Log, conform fps, clip name",
+    "where": "CameraController.cpp:11241-11266",
+    "effect": "One camera-wide value overrides what a saved format profile held"
+   },
+   {
+    "what": "Capture-gap drop detection inside ramp grace window",
+    "where": "CameraController.cpp:10013-10020",
+    "effect": "Real drops inside the grace window are not counted"
+   }
+  ],
+  "board_assumptions": [
+   {
+    "what": "Request queue depth by filesystem: 4 on ext4, 6 on exFAT/NTFS, 8-10 with Clear HDR; ramp grace = N+6 frames, at least 10",
+    "where": "CameraController.cpp:9744-9760"
+   },
+   {
+    "what": "At most 16 raw buffers (phase-lock pin history std::array of 16)",
+    "where": "CameraController.cpp:10351-10359"
+   },
+   {
+    "what": "Lossy cDNG needs Pi 5-class hardware (pre-existing upstream check, unchanged)",
+    "where": "CameraController.cpp:11267-11270"
+   },
+   {
+    "what": "libcamera Raspberry Pi pipeline: DelayedControls two-frame delay, IPA limitExposureTime behaviour",
+    "where": "CameraController.cpp:9744-9760, 10735-10740"
+   },
+   {
+    "what": "Ladder pool and editor extras only for IMX585 and IMX283 sensor families",
+    "where": "CameraController.cpp:10960-11019"
+   },
+   {
+    "what": "rubberband-cli, nice and /bin/sh installed; temp dir used for stretch map",
+    "where": "CameraController.cpp:9939-10001"
+   },
+   {
+    "what": "No RP1, PCIe, gpiochip, I2C bus, fan or RAM-size reference in this slice",
+    "where": "CameraController.cpp:9732-11567"
+   }
+  ]
+ },
+ "Camera-headers": {
+  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-Camera-headers.md",
+  "summary": "The port adds 6 new header-only modules in src/camera (FpsCeiling, FramePhaseLock, Imx283Modes, Imx585Modes, ModeLadder, TuningTdnStrip) and extends ScalerCropGeometry.hpp by one function. It adds roughly 40 members and helpers to CameraController.hpp and 95 lines to Types.hpp (CdngLog, 12 persisted and 14 runtime CaptureSettings fields). It adds 4 host tests in tools/, which have no upstream precedent (upstream has no tools/ or tests) and no CMake hook. Nothing upstream is deleted from these headers. One original signature changed: setIsoAuto(bool enabled = true). Upstream holds sensor facts as constexpr arrays and isImx585/isImx294 free functions inside CameraController.cpp, plus a SensorFamily enum. The port moves IMX283 and IMX585 facts into std-only headers, and the old isImx585* functions still exist in CC.cpp beside the new tables. ModeLadder.hpp is new ground: it has its own config file (mode_ladder.conf) and builds nested JSON by string concatenation, where upstream replies are flat scalars. The fork-log marks nearly all of this as desk-tested or built on the Pi, with the ladder WebUI untested and nothing run on the camera since the drop-frames merge.",
+  "features": [
+   {
+    "name": "Sensor-probe FPS ceiling (probe wins, table is fallback)",
+    "operator_gets": "4K SDR can now go to 60 fps (was 30); IMX585 lossless cDNG is no longer capped at 30; fps_max and iso_max appear in the state.",
+    "relation_to_upstream": "extends main's probedMaximumFps rule (min(table, probed), CC.cpp@main:2767) by moving it into FpsCeiling.hpp and flipping it to probe-wins",
+    "commits": [
+     "d44b177",
+     "97adea0",
+     "bcedbe5",
+     "6d217c7"
+    ],
+    "files": [
+     "src/camera/FpsCeiling.hpp",
+     "tools/fps_ceiling_test.cpp"
+    ],
+    "commands": [
+     "list_sensor_modes (from main f60e301)"
+    ],
+    "state_fields": [
+     "fps_max",
+     "iso_max"
+    ],
+    "env_vars": [
+     "APERTAR_FPS_LIMIT=table",
+     "APERTAR_LOSSLESS_FPS_LIMIT=<n>"
+    ],
+    "tested": "Host test only; fork-log:138 says not yet run on the camera."
+   },
+   {
+    "name": "Frame-rate phase lock (off by default)",
+    "operator_gets": "Optional lock of the sensor's frame cadence to the Pi clock, so audio and picture do not drift in long takes.",
+    "relation_to_upstream": "entirely new area; upstream sets FrameDurationLimits once (CC.cpp@upstream:2030) and has no cadence control",
+    "commits": [
+     "80ddac1",
+     "8f7dc39",
+     "3a18db0",
+     "114bfb9",
+     "117065d",
+     "69a700e",
+     "f4a1393"
+    ],
+    "files": [
+     "src/camera/FramePhaseLock.hpp",
+     "src/camera/CameraController.hpp"
+    ],
+    "commands": [
+     "set_fps_phase_lock"
+    ],
+    "state_fields": [
+     "fps_phase_lock",
+     "fps_phase_lock_active",
+     "fps_phase_lock_err_us",
+     "fps_phase_lock_dur_us",
+     "fps_phase_lock_pushes",
+     "fps_phase_lock_saturated"
+    ],
+    "config_keys": [
+     "camera_settings.conf: fps_phase_lock"
+    ],
+    "ui_elements": [
+     "WebUI Performance card toggle"
+    ],
+    "tested": "Built on the Pi 2026-11-04. No host test in the repo; the simulator is working/tools/phase_lock_sim.cpp (17 checks). Not measured on the rig."
+   },
+   {
+    "name": "IMX585 modes from tables",
+    "operator_gets": "The IMX585 size list is offered per class (SDR 12, SDR 10, Clear HDR 12, Clear HDR 16), narrow modes under 1280 px are hidden, and mono is recognised.",
+    "relation_to_upstream": "replaces upstream whitelist functions in part; the old isImx585*Resolution functions are still present at port CC.cpp:435-492",
+    "commits": [
+     "caa0153",
+     "900d282"
+    ],
+    "files": [
+     "src/camera/Imx585Modes.hpp",
+     "tools/imx585_modes_test.cpp",
+     "src/web/WebControlPage.cpp"
+    ],
+    "commands": [
+     "list_sensor_modes"
+    ],
+    "state_fields": [
+     "sensor_mono",
+     "raw_width/raw_height (ladder JSON)"
+    ],
+    "env_vars": [
+     "APERTAR_IMX585_MIN_MODE_WIDTH"
+    ],
+    "ui_elements": [
+     "WebUI family pills",
+     "ratio row"
+    ],
+    "tested": "imx585_modes_test, 44 CHECKs, desk; Pi probe per table row; not run on the camera."
+   },
+   {
+    "name": "IMX283 sensor family",
+    "operator_gets": "IMX283 (5472x3648) works as a further sensor with 57 modes, active-picture sizes, and a crop that skips the optical-black columns.",
+    "relation_to_upstream": "extends upstream's SensorFamily enum (Imx294/Imx477/Imx585) with Imx283, but keeps the facts in a header where upstream keeps them in CameraController.cpp",
+    "commits": [
+     "c48e693",
+     "a47dc28"
+    ],
+    "files": [
+     "src/camera/Imx283Modes.hpp",
+     "src/camera/ScalerCropGeometry.hpp",
+     "tools/imx283_modes_test.cpp"
+    ],
+    "commands": [
+     "list_sensor_modes"
+    ],
+    "ui_elements": [
+     "WebUI bases/ratios"
+    ],
+    "tested": "imx283_modes_test (table typed twice, 218 lines); commit says desk only."
+   },
+   {
+    "name": "Mode ladder (T34)",
+    "operator_gets": "The FPS setting picks the sensor mode, bit depth, compression and Log between takes; Ramp-ready mode; an editor with dry-run messages.",
+    "relation_to_upstream": "entirely new area, with its own config file beside camera_settings.conf and a nested-JSON reply builder; upstream replies are flat scalars",
+    "commits": [
+     "88e644d",
+     "0041ba0",
+     "a7b6f82",
+     "cdf83cd",
+     "3cae990",
+     "09256a7",
+     "e16033e",
+     "62c1711"
+    ],
+    "files": [
+     "src/camera/ModeLadder.hpp",
+     "src/camera/CameraController.hpp",
+     "include/apertar/core/Types.hpp"
+    ],
+    "commands": [
+     "get_mode_ladder",
+     "set_mode_ladder"
+    ],
+    "state_fields": [
+     "ladder_enabled",
+     "ladder_count",
+     "ladder_text",
+     "ladder_tops",
+     "ladder_resolution",
+     "ladder_rung",
+     "ladder_ramp_ready",
+     "ladder_override",
+     "ladder_active",
+     "fps_take_max"
+    ],
+    "config_keys": [
+     "~/.config/apertar-core/mode_ladder.conf: enabled, ramp_ready, resolutions (old key rungs)"
+    ],
+    "ui_elements": [
+     "WebUI Modes pane (Mode Ladder card)",
+     "touch UI ladderActive and 'set by Mode Ladder' field"
+    ],
+    "tested": "Socket-tested twice on 2026-10-28 (fork-log:87); WebUI built but not tested (fork-log:94, 96). The ladder's host test is outside the repo."
+   },
+   {
+    "name": "CineMate Log (CdngLog)",
+    "operator_gets": "cDNG and Lossy DNG can store the sensor data one bit depth lower through a log curve.",
+    "relation_to_upstream": "extends the CdngCompression enum/toString pattern in Types.hpp",
+    "commits": [
+     "d44b177"
+    ],
+    "files": [
+     "include/apertar/core/Types.hpp"
+    ],
+    "commands": [
+     "set_cdng_log"
+    ],
+    "state_fields": [
+     "cdng_log",
+     "cdng_log_bits",
+     "cdng_log_available",
+     "cdng_log_applied"
+    ],
+    "config_keys": [
+     "camera_settings.conf: cdng_log"
+    ],
+    "tested": "tools/log_curve_test.cpp (outside this unit); not run on the camera."
+   },
+   {
+    "name": "Preview temporal denoise switch",
+    "operator_gets": "A switch (off by default) that gives libcamera a copy of the tuning file without the tdn denoise member. The preview ISP gets faster at 4K Clear HDR 16-bit and the DNGs do not change.",
+    "relation_to_upstream": "adds a parallel path beside upstream's DefaultTuningSelection.hpp, with its own JSON parser",
+    "commits": [
+     "e625c68"
+    ],
+    "files": [
+     "src/camera/TuningTdnStrip.hpp",
+     "tools/tuning_tdn_strip_test.cpp"
+    ],
+    "commands": [
+     "set_preview_tdn"
+    ],
+    "state_fields": [
+     "preview_tdn",
+     "tuning_file_active"
+    ],
+    "config_keys": [
+     "camera_settings.conf: preview_tdn"
+    ],
+    "ui_elements": [
+     "WebUI Performance card"
+    ],
+    "tested": "Host test with golden-file byte compare; Pi only, built 2026-11-04."
+   },
+   {
+    "name": "Binning per sensor mode and for the current mode",
+    "operator_gets": "Sensor mode list and state show binning (driver, inferred or unknown) and the crop of the current mode.",
+    "relation_to_upstream": "extends main's startup probe (f60e301) with two struct fields and a SensorBinning struct",
+    "commits": [
+     "4ab1057"
+    ],
+    "files": [
+     "src/camera/CameraController.hpp"
+    ],
+    "commands": [
+     "list_sensor_modes"
+    ],
+    "state_fields": [
+     "sensor_binning",
+     "sensor_binning_source",
+     "sensor_crop"
+    ],
+    "tested": "fork-log:36: built and running, list_sensor_modes and get_state verified."
+   },
+   {
+    "name": "Speed ramping (FPS change during a take) and related Types.hpp fields",
+    "operator_gets": "FPS can change during a cDNG/MLV take; shutter policy, optional stretched WAV and what happens to FPS after the take.",
+    "relation_to_upstream": "entirely new area; only its API surface sits in this unit",
+    "commits": [
+     "faa2958",
+     "ca7b7c2"
+    ],
+    "files": [
+     "include/apertar/core/Types.hpp",
+     "src/camera/CameraController.hpp"
+    ],
+    "commands": [
+     "set_fps_speed_ramp"
+    ],
+    "state_fields": [
+     "fps_speed_ramp",
+     "fps_speed_ramp_keep_exposure",
+     "fps_speed_ramp_stretch_audio",
+     "fps_speed_ramp_after"
+    ],
+    "config_keys": [
+     "camera_settings.conf: fps_speed_ramp, fps_speed_ramp_keep_exposure, fps_speed_ramp_stretch_audio, fps_speed_ramp_after"
+    ],
+    "ui_elements": [
+     "WebUI Speed Ramp card"
+    ],
+    "tested": "Tested 2026-10-28 per fork-log (rows near :63); not verified line by line."
+   },
+   {
+    "name": "Settings API surface for clip names, conform fps, media trim, buffer bar, storage pre-roll and media faults",
+    "operator_gets": "Composable clip names, a project conform rate, drive trim, a write-buffer bar with a safety stop, a storage pre-roll speed test, and survival of a yanked drive.",
+    "relation_to_upstream": "extends CameraController and CaptureSettings in place; the implementations belong to other units",
+    "commits": [
+     "014a2bf",
+     "d7ff071",
+     "ce0bd90",
+     "d44b177",
+     "438a342",
+     "fb557e9",
+     "64bbbaa"
+    ],
+    "files": [
+     "src/camera/CameraController.hpp",
+     "include/apertar/core/Types.hpp"
+    ],
+    "commands": [
+     "set_clip_name_template",
+     "preview_clip_name",
+     "set_conform_fps",
+     "set_media_trim",
+     "set_buffer_mode",
+     "set_storage_preroll",
+     "storage_preroll"
+    ],
+    "state_fields": [
+     "clip_name_template",
+     "clip_name_example",
+     "conform_fps",
+     "buffer fields",
+     "dropped frame count"
+    ],
+    "config_keys": [
+     "camera_settings.conf: clip_name_template, conform_fps, media_trim",
+     "[storage]",
+     "[media]"
+    ],
+    "env_vars": [
+     "APERTAR_MEDIA_TRIM=0",
+     "APERTAR_WEB_PREVIEW_RECORDING_FPS"
+    ],
+    "ui_elements": [
+     "WebUI pill composer",
+     "Performance card",
+     "buffer bar"
+    ],
+    "tested": "fork-log:138 and :156; Pi built, not run on the camera."
+   },
+   {
+    "name": "Clear HDR holds ISO and white balance; iso_actual",
+    "operator_gets": "Auto ISO and auto white balance stop in Clear HDR and come back afterwards; the state shows the gain in use.",
+    "relation_to_upstream": "extends setIsoAuto (signature changed) and CaptureSettings",
+    "commits": [
+     "8175273",
+     "646a194"
+    ],
+    "files": [
+     "src/camera/CameraController.hpp",
+     "include/apertar/core/Types.hpp"
+    ],
+    "commands": [
+     "set_iso_auto enabled=false"
+    ],
+    "state_fields": [
+     "iso_actual",
+     "iso_auto_after_clear_hdr"
+    ],
+    "config_keys": [
+     "camera_settings.conf: iso_auto_after_clear_hdr"
+    ],
+    "tested": "Not stated in the commit subjects or the fork-log rows read."
+   }
+  ],
+  "upstream_code_changed": [
+   {
+    "region": "CameraController::setIsoAuto",
+    "where": "src/camera/CameraController.hpp",
+    "change": "signature changed from setIsoAuto() to setIsoAuto(bool enabled = true); false locks the gain in use",
+    "kind": "behaviour-changed"
+   },
+   {
+    "region": "struct CameraController::SensorMode",
+    "where": "src/camera/CameraController.hpp",
+    "change": "added binning and binningSource (struct itself comes from fork main f60e301)",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "struct CaptureSettings",
+    "where": "include/apertar/core/Types.hpp",
+    "change": "12 persisted fields and 14 runtime fields added, including std::vector ladderTops and std::string ladderText; persisted and runtime fields now mix",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "struct AudioRecordingOptions",
+    "where": "include/apertar/core/Types.hpp",
+    "change": "added fpsRamp",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "ScalerCropGeometry.hpp (centeredRawWindowScalerCrop, centeredPreviewScalerCrop)",
+    "where": "src/camera/ScalerCropGeometry.hpp",
+    "change": "both functions untouched; activeAreaScalerCrop added (28 lines)",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "CameraController private section",
+    "where": "src/camera/CameraController.hpp",
+    "change": "about 20 new helper declarations and 15 members (ladder, ramp, pre-roll, media fault, Log-applied tracking); still one class with one mutex_",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "Types.hpp includes and enums",
+    "where": "include/apertar/core/Types.hpp",
+    "change": "added <vector>, enum class CdngLog, and five free inline functions (toString, cdngLogFromString, cdngLogStoredBits, cdngLogAvailable, cdngLogBits)",
+    "kind": "extended-in-place"
+   }
+  ],
+  "new_abstractions": [
+   {
+    "name": "apertar::fpsceiling",
+    "purpose": "Pure rules for the maximum FPS: probe vs table, back-end cap, IMX585 lossless override",
+    "upstream_equivalent": "none; main has the rule inline in probedMaximumFps/maximumSupportedFpsForResolution (CC.cpp@main:2692, 2767)",
+    "files": [
+     "src/camera/FpsCeiling.hpp"
+    ],
+    "used_by": "CameraController.cpp:3121-3488, 8634; tools/fps_ceiling_test.cpp"
+   },
+   {
+    "name": "FramePhaseLock and PhaseLockStatus",
+    "purpose": "Pure PI servo state machine for frame cadence on SensorTimestamp, plus a status snapshot for the state output",
+    "upstream_equivalent": "none; upstream sets FrameDurationLimits once at CC.cpp@upstream:2030",
+    "files": [
+     "src/camera/FramePhaseLock.hpp"
+    ],
+    "used_by": "CameraSession in CameraController.cpp (stepFramePhaseLock, phaseLockStatus); ApertarCoreApp.cpp state output"
+   },
+   {
+    "name": "apertar::imx585 (Mode, Class, Rows, offered, find, nearest, transportFor, activeFor)",
+    "purpose": "Table-driven IMX585 mode data with width policy",
+    "upstream_equivalent": "free functions isImx585*Resolution and constexpr arrays inside CameraController.cpp (CC.cpp@upstream:360-398, kImx477Modes :2309)",
+    "files": [
+     "src/camera/Imx585Modes.hpp"
+    ],
+    "used_by": "CameraController.cpp, WebControlPage.cpp, tools/imx585_modes_test.cpp"
+   },
+   {
+    "name": "apertar::imx283",
+    "purpose": "Table of 57 IMX283 modes with active/transport sizes and normalise()",
+    "upstream_equivalent": "isImx294Resolution and friends in CameraController.cpp (CC.cpp@upstream:462-527)",
+    "files": [
+     "src/camera/Imx283Modes.hpp"
+    ],
+    "used_by": "CameraController.cpp:656-713, 2272+; tools/imx283_modes_test.cpp"
+   },
+   {
+    "name": "apertar::ladder (Rung, Ladder, RungState, PoolEntry, parseRungs, validate, toJson, fileText, parseFile)",
+    "purpose": "Mode ladder logic, validation, nested JSON reply writer and mode_ladder.conf reader/writer",
+    "upstream_equivalent": "none; settings persistence upstream goes through camera_settings.conf in CC.cpp, replies are flat scalar JSON",
+    "files": [
+     "src/camera/ModeLadder.hpp"
+    ],
+    "used_by": "CameraController.hpp/.cpp (modeLadder_, ladder helpers), ApertarCoreApp.cpp get/set_mode_ladder, tools/log_curve_test.cpp"
+   },
+   {
+    "name": "NativeScalerCrop / activeAreaScalerCrop",
+    "purpose": "Crop that skips IMX283 leading-left and trailing-bottom optical black, from the runtime ScalerCropMaximum",
+    "upstream_equivalent": "centeredRawWindowScalerCrop / centeredPreviewScalerCrop in the same upstream file",
+    "files": [
+     "src/camera/ScalerCropGeometry.hpp"
+    ],
+    "used_by": "CameraController.cpp:2492; tools/imx283_modes_test.cpp"
+   },
+   {
+    "name": "apertar::tuning::stripTdn / previewTuningPath and tdn_detail::Parser",
+    "purpose": "Hand-written JSON parser that removes the tdn member of every rpi.denoise config, plus a validated cached copy under $HOME/.cache/apertar-core/tuning with a .src sidecar",
+    "upstream_equivalent": "DefaultTuningSelection.hpp (Pipeline, compatibleFile, default tuning directories, libyaml-based validation)",
+    "files": [
+     "src/camera/TuningTdnStrip.hpp"
+    ],
+    "used_by": "CameraController.cpp (Preview TDN path); tools/tuning_tdn_strip_test.cpp"
+   },
+   {
+    "name": "CdngLog enum and cdngLog* free functions",
+    "purpose": "Log setting and the stored bit-depth rule (16->12, 12->10, 10->8)",
+    "upstream_equivalent": "CdngCompression enum with toString in the same Types.hpp",
+    "files": [
+     "include/apertar/core/Types.hpp"
+    ],
+    "used_by": "CameraController.cpp, ModeLadder.hpp, ApertarCoreApp.cpp state output"
+   },
+   {
+    "name": "FrameBufferStatus and StoragePrerollResult",
+    "purpose": "Plain result structs for the write-buffer bar and the storage pre-roll",
+    "upstream_equivalent": "none (MediaWriteStatus is the nearest existing status struct)",
+    "files": [
+     "src/camera/CameraController.hpp"
+    ],
+    "used_by": "ApertarCoreApp.cpp buffer bar and pre-roll thread"
+   },
+   {
+    "name": "tools/*_test.cpp host tests (imx283, imx585, fps_ceiling, tuning_tdn_strip)",
+    "purpose": "Compile-with-g++ unit tests of the pure headers; three different check styles; not wired into CMake",
+    "upstream_equivalent": "none; upstream Core has no tests and no tools/ directory",
+    "files": [
+     "tools/imx283_modes_test.cpp",
+     "tools/imx585_modes_test.cpp",
+     "tools/fps_ceiling_test.cpp",
+     "tools/tuning_tdn_strip_test.cpp"
+    ],
+    "used_by": "manual runs only"
+   }
+  ],
+  "removed_or_narrowed": [
+   {
+    "what": "Modes narrower than 1280 px on the IMX585",
+    "where": "Imx585Modes.hpp minModeWidth()",
+    "effect": "hidden by default from find/nearest/offered; env APERTAR_IMX585_MIN_MODE_WIDTH=0 shows them"
+   },
+   {
+    "what": "1x1 1920x1080 Clear HDR 16-bit IMX585 row",
+    "where": "Imx585Modes.hpp shadowed()",
+    "effect": "not offered; the binned row answers every lookup"
+   },
+   {
+    "what": "fps_max = min(table, probed) and the IMX585 lossless 30 fps cap",
+    "where": "FpsCeiling.hpp",
+    "effect": "probe wins; the old values come back only with APERTAR_FPS_LIMIT=table or APERTAR_LOSSLESS_FPS_LIMIT=30"
+   },
+   {
+    "what": "Manual resolution, bit depth and Clear HDR while the ladder is on",
+    "where": "commit 09256a7, flags in CameraController.hpp (ladderActive)",
+    "effect": "those commands are refused or return quietly while the ladder is active"
+   },
+   {
+    "what": "Cdng Log legacy values 12, 10, 8",
+    "where": "Types.hpp cdngLogFromString",
+    "effect": "all collapse to Auto; explicit target depth is gone"
+   },
+   {
+    "what": "IMX283 requests for 1920x1080 / 3840x2160 (and padded forms)",
+    "where": "Imx283Modes.hpp normalise()",
+    "effect": "mapped to 2736x1540 (12-bit) or 3840x2160 (10-bit), other sizes snap to the nearest mode"
+   }
+  ],
+  "board_assumptions": [
+   {
+    "what": "Pi 5 / CM5 only: phase lock reads SensorTimestamp stamped at CSI-2 frame start by the RP1 CFE driver, in the CLOCK_BOOTTIME domain",
+    "where": "src/camera/FramePhaseLock.hpp header comment; working/phaselock-answer.md:33"
+   },
+   {
+    "what": "PiSP pipeline assumed for the TDN strip (rpi.denoise tdn is a PiSP tuning member); Vc4 is only handled by compatibleFile's pipeline check, behaviour on Pi 4 not confirmed",
+    "where": "src/camera/TuningTdnStrip.hpp (uses Pipeline from DefaultTuningSelection.hpp)"
+   },
+   {
+    "what": "Sensor probe numbers come from IMX585 on Pi 5 at link 891 MHz with rp1-clk-333mhz; the 16-bit Clear HDR optical-black rows (+40 / +20) match that driver",
+    "where": "src/camera/Imx585Modes.hpp, working/ramp-mode-ladder.md:12"
+   },
+   {
+    "what": "HOME is set for the service user; cache lives at $HOME/.cache/apertar-core/tuning; the ladder file uses XDG_CONFIG_HOME or HOME/.config/apertar-core, else a temp dir",
+    "where": "TuningTdnStrip.hpp:404; CameraController.cpp:404-414"
+   },
+   {
+    "what": "IMX283 modes are those of the cinemate-port driver with experimental_modes=0 (57 modes); a stock driver would differ",
+    "where": "src/camera/Imx283Modes.hpp header"
+   },
+   {
+    "what": "Phase-lock gains (kp 0.06, ki 0.0015, deadband 6 us, clamp 150 us) taken from Cinemate's IMX585 tuning at 24/25 fps; other sensors unmeasured",
+    "where": "src/camera/FramePhaseLock.hpp Tuning"
+   },
+   {
+    "what": "No core count, RAM size, gpiochip, I2C bus, PCIe or fan assumption in these headers (grep found none)",
+    "where": "all seven headers"
+   }
+  ]
+ },
+ "Media-fault-tune": {
+  "report": "/home/user/apertar-kb/working/merge-review/raw/inv-Media-fault-tune.md",
+  "summary": "The port adds about 1100 lines of header-only code in src/util (MediaFault, MediaProbe, MediaIntent, CfeHat, MediaProfile, MediaTune), and a media watcher thread in the App. It also adds a record gate, a bounded dead-medium stop in the recorder, a root tuning helper with sudoers and tmpfiles, a Python CLI (apertar-tune), and two UI commits. Upstream has none of these. It reads mount state with isMountedPath inside the state builders, joins writers unconditionally, and has no record gate. It does already have a CFE HAT reader (the UI automounter, and a Python helper inside App.cpp). Findings that matter for stage 2: the eject-intent flag has a writer in Core and no reader anywhere, because the UI automounter never checks it. apertar-media-tune, its sudoers and its tmpfiles file have no documented install step, and the override directory only exists after the tmpfiles rule is installed. The get_state JSON emits media_state twice. tools/media_tune_test.cpp is named in a header but does not exist. Tuning keys and ranges are written three times (C++, Python, conf template). Tests recorded: pull tests on the Pi on 2026-10-26 and 2026-11-03 for the fault latch and fsync work; MediaTune and apertar-tune were tested at the desk only; MediaProfile was built on the Pi but not tested; the UI commits were built on the Pi, with no test result recorded.",
+  "features": [
+   {
+    "name": "F1 Dead-medium handling during a take",
+    "operator_gets": "A pulled or lost recording drive ends the take with a named fault (media_removed, media_full, media_read_only, media_permission, write_error). Files up to the pull are kept, and record_stop returns within about 2 s instead of hanging.",
+    "relation_to_upstream": "rewrites upstream code (recorder stop() join, writer error paths in DNG, MLV, lossy DNG and audio) and adds a MediaFault classifier. Upstream joins every writer unconditionally and has RecordingFailure.hpp as the nearest precedent.",
+    "commits": [
+     "438a342",
+     "e8bb1b7",
+     "0b1632f",
+     "a3ac8da"
+    ],
+    "files": [
+     "src/util/MediaFault.hpp",
+     "src/camera/CameraController.cpp",
+     "src/camera/CameraController.hpp",
+     "src/mlv/MlvEncoder.cpp",
+     "src/lossydng/LossyDngEncoder.cpp",
+     "src/audio/AudioRecordingSession.cpp"
+    ],
+    "commands": [],
+    "state_fields": [
+     "recording_fault"
+    ],
+    "env_vars": [
+     "APERTAR_DEAD_MEDIUM_STOP_MS (default 2000)",
+     "APERTAR_WRITE_STALL_MS (default 5000)"
+    ],
+    "tested": "Commit messages say 'desk only' for 438a342 and 'pi build (see next run)' for the rest. The fork-log records builds on 2026-10-26. The pull test on the Pi on 2026-10-26 22:46 found the bugs fixed in a3ac8da. Later pull tests (C0010, C0011) cover the fsync work."
+   },
+   {
+    "name": "F2 Media watcher thread and record gate",
+    "operator_gets": "record_start, capture_photo and timelapse_start are refused with a reason when media is missing, pulled, not answering, or under 1 GiB free. The touch UI and WebUI show MEDIA REMOVED or MEDIA ERROR.",
+    "relation_to_upstream": "adds a parallel path beside upstream code. Upstream calls isMountedPath inside each state builder and has no media thread and no record gate. The watcher also triggers trim, clip merge, pre-roll and tuning.",
+    "commits": [
+     "438a342",
+     "a3ac8da",
+     "70e8376",
+     "3c4f07d"
+    ],
+    "files": [
+     "src/ApertarCoreApp.cpp",
+     "src/ApertarCoreApp.hpp",
+     "src/util/MediaProbe.hpp"
+    ],
+    "commands": [
+     "event media {state,mounted,device,fstype,free_bytes,total_bytes,errno}",
+     "get_state (socket): added recording_fault, media_state, media_alive (media_state emitted twice)",
+     "record_start, capture_photo and timelapse_start gated in handleCommand (App.cpp:12597)",
+     "/api/state: media_state, media_alive, media_device, media_fstype, media_class, media_profile, recording_fault"
+    ],
+    "state_fields": [
+     "media_state",
+     "media_alive",
+     "media_device",
+     "media_fstype",
+     "media_class",
+     "media_profile",
+     "recording_fault"
+    ],
+    "env_vars": [
+     "APERTAR_MEDIA_REQUIRE_MOUNT=0 (turns the gate off)",
+     "APERTAR_MEDIA_MIN_FREE_MB (default 1024)"
+    ],
+    "ui_elements": [
+     "WebUI recordingStatus text 'MEDIA REMOVED'",
+     "WebUI hasMedia from media_alive",
+     "storage label 'Media Removed' / 'Media Error'"
+    ],
+    "tested": "438a342 says 'desk only'. Later commits say 'pi build'. The Pi pull test on 2026-10-26 exercised it. The 1 GiB floor and the gate on other commands have no recorded test."
+   },
+   {
+    "name": "F3 CFexpress slot bit in the media probe",
+    "operator_gets": "Pulling the CFexpress card is seen at once, not after the NVMe I/O timeout. A pulled and re-inserted card stays 'removed' until it is remounted or the Pi reboots.",
+    "relation_to_upstream": "adds a parallel path beside upstream code. The same I2C status byte is read by UI CfeAutomounter.cpp (I2cHat) and by a Python helper embedded in App.cpp. This is a third reader, in C++ inside Core. Config reuses the existing [cfexpress_hat] section.",
+    "commits": [
+     "0b1632f",
+     "a3ac8da"
+    ],
+    "files": [
+     "src/util/CfeHat.hpp",
+     "src/util/MediaProbe.hpp",
+     "src/ApertarCoreApp.cpp"
+    ],
+    "commands": [],
+    "state_fields": [
+     "hat_card and pulled in the media state log line",
+     "MediaSnapshot.card",
+     "MediaSnapshot.pulledSinceMount"
+    ],
+    "config_keys": [
+     "apertar-hardware.conf:[cfexpress_hat] enabled/bus/address (section already existed upstream; new C++ reader loadCfeHatConfig, reloaded through cfeHatGeneration_)"
+    ],
+    "tested": "Tested on the Pi on 2026-10-26 (a3ac8da message: pull and re-insert at 22:46-22:47). The Pi 4 / CM4 case is not tested."
+   },
+   {
+    "name": "F4 Eject intent flag file",
+    "operator_gets": "Intended: an eject done in Core is not undone by an automounter that remounts on the udev 'change' event. Today it only writes the flag.",
+    "relation_to_upstream": "entirely new area. No upstream equivalent.",
+    "commits": [
+     "438a342"
+    ],
+    "files": [
+     "src/util/MediaIntent.hpp",
+     "src/ApertarCoreApp.cpp"
+    ],
+    "commands": [
+     "eject_media and mount_media now write and clear the flag"
+    ],
+    "env_vars": [
+     "APERTAR_MEDIA_RUN_DIR (default /run/apertar-media)"
+    ],
+    "tested": "Not tested. Grep of Apertar-UI/src finds no reader of /run/apertar-media/eject, so the flag has no effect today."
+   },
+   {
+    "name": "F5 Media profile (class and filesystem to writers, queue, extra raw buffers)",
+    "operator_gets": "Writer count, queue depth and camera buffer count follow the mounted medium (ext4 and exFAT 4/12/+0; FAT and NTFS 2/16/+2). The clip log line reports the class and filesystem.",
+    "relation_to_upstream": "extends upstream functions in place: rawCameraBufferCount, the uncompressed worker count and queue depth in the recorder, the CdngEncoder page-cache mode. Upstream picks these from the recording format and four-core caps only. The env overrides are kept.",
+    "commits": [
+     "26da30e",
+     "0358fcf"
+    ],
+    "files": [
+     "src/util/MediaProfile.hpp",
+     "src/camera/CameraController.cpp",
+     "src/cdng/CdngEncoder.cpp"
+    ],
+    "state_fields": [
+     "media_class",
+     "media_profile"
+    ],
+    "env_vars": [
+     "APERTAR_RAW_CAMERA_BUFFERS",
+     "APERTAR_CDNG_UNCOMPRESSED_WORKERS",
+     "APERTAR_CDNG_QUEUE_FRAMES (all existed upstream; defaults now come from the profile)"
+    ],
+    "tested": "26da30e is 'built, not tested'. 0358fcf records the exFAT row measured on the Pi (C0106 lost 166 frames with 2/16/+2; C0101 held 10 min with 4/12/0). The FAT, NTFS and 'other' rows are not measured. The code comment calls them starting points."
+   },
+   {
+    "name": "F6 Kernel tuning helper (opt-in)",
+    "operator_gets": "With APERTAR_MEDIA_TUNE=1 or kernel_tune=on, Core applies dirty-page, scheduler, queue-depth and NVMe power-state settings for the recording drive on mount and restores them when the drive goes away.",
+    "relation_to_upstream": "adds a parallel path beside upstream code. Upstream has two root helpers called with 'sudo -n /usr/local/libexec/...' (standby-usb, standby-low-power), which is the same calling pattern. Upstream has no sudoers or tmpfiles files in config/.",
+    "commits": [
+     "26da30e",
+     "ebdcd08"
+    ],
+    "files": [
+     "scripts/apertar-media-tune",
+     "config/apertar-media.sudoers",
+     "config/apertar-media.tmpfiles.conf",
+     "src/ApertarCoreApp.cpp (applyMediaTuning)"
+    ],
+    "config_keys": [
+     "apertar-media-tune.conf [..] kernel_tune"
+    ],
+    "env_vars": [
+     "APERTAR_MEDIA_TUNE"
+    ],
+    "tested": "26da30e: 'added but not installed'. ebdcd08: tested that no helper call happens after restart. No test of an applied tuning is recorded."
+   },
+   {
+    "name": "F7 Media tuning file and override",
+    "operator_gets": "Write-path knobs (dontneed, writeback, sync_ms, raw_buffers, extra_raw_buffers, workers, queue, kernel_tune) per medium in ~/apertar-media-tune.conf. A RAM-only override in /run/apertar-media/media-tune.override.conf removes the need for systemd drop-ins on test nights.",
+    "relation_to_upstream": "adds a parallel path beside upstream code. Upstream uses env vars (unsignedEnvValue, 34 getenv sites), camera_settings.conf (SettingsFile.hpp) and apertar-hardware.conf (hwconf in the App). This is a third config file with its own parser.",
+    "commits": [
+     "2edc6d0"
+    ],
+    "files": [
+     "src/util/MediaTune.hpp",
+     "config/apertar-media-tune.conf",
+     "README.md",
+     "src/util/MediaProfile.hpp"
+    ],
+    "config_keys": [
+     "/home/pi/apertar-media-tune.conf [default|fs|class|class.fs] dontneed|writeback|sync_ms|raw_buffers|extra_raw_buffers|workers|queue|kernel_tune",
+     "/run/apertar-media/media-tune.override.conf (same format)"
+    ],
+    "env_vars": [
+     "APERTAR_DNG_DONTNEED",
+     "APERTAR_DNG_WRITEBACK",
+     "APERTAR_MEDIA_SYNC_MS (now fall back to the file)"
+    ],
+    "tested": "Desk only: a host test of 46 checks, named in the header as tools/media_tune_test.cpp, which is not in the repo. Built on the Pi on 2026-11-02; Core had not been restarted on it at the time of the fork-log entry."
+   },
+   {
+    "name": "F8 apertar-tune CLI",
+    "operator_gets": "`apertar-tune show|set|unset|clear|init` edits the override file with validation and an atomic write, and prints the journal's 'media tune' lines.",
+    "relation_to_upstream": "entirely new area. Upstream scripts/ holds only start-apertar-core.sh.",
+    "commits": [
+     "46d0e8c"
+    ],
+    "files": [
+     "scripts/apertar-tune"
+    ],
+    "commands": [
+     "apertar-tune show",
+     "apertar-tune set KEY=VALUE [--section S]",
+     "apertar-tune unset KEY",
+     "apertar-tune clear",
+     "apertar-tune init [--from PATH]"
+    ],
+    "tested": "Desk only (py_compile, set, replace, unset, clear, init, every validation error). It is on the Pi. Its docstring says Core reads files only at start; the conf header and README say at start and at take start."
+   },
+   {
+    "name": "F9 Touch UI follows Core media state",
+    "operator_gets": "MEDIA REMOVED or MEDIA ERROR shows on the touch UI and HDMI when Core's watcher says the medium is gone. Without Core's fields the UI behaves as before.",
+    "relation_to_upstream": "extends an upstream function in place (MediaStatusBridge::updateStatus, ApertarControlBridge::applyCoreMessage and applyCoreState).",
+    "commits": [
+     "UI 160898c"
+    ],
+    "files": [
+     "Apertar-UI src/ApertarControlBridge.cpp",
+     "src/ApertarControlBridge.hpp",
+     "src/MediaStatusBridge.cpp",
+     "src/MediaStatusBridge.hpp",
+     "src/main.cpp"
+    ],
+    "state_fields": [
+     "media_state",
+     "media_alive",
+     "event media"
+    ],
+    "ui_elements": [
+     "status text MEDIA REMOVED",
+     "status text MEDIA ERROR",
+     "signal coreMediaStateChanged",
+     "slot setCoreMediaState"
+    ],
+    "tested": "Pi build recorded. The commit was written after the 2026-10-26 pull test, which found the original bug. No later test is recorded."
+   },
+   {
+    "name": "F10 UI automounter releases a pulled card",
+    "operator_gets": "After a card is pulled while mounted, the automounter lazily unmounts it and removes the PCIe device. Re-inserting then remounts without a reboot, and Core's stuck writers fail at once.",
+    "relation_to_upstream": "extends an upstream function in place. It adds handleSurpriseRemoval to upstream's Automounter and moves the PCIe-remove code out of unmountPcie into removePcieDevice.",
+    "commits": [
+     "UI dc471c1"
+    ],
+    "files": [
+     "Apertar-UI src/CfeAutomounter.cpp"
+    ],
+    "tested": "'pi build (see next run)'. The bug was observed on the Pi on 2026-10-26. No test of the fix is recorded."
+   },
+   {
+    "name": "F11 noatime on Core's own mounts",
+    "operator_gets": "Mounts made by Core (mount_media, the reinsert watcher) carry noatime, so a DNG per frame does not cost an inode update.",
+    "relation_to_upstream": "extends an upstream function in place: mountDeviceAtMediaPath and the Python reinsert helper in the App. Behaviour change on mounts only.",
+    "commits": [
+     "26da30e"
+    ],
+    "files": [
+     "src/ApertarCoreApp.cpp"
+    ],
+    "tested": "Built, no test recorded."
+   }
+  ],
+  "upstream_code_changed": [
+   {
+    "region": "rawCameraBufferCount",
+    "where": "src/camera/CameraController.cpp:1457-1470",
+    "change": "base + profile extra buffers, or the tune file's raw_buffers; env var still wins",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "uncompressed worker count and queue depth",
+    "where": "src/camera/CameraController.cpp:4315-4330",
+    "change": "env > media profile > format default (was max(2,min(4,threads)) and 12/24)",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "recorder startAtFolder",
+    "where": "src/camera/CameraController.cpp:4225-4252",
+    "change": "refuses while writers from a dead-medium stop remain; resets fault, mediumGone and write-progress",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "recorder stop()",
+    "where": "src/camera/CameraController.cpp:4440-4520",
+    "change": "bounded wait (2 s) on a dead medium, 5 s stall detection, detach of stuck writers, 'dead-medium stages' log",
+    "kind": "rewritten"
+   },
+   {
+    "region": "writer error handling (DNG queue, MLV, lossy DNG, audio)",
+    "where": "CameraController.cpp:5290-5440, MlvEncoder.cpp, LossyDngEncoder.cpp, AudioRecordingSession.cpp",
+    "change": "errno classified; first fault latched; a gone medium is abandoned without rename or fsync; audio leaves raw PCM",
+    "kind": "rewritten"
+   },
+   {
+    "region": "failRecording and checkRecordingFailure",
+    "where": "CameraController.cpp:5424, 12456",
+    "change": "carry MediaFault; session stop gets mediumGone; fault name stored",
+    "kind": "behaviour-changed"
+   },
+   {
+    "region": "record start",
+    "where": "CameraController.cpp:7735",
+    "change": "sets the media profile from the cached snapshot; sets configuredMediaRoot()",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "dngPageCacheDrop",
+    "where": "src/cdng/CdngEncoder.cpp:85-110",
+    "change": "without APERTAR_DNG_DONTNEED the tune file's dontneed decides",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "sync interval and writeback switch",
+    "where": "CameraController.cpp:4365, 4718",
+    "change": "env > tune file > default",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "audio capture ring default",
+    "where": "src/audio/AudioRecordingSession.cpp",
+    "change": "APERTAR_AUDIO_BUFFER_MS default back to 100 ms; writer drains without touching a gone medium",
+    "kind": "behaviour-changed"
+   },
+   {
+    "region": "state builders",
+    "where": "src/ApertarCoreApp.cpp:9313, 9555-9562, 12943-12962",
+    "change": "new media and fault fields; get_state emits media_state twice",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "storage label",
+    "where": "src/ApertarCoreApp.cpp:9316-9326",
+    "change": "'Media Removed' or 'Media Error' from the watcher",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "handleCommand",
+    "where": "src/ApertarCoreApp.cpp:12597-12599",
+    "change": "media gate before capture_photo, record_start and timelapse_start",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "ejectMediaAtPath and mountMediaDeviceAtPath",
+    "where": "src/ApertarCoreApp.cpp:4355, 4389",
+    "change": "write and clear the eject-intent flag",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "mount commands and embedded Python reinsert watcher",
+    "where": "src/ApertarCoreApp.cpp:4208-4212, 4279-4286",
+    "change": "mount options gain noatime",
+    "kind": "behaviour-changed"
+   },
+   {
+    "region": "WebUI media status",
+    "where": "src/web/WebControlPage.cpp:10891, 14405, 15255, 15392",
+    "change": "hasMedia from media_alive; status text 'MEDIA REMOVED'; controls disabled without media",
+    "kind": "extended-in-place"
+   },
+   {
+    "region": "UI CfeAutomounter::unmountPcie",
+    "where": "Apertar-UI src/CfeAutomounter.cpp",
+    "change": "PCIe-remove code extracted to removePcieDevice; new handleSurpriseRemoval on the slot's removal edge",
+    "kind": "moved"
+   },
+   {
+    "region": "UI ApertarControlBridge, MediaStatusBridge, main.cpp",
+    "where": "Apertar-UI src/",
+    "change": "core media state signal and slot; updateStatus skips QStorageInfo when Core says removed or error",
+    "kind": "extended-in-place"
+   }
+  ],
+  "new_abstractions": [
+   {
+    "name": "Six header-only media modules in namespace apertar",
+    "purpose": "Classify faults, probe the medium, hold the eject flag, read the HAT, profile the medium, resolve the tune files (about 1100 lines)",
+    "files": [
+     "src/util/MediaFault.hpp",
+     "src/util/MediaProbe.hpp",
+     "src/util/MediaIntent.hpp",
+     "src/util/CfeHat.hpp",
+     "src/util/MediaProfile.hpp",
+     "src/util/MediaTune.hpp"
+    ],
+    "used_by": "ApertarCoreApp.cpp, CameraController.cpp, CdngEncoder.cpp, MlvEncoder.cpp",
+    "upstream_equivalent": "upstream src/util has four small headers (AtomicStillFile, RecordingDropWarning, RecordingFailure, SettingsFile). Mount handling is free functions in ApertarCoreApp.cpp (isMountedPath :2014, mountedDeviceForPath :2031). RecordingFailure.hpp is the nearest precedent. There are no mediafault:: or mediaprobe:: namespaces; only apertar::mediatune exists."
+   },
+   {
+    "name": "runMediaWatcher thread",
+    "purpose": "Probes the media root every 1 s (250 ms while recording), publishes the media event, ends a take on a dead medium, and triggers trim, clip merge, pre-roll and kernel tuning on a mount change",
+    "files": [
+     "src/ApertarCoreApp.cpp:10855",
+     "src/ApertarCoreApp.hpp"
+    ],
+    "used_by": "ApertarCoreApp (record gate, state builders, playback hold)",
+    "upstream_equivalent": "none. Upstream calls isMountedPath inside the state builders and has no media thread."
+   },
+   {
+    "name": "Process-global media snapshot cache and configuredMediaRoot()",
+    "purpose": "Lets configure-time code in CameraController and CdngEncoder read media state without a lock on the App or a blocking statvfs",
+    "files": [
+     "src/util/MediaProbe.hpp",
+     "src/util/MediaProfile.hpp"
+    ],
+    "used_by": "CameraController.cpp, CdngEncoder.cpp",
+    "upstream_equivalent": "none. Upstream passes the media root as an App option."
+   },
+   {
+    "name": "MediaTune INI resolver (base file plus override file)",
+    "purpose": "Per-medium write-path knobs with section precedence class.fs > fs > class > default",
+    "files": [
+     "src/util/MediaTune.hpp",
+     "config/apertar-media-tune.conf",
+     "scripts/apertar-tune"
+    ],
+    "used_by": "MediaProfile.hpp, CameraController.cpp, CdngEncoder.cpp, ApertarCoreApp.cpp (kernel_tune)",
+    "upstream_equivalent": "env vars through unsignedEnvValue (34 getenv sites), camera_settings.conf through util/SettingsFile.hpp, apertar-hardware.conf through hwconf in ApertarCoreApp.cpp"
+   },
+   {
+    "name": "Root helper apertar-media-tune with sudoers and tmpfiles",
+    "purpose": "Kernel-side block-queue and vm.dirty tuning for the recording drive",
+    "files": [
+     "scripts/apertar-media-tune",
+     "config/apertar-media.sudoers",
+     "config/apertar-media.tmpfiles.conf"
+    ],
+    "used_by": "ApertarCoreApp::applyMediaTuning (sudo -n /usr/local/libexec/apertar-media-tune)",
+    "upstream_equivalent": "upstream's apertar-standby-usb and apertar-standby-low-power helpers, called with 'sudo -n /usr/local/libexec/...' (ApertarCoreApp.cpp:1544, 1549). Upstream config/ has no sudoers or tmpfiles file."
+   },
+   {
+    "name": "scripts/apertar-tune Python CLI",
+    "purpose": "Edit the override file from the shell; it duplicates the C++ key table and ranges",
+    "files": [
+     "scripts/apertar-tune"
+    ],
+    "used_by": "the operator",
+    "upstream_equivalent": "none. Upstream scripts/ holds only start-apertar-core.sh."
+   },
+   {
+    "name": "Eject-intent flag-file protocol",
+    "purpose": "Tell an automounter that an unmount was deliberate",
+    "files": [
+     "src/util/MediaIntent.hpp"
+    ],
+    "used_by": "ApertarCoreApp.cpp (writes and clears only)",
+    "upstream_equivalent": "none. Upstream ejectMediaAtPath does not signal the automounter."
+   },
+   {
+    "name": "Dead-medium writer detach (liveWorkers_, exitCv_, mediumGone_) in the recorder",
+    "purpose": "Bound record_stop when writers are stuck in write() on a vanished device",
+    "files": [
+     "src/camera/CameraController.cpp"
+    ],
+    "used_by": "recorder stop() and startAtFolder",
+    "upstream_equivalent": "upstream stop() joins every writer."
+   },
+   {
+    "name": "CfeHatReader (C++, I2C SMBus)",
+    "purpose": "Read the HAT slot bit from the watcher and the Hardware card",
+    "files": [
+     "src/util/CfeHat.hpp"
+    ],
+    "used_by": "runMediaWatcher, cfeHatPeripheralJson",
+    "upstream_equivalent": "UI CfeAutomounter.cpp I2cHat class (:393) and the Python helper embedded in ApertarCoreApp.cpp (:3394). This is a third reader of the same byte."
+   }
+  ],
+  "removed_or_narrowed": [
+   {
+    "what": "Unconditional record_start",
+    "where": "ApertarCoreApp.cpp handleCommand",
+    "effect": "record_start, capture_photo and timelapse_start are refused when media is missing, pulled, errored or under 1 GiB free (APERTAR_MEDIA_MIN_FREE_MB). Upstream had no media gate."
+   },
+   {
+    "what": "Writer join on stop",
+    "where": "CameraController.cpp stop()",
+    "effect": "After a dead-medium stop, stuck writer threads may be detached and the next take is refused until they return."
+   },
+   {
+    "what": "exFAT writer table row",
+    "where": "MediaProfile.hpp",
+    "effect": "Reverted to 4/12/+0 (0358fcf). FAT and NTFS keep 2/16/+2. Filesystem 'other' gives 2 workers, below the old 4 on a four-core board (unconfirmed on hardware)."
+   },
+   {
+    "what": "Audio capture ring 1000 ms",
+    "where": "AudioRecordingSession.cpp",
+    "effect": "Default back to 100 ms. The writer thread from the same port stays."
+   },
+   {
+    "what": "media_mounted as the UI's truth",
+    "where": "WebControlPage.cpp, MediaStatusBridge.cpp",
+    "effect": "Still emitted. The UI prefers media_alive when it is present."
+   },
+   {
+    "what": "Direct-I/O flag",
+    "where": "MediaProfile.hpp MediaWriterSettings.directIo",
+    "effect": "Field exists but is unused; the code comment says the direct-I/O work (T24) is not in this fork."
+   }
+  ],
+  "board_assumptions": [
+   {
+    "what": "Pi 5 / CM5 with a CFexpress HAT on NVMe over PCIe: a Pi 5 cannot hot-plug NVMe, so a pulled card needs a PCIe remove and rescan, and the watcher latches 'pulled' until a new mount id",
+    "where": "MediaProbe.hpp, ApertarCoreApp.cpp:10863, UI CfeAutomounter.cpp handleSurpriseRemoval"
+   },
+   {
+    "what": "HAT on I2C bus 10, address 0x34 by default (configurable in [cfexpress_hat]); status byte bit 0 = no card, bit 1 = eject held, 0x69 = nothing to report",
+    "where": "CfeHat.hpp:21; the same defaults exist upstream in CfeAutomounter.cpp:38 and the App's Python helper"
+   },
+   {
+    "what": "Four cores: writers capped at min(4, hardware_concurrency); the compressed-DNG queue of 24 applies only with 4 or more threads",
+    "where": "CameraController.cpp:4315-4329"
+   },
+   {
+    "what": "Storage class from sysfs: nvme* = pi-nvme, mmcblk* = sd-card, '/usb' in the realpath = USB (uas or usb-storage by driver)",
+    "where": "MediaProfile.hpp classifyMediaClass"
+   },
+   {
+    "what": "NVMe controller state read from /sys/block/<disk>/device/state; APST disabled through nvme_core default_ps_max_latency_us for pi-nvme only",
+    "where": "MediaProbe.hpp; scripts/apertar-media-tune"
+   },
+   {
+    "what": "User 'pi', /home/pi paths, udisksctl and 'sudo -n' (also true upstream for apertar-hardware.conf)",
+    "where": "MediaTune.hpp:27, config/apertar-media.sudoers, ApertarCoreApp.cpp"
+   },
+   {
+    "what": "Media root /media/RAW as the default recording target",
+    "where": "MediaProfile.hpp configuredMediaRoot()"
+   },
+   {
+    "what": "RAM size, gpiochip numbering, RP1 as such and fan: no assumption in this unit",
+    "where": "-"
+   },
+   {
+    "what": "Pi 4 / CM4 and earlier: no PCIe NVMe, so USB and SD classes apply and the HAT reader stays off unless [cfexpress_hat] exists in the hardware file. Probable, not tested.",
+    "where": "ApertarCoreApp.cpp:5318 (enabled only when the section is present)"
    }
   ]
  }
