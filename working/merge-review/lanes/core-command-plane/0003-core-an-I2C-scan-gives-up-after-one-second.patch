@@ -1,7 +1,7 @@
 From a035679500cef2b3563bdddfd0b8fb65bbb0e684 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 19:03:54 +0000
-Subject: [PATCH 3/4] core: an I2C scan gives up after one second
+Subject: [PATCH] core: an I2C scan gives up after one second
 
 Why: scan_i2c probes up to 117 addresses, one read each, with no limit
 on the total time. On a stuck bus (SDA held low) every address costs one

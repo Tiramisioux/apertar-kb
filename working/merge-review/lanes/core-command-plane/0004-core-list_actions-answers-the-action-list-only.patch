@@ -1,7 +1,7 @@
 From f312d933db67d2ea9acbdac5e35f164c67bfb5d3 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 19:10:05 +0000
-Subject: [PATCH 4/4] core: list_actions answers the action list only
+Subject: [PATCH] core: list_actions answers the action list only
 
 Why: the list_actions reply carried three members nobody reads. values
 (the ISO, shutter, white balance, fps and resolution lists), values_for

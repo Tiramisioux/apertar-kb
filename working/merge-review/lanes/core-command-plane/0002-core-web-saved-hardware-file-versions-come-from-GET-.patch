@@ -1,7 +1,7 @@
 From 7625476b95b3da3e44d4ec0345c916df1f2477ac Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:57:10 +0000
-Subject: [PATCH 2/4] core, web: saved hardware-file versions come from GET
+Subject: [PATCH] core, web: saved hardware-file versions come from GET
  /api/config/history
 
 Why: controls_history was a socket command that only read the store's

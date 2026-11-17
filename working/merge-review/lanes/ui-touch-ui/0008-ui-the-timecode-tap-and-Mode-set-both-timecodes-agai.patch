@@ -1,8 +1,8 @@
 From 477eb11ce965828b62e99a531418ee5dd29fadde Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 19:07:01 +0000
-Subject: [PATCH 8/8] ui: the timecode tap and Mode set both timecodes again
- unless the file timecode is set apart
+Subject: [PATCH] ui: the timecode tap and Mode set both timecodes again unless
+ the file timecode is set apart
 
 Why:
 The port made the timecode tap and the first Settings row screen-only

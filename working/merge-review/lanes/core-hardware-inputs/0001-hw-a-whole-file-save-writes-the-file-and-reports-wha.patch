@@ -1,8 +1,8 @@
 From 322117b8dccf9446d0ede57e651802e78e15dcc6 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:42:04 +0000
-Subject: [PATCH 1/3] hw: a whole-file save writes the file and reports what
- the checker found
+Subject: [PATCH] hw: a whole-file save writes the file and reports what the
+ checker found
 
 Why: the hardware text store refused a whole-file save (Config page Save,
 Undo, history restore, set_controls text=) when hwconf::validate found an

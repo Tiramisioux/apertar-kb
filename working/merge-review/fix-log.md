@@ -926,3 +926,223 @@ static bool crop_vmax;
 **Checked.** Not built or loaded: this container has no kernel headers and no sensor. On the Pi: `cat /sys/module/imx283/parameters/crop_vmax` must print `N`, and Apertar must offer the frame rates it offered with `crop_vmax=0`.
 
 **Rule.** An unmeasured feature is off by default. If the guide tells every user to turn something off, turn it off in the code.
+
+---
+
+## C15. rec: free the playback JPEG encoder when its thread ends
+
+Apertar-Core `b13ccb5`. Finding: REC-5. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/playback/PlaybackFrames.cpp:92@cinemate-port, inside encodeRgbJpeg:
+    thread_local tjhandle handle = tjInitCompress();
+    if (!handle) return false;
+    ...
+    const int rc = tjCompress2(handle, rgb.data(), ...);
+Nothing ever calls tjDestroy(handle).
+
+**Why it is a problem.** A thread_local variable is destroyed when its thread exits. But a raw tjhandle is just a pointer, so destroying it does not free what it points to. WebServer starts one detached thread per connection (src/web/WebServer.cpp:279-290) and serves one request on it. So every frame that missed the cache created a handle plus its libjpeg state, and the thread then exited without freeing them. Core's memory grew with every scrub and play session. Original Apertar wraps the handle in a small RAII struct: TurboJpegCompressor calls tjInitCompress in its constructor and tjDestroy in its destructor, and the encoder declares `thread_local TurboJpegCompressor compressor;` (App:4108-4134@upstream-1.6.0, encodeYuv420ToJpeg). CAM-6 says small helpers are copied into each .cpp that needs them.
+
+**How to spot it.** grep -rn "thread_local" src | grep -v "thread_local [A-Z][A-Za-z]*Compressor". Any thread_local raw handle or pointer from an Init/Create/open call with no destructor leaks once per thread. That is worst where threads are short-lived, like WebServer's one detached thread per connection.
+
+**Options.**
+
+- Copy App's TurboJpegCompressor struct into the PlaybackFrames.cpp anonymous namespace: 15 lines, one file, App untouched, follows CAM-6
+- Move the struct into a new src/playback/TurboJpegCompressor.hpp and include it from App and playback: one source of truth, but a new file and an edit in App (merging copies unasked, CAM-6 smell)
+- Call tjInitCompress and tjDestroy on every call with no thread_local: simplest, but it sets the handle up again for each frame, even on a long-lived thread
+
+**Chosen, and why.** Option 1, the copy. It is the smallest local change, it is code App already has, and it leaves App alone. I gave up the single shared definition the item suggested. Two 15-line copies are what CAM-6 expects in this code base. The handle is still created once per connection thread. That cost was there before, and the cache hides most of it.
+
+**After.**
+
+```
+struct TurboJpegCompressor {
+    TurboJpegCompressor() : handle(tjInitCompress()) {}
+    ~TurboJpegCompressor() { if (handle) tjDestroy(handle); }
+    tjhandle handle = nullptr;
+};
+...
+    thread_local TurboJpegCompressor compressor;
+    if (!compressor.handle) return false;
+    const int rc = tjCompress2(compressor.handle, rgb.data(), ...);
+```
+
+**Checked.** Run here: the gate (/home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests) printed all PASS, with no warnings in PlaybackFrames.cpp. The libcamera build has TurboJPEG enabled. The sim media folder has no DNG clip, so I could not scrub in --simulate. Instead, a standalone program ran the same tjCompress2 call on 3000 short-lived threads: with the raw thread_local tjhandle, RSS went from 4 MB to 20 MB; with TurboJpegCompressor it went from 4 MB to 6 MB. Needs the Pi: scrub a 4K clip in the WebUI for 5 minutes and compare `ps -o rss -C apertar-core` before and after. The growth should stay within the JPEG caches (about 32 MB).
+
+**Rule.** A thread_local holding a C library handle must be an RAII object whose destructor frees the handle, never a raw pointer.
+
+
+---
+
+## C16. rec: clip-name example reads a listing, never the medium under the lock
+
+Apertar-Core `9ec7bbf`. Finding: REC-6. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/camera/CameraController.cpp:11827-11834@cinemate-port (called from settings() :12592 and emitSettingsEventLocked() :12866, both under mutex_):
+void CameraController::fillClipNameExampleLocked(CaptureSettings &out) const
+{
+    try {
+        out.clipNameExample = nextClipFolderName(mediaRootPath(mediaRoot_), out, clipNameSensorLocked(),
+                                                 std::chrono::system_clock::now());
+nextClipFolderName (:1191) -> clipname::nextClipNumber (ClipName.hpp:287) calls std::filesystem::exists(root / name) for clip 1..9999 until one is free.
+
+**Why it is a problem.** Every state poll (once a second per WebUI client) and every setter reply ran one stat per existing clip with the camera lock held. With 400 takes that is about 400 stats per poll, also during a take. On a hung or pulled USB mount one stat can block, and then record_stop, checkRecordingFailure and every setter wait on mutex_. Original Apertar looks the clip folder up only at take start (CC:5548@upstream-1.6.0, DngRecordingQueue::reserveClipFolder), and settings() does no I/O (CC:8566-8573@upstream-1.6.0). Rule CAM-10: nothing slow under mutex_. CAM-18: the runtime field is still filled before settings leave Core.
+
+**How to spot it.** grep -n "Locked(" for helpers called from settings() or emit*EventLocked, then follow them to std::filesystem::exists/status/directory_iterator, stat or open. A loop of up to 9999 probes, or any I/O reached from a getter that polls run every second, is the smell. Ask: what happens to this call if the USB disk stops answering?
+
+**Options.**
+
+- Cache the finished example string, refreshed on template change, take start/stop and mount change (the item's literal rework): cheap, but the string goes wrong right after a format, fps or date change ({format}_{date}_{clip} is the default), until the next take
+- Keep the probe but run it outside mutex_ on each settings read: no lock hang, but still ~400 stats per poll per client
+- Cache the root's folder names, filled by the media watcher thread (which already does blocking probes of the root), and compute the example from the set under the lock: no I/O under the lock, correct for current settings and clock, stale only up to one watcher cycle (1 s) after an external card change
+- Drop clip_name_example from state and let the UIs call preview_clip_name: changes the socket contract and the touch UI bridge
+
+**Chosen, and why.** Option 3, the folder-name set. It meets the item's goals (no stat per poll, nothing slow under mutex_, example stale for at most one poll after an external change, as the item's Risk line accepts) without the stale-name bug a cached string would have after a format or fps change. Given up: one readdir of the root per second on the media watcher thread while idle (not during takes, and never on a Removed/Error mount). Also a small extra member and public setter. setClipFolderNames ignores a listing that arrives while recording_ is set, because that listing was made before the take began and lacks the take's folder.
+
+**After.**
+
+```
+// CameraController.cpp, fillClipNameExampleLocked: a set lookup, no I/O
+out.clipNameExample = nextClipFolderName([this](const std::string &name) {
+    return clipFolderNames_.count(name) > 0;
+}, out, clipNameSensorLocked(), std::chrono::system_clock::now());
+// ApertarCoreApp.cpp, runMediaWatcher (own thread, no camera lock while listing)
+for (std::filesystem::directory_iterator it(options_.mediaRoot, ec), end; !ec && it != end; it.increment(ec))
+    names.insert(it->path().filename().string());
+camera_.setClipFolderNames(std::move(names));
+```
+
+**Checked.** Here: the gate (above, PASS). Then apertar-core --simulate --media /home/user/build/sim/media --web-port 8163 with 400 dummy cDNG_26-11-17_C0001..C0400 folders. get_state gave clip_name_example cDNG_26-11-17_C0401. Folders made or removed by hand showed in the next poll (C0402, then C0001). set_record_format mlv answered MLV_26-11-17_C0001 at once. set_clip_name_template / preview_clip_name answered correctly. Playwright: the WebUI "Next clip:" line showed the name, with no page errors. strace cannot attach to processes in this container, so the stat count per poll was not measured. Needs the Pi: with many clips on the card and the WebUI open, run strace -f -c -e trace=newfstatat -p $(pidof apertar-core) for 10 s; it must show no stat per clip folder. Then pull the card during polling and press record stop; it must answer within 2 s. After a real take stops, the example must move to the next number within about 1 s.
+
+**Rule.** A getter or event builder that runs under the camera mutex reads only memory. Filesystem probes belong on the thread that already owns blocking media I/O, which passes the result in.
+
+
+---
+
+## C17. rec: part folders are made by the writers, the queue waits for stranded ones
+
+Apertar-Core `a663cfc`. Finding: REC-7. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/camera/CameraController.cpp spawnWorker Exit guard @cinemate-port (plus the e8b065e destructor wait):
+    {
+        std::lock_guard<std::mutex> lock(queue->exitMutex_);
+        queue->liveWorkers_.fetch_sub(1, std::memory_order_acq_rel);
+    }
+    queue->exitCv_.notify_all();
+In the port, copy threads also called ensurePartFolder (mkdir on the medium) and were joined without a bound. ~DngRecordingQueue's second stop() returned at once and left detached writers running.
+
+**Why it is a problem.** Original Apertar 1.6.0 joins every writer in stop() and makes its folders before the take, so it has no detached threads. The port's bounded dead-medium stop is port ground and must cover every thread that touches the medium. Once the queue is destroyed after waiting on a cv, a thread may only touch that cv while it holds the mutex the waiter rechecks under. Otherwise the waiter can see the count drop, return and free the cv before notify_all runs.
+
+**How to spot it.** grep -n 'notify_all\|notify_one' and check whether any notify sits after a lock scope closes on an object a waiter may destroy. grep for filesystem calls (create_directories, mkdir, open) in threads that stop() joins without a timeout.
+
+**Options.**
+
+- Keep mkdir on the copy thread and bound the copy-thread join: a second timeout path and more detached threads
+- Move ensurePartFolder to the writer, which stop()'s bounded wait already covers: chosen, a small local change
+- Destructor: wait on exitCv_ for the dead-medium time; notify under exitMutex_ so the waiter cannot free the cv early: a one-line move
+- Make the queue shared_ptr-owned by the writers: a new ownership layer, out of style
+
+**Chosen, and why.** The writer makes the part folder, and the destructor gets a bounded wait with the notify done under the lock. This is the smallest safe change, and it does not alter how a removed medium is detected (REC-8). What is given up: if the writers outlive even the second bound, the queue is still destroyed under them. That is logged, and it is left to REC-8's design.
+
+**After.**
+
+```
+~Exit()
+{
+    // Notify under the lock: ~DngRecordingQueue may free the cv
+    // as soon as it sees 0.
+    std::lock_guard<std::mutex> lock(queue->exitMutex_);
+    queue->liveWorkers_.fetch_sub(1, std::memory_order_acq_rel);
+    queue->exitCv_.notify_all();
+}
+```
+
+**Checked.** Here: /home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests, all PASS. The 3 nolc warnings are older ones in lines this change does not touch (7782 mediumGone, 7935 basePathOverride, 1242 allocatePhotoBasePath). Needs the Pi: set [storage] frames_per_folder=100, record a cDNG take and pull the card. stop must return within APERTAR_DEAD_MEDIUM_STOP_MS. Quit Core 10 s later with no crash: journalctl -u apertar-core -b | grep -i 'segfault\|detached'. A normal split take must still have every part_NNN folder filled.
+
+**Rule.** Every thread that can block on the medium must sit under a bounded wait, and a thread that signals an object which may be destroyed must do so under the waiter's mutex.
+
+
+---
+
+## C18. audio: bound the writer queue and size the WAV from bytes written
+
+Apertar-Core `bfd032e`. Finding: REC-16. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/audio/AudioRecordingSession.cpp (readerLoop) @cinemate-port: the reader counted bytes when it queued them, not when they were written, and the queue had no size limit.
+    enqueueWrite(buffer.data(), static_cast<size_t>(bytesRead));
+    if (writeFailed_.load(std::memory_order_acquire)) break;
+    capturedBytes_ += static_cast<uint64_t>(bytesRead);
+  and the gap padding did: enqueueWrite(nullptr, gapBytes); capturedBytes_ += gapBytes;
+  enqueueWrite pushed every block with no cap; after a failed write, writerLoop dropped the blocks without counting them.
+
+**Why it is a problem.** After a write failure, finalizeWav sized the WAV header from capturedBytes_, which included bytes that never reached the file. The header then claimed more data than the file held (or the file had a silent tail when resampling), and memory grew without limit while the card stalled. Original Apertar adds to capturedBytes_ only after a successful rawStream_.write (src/audio/AudioRecordingSession.cpp:472-474 @upstream-1.6.0). Its background DNG writer is bounded by configuredWriterByteCap() with APERTAR_LOSSYDNG_WRITER_BYTES (src/lossydng/LossyDngEncoder.cpp:97-110 @upstream-1.6.0, used at :167).
+
+**How to spot it.** grep -n 'capturedBytes_ +=\|push_back' in any code that hands work to a writer thread. Ask whether the counter moves before the write succeeds, and whether the queue has a cap.
+
+**Options.**
+
+- Count bytes in the writer thread after a successful write and cap the queue the way the DNG writer is capped: small and local, follows upstream
+- Keep counting in the reader and subtract dropped blocks on failure: more bookkeeping across two threads, easy to get wrong
+- Go back to synchronous writes in the reader like upstream: undoes the port's writer thread and brings back reader stalls
+
+**Chosen, and why.** The first option: count after the write, in the writer thread, and add a cap read from the environment like configuredWriterByteCap(). This gives up the port's never-drop queue: when the card stalls past the cap, the take ends with an error instead of using up memory.
+
+**After.**
+
+```
+    if (queuedWriteBytes_ + size > configuredWriterByteCap()) {
+        if (!writeFailed_.exchange(true, std::memory_order_acq_rel)) {
+            failure_.set("Audio capture write stalled.");
+            ...
+        }
+        return;
+    }
+...
+        capturedBytes_ += static_cast<uint64_t>(block.size());
+```
+
+**Checked.** Run here: check_core.sh /home/user/wt/lane-core1 lane-core1 both tests. Both builds pass with 0 warnings and all 17 host tests pass. There is no ALSA here. Still needs the Pi: record with audio to a nearly full card, then run ffprobe -v warning <clip>.wav and check there is no size warning. Also set APERTAR_AUDIO_WRITER_BYTES=1048576 with a stalled card and check the take ends with "Audio capture write stalled.".
+
+**Rule.** Count bytes where they are written, not where they are queued, and give every queue between threads a byte cap.
+
+
+---
+
+## C19. media: URL-encode the clip id and name in a clip's audio_url
+
+Apertar-Core `7f188a5`. Finding: APP-26. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:7387@cinemate-port (line 7391 at lane tip before the fix), in clipInfoJson:
+    << ",\"audio_url\":\"" << (hasAudio ? "/api/media/file?kind=folder&id=" + escapeJson(id) + "&name=" + escapeJson(f.name) + ".wav" : std::string()) << "\""
+
+**Why it is a problem.** escapeJson only makes a string safe inside JSON quotes. It does not make it safe inside a URL query. A clip name with '&', '#', '%', '+' or a space breaks the query: for 'A&B_001' the server reads id=A and finds no name, so /api/media/file returns 400 and the clip plays with no sound. Clip names can hold such characters because the names are built from a template (014a2bf). Original Apertar builds media URLs one query value at a time with urlEncodeComponent (mediaDownloadUrl, src/ApertarCoreApp.cpp:6140-6142@upstream-1.6.0; presets at :5447). It applies escapeJson once to the finished URL where the URL goes into the JSON (download_url).
+
+**How to spot it.** grep -n '?[a-z_]*=" + escapeJson\|&[a-z_]*=" + escapeJson' src/*.cpp src/*/*.cpp. Any query value built with escapeJson instead of urlEncodeComponent is this bug. Also ask: can this value contain '&', '#', '%', '+' or a space? Clip names, file names and preset names can.
+
+**Options.**
+
+- Encode each query value with urlEncodeComponent and escapeJson the whole URL: one line, same as mediaDownloadUrl, no new code
+- Add a mediaAudioUrl() helper next to mediaDownloadUrl: tidier, but it is a new function with one caller
+- Have the WebUI build the URL itself from id and name with encodeURIComponent: moves the logic to JS and changes the JSON contract the page reads
+
+**Chosen, and why.** Option 1. It is the smallest change and it matches how upstream already builds download URLs. Nothing else changes: the field name, the empty string when there is no audio, and the page's use of clip.audio_url all stay as they were. I did not add a helper, because the line has only one caller.
+
+**After.**
+
+```
+    << ",\"audio_url\":\"" << (hasAudio ? escapeJson("/api/media/file?kind=folder&id=" + urlEncodeComponent(id) + "&name=" + urlEncodeComponent(f.name + ".wav")) : std::string()) << "\""
+```
+
+**Checked.** Here: the gate (check_core.sh /home/user/wt/lane-core1 lane-core1 both tests) prints PASS. I ran a --simulate core on port 8167 with --media /home/user/build/sim/app26-media. It held a clip folder 'A&B_001' with three DNG frames and A&B_001.wav. GET /api/media/clip?kind=folder&id=A%26B_001 returned audio_url "/api/media/file?kind=folder&id=A%26B_001&name=A%26B_001.wav". curl fetched that URL with 200 audio/wav (192044 bytes). The old, unencoded form returned 400. A Playwright fetch from the WebUI page with a Range header got 206 audio/wav. Camera: nothing beyond the general smoke test. Optional Pi check: record a take with sound under a clip name that holds '&' or a space, open it in the WebUI player and confirm the sound plays.
+
+**Rule.** Build a URL by URL-encoding each query value (urlEncodeComponent), then JSON-escape the whole URL once where it goes into the reply.
+

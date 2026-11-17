@@ -1,7 +1,7 @@
 From 30961b67a08c1c1d713a4bd5764628f36f5cdb7d Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 19:01:39 +0000
-Subject: [PATCH 7/8] ui: SettingsBridge reads fileTimecodeSeparate
+Subject: [PATCH] ui: SettingsBridge reads fileTimecodeSeparate
 
 Why:
 Core's set_timecode_mode is to record in UI.conf whether the operator

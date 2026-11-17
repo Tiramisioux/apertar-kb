@@ -1,7 +1,7 @@
 From 57dd0e877339d0882717ca52d3c9a2731c96385b Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:52:43 +0000
-Subject: [PATCH 5/8] ui: controls and media events go through applyCoreState
+Subject: [PATCH] ui: controls and media events go through applyCoreState
 
 Why: the controls and media events had their own branches in
 applyCoreMessage, with their own key names (errors/warnings,

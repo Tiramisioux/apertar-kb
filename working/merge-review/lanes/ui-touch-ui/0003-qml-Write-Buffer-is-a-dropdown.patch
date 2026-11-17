@@ -1,7 +1,7 @@
 From 797180e4ae0ec0405f8084ceb3302a731dcd1e00 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:45:49 +0000
-Subject: [PATCH 3/8] qml: Write Buffer is a dropdown
+Subject: [PATCH] qml: Write Buffer is a dropdown
 
 Why: the Write Buffer choice was a header and two ActionTiles, Frames and
 RAM, whose accent tone flipped like a radio button. Original Apertar shows

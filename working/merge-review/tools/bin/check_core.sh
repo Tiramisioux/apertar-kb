@@ -28,7 +28,7 @@ if [ -n "$TESTS" ]; then
     srcs=$(grep -m3 -E '^\s*//\s+(c\+\+|g\+\+) ' "$t" | grep -oE '(src|third_party)/[A-Za-z0-9_/.]+\.(cpp|c)' | tr '\n' ' ')
     libs=$(grep -m3 -E '^\s*//\s+(c\+\+|g\+\+) ' "$t" | grep -oE ' -l[a-z0-9_+-]+' | tr '\n' ' ')
     if ccache g++ -std=c++20 -O2 -Wall -Wextra -I src -I include -I third_party/liblj92 "$t" $srcs -o "$OUT/$name" $extra $libs > "$OUT/$name.build.log" 2>&1 \
-       && (cd "$OUT" && "./$name" > "$name.run.log" 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL host test $name: $(tail -2 "$OUT/$name.run.log" "$OUT/$name.build.log" 2>/dev/null | cut -c1-200 | tr '\n' ' ')"; fi
+       && (cd "$OUT" && TMPDIR="$OUT" "./$name" > "$name.run.log" 2>&1); then pass=$((pass+1)); else fail=$((fail+1)); echo "FAIL host test $name: $(tail -2 "$OUT/$name.run.log" "$OUT/$name.build.log" 2>/dev/null | cut -c1-200 | tr '\n' ' ')"; fi
   done
   for s in tools/*_test.sh; do
     name=$(basename "$s" .sh)

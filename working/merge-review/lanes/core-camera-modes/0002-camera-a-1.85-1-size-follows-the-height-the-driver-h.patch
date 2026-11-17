@@ -1,7 +1,7 @@
 From ef17857c551b427ccf85c75424a42c8952edb187 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:58:39 +0000
-Subject: [PATCH 2/4] camera: a 1.85:1 size follows the height the driver has
+Subject: [PATCH] camera: a 1.85:1 size follows the height the driver has
 
 Why:
 The port rewrote 3840x2076 / 1920x1038 to 3840x2072 / 1920x1036 on every

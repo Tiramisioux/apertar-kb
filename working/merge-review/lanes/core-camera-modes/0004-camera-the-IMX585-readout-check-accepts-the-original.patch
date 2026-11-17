@@ -1,32 +1,44 @@
-From 7f0cdb79946d476bc5e0204ec107bc056ffc1a1b Mon Sep 17 00:00:00 2001
+From 2e0d5457a19782d1e4c44f86b1b79a13e274c28e Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 19:10:51 +0000
-Subject: [PATCH 4/4] camera: the IMX585 readout check accepts the original
- driver and checks the auto config like the IMX477
+Subject: [PATCH] camera: the IMX585 readout check accepts the original driver
+ and checks the auto config like the IMX477
 
 Why: After configure() the colour IMX585 block compared ScalerCropMaximum
 with the table row's active size times the binning. The original Apertar
 imx585 driver (e5b74d3) reports a binned mode's crop as the output size
-(1920x1080 at 0,0 for 1080p), so every binned mode, 1080p included, was
-refused as "adjusted by the driver (scaler crop maximum ...)". The block
-also ran for an auto sensor configuration, where an exact mode is not
-what was asked. Original Apertar 1.6.0 checks an auto config with one
-size rule (invalidReadout, CameraController.cpp:6166-6168@upstream-1.6.0:
-same raw width, height at least the requested height).
+(1920x1080 at 0,0 for 1080p, imx585.c:803-808 and :2379-2381@e5b74d3),
+and libcamera sets ScalerCropMaximum from that analogCrop on every
+configure (pipeline_base.cpp:568). So every binned mode, 1080p included,
+is refused (confirmed in code, not run on a Pi). The block also did not
+tell an explicit sensor config from an auto one. Colour IMX585 has no
+auto fallback yet (commit 5 brings back 1.6.0's,
+CameraController.cpp:5993-5996@upstream-1.6.0), and 1.6.0 checks an auto
+config with the IMX477/577 size rule (invalidReadout,
+CameraController.cpp:6166-6168@upstream-1.6.0: same raw width, height at
+least the requested height).
 
 What: The exact-mode block runs only for an explicit sensorConfig. Its
 crop comparison is skipped when the reported crop equals the configured
 raw size, because such a driver gives no window to compare. A colour
-IMX585 on the auto path gets the IMX477/577 size rule. Mono is unchanged
-(it always configures auto and never had a readout rule).
+IMX585 on the auto path gets the IMX477/577 size rule. That half does
+nothing yet: it takes effect only when commit 5 adds the colour IMX585
+3840-wide crops to allowAutoSensorConfigFallback. It is new compared with
+1.6.0, whose IMX585 auto fallback had no readout check at all
+(CameraController.cpp:6162-6164@upstream-1.6.0 lists only IMX477/577/294).
+It is the rule from the design page, taken from the IMX477/577 one. Mono
+is unchanged (it always configures auto and never had a readout rule).
 
 Tested: check_core.sh both builds (libcamera and without) and the host
-tests pass. Needs the camera: with the original driver installed, Core
-starts at 1920x1080 and
+tests pass. Needs the camera. Original driver: Core starts at 1920x1080
+and the output of
 journalctl -u apertar-core -b | grep -E 'camera configured|adjusted by the driver'
-shows no "scaler crop maximum" rejection. With the cinemate-port driver,
-the "camera configured:" lines for 1920x1080, 3840x2160 and 3840x2072
-are the same as before.
+no longer has "adjusted by the driver (scaler crop maximum (0, 0)/1920x1080)"
+(before this commit that line settles the refusal). Port driver (cd548ef):
+the "camera configured:" lines for 1920x1080, 3840x2160 and 3840x2072 are
+the same as before. The auto-path rule is covered by the commit 5 check:
+on the port driver a 3840x2076 auto request is refused with
+"adjusted to too-small stream 3840x2072".
 
 Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr

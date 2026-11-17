@@ -1,8 +1,7 @@
 From 53e20e090cf5727ee44401f8b812bc22176d3ea7 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:49:46 +0000
-Subject: [PATCH 4/8] ui: only the ISO and WB auto keys reset the get_state
- poll
+Subject: [PATCH] ui: only the ISO and WB auto keys reset the get_state poll
 
 Why: applyCoreState called updateRefreshTimer() at the end of the
 camera-set-values block for every state it applied. QTimer::setInterval

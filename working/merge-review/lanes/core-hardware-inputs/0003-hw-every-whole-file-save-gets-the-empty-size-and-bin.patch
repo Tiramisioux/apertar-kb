@@ -1,7 +1,7 @@
 From ad917eacf1f24efc3960b382ef28efb8e5d993a4 Mon Sep 17 00:00:00 2001
 From: Claude <noreply@anthropic.com>
 Date: Tue, 17 Nov 2026 18:53:29 +0000
-Subject: [PATCH 3/3] hw: every whole-file save gets the empty, size and binary
+Subject: [PATCH] hw: every whole-file save gets the empty, size and binary
  checks
 
 Why: POST /api/config refused an empty text, a text over 256 KiB and a
