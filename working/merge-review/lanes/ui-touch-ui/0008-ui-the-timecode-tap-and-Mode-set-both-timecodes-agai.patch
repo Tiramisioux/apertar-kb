@@ -1,0 +1,176 @@
+From 477eb11ce965828b62e99a531418ee5dd29fadde Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:07:01 +0000
+Subject: [PATCH 8/8] ui: the timecode tap and Mode set both timecodes again
+ unless the file timecode is set apart
+
+Why:
+The port made the timecode tap and the first Settings row screen-only
+(applyTimecodeMode(v, "ui")), so on a stock camera they no longer change
+the timecode written into the clips, and the bridge stopped copying
+Core's timecode_mode into UI.conf. Original Apertar 1.6.0 has one
+bool applyTimecodeMode(displayValue) that sends set_timecode_mode
+value= and writes UI.conf (ACB:622-636), the tap changes both
+(CPg:1709-1715), and applyCoreState copies Core's mode into UI.conf
+(ACB:1466-1471), so camera and screens stay in step (CMD-26).
+
+What:
+applyTimecodeMode has the 1.6.0 body again: one argument, no target,
+Core sets both. New bool applyFileTimecodeMode sends target=files; the
+file mode follows from the reply through applyCoreState. applyCoreState
+copies Core's mode into UI.conf again, only while UI.conf
+fileTimecodeSeparate is false (re-read with sync first, since Core
+writes the key). While the file timecode is set apart, the tap and the
+first timecode row are a plain settingsState assignment (QML-7) and
+send nothing to Core. The second row calls applyFileTimecodeMode. The
+port's target comment above applyTimecodeMode in the header is gone
+(1.6.0 has none there).
+
+Tested:
+check_ui.sh lane-ui1: PASS, 0 warnings (QML compiled ahead of time).
+Nothing run on a screen here. On the camera, with the Core commits that
+write fileTimecodeSeparate: stock camera (no key), tap the timecode,
+apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"timecode_mode":"[a-z_]*"'
+shows the new mode and a DNG take with Rec Run starts at 00:00:00:00.
+With fileTimecodeSeparate=true in ~/.config/CinePi/UI.conf: files at
+Free Run, tap to Rec Run, the screen counts from zero and timecode_mode
+stays free_run.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ qml/CameraPage.qml           |  4 +++-
+ qml/SettingsPage.qml         |  6 ++++--
+ src/ApertarControlBridge.cpp | 37 +++++++++++++++++++++++-------------
+ src/ApertarControlBridge.hpp |  4 ++--
+ 4 files changed, 33 insertions(+), 18 deletions(-)
+
+diff --git a/qml/CameraPage.qml b/qml/CameraPage.qml
+index 715dfd3..4236cc4 100644
+--- a/qml/CameraPage.qml
++++ b/qml/CameraPage.qml
+@@ -1838,8 +1838,10 @@ function toggleTimecodeMode() {
+     var nextMode = root.timecodeMode === "Free Run" ? "Rec Run" : "Free Run"
+     if (root.settingsState)
+         root.settingsState.timecodeMode = nextMode
++    if (root.settingsState && root.settingsState.fileTimecodeSeparate)
++        return
+     if (typeof apertarControlBridge !== "undefined" && apertarControlBridge)
+-        apertarControlBridge.applyTimecodeMode(nextMode, "ui")
++        apertarControlBridge.applyTimecodeMode(nextMode)
+ }
+ 
+ function falseColorModeToInt(mode) {
+diff --git a/qml/SettingsPage.qml b/qml/SettingsPage.qml
+index a1f6853..811da2e 100644
+--- a/qml/SettingsPage.qml
++++ b/qml/SettingsPage.qml
+@@ -3991,8 +3991,10 @@ Item {
+                 onValueSelected: function(v) {
+                     if (root.settingsState)
+                         root.settingsState.timecodeMode = v
++                    if (root.settingsState && root.settingsState.fileTimecodeSeparate)
++                        return
+                     if (typeof apertarControlBridge !== "undefined" && apertarControlBridge)
+-                        apertarControlBridge.applyTimecodeMode(v, "ui")
++                        apertarControlBridge.applyTimecodeMode(v)
+                 }
+             }
+ 
+@@ -4007,7 +4009,7 @@ Item {
+                 dropdownController: sharedDropdownController
+                 onValueSelected: function(v) {
+                     if (typeof apertarControlBridge !== "undefined" && apertarControlBridge)
+-                        apertarControlBridge.applyTimecodeMode(v, "files")
++                        apertarControlBridge.applyFileTimecodeMode(v)
+                 }
+             }
+         }
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index f85be73..8392491 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -734,29 +734,35 @@ bool ApertarControlBridge::applyH264Resolution(const QString &displayValue)
+     return true;
+ }
+ 
+-bool ApertarControlBridge::applyTimecodeMode(const QString &displayValue, const QString &target)
++bool ApertarControlBridge::applyTimecodeMode(const QString &displayValue)
+ {
+     const QString normalized = parseTimecodeModeValue(displayValue);
+-    if (normalized.isEmpty() || (target != QLatin1String("ui") && target != QLatin1String("files") && target != QLatin1String("both"))) {
++    if (normalized.isEmpty()) {
+         setLastError(QStringLiteral("Invalid timecode mode value."));
+         return false;
+     }
+ 
+-    if (!sendCoreCommand(QStringLiteral("set_timecode_mode"),
+-                         { { QStringLiteral("value"), normalized }, { QStringLiteral("target"), target } }))
++    if (!sendCoreCommand(QStringLiteral("set_timecode_mode"), { { QStringLiteral("value"), normalized } }))
+         return false;
+ 
+-    if (target != QLatin1String("files")) {
+-        m_settings.setValue(QStringLiteral("timecodeMode"), displayValue);
+-        m_settings.sync();
+-    }
+-    if (target != QLatin1String("ui") && m_fileTimecodeMode != displayValue) {
+-        m_fileTimecodeMode = displayValue;
+-        emit fileTimecodeModeChanged();
+-    }
++    m_settings.setValue(QStringLiteral("timecodeMode"), displayValue);
++    m_settings.sync();
+     return true;
+ }
+ 
++bool ApertarControlBridge::applyFileTimecodeMode(const QString &displayValue)
++{
++    const QString normalized = parseTimecodeModeValue(displayValue);
++    if (normalized.isEmpty()) {
++        setLastError(QStringLiteral("Invalid timecode mode value."));
++        return false;
++    }
++
++    // Only the clips' timecode; Core records in UI.conf that it is set apart (fileTimecodeSeparate).
++    return sendCoreCommand(QStringLiteral("set_timecode_mode"),
++                           { { QStringLiteral("value"), normalized }, { QStringLiteral("target"), QStringLiteral("files") } });
++}
++
+ bool ApertarControlBridge::applyAutofocusMode(const QString &displayValue)
+ {
+     const QString normalized = parseAutofocusModeValue(displayValue);
+@@ -1706,11 +1712,16 @@ void ApertarControlBridge::applyCoreState(const QJsonObject &state)
+         const QString displayValue = normalized == QStringLiteral("rec_run")
+             ? QStringLiteral("Rec Run")
+             : QStringLiteral("Free Run");
+-        // Core's mode is the files' timecode; the UI's own copy (timecodeMode) is set apart.
+         if (m_fileTimecodeMode != displayValue) {
+             m_fileTimecodeMode = displayValue;
+             emit fileTimecodeModeChanged();
+         }
++        // The screens follow Core's mode unless the file timecode is set apart.
++        m_settings.sync();
++        if (!m_settings.value(QStringLiteral("fileTimecodeSeparate"), false).toBool()) {
++            m_settings.setValue(QStringLiteral("timecodeMode"), displayValue);
++            m_settings.sync();
++        }
+     }
+ 
+     if (state.contains(QStringLiteral("af_mode")))
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 76235d7..f8f2e12 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -199,8 +199,8 @@ public:
+     Q_INVOKABLE bool applyClearHdr(bool enabled);
+     Q_INVOKABLE bool applyCdngLog(const QString &value);
+     Q_INVOKABLE bool applyH264Resolution(const QString &displayValue);
+-    // target: "ui" (what the screens show), "files" (the clips and the audio) or "both"
+-    Q_INVOKABLE bool applyTimecodeMode(const QString &displayValue, const QString &target);
++    Q_INVOKABLE bool applyTimecodeMode(const QString &displayValue);
++    Q_INVOKABLE bool applyFileTimecodeMode(const QString &displayValue);
+     Q_INVOKABLE bool applyAutofocusMode(const QString &displayValue);
+     Q_INVOKABLE bool applyAutofocusRange(const QString &displayValue);
+     Q_INVOKABLE bool applyAutofocusSpeed(const QString &displayValue);
+-- 
+2.43.0
+

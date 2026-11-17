@@ -1,0 +1,85 @@
+From 322117b8dccf9446d0ede57e651802e78e15dcc6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:42:04 +0000
+Subject: [PATCH 1/3] hw: a whole-file save writes the file and reports what
+ the checker found
+
+Why: the hardware text store refused a whole-file save (Config page Save,
+Undo, history restore, set_controls text=) when hwconf::validate found an
+error the current file did not have, even where every reader accepts the
+file (for example a key set twice: the readers take the later line).
+Original Apertar 1.6.0 checks a whole-file save only for empty, 256 KiB
+and NUL bytes, then writes it (saveHardwareConfigFile,
+src/ApertarCoreApp.cpp:5323-5386@upstream-1.6.0); the readers keep their
+defaults for what they cannot use (HW-12). The Check button also said
+"Save is refused until the errors are fixed."
+
+What: HardwareConfigStore::saveLocked works out the new errors only for
+key edits, so only a key edit (set_controls set.<section>.<key>=) is still
+refused when it adds an error; the Controls page writes keys the operator
+did not type. A whole-file save is written and its ok reply carries the
+issues and the error count, as before. StoreFlags::force is documented as
+key edits only. The Check sentence now reads "Save writes the file anyway;
+the readers skip what they cannot use."
+
+Tested: check_core.sh both builds and the host tests pass. Simulate:
+POST /api/config with d17=capture twice in [gpio_buttons] returns ok:true,
+written:true, one duplicate_key issue, and the file holds the text; a key
+edit set.gpio_buttons.d18=no_such_action is refused with "Not saved: 1 new
+error." and the file is unchanged. Headless Chromium: Check on that text
+ends in the new sentence; Save writes it and lists the issue. Pi: nothing
+to check, no hardware path changes.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/hardware/HardwareConfigStore.cpp | 5 ++++-
+ src/hardware/HardwareConfigStore.hpp | 2 +-
+ src/web/WebControlPage.cpp           | 2 +-
+ 3 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/src/hardware/HardwareConfigStore.cpp b/src/hardware/HardwareConfigStore.cpp
+index 872f166..f91ad58 100644
+--- a/src/hardware/HardwareConfigStore.cpp
++++ b/src/hardware/HardwareConfigStore.cpp
+@@ -333,7 +333,10 @@ StoreResult HardwareConfigStore::saveLocked(const std::string &base, const std::
+         result.error = "Script paths are changed over ssh, not here.";
+         return result;
+     }
+-    result.newErrors = hwconf::newErrors(hwconf::validate(current, facts), result.issues);
++    // A whole-file save is written whatever the checker finds, as in 1.6.0: the readers skip what they cannot use
++    // and the reply names the issues. A key edit that adds an error is refused: the page writes keys nobody typed.
++    if (edits)
++        result.newErrors = hwconf::newErrors(hwconf::validate(current, facts), result.issues);
+     if (!result.newErrors.empty() && !flags.force) {
+         result.code = "errors";
+         result.error = "Not saved: " + std::to_string(result.newErrors.size()) + " new error" +
+diff --git a/src/hardware/HardwareConfigStore.hpp b/src/hardware/HardwareConfigStore.hpp
+index 6d1f8c6..0ed034e 100644
+--- a/src/hardware/HardwareConfigStore.hpp
++++ b/src/hardware/HardwareConfigStore.hpp
+@@ -16,7 +16,7 @@ namespace apertar::hardware {
+ 
+ struct StoreFlags {
+     bool dryRun = false;        // work out everything, write nothing
+-    bool force = false;         // save although the new text has errors the current one does not
++    bool force = false;         // key edits only: save although the edit adds errors
+     bool backup = false;        // also keep <file>.bak: WebUI and core.py saves only
+     bool confirmMerge = false;  // a stale text save that merged onto the current file: write it now
+     bool trusted = false;       // Core's own code (the IMU): the easy-mode key checks are skipped
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 4075c43..a2e14d3 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -18882,7 +18882,7 @@ std::string_view webControlPageHtml()
+       }
+       const errors = found.filter((issue) => issue.error).length;
+       showConfigIssues("Checked: " + errors + (errors === 1 ? " error" : " errors") + ", " + (found.length - errors) +
+-        (found.length - errors === 1 ? " warning" : " warnings") + (errors ? ". Save is refused until the errors are fixed." : "."), found);
++        (found.length - errors === 1 ? " warning" : " warnings") + (errors ? ". Save writes the file anyway; the readers skip what they cannot use." : "."), found);
+     }
+ 
+     // T43: the lines that differ between the loaded file and the editor (a longest-common-subsequence line diff),
+-- 
+2.43.0
+

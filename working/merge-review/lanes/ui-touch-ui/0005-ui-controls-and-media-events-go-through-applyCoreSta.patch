@@ -1,0 +1,112 @@
+From 57dd0e877339d0882717ca52d3c9a2731c96385b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:52:43 +0000
+Subject: [PATCH 5/8] ui: controls and media events go through applyCoreState
+
+Why: the controls and media events had their own branches in
+applyCoreMessage, with their own key names (errors/warnings,
+state/mounted) and a setter, setControlsStatus, that took the key
+names as arguments so one function could read both spellings. 1.6.0
+sends an event made of state keys whole to applyCoreState (the
+standby, still_exposure, timelapse_progress and media_write_state
+list, UIC-4) and reads each key inline there, as
+recording_has_dropped_frames.
+
+What: Core now spells the two events with the state keys
+(controls_errors/controls_warnings, media_state/media_alive), so
+controls and media join the 1.6.0 list and their branches are gone.
+applyCoreState reads controls_errors/controls_warnings inline;
+setControlsStatus is deleted. setCoreMediaState stays: it emits the
+signal MediaStatusBridge listens to. The frequent buffer event keeps
+its own branch, as audio_level. Needs the Core commit "core: the
+controls and media events carry the state keys"; no fallback for an
+older Core.
+
+Tested: check_ui.sh (UI build, QML compiled ahead of time): PASS,
+0 warnings. Not run on a screen here. On the camera: pull the card,
+NO MEDIA shows within a second on the touch screen and the HDMI
+monitor; save a bad pin in Controls, the warning chip appears; during
+a 4K take with ISO Auto the ISO in use still moves. Wire form:
+printf '%s\n' '{"cmd":"get_state","id":1}' | socat - UNIX-CONNECT:/tmp/apertar-core.sock
+and watch the same socket for {"event":"media","media_state":...}.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarControlBridge.cpp | 35 +++++++++++------------------------
+ src/ApertarControlBridge.hpp |  1 -
+ 2 files changed, 11 insertions(+), 25 deletions(-)
+
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 6098a6a..0e0f311 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -1312,19 +1312,11 @@ void ApertarControlBridge::applyCoreMessage(const QJsonObject &message)
+         return;
+     }
+     if (event == QStringLiteral("standby") || event == QStringLiteral("still_exposure") ||
+-        event == QStringLiteral("timelapse_progress") || event == QStringLiteral("media_write_state")) {
++        event == QStringLiteral("timelapse_progress") || event == QStringLiteral("media_write_state") ||
++        event == QStringLiteral("controls") || event == QStringLiteral("media")) {
+         applyCoreState(message);
+         return;
+     }
+-    if (event == QStringLiteral("controls")) {
+-        setControlsStatus(message, QStringLiteral("errors"), QStringLiteral("warnings"));
+-        return;
+-    }
+-    if (event == QStringLiteral("media")) {
+-        setCoreMediaState(message.value(QStringLiteral("state")).toString(),
+-                          message.value(QStringLiteral("mounted")).toBool(true));
+-        return;
+-    }
+     if (event == QStringLiteral("audio_level")) {
+         setAudioInputLevel(message.value(QStringLiteral("input_level")).toInt(0));
+         return;
+@@ -1408,22 +1400,17 @@ void ApertarControlBridge::setCoreMediaState(const QString &state, bool alive)
+     emit coreMediaStateChanged(state, alive);
+ }
+ 
+-void ApertarControlBridge::setControlsStatus(const QJsonObject &object, const QString &errorsKey, const QString &warningsKey)
+-{
+-    if (!object.contains(errorsKey))
+-        return;
+-    const int errors = object.value(errorsKey).toInt(0);
+-    const int warnings = object.value(warningsKey).toInt(0);
+-    if (errors == m_controlsErrors && warnings == m_controlsWarnings)
+-        return;
+-    m_controlsErrors = errors;
+-    m_controlsWarnings = warnings;
+-    emit controlsStatusChanged();
+-}
+-
+ void ApertarControlBridge::applyCoreState(const QJsonObject &state)
+ {
+-    setControlsStatus(state, QStringLiteral("controls_errors"), QStringLiteral("controls_warnings"));
++    if (state.contains(QStringLiteral("controls_errors"))) {
++        const int errors = state.value(QStringLiteral("controls_errors")).toInt(0);
++        const int warnings = state.value(QStringLiteral("controls_warnings")).toInt(0);
++        if (m_controlsErrors != errors || m_controlsWarnings != warnings) {
++            m_controlsErrors = errors;
++            m_controlsWarnings = warnings;
++            emit controlsStatusChanged();
++        }
++    }
+     if (state.contains(QStringLiteral("media_state")))
+         setCoreMediaState(state.value(QStringLiteral("media_state")).toString(),
+                           state.value(QStringLiteral("media_alive")).toBool(true));
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 2f1300c..741e5f1 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -450,7 +450,6 @@ private:
+     int m_recordingDroppedFrames = 0; // the take's dropped frames, all kinds (Core recording_dropped_frames)
+     int m_controlsErrors = 0;
+     int m_controlsWarnings = 0;
+-    void setControlsStatus(const QJsonObject &object, const QString &errorsKey, const QString &warningsKey);
+     bool m_standby = false;
+     QString m_coreMediaState;
+     bool m_coreMediaAlive = true;
+-- 
+2.43.0
+

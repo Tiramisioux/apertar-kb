@@ -1,0 +1,137 @@
+From 30961b67a08c1c1d713a4bd5764628f36f5cdb7d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:01:39 +0000
+Subject: [PATCH 7/8] ui: SettingsBridge reads fileTimecodeSeparate
+
+Why:
+Core's set_timecode_mode is to record in UI.conf whether the operator
+has set the file timecode apart from the screens' timecode
+(fileTimecodeSeparate, a bool; absent means false, the 1.6.0 behaviour).
+The touch UI had no way to read that key. Original Apertar reads every
+UI.conf toggle through one SettingsBridge property, built as zebraEnabled
+is (conventions R3 steps 1-2).
+
+What:
+SettingsBridge has a bool property fileTimecodeSeparate, copied from
+zebraEnabled: read in the constructor (default false), setter with the
+same guard, sync() and updateSettingsFileState(), re-read in
+pollExternalSettings so a Core write shows up through the file watcher,
+saved in serializeCurrentSettings and applied in applySettingsObject so
+touch presets carry it. No QML reads it yet: no behaviour change.
+
+Tested:
+Here: /home/user/build/bin/check_ui.sh (UI build with QML compiled ahead
+of time): PASS, 0 warnings. Nothing was run on a screen. On the camera,
+after the Core side is in: apertar-cmd
+'{"cmd":"set_timecode_mode","value":"rec_run","target":"ui","id":1}'
+then grep fileTimecodeSeparate ~/.config/CinePi/UI.conf shows true; save
+a touch preset and check its JSON holds "fileTimecodeSeparate": true.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/SettingsBridge.cpp | 21 +++++++++++++++++++++
+ src/SettingsBridge.hpp |  6 ++++++
+ 2 files changed, 27 insertions(+)
+
+diff --git a/src/SettingsBridge.cpp b/src/SettingsBridge.cpp
+index ecbfb72..0708096 100644
+--- a/src/SettingsBridge.cpp
++++ b/src/SettingsBridge.cpp
+@@ -370,6 +370,7 @@ SettingsBridge::SettingsBridge(QObject *parent)
+     m_recordingRedTimecodeEnabled = m_settings.value("recordingRedTimecodeEnabled", true).toBool();
+     m_audioRecordedOutlineEnabled = m_settings.value("audioRecordedOutlineEnabled", false).toBool();
+     m_timecodeMode = m_settings.value("timecodeMode", "Free Run").toString();
++    m_fileTimecodeSeparate = m_settings.value("fileTimecodeSeparate", false).toBool();
+     m_photoModeEnabled = m_settings.value("photoModeEnabled", false).toBool();
+     m_photoLongExposureEnabled = m_settings.value("photoLongExposureEnabled", false).toBool();
+     m_photoBracketingEnabled = m_settings.value("photoBracketingEnabled", false).toBool();
+@@ -593,6 +594,7 @@ void SettingsBridge::pollExternalSettings()
+         timecodeMode = QStringLiteral("Free Run");
+     }
+     setTimecodeMode(timecodeMode);
++    setFileTimecodeSeparate(m_settings.value(QStringLiteral("fileTimecodeSeparate"), m_fileTimecodeSeparate).toBool());
+ 
+     m_settings.sync();
+     updateSettingsFileState();
+@@ -1237,6 +1239,23 @@ void SettingsBridge::setTimecodeMode(const QString &value)
+     emit timecodeModeChanged();
+ }
+ 
++bool SettingsBridge::fileTimecodeSeparate() const
++{
++    return m_fileTimecodeSeparate;
++}
++
++void SettingsBridge::setFileTimecodeSeparate(bool value)
++{
++    if (m_fileTimecodeSeparate == value)
++        return;
++
++    m_fileTimecodeSeparate = value;
++    if (!m_externalSettingsSyncing) m_settings.setValue("fileTimecodeSeparate", value);
++    m_settings.sync();
++    updateSettingsFileState();
++    emit fileTimecodeSeparateChanged();
++}
++
+ bool SettingsBridge::photoModeEnabled() const
+ {
+     return m_photoModeEnabled;
+@@ -2177,6 +2196,7 @@ QJsonObject SettingsBridge::serializeCurrentSettings() const
+     settingsObject.insert(QStringLiteral("recordingRedTimecodeEnabled"), m_recordingRedTimecodeEnabled);
+     settingsObject.insert(QStringLiteral("audioRecordedOutlineEnabled"), m_audioRecordedOutlineEnabled);
+     settingsObject.insert(QStringLiteral("timecodeMode"), m_timecodeMode);
++    settingsObject.insert(QStringLiteral("fileTimecodeSeparate"), m_fileTimecodeSeparate);
+     settingsObject.insert(QStringLiteral("photoModeEnabled"), m_photoModeEnabled);
+     settingsObject.insert(QStringLiteral("photoLongExposureEnabled"), m_photoLongExposureEnabled);
+     settingsObject.insert(QStringLiteral("photoBracketingEnabled"), m_photoBracketingEnabled);
+@@ -2269,6 +2289,7 @@ bool SettingsBridge::applySettingsObject(const QJsonObject &settingsObject, QStr
+     setRecordingRedTimecodeEnabled(boolValue(settingsObject, "recordingRedTimecodeEnabled", m_recordingRedTimecodeEnabled));
+     setAudioRecordedOutlineEnabled(boolValue(settingsObject, "audioRecordedOutlineEnabled", m_audioRecordedOutlineEnabled));
+     setTimecodeMode(stringValue(settingsObject, "timecodeMode", m_timecodeMode));
++    setFileTimecodeSeparate(boolValue(settingsObject, "fileTimecodeSeparate", m_fileTimecodeSeparate));
+     setPhotoModeEnabled(boolValue(settingsObject, "photoModeEnabled", m_photoModeEnabled));
+     setPhotoLongExposureEnabled(boolValue(settingsObject, "photoLongExposureEnabled", m_photoLongExposureEnabled));
+     setPhotoBracketingEnabled(boolValue(settingsObject, "photoBracketingEnabled", m_photoBracketingEnabled));
+diff --git a/src/SettingsBridge.hpp b/src/SettingsBridge.hpp
+index 390f8b9..e8ceba6 100644
+--- a/src/SettingsBridge.hpp
++++ b/src/SettingsBridge.hpp
+@@ -57,6 +57,8 @@ class SettingsBridge : public QObject
+     Q_PROPERTY(bool recordingRedTimecodeSet READ recordingRedTimecodeSet NOTIFY recordingRedTimecodeEnabledChanged)
+     Q_PROPERTY(bool audioRecordedOutlineEnabled READ audioRecordedOutlineEnabled WRITE setAudioRecordedOutlineEnabled NOTIFY audioRecordedOutlineEnabledChanged)
+     Q_PROPERTY(QString timecodeMode READ timecodeMode WRITE setTimecodeMode NOTIFY timecodeModeChanged)
++    // Written by Core's set_timecode_mode: true once the file timecode is set apart from timecodeMode.
++    Q_PROPERTY(bool fileTimecodeSeparate READ fileTimecodeSeparate WRITE setFileTimecodeSeparate NOTIFY fileTimecodeSeparateChanged)
+     Q_PROPERTY(bool photoModeEnabled READ photoModeEnabled WRITE setPhotoModeEnabled NOTIFY photoModeEnabledChanged)
+     Q_PROPERTY(bool photoLongExposureEnabled READ photoLongExposureEnabled WRITE setPhotoLongExposureEnabled NOTIFY photoLongExposureEnabledChanged)
+     Q_PROPERTY(bool photoBracketingEnabled READ photoBracketingEnabled WRITE setPhotoBracketingEnabled NOTIFY photoBracketingEnabledChanged)
+@@ -211,6 +213,8 @@ public:
+ 
+     QString timecodeMode() const;
+     void setTimecodeMode(const QString &value);
++    bool fileTimecodeSeparate() const;
++    void setFileTimecodeSeparate(bool value);
+ 
+     bool photoModeEnabled() const;
+     void setPhotoModeEnabled(bool value);
+@@ -374,6 +378,7 @@ signals:
+     void recordingRedTimecodeEnabledChanged();
+     void audioRecordedOutlineEnabledChanged();
+     void timecodeModeChanged();
++    void fileTimecodeSeparateChanged();
+     void photoModeEnabledChanged();
+     void photoLongExposureEnabledChanged();
+     void photoBracketingEnabledChanged();
+@@ -487,6 +492,7 @@ private:
+     bool m_recordingRedTimecodeEnabled = true;
+     bool m_audioRecordedOutlineEnabled = false;
+     QString m_timecodeMode = "Free Run";
++    bool m_fileTimecodeSeparate = false;
+     bool m_photoModeEnabled = false;
+     bool m_photoLongExposureEnabled = false;
+     bool m_photoBracketingEnabled = false;
+-- 
+2.43.0
+

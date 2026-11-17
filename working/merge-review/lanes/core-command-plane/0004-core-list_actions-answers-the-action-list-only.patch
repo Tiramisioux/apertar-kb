@@ -1,0 +1,96 @@
+From f312d933db67d2ea9acbdac5e35f164c67bfb5d3 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:10:05 +0000
+Subject: [PATCH 4/4] core: list_actions answers the action list only
+
+Why: the list_actions reply carried three members nobody reads. values
+(the ISO, shutter, white balance, fps and resolution lists), values_for
+and gestures: the WebUI keeps only catalog.actions. To fill values the
+command read UI.conf and the camera settings on every call. It also
+built the catalog with braces and then cut them off again with substr.
+Original Apertar builds a reply as okReply(id, members): the builder
+returns the members and okReply adds the braces (okReply/errorReply,
+ApertarCoreApp.cpp:108-128 @upstream-1.6.0).
+
+What: catalogJson() in ActionCatalog.hpp returns the members without
+braces (actions, analog_targets, trigger_events, max_per_mapping), and
+list_actions is okReply(command.id, catalogJson()). The command no
+longer reads UI.conf or the camera settings.
+
+Tested: check_core.sh both tests (PASS, warning count unchanged at 1).
+--simulate: list_actions answers ok, actions (53), analog_targets,
+trigger_events, max_per_mapping; smoke_core.sh diff against the
+previous commit shows only values, values_for and gestures gone.
+Headless Chromium on Settings > Controls: the catalog loads, the
+action pickers fill, no page errors. Needs no camera.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp         | 23 ++---------------------
+ src/hardware/ActionCatalog.hpp |  5 +++--
+ 2 files changed, 5 insertions(+), 23 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index a7d571e..84c7b32 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -12547,27 +12547,8 @@ std::optional<std::string> ApertarCoreApp::handleReadOnlyHardwareCommand(const C
+         body << "]";
+         return okReply(command.id, body.str());
+     }
+-    if (command.name == "list_actions") {
+-        const SharedUiSettingsSnapshot uiSettings = readSharedUiSettings();
+-        const CaptureSettings cameraSettings = camera_.settings();
+-        std::vector<std::string> resolutions;
+-        for (const Resolution &resolution : availablePcfResolutionOptions(camera_.sensorName(), cameraSettings))
+-            resolutions.push_back(resolution.toString());
+-        std::string body = hardware::actions::catalogJson();   // "{...}": the reply wants the members
+-        body = body.substr(1, body.size() - 2);
+-        body += ",\"values\":{\"iso\":" + jsonNumberArray(pcfIsoOptions(uiSettings.isoSteps, cameraSettings.isoMax))
+-            + ",\"shutter_angle\":" + jsonNumberArray(pcfShutterAngleOptions(uiSettings.shutterAngleSteps, cameraSettings.fps,
+-                                                       uiSettings.flickerFreeShutterAngles ? uiSettings.mainsHz : 0))
+-            + ",\"shutter_speed\":" + jsonNumberArray(pcfShutterSpeedDenominatorOptions(
+-                  cameraSettings.photoModeEnabled && cameraSettings.longExposureEnabled, cameraSettings.timelapseExposureLimitUs))
+-            + ",\"wb\":" + jsonNumberArray(pcfWhiteBalanceOptions(uiSettings.wbSteps))
+-            + ",\"fps\":" + jsonNumberArray(availablePcfFpsOptions(cameraSettings, camera_.sensorName(), uiSettings.fpsSteps))
+-            + ",\"resolution\":" + jsonStringArray(resolutions) + "}";
+-        body += ",\"values_for\":\"" + escapeJson(camera_.sensorName() + " \xC2\xB7 " + cameraSettings.resolution.toString()
+-            + " \xC2\xB7 Clear HDR " + (cameraSettings.clearHdr ? "on" : "off")) + "\"";
+-        body += ",\"gestures\":{\"button\":[\"press\"],\"encoder\":[\"turn\",\"cw\",\"ccw\",\"press\"],\"analog\":[\"target\"]}";
+-        return okReply(command.id, body);
+-    }
++    if (command.name == "list_actions")
++        return okReply(command.id, hardware::actions::catalogJson());
+ 
+     return std::nullopt;
+ }
+diff --git a/src/hardware/ActionCatalog.hpp b/src/hardware/ActionCatalog.hpp
+index f8593b9..d34ef92 100644
+--- a/src/hardware/ActionCatalog.hpp
++++ b/src/hardware/ActionCatalog.hpp
+@@ -333,10 +333,11 @@ inline std::string canonicalTriggerEvent(std::string_view text)
+     return {};
+ }
+ 
++// The members of the list_actions reply, without the braces.
+ inline std::string catalogJson()
+ {
+     std::ostringstream out;
+-    out << "{\"actions\":[";
++    out << "\"actions\":[";
+     bool first = true;
+     for (const auto &spec : kSpecs) {
+         out << (first ? "" : ",") << "{\"id\":\"" << spec.id << "\",\"group\":\"" << spec.group << "\",\"label\":\""
+@@ -353,7 +354,7 @@ inline std::string catalogJson()
+     out << "],\"trigger_events\":[";
+     for (size_t i = 0; i < std::size(kTriggerEvents); ++i)
+         out << (i ? "," : "") << "{\"id\":\"" << kTriggerEvents[i].id << "\",\"label\":\"" << kTriggerEvents[i].label << "\"}";
+-    out << "],\"max_per_mapping\":" << maxButtonActions << "}";
++    out << "],\"max_per_mapping\":" << maxButtonActions;
+     return out.str();
+ }
+ 
+-- 
+2.43.0
+

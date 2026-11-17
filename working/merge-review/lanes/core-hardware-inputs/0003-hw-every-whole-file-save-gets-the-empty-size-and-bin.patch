@@ -1,0 +1,50 @@
+From ad917eacf1f24efc3960b382ef28efb8e5d993a4 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:53:29 +0000
+Subject: [PATCH 3/3] hw: every whole-file save gets the empty, size and binary
+ checks
+
+Why: POST /api/config refused an empty text, a text over 256 KiB and a
+text with a NUL byte, as 1.6.0's saveHardwareConfigFile does
+(src/ApertarCoreApp.cpp:5325-5341 at upstream-1.6.0). The other two
+whole-file doors, set_controls text= (Undo, history restore) and
+set_controls restore=true, skipped those checks and handed any text to
+the store.
+
+What: the set_controls branch runs checkHardwareConfigText on the text,
+after restore=true has resolved it and before the store sees it, and
+replies with the same sentence as POST /api/config. The checks stay in
+App, where 1.6.0 has them. They run before the store's base test, so
+an empty text is refused whatever base it names.
+
+Tested: check_core.sh both builds and host tests. --simulate run:
+set_controls with text="" and with "  \n" (current and stale base) ->
+"Config file cannot be empty.", a text with a NUL -> "Config file
+contains invalid binary data.", 256 KiB + 1 -> "Config file is too
+large."; the file stayed byte-identical. A normal text= save still
+writes. POST /api/config with an empty body still gives the 1.6.0
+sentence. Pi: none, no hardware path changes.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 4142407..cdded61 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -12802,6 +12802,9 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+             return errorReply(command.id, "Send the whole file (text=) or single keys (set.<section>.<key>=), not both.");
+         if (!text && edits.empty())
+             return errorReply(command.id, "set_controls needs text= (the whole file), restore=true, or set.<section>.<key>=value.");
++        // A whole file, restored text included, gets the same checks as POST /api/config.
++        if (std::string message; text && !checkHardwareConfigText(*text, &message))
++            return errorReply(command.id, message);
+         hardware::StoreFlags flags;
+         flags.backup = true;   // WebUI and core.py saves keep <file>.bak; the IMU code does not
+         const std::pair<const char *, bool *> flagFields[] = {
+-- 
+2.43.0
+

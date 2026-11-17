@@ -1,0 +1,47 @@
+From 6fa2f3de9c269f77db5d754f1a810401d7581ef2 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:01:57 +0000
+Subject: [PATCH 5/6] media: URL-encode the clip id and name in a clip's
+ audio_url
+
+Why: the clip info built audio_url from the clip id and name with
+escapeJson, which only escapes for JSON. A clip named A&B_001 gave
+"...&id=A&B_001&name=A&B_001.wav", the server read id=A and the
+sound did not load; '#', '%', '+' and space break the URL the same
+way. Original Apertar builds media URLs with urlEncodeComponent per
+query value (mediaDownloadUrl) and escapes the finished URL for JSON
+where it is written.
+
+What: id and "<name>.wav" each go through urlEncodeComponent, and
+the whole URL through escapeJson, as mediaDownloadUrl and
+download_url do.
+
+Tested: check_core.sh lane-core1 both tests: PASS. --simulate with a
+clip folder 'A&B_001' holding three DNG frames and A&B_001.wav:
+/api/media/clip gives audio_url
+/api/media/file?kind=folder&id=A%26B_001&name=A%26B_001.wav, curl
+fetches it 200 audio/wav, the WebUI page fetches it 206 with a Range
+header. On the Pi: nothing beyond the general smoke test.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index c4c9693..dfa2542 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -7388,7 +7388,7 @@ std::string clipInfoJson(const std::string &id, const std::filesystem::path &dir
+     std::snprintf(fpsBuf, sizeof fpsBuf, "%.3f", f.fps);
+     out << ",\"has_audio\":" << (hasAudio ? "true" : "false")
+         << ",\"sound_text\":\"" << escapeJson(soundText) << "\""
+-        << ",\"audio_url\":\"" << (hasAudio ? "/api/media/file?kind=folder&id=" + escapeJson(id) + "&name=" + escapeJson(f.name) + ".wav" : std::string()) << "\""
++        << ",\"audio_url\":\"" << (hasAudio ? escapeJson("/api/media/file?kind=folder&id=" + urlEncodeComponent(id) + "&name=" + urlEncodeComponent(f.name + ".wav")) : std::string()) << "\""
+         << ",\"fps_badge\":\"" << fpsBuf << " FPS\""
+         << ",\"info_line\":\"cDNG sequence \u2022 " << f.frames.count() << " frames\""
+         << ",\"meta\":{\"captured\":\"" << escapeJson(f.shotDateText) << "\",\"type\":\"cDNG sequence\""
+-- 
+2.43.0
+

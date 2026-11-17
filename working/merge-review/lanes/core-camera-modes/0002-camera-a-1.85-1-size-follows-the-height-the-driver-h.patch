@@ -1,0 +1,327 @@
+From ef17857c551b427ccf85c75424a42c8952edb187 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:58:39 +0000
+Subject: [PATCH 2/4] camera: a 1.85:1 size follows the height the driver has
+
+Why:
+The port rewrote 3840x2076 / 1920x1038 to 3840x2072 / 1920x1036 on every
+load, save, set_resolution, preset and ladder rung
+(migratedImx585CropResolution). That works only with the cinemate-port
+imx585 driver; the original Apertar driver has 2076 / 1038, so a stock
+camera asked for a size its driver does not have, and every saved file was
+changed on load. Original Apertar maps a size a client sends to the
+sensor's own size in the per-sensor normaliser, at use, and never rewrites
+the saved value on load (isImx585LowResolutionAlias and
+normalizedResolutionForSensor, CameraController.cpp@upstream-1.6.0).
+
+What:
+Imx585Modes.hpp gains driverCropSize(): for a 1.85:1 size it returns the
+height of the pair that the startup probe found in the class (bit depth,
+Clear HDR); with nothing probed, the request if the class has it, else its
+partner. Other sizes come back unchanged. CameraController calls it in
+imx585ModeForResolution (the sanitiser's IMX585 step and the mode
+selection) and in setResolution's class check. The rewrite on load, in
+setResolution and in presets is gone. Ladder rungs follow the driver
+through followDriverCropSizes, in set_mode_ladder and in start() after the
+session start ran the probe (it was in the constructor, before the probe).
+isImx585LegacyCropResolution lists 2076 and 1038 again, so every sensor's
+validator accepts them, as in 1.6.0. The WebUI drops its 2076->2072 and
+1038->1036 aliases and shows what Core reports.
+
+Tested:
+check_core.sh both tests: both builds, 18 host tests pass;
+imx585_modes_test has driverCropSize cases for the port driver's and the
+original driver's size sets, an empty probe, H12 and H16.
+--simulate (sensor Unknown): set_resolution 3840x2076 -> get_state
+3840x2076, camera_settings.conf keeps resolution_height=2076 after a
+restart; 3840x2072 and 1920x1038 round-trip; the WebUI page loads without
+script errors and imx585NormalizedResolution keeps 3840x2076.
+Needs the camera, port driver: a camera_settings.conf with
+resolution_height=2076 starts at 3840x2072
+(journalctl -u apertar-core -b | grep 'camera configured'); a ladder with a
+3840x2076 rung shows it as 3840x2072 and valid in get_mode_ladder before
+and after a restart. Original driver (after the readout check commit):
+set_resolution 3840x2076 configures raw 3840x2076.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/camera/CameraController.cpp | 87 +++++++++++++++++----------------
+ src/camera/Imx585Modes.hpp      | 30 ++++++++++++
+ src/web/WebControlPage.cpp      |  6 +--
+ tools/imx585_modes_test.cpp     | 22 +++++++++
+ 4 files changed, 101 insertions(+), 44 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 6af57c0..784719a 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -438,29 +438,6 @@ bool isImx585LowResolutionAlias(const Resolution &resolution)
+            resolutionMatches(resolution, 1928, 1090);
+ }
+ 
+-// The imx585 driver's 1.85:1 crops are 3840x2072 and the binned 1920x1036 (cinemate-modes, the
+-// cinemate-port driver branch). The Apertar-Beta 1.6.0 driver had 3840x2076 and 1920x1038, windows
+-// that started at PIX_VST 54 against the sensor's multiple-of-4 rule; the new driver has neither.
+-// Settings, presets, ladder rungs and clients (the touch UI) that still say the old sizes are
+-// moved to the new ones here, before any lookup.
+-Resolution migratedImx585CropResolution(Resolution resolution)
+-{
+-    if (resolutionMatches(resolution, 3840, 2076))
+-        return Resolution{ 3840, 2072 };
+-    if (resolutionMatches(resolution, 1920, 1038))
+-        return Resolution{ 1920, 1036 };
+-    return resolution;
+-}
+-
+-void migrateImx585LadderRungs(std::vector<ladder::Rung> &rungs)
+-{
+-    for (ladder::Rung &rung : rungs) {
+-        const Resolution moved = migratedImx585CropResolution(Resolution{ rung.width, rung.height });
+-        rung.width = moved.width;
+-        rung.height = moved.height;
+-    }
+-}
+-
+ bool isImx585HighResolutionAlias(const Resolution &resolution)
+ {
+     return resolutionMatches(resolution, 3840, 2160) ||
+@@ -496,22 +473,59 @@ bool isImx585KnownResolution(const Resolution &resolution)
+ // mode): the Full HD and 3840-wide crops. The other table sizes are IMX585 only.
+ bool isImx585LegacyCropResolution(const Resolution &resolution)
+ {
+-    for (const uint32_t height : { 1036u, 1012u, 960u, 872u, 864u, 816u, 804u, 768u, 752u }) {
++    for (const uint32_t height : { 1038u, 1036u, 1012u, 960u, 872u, 864u, 816u, 804u, 768u, 752u }) {
+         if (resolutionMatches(resolution, 1920, height))
+             return true;
+     }
+-    for (const uint32_t height : { 2072u, 2024u, 1920u, 1744u, 1728u, 1632u, 1608u, 1536u, 1504u }) {
++    for (const uint32_t height : { 2076u, 2072u, 2024u, 1920u, 1744u, 1728u, 1632u, 1608u, 1536u, 1504u }) {
+         if (resolutionMatches(resolution, 3840, height))
+             return true;
+     }
+     return false;
+ }
+ 
++// Filled once by the startup probe (probeSensorModesOnce); empty if it did not run.
++std::mutex probedSensorModesMutex;
++std::vector<CameraController::SensorMode> probedSensorModes;
++#if APERTARCORE_HAS_LIBCAMERA
++bool sensorModesProbed = false;
++#endif
++
++// The sizes the probe found in a class (bit depth, Clear HDR), as the driver delivers them.
++std::vector<apertar::imx585::Size> probedImx585Sizes(apertar::imx585::Class cls)
++{
++    std::vector<apertar::imx585::Size> sizes;
++    std::lock_guard<std::mutex> lock(probedSensorModesMutex);
++    for (const auto &mode : probedSensorModes) {
++        if (mode.bitDepth == apertar::imx585::bitDepthOf(cls) && mode.clearHdr == apertar::imx585::clearHdrClass(cls))
++            sizes.push_back({ mode.size.width, mode.size.height });
++    }
++    return sizes;
++}
++
++// A 1.85:1 request in the height the installed driver has (2072 or 2076, 1036 or 1038).
++Resolution driverCropResolution(apertar::imx585::Class cls, const Resolution &requested)
++{
++    const auto size = apertar::imx585::driverCropSize(cls, { requested.width, requested.height }, probedImx585Sizes(cls));
++    return Resolution{ size.width, size.height };
++}
++
++// Ladder rungs saved with the other driver's 1.85:1 height take this driver's.
++void followDriverCropSizes(std::vector<ladder::Rung> &rungs)
++{
++    for (ladder::Rung &rung : rungs) {
++        const Resolution followed = driverCropResolution(apertar::imx585::classFor(rung.bits, rung.clearHdr),
++                                                         Resolution{ rung.width, rung.height });
++        rung.width = followed.width;
++        rung.height = followed.height;
++    }
++}
++
+ // The row of a class that an active size stands for: the size itself, else (a size from another class
+ // or sensor) the nearest row. Never null while the width policy leaves the class a row.
+ const apertar::imx585::Mode *imx585ModeForResolution(apertar::imx585::Class cls, const Resolution &requested)
+ {
+-    const Resolution wanted = imx585AliasResolution(requested);
++    const Resolution wanted = driverCropResolution(cls, imx585AliasResolution(requested));
+     if (const auto *mode = apertar::imx585::find(cls, wanted.width, wanted.height))
+         return mode;
+     return apertar::imx585::nearest(cls, wanted.width, wanted.height);
+@@ -700,7 +714,6 @@ CaptureSettings clampCaptureSettings(CaptureSettings settings)
+         const auto parsed = apertar::clipname::parse(settings.clipNameTemplate);
+         settings.clipNameTemplate = parsed.ok ? parsed.normalized : std::string(apertar::clipname::kDefaultTemplate);
+     }
+-    settings.resolution = migratedImx585CropResolution(settings.resolution);
+     const bool supportedResolution =
+         (settings.resolution.width == 1332 && settings.resolution.height == 990) ||
+         (settings.resolution.width == 2028 && settings.resolution.height == 1080) ||
+@@ -3303,13 +3316,6 @@ double imx477MaximumUncompressedCdngFpsForResolution(Resolution resolution, uint
+     return 1000.0;
+ }
+ 
+-// Filled once by the startup probe (probeSensorModesOnce); empty if it did not run.
+-std::mutex probedSensorModesMutex;
+-std::vector<CameraController::SensorMode> probedSensorModes;
+-#if APERTARCORE_HAS_LIBCAMERA
+-bool sensorModesProbed = false;
+-#endif
+-
+ std::optional<double> probedMaximumFps(Resolution sensorSize, uint32_t bitDepth, bool clearHdr)
+ {
+     std::lock_guard<std::mutex> lock(probedSensorModesMutex);
+@@ -10519,7 +10525,6 @@ CameraController::CameraController(EventCallback eventCallback, PreviewCallback
+         std::stringstream ladderText;
+         ladderText << ladderFile.rdbuf();
+         modeLadder_ = ladder::parseFile(ladderText.str());   // a missing or broken file: ladder off
+-        migrateImx585LadderRungs(modeLadder_.rungs);
+     }
+     if (unsupportedRecordingSettings(settings_))
+         std::cerr << "ApertarCore: saved recording settings are unavailable on this board; selecting supported recording settings.\n";
+@@ -10562,6 +10567,7 @@ bool CameraController::start(const std::string &mediaRoot, bool simulateCamera)
+         settings_ = session_->currentSettings();
+     else if (simulateCamera_)
+         settings_ = sanitizeSettingsForSensor(settings_, SensorFamily::Unknown);
++    followDriverCropSizes(modeLadder_.rungs);   // after the startup probe, which the session start ran
+ 
+     if (simulateCamera_)
+         constrainExposureMetering(settings_, std::getenv("LIBCAMERA_RPI_TUNING_FILE")
+@@ -10653,7 +10659,6 @@ bool CameraController::setResolution(Resolution resolution)
+         return false;
+     }
+ 
+-    resolution = migratedImx585CropResolution(resolution);   // a client that still sends 3840x2076 / 1920x1038
+     if (!validateResolution(resolution))
+         return false;
+ 
+@@ -10664,9 +10669,9 @@ bool CameraController::setResolution(Resolution resolution)
+     if (sensorFamily == SensorFamily::Imx585) {
+         // An explicit size must be a mode of the current class (bit depth, Clear HDR); derived changes
+         // (bit depth, Clear HDR) take the nearest row in the sanitiser, except Clear HDR on: setClearHdr starts at 3840x2160.
+-        const Resolution wanted = imx585AliasResolution(resolution);
+-        if (!apertar::imx585::find(apertar::imx585::classFor(current.rawBitDepth, current.clearHdr),
+-                                   wanted.width, wanted.height)) {
++        const auto cls = apertar::imx585::classFor(current.rawBitDepth, current.clearHdr);
++        const Resolution wanted = driverCropResolution(cls, imx585AliasResolution(resolution));
++        if (!apertar::imx585::find(cls, wanted.width, wanted.height)) {
+             setErrorLocked(wanted.toString() + " is not a mode of the IMX585 at " + std::to_string(current.rawBitDepth) +
+                            "-bit" + (current.clearHdr ? " Clear HDR." : "."));
+             return false;
+@@ -11065,7 +11070,7 @@ bool CameraController::setModeLadder(const std::optional<std::string> &rungs, st
+             *error = parseError;
+             return false;
+         }
+-        migrateImx585LadderRungs(draft.rungs);
++        followDriverCropSizes(draft.rungs);
+     }
+     if (enabled)
+         draft.enabled = *enabled;
+@@ -12671,7 +12676,7 @@ bool CameraController::applyCapturePreset(const CaptureSettings &requested, cons
+         setErrorLocked("Wait for still captures to finish before loading a preset.");
+         return false;
+     }
+-    const Resolution presetResolution = migratedImx585CropResolution(requested.resolution);   // a preset saved with 3840x2076 / 1920x1038
++    const Resolution presetResolution = requested.resolution;
+     if (!validateResolution(presetResolution)) return false;
+     rampNominalShutterUs_ = 0; // a preset brings its own shutter
+     CaptureSettings next = supportedRecordingSettings(requested);
+diff --git a/src/camera/Imx585Modes.hpp b/src/camera/Imx585Modes.hpp
+index dca88bf..c24a8e7 100644
+--- a/src/camera/Imx585Modes.hpp
++++ b/src/camera/Imx585Modes.hpp
+@@ -241,6 +241,36 @@ inline std::optional<Size> activeFor(Size transport, uint32_t bitDepth)
+     return Size{ found->width, found->height };
+ }
+ 
++// The 1.85:1 size of the installed driver: 3840x2072 / 1920x1036 (cinemate-port driver) or 3840x2076 /
++// 1920x1038 (original Apertar driver). `probed` holds the transport sizes the startup probe found in the
++// class: the size of the pair it holds comes back. With nothing probed, the request if the class has it,
++// else its partner. Any other size comes back as it is.
++inline Size driverCropSize(Class cls, Size requested, const std::vector<Size> &probed)
++{
++    Size partner = requested;
++    if (requested == Size{ 3840, 2072 })
++        partner = { 3840, 2076 };
++    else if (requested == Size{ 3840, 2076 })
++        partner = { 3840, 2072 };
++    else if (requested == Size{ 1920, 1036 })
++        partner = { 1920, 1038 };
++    else if (requested == Size{ 1920, 1038 })
++        partner = { 1920, 1036 };
++    else
++        return requested;
++
++    for (const Size candidate : { requested, partner }) {
++        const auto transport = transportFor(cls, candidate.width, candidate.height, 0);
++        for (const Size &size : probed) {
++            if (transport && *transport == size)
++                return candidate;
++        }
++    }
++    if (find(cls, requested.width, requested.height, 0) || !find(cls, partner.width, partner.height, 0))
++        return requested;
++    return partner;
++}
++
+ // The offered row closest to a size (Manhattan distance on the active picture; the driver's order
+ // breaks ties). nullptr only when the width policy hides the whole class.
+ inline const Mode *nearest(Class cls, uint32_t width, uint32_t height, uint32_t minWidth = minModeWidth())
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 4075c43..7fb670e 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -9081,14 +9081,14 @@ std::string_view webControlPageHtml()
+         .map((row) => formatResolutionValue(row.width, row.height));
+     }
+ 
+-    // What Core reports, with the old driver's 1.85:1 sizes (3840x2076, 1920x1038) and the other sensors' sizes a
+-    // saved preset or an old client may still send mapped to the sizes the IMX585 has.
++    // What Core reports, with the other sensors' sizes a saved preset or an old client may still send mapped
++    // to the sizes the IMX585 has.
+     function imx585NormalizedResolution(snapshot, resolutionValue) {
+       if (processedVideoRecordFormatForSnapshot(snapshot))
+         return forcedH264CaptureResolutionForSnapshot(snapshot);
+       const value = String(resolutionValue || "").trim();
+       const aliases = {
+-        "3840x2076": "3840x2072", "1920x1038": "1920x1036", "1928x1090": "1920x1080", "3856x2180": "3840x2160",
++        "1928x1090": "1920x1080", "3856x2180": "3840x2160",
+         "1332x990": "1920x1080", "2028x1080": "1920x1080", "2028x1520": "1920x1080",
+         "4056x2160": "3840x2160", "4056x3040": "3840x2160",
+       };
+diff --git a/tools/imx585_modes_test.cpp b/tools/imx585_modes_test.cpp
+index 3ec580b..c106207 100644
+--- a/tools/imx585_modes_test.cpp
++++ b/tools/imx585_modes_test.cpp
+@@ -94,6 +94,28 @@ int main()
+     CHECK(im::transportFor(im::Class::S12, 3840, 2076, 0) == std::optional<im::Size>(im::Size{ 3840, 2076 }));
+     CHECK(im::transportFor(im::Class::S10, 1920, 1038, 0) == std::optional<im::Size>(im::Size{ 1920, 1038 }));
+ 
++    // driverCropSize: a 1.85:1 size follows the height the probe found in the class.
++    const std::vector<im::Size> portS12 = { { 1920, 1080 }, { 3840, 2160 }, { 3840, 2072 }, { 1920, 1036 } };
++    const std::vector<im::Size> originalS12 = { { 1920, 1080 }, { 3840, 2160 }, { 3840, 2076 }, { 1920, 1038 } };
++    const std::vector<im::Size> portH16 = { { 3840, 2200 }, { 3840, 2112 }, { 1920, 1100 } };
++    const std::vector<im::Size> none;
++    for (const uint32_t height : { 2072u, 2076u }) {
++        CHECK(im::driverCropSize(im::Class::S12, { 3840, height }, portS12) == (im::Size{ 3840, 2072 }));
++        CHECK(im::driverCropSize(im::Class::S12, { 3840, height }, originalS12) == (im::Size{ 3840, 2076 }));
++        CHECK(im::driverCropSize(im::Class::S12, { 3840, height }, none) == (im::Size{ 3840, height }));
++        CHECK(im::driverCropSize(im::Class::H16, { 3840, height }, portH16) == (im::Size{ 3840, 2072 }));
++        CHECK(im::driverCropSize(im::Class::H16, { 3840, height }, none) == (im::Size{ 3840, 2072 }));
++    }
++    for (const uint32_t height : { 1036u, 1038u }) {
++        CHECK(im::driverCropSize(im::Class::S12, { 1920, height }, portS12) == (im::Size{ 1920, 1036 }));
++        CHECK(im::driverCropSize(im::Class::S12, { 1920, height }, originalS12) == (im::Size{ 1920, 1038 }));
++        CHECK(im::driverCropSize(im::Class::S10, { 1920, height }, none) == (im::Size{ 1920, height }));
++        CHECK(im::driverCropSize(im::Class::H12, { 1920, height }, none) == (im::Size{ 1920, height }));  // no binned 1.85:1 there
++    }
++    CHECK(im::driverCropSize(im::Class::H12, { 3840, 2076 }, { { 3840, 2160 }, { 3840, 2072 } }) == (im::Size{ 3840, 2072 }));
++    CHECK(im::driverCropSize(im::Class::S12, { 3840, 2160 }, originalS12) == (im::Size{ 3840, 2160 }));
++    CHECK(im::driverCropSize(im::Class::S12, { 3840, 2024 }, portS12) == (im::Size{ 3840, 2024 }));
++
+     // nearest: an exact row is its own nearest; a missing size takes the closest row.
+     for (const im::Mode &mode : im::offered(im::Class::H12)) {
+         const im::Mode *near = im::nearest(im::Class::H12, mode.width, mode.height);
+-- 
+2.43.0
+

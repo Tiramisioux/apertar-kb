@@ -462,3 +462,57 @@ Each row was checked against the code at `0d13a6f`.
 | core.py and `confirm_merge` | Partly right. core.py is a generic field sender with no code for either; the owner line asks only about the owner's own scripts (question 5) | `apertar-kb/working/tools/core.py:3` |
 | IMU probe claim in question 4 unconfirmed | Right; settled. The probe is every WebUI state build, not only the Gyro panel, in 1.6.0 and the port | `App:9706`; upstream `App:8028`; `Mpu6050RecordingSession.cpp:1015-1054` |
 | Commit 3 placement | Partly right. The checks must run before the store's base and no-change tests. They stay in App, where 1.6.0 has them, and are called in the `set_controls` branch after `restore=true` resolves the text: -0 / +4 instead of a move into the store | `App:6235-6255`, `:12780-12803`; `HardwareConfigStore.cpp:282`, `:325-328` |
+
+## Checked against the owner's recorded decisions
+
+Read 2026-11-17 against `owner-recorded-decisions-a.md` (DA-*), `owner-recorded-decisions-b.md` (DB-*) and their sources (`working/controls/decisions.md`, `working/controls/design-controls.md` 9.2, `working/tools/controls_*`). Lane commits read at `/home/user/wt/lane-core3` `56e135c..ad917ea`: `322117b` (plan 1), `476ca75` (plan 2, already the ssh-only variant), `ad917ea` (plan 3). Stock rule: a decision stays; where it makes a stock camera (1.6.0 file, no port keys) behave differently from 1.6.0, it becomes a setting at the 1.6.0 value.
+
+| commit | touches decision (id, his words) | verdict | what changes in the commit |
+| --- | --- | --- | --- |
+| 1 (lane `322117b`) | DA-18 / Q15 "Until then the red banner + Undo last save" (a bad pin save is recovered by Undo, not blocked); DA-6 "Save during a take: allowed" | fine | none. Key edits still refuse new errors (KB `working/tools/controls_store_test.cpp:139`, `controls_page_test.js:229` still pass) |
+| 2 plan (delete the guard) | DA-4 / Q2 "`[run_script]` paths: ssh only; the browser cannot write them"; DA-28, DA-29 "script paths otherwise stay ssh-only (Q2)" | conflict | replaced by the lane commit below; do not land the plan text |
+| 2 (lane `476ca75`) | DA-4 / Q2 kept; DA-18 / Q15 "Undo last save" now works across a path change | conflict (stock rule only) | the guard is always on, so a stock camera's Config page refuses a path edit 1.6.0 wrote (`App:5323-5386@upstream-1.6.0`, no check). Variant: the guard and `keptScriptPaths` run only when `APERTAR_SCRIPT_PATHS=ssh` is set in Core's environment (unset = 1.6.0). An env knob is reachable only over ssh, which is Q2's own boundary. Shape: upstream `APERTAR_LOSSYDNG_ASYNCWRITE` (`src/lossydng/LossyDngEncoder.cpp:325-328@upstream-1.6.0`), port `APERTAR_MEDIA_TUNE=1` opt-in (DA-88, `App:11402-11406`); set in `/home/pi/start-apertar-core.sh` (env-to-flag pattern, DA-84). About +5 lines in `saveLocked`, README sentence names the variable. KB `controls_store_test.cpp:146-151` sets the variable before its script-path checks. Pi: Patrik adds the line to his start script |
+| 3 (lane `ad917ea`) | none (1.6.0's own checks) | fine | none |
+| 4 | DA-20 / Q17 "otherwise refuse" (stale text is refused) | fine | none. The page keeps the header, so a stale browser save still gets 409. Stock note: 1.6.0 overwrote in that race (last writer wins); Q17 accepts the refusal; not made a setting |
+| 5 | DA-20 / Q17 "Stale text save: merge per key when only values changed and no key clashes, shown as a review before saving; otherwise refuse" | conflict | drop commit 5. Keep `textToEdits`, `StoreFlags::confirmMerge`, `StoreResult::merged` / `needsReview`, the `confirm_merge` field and the `merge_review` code. The review was never wired in the page (`WCP:19025` treats `merge_review` as "Reload"; POST `/api/config` sets no `confirmMerge`, `App:8645-8647`); wiring it is page work (webui-state), see questions. Stock: unaffected (only a stale browser save reaches it). Keeps KB `controls_store_test.cpp:117-135` passing. Commit 19 moves these bodies too |
+| 6 | DA-90 / DB-19 Clear HDR ISO caps 720 / 1585 from `[camera] clear_hdr_iso_max_*`; DB-65 RAM buffer kept | fine | none: the readers default to the same numbers. `longtakes.py` `edit_storage_keys` replaces a commented copy, so it still works on the new template |
+| 7 | DA-7 / Q7 "INA219 stays on by default"; DA-8 "detect and show ... nothing is written automatically"; DA-11 his mappings | fine | none. Keep `[ina219] enabled=true` (already `App:5041-5044`, as 1.6.0 UI `DisplayConfigBridge.cpp:70-73`) |
+| 8 | DA-7, DA-8 (hardware on by default, "not found" shown, not a warning); DA-27 his rig has no IMU (he has a file, not reached) | fine | none. Owner question 4 takes the DA-7 answer (see below) |
+| 9 | DA-3 / Q1 "Keep `~/apertar-hardware.conf` as the system-controlled file (Core writes it; its notes in `~/.config/apertar-core/`)"; DA-25 / Q22 "Before Controls"; DA-84 `APERTAR_HARDWARE_CONFIG` / `XDG_CONFIG_HOME` per instance | fine | none. It writes through the env path and `XDG_CONFIG_HOME` notes, as DA-84's secondary needs. DA-8's "nothing is written automatically" is about detection results; the template is 1.6.0's fresh-camera file, not a detected section. A dual-sensor cam1 instance started without its copied file (design step `design-dual-sensor.md:253` copies it first) would get the template; noted for dual-sensor |
+| 10 plan (delete the inversion) | DA-34 "like Cinemate (gpio_input.py check_initial_state): ... one that already reads pressed is taken as wired the other way round and inverted ... with a journal line naming it"; DA-39 "PCF pins get the 1-0-1 inversion at start"; DA-36 "No 1-0-1 inversion for switches"; DA-39 "a knob held at start counts from its release" | conflict | the inversion stays, off by default. New section bool `invert_on_start` in `[gpio_buttons]` (read in the buttons branch only, not shared with `[gpio_encoders]`) and `[pcf8574]`, `parseConfigBool`, default false. False: the plan's rule (held at start is ignored until released, = 1.6.0). True: today's code (`GpioInput.cpp:620-631`, `Pcf8574Input.cpp:424-435`) with its journal line. Shape: upstream `[neorotary4] reset_on_start` (`NeoRotary4Input.cpp:419@upstream-1.6.0`), `[grove_analog] emit_on_start` (`GroveAnalogInput.cpp:309@upstream-1.6.0`). Template: a comment line under both sections. `knownKey` (commit 21) accepts it; no Controls card row (text-only, as `poll_ms` and `chip`, DA-40). Switches and NeoRotary unchanged. About -4 / +22 instead of -24 / +16. Pi: on his rig `journalctl -u apertar-core | grep 'taken as inverted'`; any line means he adds `invert_on_start=true` |
+| 11 | DA-30 gestures "like Cinemate"; DA-35 edge events; DA-36 switches; design-controls 3.x "In standby a press only wakes" | fine | none. Do not touch the edge-wait loop; switches stay as they are |
+| 12 | DA-34 (1-0-1 buttons work by the Cinemate rule) | fine, not needed | drop commit 12: owner question 2 is answered by DA-34; the opt-in key of commit 10 covers a normally closed button |
+| 13, 14, 15, 16 | DA-5 / Q3 (hand edits over ssh), DA-25 history | fine | none. `longtakes.py:626-662` writes the file outside Core with `os.replace`; commit 16 keeps the 1 s age check that catches it |
+| 17 | DA-21 / Q18 DPI box (not in the tree: no "DPI screen" text in `WCP` or `App`); his rig: CM5, DPI overlays commented | fine in code; breaks a KB test | the same change updates KB `working/tools/controls_test.cpp` sections 9 and D5 (`hc::parseConfigTxt`, `hc::dpiCommands`, lines 262-268 and 319-330): move the DPI-line checks to `bootconf::readState` or drop them (`boot_config_test` covers the parser). KB commit, no code change |
+| 18 | DB-65 RAM buffer, DB-35 | fine | none |
+| 19 | DA-15 / Q12 his live file as the host-test fixture (KB `controls_test.cpp`, `controls_store_test.cpp`, `controls_page_test.js`) | fine in code; breaks KB tests | the three KB tests build header-only (`controls_test.cpp:3`, `controls_store_test.cpp:2`, `controls_page_test.js:46`). Add `<core>/src/hardware/HardwareConfigText.cpp` to each build line in the same change (KB commit) |
+| 20 | DA-2 "the setting of i2c channels ... to make my fix ... work" | fine | none. KB `controls_test.cpp:162-166` still pass (`[grove_analog] channel` stays `bus`) |
+| 21 | DA-30 "Press fires at once ... Hold fires after 3 s. This replaces Q4's 800/350 ms design" (timings fixed in code); DA-40 "poll_ms and chip stay text-only" | fine | none; also accept `invert_on_start` (commit 10 variant) |
+| 22 | DA-22 / Q19 "only visible when something is wrong" (chip counts errors) | fine | none. His live file (`controls_fixture_apertar-hardware.conf:145-149`, `[gpio_encoders] poll_ms=3 debounce_ms=40`) gets two warnings, no error, no chip |
+| 23 | standing rule "User", never his name, in commits | fine | none |
+| New ground: gestures, switches, chip | DA-30, DA-31, DA-36, DA-22 | fine | none |
+
+### Decisions this plan must keep
+
+- Script paths are ssh only (DA-4, DA-28, DA-29): with `APERTAR_SCRIPT_PATHS=ssh` the browser cannot set a new `[run_script]` path; Undo, History and `restore=true` may put back a kept version (DA-18 "Undo last save"). Unset, 1.6.0 behaviour.
+- A button pressed at start is inverted like Cinemate (DA-34, DA-39) when `invert_on_start=true`; never for switches (DA-36); NeoRotary pushes held at start count from release (DA-39).
+- A stale whole-file save merges per key after a review, else is refused (DA-20). Do not delete the merge.
+- Core owns `~/apertar-hardware.conf`, notes in `~/.config/apertar-core/` (DA-3); `APERTAR_HARDWARE_CONFIG` and `XDG_CONFIG_HOME` stay honoured (DA-84).
+- `[ina219] enabled=true` in the template (DA-7); devices are detected and shown, nothing is written from a scan (DA-8).
+- History: 20 versions plus the pinned "Before Controls" (DA-25).
+- Gesture timings are fixed in code: 0.5 s click window, Hold at 3 s (DA-30); GPIO buttons wait on edge events (DA-35).
+- Switch keys and "position applied at Core start" (DA-31, DA-36).
+- Touch chip on errors only (DA-22). Save during a take is written now, applied after (DA-6).
+- KB host tests built on his live file (DA-15) keep building: commits 17 and 19 change them in the same step.
+
+### Open questions a recorded decision already answers
+
+| question | decision | answer |
+| --- | --- | --- |
+| Owner question 1: may the Config page change `[run_script]` paths? | DA-4 / Q2, DA-28, DA-29 | No on his camera (ssh only), with Undo/restore of kept versions (lane `476ca75`). Stock rule makes it the opt-in `APERTAR_SCRIPT_PATHS=ssh` |
+| Owner question 2: normally closed buttons? | DA-34, DA-39 | Yes, by the Cinemate rule (option c): keep the inversion behind `invert_on_start`, drop commit 12 |
+| Owner question 3: who writes the first file? | DA-3 / Q1 | Core (option a) |
+| Owner question 4: IMU on or off in the first file? | DA-7 / Q7, DA-8 | On, as 1.6.0's file: he kept INA219 on by default with no chip fitted, absent hardware shown as "not found" |
+| Owner question 5: keep the chip? keep the merge review? | DA-22 / Q19; DA-20 / Q17 | Keep the chip. Keep the merge review (commit 5 dropped). Still his: wire the review in the Config page (show the merged text, resend with `confirm_merge`) or leave Core's half unused |
+| Key timings `hold_ms` / `double_ms` per source? | DA-30 (replaces DA-9) | No: fixed in code; commit 21 refuses the keys |
+| Owner question 7: a switch moved in Standby | DA-31, DA-36 (position applied at Core start) | Not answered: no decision covers Standby |

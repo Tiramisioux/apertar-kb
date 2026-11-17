@@ -1,0 +1,160 @@
+From 3b2c98b28cbcdc8a4fd05f5b003d67d44695fa9f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:41:05 +0000
+Subject: [PATCH 2/8] qml: Log is a dropdown next to Compression, sent as
+ Core's off or auto
+
+Why: the cDNG Log choice was an ActionTile whose accent tone flipped like
+a radio button, under its own header below Write Buffer, and the bridge
+took a bool and turned it into Core's words. Original Apertar shows a
+choice of values as an InlineDropdownField with {value,label} options
+(Compression, SettingsPage.qml:3244-3261@upstream-1.6.0, QML-23), keeps
+ActionTile for verbs with a fixed tone, and sends an enum as Core's own
+word (applyCdngCompression value=, Core refuses unknown values).
+
+What: applyCdngLog(const QString &value) sends set_cdng_log value= as
+given; Core's cdngLogFromString refuses anything else. In Settings >
+Record the Log field is an InlineDropdownField in the format grid after
+Compression, options off/Off and auto/On, disabled while recording; the
+grid counts it in its row height. The grey status text stays, now
+directly under the grid.
+
+Tested: check_ui.sh lane-ui1 PASS (UI build, QML compiled ahead of time,
+0 warnings). Not run on a screen. On the camera: cDNG + Clear HDR, pick
+Log On, then
+  printf '%s\n' '{"cmd":"get_state","id":1}' | socat - UNIX-CONNECT:/tmp/apertar-core.sock | grep -o '"cdng_log":"[a-z]*"'
+shows auto; the field shows On and the grid has no gap or overlap.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ qml/SettingsPage.qml         | 65 +++++++++++++++++-------------------
+ src/ApertarControlBridge.cpp |  6 ++--
+ src/ApertarControlBridge.hpp |  2 +-
+ 3 files changed, 35 insertions(+), 38 deletions(-)
+
+diff --git a/qml/SettingsPage.qml b/qml/SettingsPage.qml
+index 91f65fe..3b5b2a8 100644
+--- a/qml/SettingsPage.qml
++++ b/qml/SettingsPage.qml
+@@ -3277,6 +3277,7 @@ Item {
+                 readonly property int activeFieldCount: 3
+                                                         + ((root.processedVideoRecordFormat || root.sensorCropControlsAvailable) ? 1 : 0)
+                                                         + (root.cdngRecordFormat ? 1 : 0)
++                                                        + (root.cdngRecordFormat && !!apertarControlBridge && apertarControlBridge.cdngLogAvailable ? 1 : 0)
+                 readonly property int activeRowCount: Math.ceil(activeFieldCount / columns)
+ 
+                 width: parent.width
+@@ -3412,6 +3413,36 @@ Item {
+                     onValueSelected: function(v) { apertarControlBridge.applyCdngCompression(v) }
+                 }
+ 
++                InlineDropdownField {
++                    width: (parent.width - 12) / 2
++                    visible: root.cdngRecordFormat && !!apertarControlBridge && apertarControlBridge.cdngLogAvailable
++                    label: "Log"
++                    value: apertarControlBridge && apertarControlBridge.cdngLogOn ? "auto" : "off"
++                    displayValue: value === "auto" ? "On" : "Off"
++                    options: [
++                        { value: "off", label: "Off" },
++                        { value: "auto", label: "On" }
++                    ]
++                    fieldEnabled: apertarControlBridge && !apertarControlBridge.recording
++                    popupParent: dropdownOverlay
++                    dropdownController: sharedDropdownController
++                    onValueSelected: function(v) { apertarControlBridge.applyCdngLog(v) }
++                }
++
++            }
++
++            Text {
++                width: parent.width
++                visible: root.cdngRecordFormat && !!apertarControlBridge && apertarControlBridge.cdngLogAvailable
++                text: !apertarControlBridge.cdngLogOn ? "Linear storage"
++                      : (apertarControlBridge.cdngLogApplied
++                         ? (apertarControlBridge.cdngLogBits > 0
++                            ? "Stores one step down (" + apertarControlBridge.cdngLogBits + "-bit)"
++                            : "One step down")
++                         : "Not applied: in SDR the sensor chip already compresses the raw stream; Log works in Clear HDR. Files stay linear.")
++                color: "#9aa5b1"
++                font.pixelSize: 12
++                wrapMode: Text.WordWrap
+             }
+ 
+             Column {
+@@ -3460,40 +3491,6 @@ Item {
+                 }
+             }
+ 
+-            Column {
+-                width: parent.width
+-                spacing: 8
+-                visible: root.cdngRecordFormat && !!apertarControlBridge && apertarControlBridge.cdngLogAvailable
+-
+-                Text {
+-                    width: parent.width
+-                    text: "Log"
+-                    color: "white"
+-                    font.pixelSize: 14
+-                }
+-
+-                ActionTile {
+-                    width: (parent.width - 12) / 2
+-                    label: apertarControlBridge.cdngLogOn ? "On" : "Off"
+-                    tone: apertarControlBridge.cdngLogOn ? "accent" : "default"
+-                    actionEnabled: !apertarControlBridge.recording
+-                    onClicked: apertarControlBridge.applyCdngLog(!apertarControlBridge.cdngLogOn)
+-                }
+-
+-                Text {
+-                    width: parent.width
+-                    text: !apertarControlBridge.cdngLogOn ? "Linear storage"
+-                          : (apertarControlBridge.cdngLogApplied
+-                             ? (apertarControlBridge.cdngLogBits > 0
+-                                ? "Stores one step down (" + apertarControlBridge.cdngLogBits + "-bit)"
+-                                : "One step down")
+-                             : "Not applied: in SDR the sensor chip already compresses the raw stream; Log works in Clear HDR. Files stay linear.")
+-                    color: "#9aa5b1"
+-                    font.pixelSize: 12
+-                    wrapMode: Text.WordWrap
+-                }
+-            }
+-
+             InlineDropdownField {
+                 width: parent.width
+                 visible: root.proresClipFormat
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 3958c04..6e98bd1 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -705,11 +705,11 @@ bool ApertarControlBridge::applyClearHdr(bool enabled)
+     return true;
+ }
+ 
+-bool ApertarControlBridge::applyCdngLog(bool on)
++bool ApertarControlBridge::applyCdngLog(const QString &value)
+ {
+-    // The reply carries cdng_log, which applyCoreState applies.
++    // Core refuses anything but off or auto; the reply carries cdng_log, which applyCoreState applies.
+     return sendCoreCommand(QStringLiteral("set_cdng_log"), {
+-        { QStringLiteral("value"), on ? QStringLiteral("auto") : QStringLiteral("off") }
++        { QStringLiteral("value"), value }
+     });
+ }
+ 
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 0d451eb..2f1300c 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -197,7 +197,7 @@ public:
+     Q_INVOKABLE bool applyClipNameTemplate(const QString &value);
+     Q_INVOKABLE void requestClipNamePreview(const QString &value);
+     Q_INVOKABLE bool applyClearHdr(bool enabled);
+-    Q_INVOKABLE bool applyCdngLog(bool on);
++    Q_INVOKABLE bool applyCdngLog(const QString &value);
+     Q_INVOKABLE bool applyH264Resolution(const QString &displayValue);
+     // target: "ui" (what the screens show), "files" (the clips and the audio) or "both"
+     Q_INVOKABLE bool applyTimecodeMode(const QString &displayValue, const QString &target);
+-- 
+2.43.0
+

@@ -1,0 +1,187 @@
+From f1c14d4a0744cb2c5eb653aed1b74a64d0e71d16 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:49:50 +0000
+Subject: [PATCH 1/4] camera: the IMX585 tables also list the original driver's
+ 1.85:1 sizes
+
+Why:
+The four IMX585 class tables in Imx585Modes.hpp were copied from the
+cinemate-port driver only. The original Apertar driver (e5b74d3) has
+1.85:1 at 3840x2076 and binned 1920x1038, in 12-bit and 10-bit (one
+mode list for both codes). The startup probe configures only table
+rows, so on the original driver those two modes were never tried and
+never listed. The probe also told the IMX585 apart by a
+properties::Model substring, where the rest of CameraController (as
+1.6.0) uses detectSensorFamily(camera->id()). A driver mode with no
+table row disappeared without a trace.
+
+What:
+S12 and S10 gain 3840x2076 and binned 1920x1038, H12 gains 3840x2076
+(a driver whose SDR 1.85:1 is 3840x2076 lists it in Clear HDR 12-bit
+too; the original driver has only 4K there). The probe tries them like
+every other row and keeps what the installed driver accepts; the
+cinemate-port driver refuses them. tableProbe now comes from
+detectSensorFamily. For each size the driver advertises that no table
+row of the class covers, the probe writes one line:
+"ApertarCore sensor probe: <format> <size> sdr|clear_hdr is a driver
+mode with no IMX585 table row". Saved sizes are still moved to
+2072/1036 before any lookup; that changes in the next commit.
+
+Tested:
+check_core.sh both builds and host tests pass; imx585_modes_test checks
+the new counts (64, 64, 29, 34), both 1.85:1 pairs in S12 and S10 with
+their binned flags, 3840x2076 in H12, none in H16, and no duplicate
+rows. Needs the camera: journalctl -u apertar-core -b | grep -E
+'sensor mode:|sensor probe:'. cinemate-port driver: the same
+'sensor mode:' lines as before, no 2076/1038 among them, the probe
+time a few configures longer, and one 'no IMX585 table row' line for
+the binned 1920x1080 in Clear HDR 12-bit that Core holds back.
+Original driver: 'sensor mode:' lines for 3840x2076 and 1920x1038.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/camera/CameraController.cpp | 16 +++++++++++-----
+ src/camera/Imx585Modes.hpp      | 10 ++++++++--
+ tools/imx585_modes_test.cpp     | 28 +++++++++++++++++++++++-----
+ 3 files changed, 42 insertions(+), 12 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 0065b41..6af57c0 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -7151,11 +7151,7 @@ std::vector<CameraController::SensorMode> probeSensorModes()
+                     const libcamera::StreamFormats formats = config->at(0).formats();
+                     // An IMX585 is probed by its mode tables (one configure per offered row of the class);
+                     // any other sensor by the sizes it advertises.
+-                    const auto model = camera->properties().get(libcamera::properties::Model);
+-                    std::string modelName = model ? std::string(*model) : std::string();
+-                    std::transform(modelName.begin(), modelName.end(), modelName.begin(),
+-                                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+-                    const bool tableProbe = modelName.find("imx585") != std::string::npos;
++                    const bool tableProbe = detectSensorFamily(camera->id()) == SensorFamily::Imx585;
+                     for (const auto &pixelFormat : formats.pixelformats()) {
+                         RawBitDepth depth;
+                         PixelPacking packing;
+@@ -7174,6 +7170,16 @@ std::vector<CameraController::SensorMode> probeSensorModes()
+                                 probeSizes.emplace_back(transport.width, transport.height);
+                                 probeBinning.push_back(row.binned ? 2u : 1u);
+                             }
++                            for (const auto &advertised : formats.sizes(pixelFormat)) {
++                                bool covered = false;
++                                for (const auto &row : apertar::imx585::all(cls))
++                                    covered = covered || apertar::imx585::transportFor(cls, row) ==
++                                        apertar::imx585::Size{ advertised.width, advertised.height };
++                                if (!covered)
++                                    std::cerr << "ApertarCore sensor probe: " << pixelFormat.toString() << " "
++                                              << advertised.toString() << (clearHdr ? " clear_hdr" : " sdr")
++                                              << " is a driver mode with no IMX585 table row\n";
++                            }
+                         } else {
+                             probeSizes = formats.sizes(pixelFormat);
+                         }
+diff --git a/src/camera/Imx585Modes.hpp b/src/camera/Imx585Modes.hpp
+index 3a5471d..dca88bf 100644
+--- a/src/camera/Imx585Modes.hpp
++++ b/src/camera/Imx585Modes.hpp
+@@ -3,6 +3,10 @@
+ // The IMX585 modes the cinemate-port driver advertises, per class, and the size rules around them.
+ // std-only: tools/imx585_modes_test.cpp includes it without libcamera.
+ //
++// The original Apertar driver has 1.85:1 at 3840x2076 and binned 1920x1038 (12-bit and 10-bit), where the
++// cinemate-port driver has 3840x2072 and 1920x1036. The tables list both; the startup probe keeps the rows
++// the installed driver accepts.
++//
+ // Sizes are the ACTIVE picture, the size Core records and shows. What the driver delivers (the
+ // transport size) is the same for the three classes below; only 16-bit Clear HDR prepends
+ // optical-black rows: +40 rows at 1x1, +20 rows binned, split evenly top and bottom, so the
+@@ -54,6 +58,7 @@ inline constexpr Mode kS12Modes[] = {
+     { 1024, 576, true }, { 1024, 552, true }, { 1024, 540, true }, { 1024, 512, true },
+     { 1024, 464, true }, { 1024, 460, true }, { 1024, 436, true }, { 1024, 428, true },
+     { 1024, 408, true }, { 1024, 400, true },
++    { 3840, 2076, false }, { 1920, 1038, true },     // 1.85:1 of the original Apertar driver
+ };
+ 
+ inline constexpr Mode kS10Modes[] = {
+@@ -73,6 +78,7 @@ inline constexpr Mode kS10Modes[] = {
+     { 1024, 576, true }, { 1024, 552, true }, { 1024, 540, true }, { 1024, 512, true },
+     { 1024, 464, true }, { 1024, 460, true }, { 1024, 436, true }, { 1024, 428, true },
+     { 1024, 408, true }, { 1024, 400, true },
++    { 3840, 2076, false }, { 1920, 1038, true },     // 1.85:1 of the original Apertar driver
+ };
+ 
+ // The driver also lists 1920x1080 binned here. Core holds it back until a capture shows that the 12-bit
+@@ -87,6 +93,7 @@ inline constexpr Mode kH12Modes[] = {
+     { 2048, 1080, false }, { 2048, 1024, false }, { 2048, 928, false }, { 2048, 920, false },
+     { 2048, 872, false }, { 2048, 856, false }, { 2048, 816, false }, { 2048, 800, false },
+     { 1440, 1080, false },
++    { 3840, 2076, false },          // a driver with 3840x2076 in SDR has it here too (the original: 4K only)
+ };
+ 
+ inline constexpr Mode kH16Modes[] = {
+@@ -136,8 +143,7 @@ constexpr uint32_t bitDepthOf(Class cls)
+     return 12;
+ }
+ 
+-// Every row of the class as the driver lists it (62, 62, 28 of 29, 34: see kH12Modes), hidden and shadowed
+-// rows included.
++// Every row of the class (64, 64, 29, 34: see kH12Modes), hidden and shadowed rows included.
+ struct Rows {
+     const Mode *first;
+     const Mode *last;
+diff --git a/tools/imx585_modes_test.cpp b/tools/imx585_modes_test.cpp
+index 637e397..3ec580b 100644
+--- a/tools/imx585_modes_test.cpp
++++ b/tools/imx585_modes_test.cpp
+@@ -15,9 +15,9 @@ static int failures = 0;
+ 
+ int main()
+ {
+-    CHECK(im::all(im::Class::S12).size() == 62);
+-    CHECK(im::all(im::Class::S10).size() == 62);
+-    CHECK(im::all(im::Class::H12).size() == 28);   // the driver's binned 1920x1080 row is left out
++    CHECK(im::all(im::Class::S12).size() == 64);
++    CHECK(im::all(im::Class::S10).size() == 64);
++    CHECK(im::all(im::Class::H12).size() == 29);   // the driver's binned 1920x1080 row is left out
+     CHECK(im::all(im::Class::H16).size() == 34);
+ 
+     CHECK(im::classFor(12, false) == im::Class::S12);
+@@ -63,7 +63,7 @@ int main()
+     CHECK(im::find(im::Class::S12, 960, 540, 0) != nullptr);
+     CHECK(im::find(im::Class::S12, 1488, 1080, 1280) != nullptr);
+     CHECK(im::find(im::Class::S12, 1080, 1080, 1280) == nullptr);
+-    CHECK(im::offered(im::Class::S12, 1280).size() == 62 - 11 - 10 - 1);   // 960 x11, 1024 x10, 1080x1080b
++    CHECK(im::offered(im::Class::S12, 1280).size() == 64 - 11 - 10 - 1);   // 960 x11, 1024 x10, 1080x1080b
+     for (const im::Mode &mode : im::offered(im::Class::S10))
+         CHECK(mode.width >= im::kDefaultMinModeWidth);
+ 
+@@ -74,7 +74,25 @@ int main()
+     for (const im::Class cls : { im::Class::S12, im::Class::S10, im::Class::H12, im::Class::H16 })
+         CHECK(im::find(cls, 3840, 2160));
+     CHECK(im::anyClassHas(1920, 1016));
+-    CHECK(!im::anyClassHas(3840, 2076));            // the retired 1.6.0 size
++
++    // 1.85:1 of both drivers: the cinemate-port driver's 3840x2072 / 1920x1036b and the original
++    // driver's 3840x2076 / 1920x1038b, in SDR 12-bit and 10-bit; 3840 also in 12-bit Clear HDR.
++    for (const im::Class cls : { im::Class::S12, im::Class::S10 }) {
++        for (const uint32_t height : { 2072u, 2076u }) {
++            const im::Mode *uhd = im::find(cls, 3840, height);
++            CHECK(uhd && !uhd->binned);
++        }
++        for (const uint32_t height : { 1036u, 1038u }) {
++            const im::Mode *hd = im::find(cls, 1920, height);
++            CHECK(hd && hd->binned);
++        }
++    }
++    const im::Mode *hdr185 = im::find(im::Class::H12, 3840, 2076);
++    CHECK(hdr185 && !hdr185->binned);
++    CHECK(!im::find(im::Class::H12, 1920, 1038, 0));
++    CHECK(!im::find(im::Class::H16, 3840, 2076, 0));   // RAW16 1.85:1 stays 3840x2072 (transport 3840x2112)
++    CHECK(im::transportFor(im::Class::S12, 3840, 2076, 0) == std::optional<im::Size>(im::Size{ 3840, 2076 }));
++    CHECK(im::transportFor(im::Class::S10, 1920, 1038, 0) == std::optional<im::Size>(im::Size{ 1920, 1038 }));
+ 
+     // nearest: an exact row is its own nearest; a missing size takes the closest row.
+     for (const im::Mode &mode : im::offered(im::Class::H12)) {
+-- 
+2.43.0
+

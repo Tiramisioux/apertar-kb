@@ -1,0 +1,359 @@
+From 1c5c76ae7f371606d97ac7d5bd3027a9de9d4b67 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:41:21 +0000
+Subject: [PATCH 1/4] core, web: the Controls page reads the hardware file
+ through GET /api/config
+
+Why: get_controls was a second door to the hardware file. It ran in a
+second dispatcher before the command lock, parsed the file eight times
+and wrote the error and warning counters from a read. Original Apertar
+serves a read that must not wait for the lock as an HTTP GET route on
+the web server's thread, and GET /api/config already returns this
+file (buildHardwareConfigFileJson, App:5290-5321 and App:7168-7173
+@upstream-1.6.0).
+
+What: buildHardwareConfigFileJson is now an ApertarCoreApp member. It
+keeps the upstream fields (ok, path, display_path, exists, size_bytes,
+size_text, modified_text, text) and the port's revision and boot_copy,
+and adds what get_controls sent: written_by, written_at, errors,
+warnings, issues, replaced, model, peripherals, i2c_buses, apply,
+dpi_lines, gpio_chips. It parses the file once. The model, peripherals
+and issues are of the file Core runs; text stays the editor's text
+(file, /boot copy or template). The systemctl probe stays in
+controlsApplyJson. The get_controls block and its help entry are gone,
+and the read no longer writes controlsErrors_/controlsWarnings_ (the
+worker and the saves keep them). loadControls and controlsRecheckSoon
+fetch /api/config with cache: "no-store"; loadControls still asks for
+/api/config and list_actions together in one Promise.all.
+
+Tested: check_core.sh both tests: PASS (warning counts unchanged).
+--simulate with the controls fixture and with no hardware file:
+/api/config carries every 1.6.0 field with the same type plus the
+new members; Settings > Controls renders the same rows, the Hardware
+card the same 7 peripherals as the build before this commit, no page
+errors; Playwright: the first load sends GET /api/config and
+list_actions side by side, a reload only GET /api/config. smoke_core.sh before/after: only get_controls (now Unknown
+command), help (one name fewer) and the added /api/config members
+differ. Needs the camera: open Settings > Controls while a take runs;
+the page loads and curl -s localhost:8000/api/state shows
+recording_dropped_frames 0.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp         | 178 +++++++++++++++------------------
+ src/ApertarCoreApp.hpp         |   1 +
+ src/hardware/ControlsModel.hpp |   2 +-
+ src/web/WebControlPage.cpp     |  35 +++----
+ 4 files changed, 103 insertions(+), 113 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 4142407..b609301 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -6182,55 +6182,6 @@ std::string formatFileTimestampHuman(const std::filesystem::file_time_type &time
+     return buffer;
+ }
+ 
+-std::string buildHardwareConfigFileJson()
+-{
+-    const std::filesystem::path path = editableHardwareConfigPath();
+-    const hardware::StoreInfo info = hardware::configStore().info();
+-    std::error_code ec;
+-    const bool exists = info.exists;
+-
+-    // A missing file starts from a /boot copy when there is one (the readers take its sections), else the template.
+-    std::string text = info.text;
+-    std::string bootCopy;
+-    if (!exists) {
+-        for (const char *candidate : { "/boot/firmware/apertar-hardware.conf", "/boot/apertar-hardware.conf" }) {
+-            if (std::filesystem::is_regular_file(candidate, ec)) {
+-                bootCopy = candidate;
+-                text = readTextFileRaw(candidate);
+-                break;
+-            }
+-            ec.clear();
+-        }
+-        if (bootCopy.empty())
+-            text = defaultHardwareConfigTemplate();
+-    }
+-    uint64_t sizeBytes = static_cast<uint64_t>(text.size());
+-    if (exists) {
+-        const auto fileSize = std::filesystem::file_size(path, ec);
+-        if (!ec)
+-            sizeBytes = static_cast<uint64_t>(fileSize);
+-    }
+-    ec.clear();
+-
+-    std::string modifiedText = exists ? formatFileTimestampHuman(std::filesystem::last_write_time(path, ec)) : "Not saved yet";
+-    if (ec)
+-        modifiedText = "Unknown";
+-
+-    std::ostringstream out;
+-    out << "{\"ok\":true"
+-        << ",\"path\":\"" << escapeJson(path.string()) << "\""
+-        << ",\"display_path\":\"" << escapeJson(hardwareConfigDisplayPath(path)) << "\""
+-        << ",\"exists\":" << (exists ? "true" : "false")
+-        << ",\"revision\":\"" << escapeJson(info.revision) << "\""
+-        << ",\"boot_copy\":\"" << escapeJson(bootCopy) << "\""
+-        << ",\"size_bytes\":" << sizeBytes
+-        << ",\"size_text\":\"" << escapeJson(formatBytesHuman(sizeBytes)) << "\""
+-        << ",\"modified_text\":\"" << escapeJson(modifiedText) << "\""
+-        << ",\"text\":\"" << escapeJson(text) << "\""
+-        << "}";
+-    return out.str();
+-}
+-
+ // What the Config page may send before the store sees it. Empty, too large and binary texts never get that far.
+ bool checkHardwareConfigText(const std::string &text, std::string *errorMessage)
+ {
+@@ -12424,54 +12375,91 @@ std::string ApertarCoreApp::testInputReply(const ControlCommand &command)
+     return errorReply(command.id, "test_input: no control " + section + " " + key + " in the saved file.");
+ }
+ 
++std::string ApertarCoreApp::buildHardwareConfigFileJson()
++{
++    const std::filesystem::path path = editableHardwareConfigPath();
++    const hardware::StoreInfo info = hardware::configStore().info();
++    std::error_code ec;
++    const bool exists = info.exists;
++    // The model, the peripherals and the issues are of the file Core runs; text is what the editor starts from.
++    const hwconf::Document doc = hwconf::parse(info.text);
++    const hwconf::Facts facts = hardwareConfigFacts();
++    const std::vector<hwconf::Issue> issues = hwconf::validate(info.text, facts);
++    const size_t errors = controlsErrorCount(issues);
++
++    // A missing file starts from a /boot copy when there is one (the readers take its sections), else the template.
++    std::string text = info.text;
++    std::string bootCopy;
++    if (!exists) {
++        for (const char *candidate : { "/boot/firmware/apertar-hardware.conf", "/boot/apertar-hardware.conf" }) {
++            if (std::filesystem::is_regular_file(candidate, ec)) {
++                bootCopy = candidate;
++                text = readTextFileRaw(candidate);
++                break;
++            }
++            ec.clear();
++        }
++        if (bootCopy.empty())
++            text = defaultHardwareConfigTemplate();
++    }
++    uint64_t sizeBytes = static_cast<uint64_t>(text.size());
++    if (exists) {
++        const auto fileSize = std::filesystem::file_size(path, ec);
++        if (!ec)
++            sizeBytes = static_cast<uint64_t>(fileSize);
++    }
++    ec.clear();
++
++    std::string modifiedText = exists ? formatFileTimestampHuman(std::filesystem::last_write_time(path, ec)) : "Not saved yet";
++    if (ec)
++        modifiedText = "Unknown";
++
++    std::ostringstream out;
++    out << "{\"ok\":true"
++        << ",\"path\":\"" << escapeJson(path.string()) << "\""
++        << ",\"display_path\":\"" << escapeJson(hardwareConfigDisplayPath(path)) << "\""
++        << ",\"exists\":" << (exists ? "true" : "false")
++        << ",\"revision\":\"" << escapeJson(info.revision) << "\""
++        << ",\"boot_copy\":\"" << escapeJson(bootCopy) << "\""
++        << ",\"size_bytes\":" << sizeBytes
++        << ",\"size_text\":\"" << escapeJson(formatBytesHuman(sizeBytes)) << "\""
++        << ",\"modified_text\":\"" << escapeJson(modifiedText) << "\""
++        << ",\"text\":\"" << escapeJson(text) << "\""
++        << ",\"written_by\":\"" << escapeJson(info.writtenBy) << "\""
++        << ",\"written_at\":\"" << escapeJson(info.writtenAt) << "\""
++        << ",\"errors\":" << errors
++        << ",\"warnings\":" << issues.size() - errors
++        << ",\"issues\":" << controlsIssuesJson(issues)
++        << ",\"replaced\":" << controlsReplacedJson(hardware::configStore().replacedByDefault())
++        << ",\"model\":" << hwconf::modelJson(doc)
++        << ",\"peripherals\":[" << gpioPeripheralJson(doc)
++        << "," << i2cPeripheralJson(doc, "neorotary4", "NeoRotary 4", 0x49, neoRotary4Input_.enabled(), neoRotary4Input_.lastError())
++        << "," << i2cPeripheralJson(doc, "pcf8574", "PCF8574 buttons", 0x20, pcf8574Input_.enabled(), pcf8574Input_.lastError())
++        << "," << i2cPeripheralJson(doc, "grove_analog", "Grove analog (ADC)", 0x04, groveAnalogInput_.enabled(), groveAnalogInput_.lastError())
++        << "," << cfeHatPeripheralJson(doc, options_.mediaRoot)
++        << "," << outputPeripheralJson(doc, "recording_indicator", "Tally LED",
++                                       recordingIndicatorOutput_.enabled(), recordingIndicatorOutput_.lastError())
++        << "," << outputPeripheralJson(doc, "trigger_output", "Trigger output",
++                                       triggerOutput_.enabled(), triggerOutput_.lastError())
++        << "],\"i2c_buses\":" << i2cBusesJson()
++        << ",\"apply\":" << controlsApplyJson()
++        << ",\"dpi_lines\":[";
++    for (size_t i = 0; i < facts.dpiLines.size(); ++i)
++        out << (i ? "," : "") << facts.dpiLines[i];
++    // The GPIO chips a chip= setting can name; "header" marks the one chip=auto means.
++    out << "],\"gpio_chips\":[";
++    for (size_t i = 0; i < facts.gpioChips.size(); ++i) {
++        const hwconf::GpioChipFact &chip = facts.gpioChips[i];
++        out << (i ? "," : "") << "{\"path\":\"" << escapeJson(chip.path) << "\",\"label\":\"" << escapeJson(chip.label)
++            << "\",\"lines\":" << chip.lines << ",\"header\":" << (chip.path == facts.headerChip ? "true" : "false") << "}";
++    }
++    out << "]}";
++    return out.str();
++}
++
+ // The hardware commands that only read: they run without the command lock.
+ std::optional<std::string> ApertarCoreApp::handleReadOnlyHardwareCommand(const ControlCommand &command)
+ {
+-    if (command.name == "get_controls") {
+-        hardware::HardwareConfigStore &store = hardware::configStore();
+-        const hardware::StoreInfo info = store.info();
+-        const std::vector<hwconf::Issue> issues = hwconf::validate(info.text, hardwareConfigFacts());
+-        const size_t errors = controlsErrorCount(issues);
+-        controlsErrors_ = errors;
+-        controlsWarnings_ = issues.size() - errors;
+-        std::ostringstream body;
+-        body << "\"controls\":{\"revision\":\"" << escapeJson(info.revision) << "\""
+-             << ",\"path\":\"" << escapeJson(store.path().string()) << "\""
+-             << ",\"display_path\":\"" << escapeJson(hardwareConfigDisplayPath(store.path())) << "\""
+-             << ",\"exists\":" << (info.exists ? "true" : "false")
+-             << ",\"written_by\":\"" << escapeJson(info.writtenBy) << "\""
+-             << ",\"written_at\":\"" << escapeJson(info.writtenAt) << "\""
+-             << ",\"errors\":" << errors
+-             << ",\"warnings\":" << issues.size() - errors
+-             << ",\"issues\":" << controlsIssuesJson(issues)
+-             << ",\"text\":\"" << escapeJson(info.text) << "\""
+-             << ",\"replaced\":" << controlsReplacedJson(store.replacedByDefault())
+-             << ",\"model\":" << hwconf::modelJson(hwconf::parse(info.text))
+-             << ",\"peripherals\":[" << gpioPeripheralJson(hwconf::parse(info.text))
+-             << "," << i2cPeripheralJson(hwconf::parse(info.text), "neorotary4", "NeoRotary 4", 0x49, neoRotary4Input_.enabled(), neoRotary4Input_.lastError())
+-             << "," << i2cPeripheralJson(hwconf::parse(info.text), "pcf8574", "PCF8574 buttons", 0x20, pcf8574Input_.enabled(), pcf8574Input_.lastError())
+-             << "," << i2cPeripheralJson(hwconf::parse(info.text), "grove_analog", "Grove analog (ADC)", 0x04, groveAnalogInput_.enabled(), groveAnalogInput_.lastError())
+-             << "," << cfeHatPeripheralJson(hwconf::parse(info.text), options_.mediaRoot)
+-             << "," << outputPeripheralJson(hwconf::parse(info.text), "recording_indicator", "Tally LED",
+-                                            recordingIndicatorOutput_.enabled(), recordingIndicatorOutput_.lastError())
+-             << "," << outputPeripheralJson(hwconf::parse(info.text), "trigger_output", "Trigger output",
+-                                            triggerOutput_.enabled(), triggerOutput_.lastError())
+-             << "],\"i2c_buses\":" << i2cBusesJson()
+-             << ",\"apply\":" << controlsApplyJson()
+-             << ",\"dpi_lines\":[";
+-        const hwconf::Facts facts = hardwareConfigFacts();
+-        for (size_t i = 0; i < facts.dpiLines.size(); ++i)
+-            body << (i ? "," : "") << facts.dpiLines[i];
+-        // The GPIO chips a chip= setting can name; "header" marks the one chip=auto means.
+-        body << "],\"gpio_chips\":[";
+-        for (size_t i = 0; i < facts.gpioChips.size(); ++i) {
+-            const hwconf::GpioChipFact &chip = facts.gpioChips[i];
+-            body << (i ? "," : "") << "{\"path\":\"" << escapeJson(chip.path) << "\",\"label\":\"" << escapeJson(chip.label)
+-                 << "\",\"lines\":" << chip.lines << ",\"header\":" << (chip.path == facts.headerChip ? "true" : "false") << "}";
+-        }
+-        body << "]}";
+-        return okReply(command.id, body.str());
+-    }
+     if (command.name == "controls_history") {
+         // T42/T43: the saved versions, newest first; name= returns one version's text (Undo, the Config history).
+         hardware::HardwareConfigStore &store = hardware::configStore();
+@@ -12944,7 +12932,7 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+     }
+ 
+     if (command.name == "help")
+-        return okReply(command.id, "\"commands\":[\"get_state\",\"list_sensor_modes\",\"list_actions\",\"get_controls\",\"set_controls\",\"set_buffer_mode\",\"set_frames_per_folder\",\"set_clip_merge\",\"set_storage_preroll\",\"storage_preroll\",\"controls_history\",\"controls_last_input\",\"scan_i2c\",\"test_output\",\"set_iso\",\"set_iso_auto\",\"set_exposure_compensation\",\"set_exposure_metering\",\"set_fps\",\"set_shutter_us\",\"set_shutter_auto\",\"set_wb\",\"set_wb_auto\",\"set_resolution\",\"set_record_format\",\"set_cdng_compression\",\"set_cdng_log\",\"set_lossy_dng_ratio\",\"set_prores_profile\",\"set_prores_color_profile\",\"set_cdng_preview_color_profile\",\"set_tuning_file\",\"set_raw_bit_depth\",\"set_clear_hdr\",\"set_hdr_threshold_high\",\"set_hdr_threshold_low\",\"set_hdr_blend\",\"set_hdr_gain_adder\",\"set_h264_resolution\",\"set_timecode_mode\",\"set_conform_fps\",\"set_clip_name_template\",\"preview_clip_name\",\"set_fps_phase_lock\",\"set_media_trim\",\"set_preview_tdn\",\"set_fps_speed_ramp\",\"set_af_mode\",\"set_af_range\",\"set_af_speed\",\"set_af_window\",\"set_photo_mode_enabled\",\"set_photo_long_exposure_enabled\",\"set_photo_bracketing_enabled\",\"set_photo_bracketing_ev\",\"set_photo_timer\",\"set_photo_burst\",\"set_photo_format\",\"set_photo_timelapse\",\"timelapse_start\",\"timelapse_stop\",\"set_focus_peaking_enabled\",\"set_focus_peaking_threshold\",\"set_focus_peaking_color\",\"set_zebra_enabled\",\"set_zebra_threshold\",\"set_false_color_enabled\",\"set_false_color_mode\",\"set_lut_preview_enabled\",\"set_lut_preview_file\",\"set_guides_enabled\",\"set_guides_type\",\"set_guides_thickness\",\"set_center_marker_enabled\",\"set_center_marker_type\",\"set_grayscale_enabled\",\"set_smpte_enabled\",\"set_anamorphic_desqueeze_enabled\",\"set_anamorphic_ratio\",\"set_external_monitor_enabled\",\"set_external_monitor_mode\",\"set_external_monitor_info_overlay\",\"set_external_monitor_orientation\",\"set_ui_orientation\",\"set_camera_controls_opacity\",\"set_camera_controls_mode\",\"set_date_time_overlay_enabled\",\"set_recording_frame_enabled\",\"set_frame_buffer_bar_enabled\",\"set_recording_red_timecode_enabled\",\"set_audio_recorded_outline_enabled\",\"set_sound_recorder_enabled\",\"set_record_audio_enabled\",\"set_record_gyro_enabled\",\"set_imu_driver\",\"set_imu_orientation\",\"set_imu_sync_offset\",\"adjust_imu_sync_offset\",\"reset_imu_sync_offset\",\"set_imu_level_reference\",\"clear_imu_level_reference\",\"calibrate_gyro\",\"set_live_audio_monitoring_enabled\",\"set_audio_meter_enabled\",\"set_audio_input_device\",\"set_audio_output_device\",\"set_input_volume\",\"set_headphone_volume\",\"set_battery_type\",\"set_battery_capacity\",\"set_custom_battery_wh\",\"set_custom_battery_voltage\",\"set_sleep_mode\",\"set_favorites_order\",\"set_value_steps\",\"get_mode_ladder\",\"set_mode_ladder\",\"apply_time_zone\",\"apply_date_time\",\"set_fan_mode\",\"get_boot_config\",\"set_boot_config\",\"format_media\",\"eject_media\",\"mount_media\",\"run_media_speed_test\",\"capture_photo\",\"record_start\",\"record_stop\",\"preview_subscribe\",\"restart_system\",\"power_off_system\",\"shutdown\"]");
++        return okReply(command.id, "\"commands\":[\"get_state\",\"list_sensor_modes\",\"list_actions\",\"set_controls\",\"set_buffer_mode\",\"set_frames_per_folder\",\"set_clip_merge\",\"set_storage_preroll\",\"storage_preroll\",\"controls_history\",\"controls_last_input\",\"scan_i2c\",\"test_output\",\"set_iso\",\"set_iso_auto\",\"set_exposure_compensation\",\"set_exposure_metering\",\"set_fps\",\"set_shutter_us\",\"set_shutter_auto\",\"set_wb\",\"set_wb_auto\",\"set_resolution\",\"set_record_format\",\"set_cdng_compression\",\"set_cdng_log\",\"set_lossy_dng_ratio\",\"set_prores_profile\",\"set_prores_color_profile\",\"set_cdng_preview_color_profile\",\"set_tuning_file\",\"set_raw_bit_depth\",\"set_clear_hdr\",\"set_hdr_threshold_high\",\"set_hdr_threshold_low\",\"set_hdr_blend\",\"set_hdr_gain_adder\",\"set_h264_resolution\",\"set_timecode_mode\",\"set_conform_fps\",\"set_clip_name_template\",\"preview_clip_name\",\"set_fps_phase_lock\",\"set_media_trim\",\"set_preview_tdn\",\"set_fps_speed_ramp\",\"set_af_mode\",\"set_af_range\",\"set_af_speed\",\"set_af_window\",\"set_photo_mode_enabled\",\"set_photo_long_exposure_enabled\",\"set_photo_bracketing_enabled\",\"set_photo_bracketing_ev\",\"set_photo_timer\",\"set_photo_burst\",\"set_photo_format\",\"set_photo_timelapse\",\"timelapse_start\",\"timelapse_stop\",\"set_focus_peaking_enabled\",\"set_focus_peaking_threshold\",\"set_focus_peaking_color\",\"set_zebra_enabled\",\"set_zebra_threshold\",\"set_false_color_enabled\",\"set_false_color_mode\",\"set_lut_preview_enabled\",\"set_lut_preview_file\",\"set_guides_enabled\",\"set_guides_type\",\"set_guides_thickness\",\"set_center_marker_enabled\",\"set_center_marker_type\",\"set_grayscale_enabled\",\"set_smpte_enabled\",\"set_anamorphic_desqueeze_enabled\",\"set_anamorphic_ratio\",\"set_external_monitor_enabled\",\"set_external_monitor_mode\",\"set_external_monitor_info_overlay\",\"set_external_monitor_orientation\",\"set_ui_orientation\",\"set_camera_controls_opacity\",\"set_camera_controls_mode\",\"set_date_time_overlay_enabled\",\"set_recording_frame_enabled\",\"set_frame_buffer_bar_enabled\",\"set_recording_red_timecode_enabled\",\"set_audio_recorded_outline_enabled\",\"set_sound_recorder_enabled\",\"set_record_audio_enabled\",\"set_record_gyro_enabled\",\"set_imu_driver\",\"set_imu_orientation\",\"set_imu_sync_offset\",\"adjust_imu_sync_offset\",\"reset_imu_sync_offset\",\"set_imu_level_reference\",\"clear_imu_level_reference\",\"calibrate_gyro\",\"set_live_audio_monitoring_enabled\",\"set_audio_meter_enabled\",\"set_audio_input_device\",\"set_audio_output_device\",\"set_input_volume\",\"set_headphone_volume\",\"set_battery_type\",\"set_battery_capacity\",\"set_custom_battery_wh\",\"set_custom_battery_voltage\",\"set_sleep_mode\",\"set_favorites_order\",\"set_value_steps\",\"get_mode_ladder\",\"set_mode_ladder\",\"apply_time_zone\",\"apply_date_time\",\"set_fan_mode\",\"get_boot_config\",\"set_boot_config\",\"format_media\",\"eject_media\",\"mount_media\",\"run_media_speed_test\",\"capture_photo\",\"record_start\",\"record_stop\",\"preview_subscribe\",\"restart_system\",\"power_off_system\",\"shutdown\"]");
+ 
+     if (command.name == "get_state") {
+         const auto mediaWrite = camera_.mediaWriteStatus();
+diff --git a/src/ApertarCoreApp.hpp b/src/ApertarCoreApp.hpp
+index 3ab5c96..647c496 100644
+--- a/src/ApertarCoreApp.hpp
++++ b/src/ApertarCoreApp.hpp
+@@ -89,6 +89,7 @@ private:
+     std::string buildWebStateJson() const;
+     std::string buildPresetLibraryJson() const;
+     std::string buildMediaLibraryJson() const;
++    std::string buildHardwareConfigFileJson();
+     void enqueuePreviewFrame(PreviewFrameDescriptor frame);
+     void enqueueCurrentPreviewRegistrations();
+     void updateWebPreviewRegistration(const PreviewFrameDescriptor &frame);
+diff --git a/src/hardware/ControlsModel.hpp b/src/hardware/ControlsModel.hpp
+index 83a8b30..cc6bdf2 100644
+--- a/src/hardware/ControlsModel.hpp
++++ b/src/hardware/ControlsModel.hpp
+@@ -337,7 +337,7 @@ inline std::string peripheralSettingsJson(const Document &doc, const std::string
+     return out + "]";
+ }
+ 
+-// {"sections":[...],"rows":[...],"gpio_pins":{"used":[...],"free":[...]}}: the part of get_controls the page draws.
++// {"sections":[...],"rows":[...],"gpio_pins":{"used":[...],"free":[...]}}: the part of GET /api/config the page draws.
+ inline std::string modelJson(const Document &doc)
+ {
+     std::string out = "{\"sections\":[";
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 4075c43..6378072 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -16652,7 +16652,7 @@ std::string_view webControlPageHtml()
+       scans: {},             // bus -> { loading } or { found } or { error }: the Hardware card's Scan
+       dpiLines: [],          // config.txt lines that load a DPI display
+       gpioChips: [],         // the GPIO chips there are: { path, label, lines, header }; header = the one chip=auto means
+-      apply: null,           // get_controls apply: { state, detail, pending }
++      apply: null,           // /api/config apply: { state, detail, pending }
+       history: [],           // saved versions, newest first
+       listening: false,
+     };
+@@ -18336,24 +18336,24 @@ std::string_view webControlPageHtml()
+       controlsState.loading = true;
+       updateControlsButtons();
+       try {
+-        const [controls, catalog] = await Promise.all([
+-          controlsCall({ cmd: "get_controls" }),
++        const [payload, catalog] = await Promise.all([
++          fetch("/api/config", { cache: "no-store" }).then((response) => response.json()),
+           controlsState.catalog ? Promise.resolve(null) : controlsCall({ cmd: "list_actions" }),
+         ]);
+-        if (!controls.ok)
+-          throw new Error(controls.error || "Could not load the controls.");
++        if (!payload.ok)
++          throw new Error(payload.error || "Could not load the controls.");
+         if (catalog) {
+           if (!catalog.ok)
+             throw new Error(catalog.error || "Could not load the list of actions.");
+           controlsState.catalog = catalog;
+         }
+-        controlsState.revision = String(controls.controls.revision || "");
+-        controlsState.model = controls.controls.model || null;
+-        controlsState.peripherals = controls.controls.peripherals || [];
+-        controlsState.buses = controls.controls.i2c_buses || [];
+-        controlsState.dpiLines = controls.controls.dpi_lines || [];
+-        controlsState.gpioChips = controls.controls.gpio_chips || [];
+-        controlsState.apply = controls.controls.apply || null;
++        controlsState.revision = String(payload.revision || "");
++        controlsState.model = payload.model || null;
++        controlsState.peripherals = payload.peripherals || [];
++        controlsState.buses = payload.i2c_buses || [];
++        controlsState.dpiLines = payload.dpi_lines || [];
++        controlsState.gpioChips = payload.gpio_chips || [];
++        controlsState.apply = payload.apply || null;
+         controlsChipLines.clear();
+         controlsSeparateTurns.clear();
+         controlsReplaced.clear();
+@@ -18372,7 +18372,7 @@ std::string_view webControlPageHtml()
+               suffix: line.key.slice(row.base.length), value: line.raw, orig: line.key, raw: line.raw, removed: false,
+             })) });
+         });
+-        const found = controls.controls;
++        const found = payload;
+         if (found.errors > 0)
+           showControlsMessage("The file has " + found.errors + (found.errors === 1 ? " error" : " errors") + ". Config shows where.", found.issues.filter((issue) => issue.error), false);
+         else if (found.replaced && found.replaced.replaced)
+@@ -18592,12 +18592,13 @@ std::string_view webControlPageHtml()
+     // A moment after a save, read the file's state again: what Core restarted, and what still needs a restart.
+     function controlsRecheckSoon() {
+       window.setTimeout(async () => {
+-        const reply = await controlsCall({ cmd: "get_controls" });
+-        if (!reply.ok)
++        const response = await fetch("/api/config", { cache: "no-store" });
++        const payload = await response.json();
++        if (!payload.ok)
+           return;
+-        controlsState.apply = reply.controls.apply || null;
++        controlsState.apply = payload.apply || null;
+         if (!controlsDirty() && !hardwareDirty()) {
+-          controlsState.peripherals = reply.controls.peripherals || controlsState.peripherals;
++          controlsState.peripherals = payload.peripherals || controlsState.peripherals;
+           renderControls();
+           renderHardware();
+         }
+-- 
+2.43.0
+
