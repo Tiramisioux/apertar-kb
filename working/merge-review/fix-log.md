@@ -686,3 +686,203 @@ So in photo mode the ISP picture is only the monitor picture. My change made the
 **Checked.** Ran here: both builds, the 17 host tests. Still needs the camera: with the switch off, enter photo mode and read `journalctl -u apertar-core | grep "tuning file"`: the line must end in `active=<...>_notdn.json`.
 
 **Rule.** Check a finding against the code before you act on it, also when a reviewer and a skeptic both signed it. Two readers can share one wrong assumption.
+
+---
+
+## C11. camera: reconfigure when a format switch changes the Clear HDR storage depth
+
+Apertar-Core `9bd7610`. Finding: HDR-D1. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/camera/CameraController.cpp:12723-12727@cinemate-port (same lines at the lane tip before ea120bc):
+    bool CameraController::applySettingsLocked(CaptureSettings nextSettings, bool requiresReconfigure, bool commit)
+    {
+        requiresReconfigure |= nextSettings.photoModeEnabled != settings_.photoModeEnabled;
+        requiresReconfigure |= activeIspColorProfile(nextSettings) != activeIspColorProfile(settings_);
+        requiresReconfigure |= nextSettings.clearHdr != settings_.clearHdr;
+setRecordingFormat (CC:11387-11389) only checked processed stream, size and rawBitDepth. The storage depth, which depends on the format (CC:1640-1643, 1686-1687), reached rawStreamInfo_ only at configure (CC:8615-8622). The copy worker read the format from the new settings_ and the depth from the stale rawInfo (CC:9491-9496).
+
+**Why it is a problem.** If the stream is not reconfigured, the session only swaps controls and settings_, so the stale rawStreamInfo_.bitDepth is used for the take. cDNG -> MLV: the MLV says 12/200/4095 and the packer keeps the low 12 bits of linear 16-bit samples (black at 77 % of white, highs wrap). MLV -> cDNG: a 4096-entry LinearizationTable meets a 16-bit view, writeDngFile throws "Invalid RAW linearization table." and the take fails. In Apertar 1.6.0 the storage depth followed rawBitDepth only (CC:1301-1308@upstream-1.6.0), so setRecordingFormat's rawBitDepth test covered it. Upstream lists the settings that change the stream as `requiresReconfigure |=` lines at the top of applySettingsLocked (CC:8661-8662@upstream-1.6.0). Fork main 57c8fb0 made the depth depend on the format and did not add a line there. This was not a port regression.
+
+**How to spot it.** grep for the function that fills a cached value at configure time (storageRawBitDepthForSettings -> rawStreamInfo_) and list its inputs. Then check that the reconfigure predicate (grep 'requiresReconfigure') changes when any of those inputs changes. Warning sign: a predicate that compares raw settings fields (rawBitDepth) while the value it protects is computed from more fields (clearHdr, recordingFormat, photo mode).
+
+**Options.**
+
+- One `requiresReconfigure |=` line in applySettingsLocked comparing storageRawBitDepthForSettings of next and current: covers every setter, 4 lines, guarded because the helper is libcamera-only
+- Extend the predicate in setRecordingFormat: covers only that setter, so a future setter that changes format, photo mode or depth would miss it
+- Move clearHdrStoresCodes12 / storageRawBitDepthForSettings out of the libcamera block into a header so the line needs no #if and a host test can call them: a code move that needs the original developer's decision and touches lines the other lane may edit
+
+**Chosen, and why.** Option 1. It is the Apertar pattern: the stream-changing settings are listed as `requiresReconfigure |=` lines in one place. storageRawBitDepthForSettings is defined inside `#if APERTARCORE_HAS_LIBCAMERA` (CC:1443-2268), while applySettingsLocked builds in both configurations. So the new line has the same guard as the other libcamera-only blocks in the file (for example CC:12686-12698). The simulated camera has no session to reconfigure, so nothing is lost there. What we give up: cDNG <-> MLV in 12-bit Clear HDR now restarts the stream (about as long as a size change). There is also no host test. The encoder-level tools/clear_hdr_storage_test.cpp was left out on purpose. It would only show that MlvEncoder and CdngEncoder write what a stale view tells them, and it would pass the same with or without this fix. Testing the fix needs the helper move from option 3.
+
+**After.**
+
+```
+    requiresReconfigure |= nextSettings.clearHdr != settings_.clearHdr;
+#if APERTARCORE_HAS_LIBCAMERA
+    // Clear HDR 12-bit stores 12-bit codes in cDNG and linear 16-bit in MLV; the stream takes the depth at configure.
+    requiresReconfigure |= storageRawBitDepthForSettings(nextSettings) != storageRawBitDepthForSettings(settings_);
+#endif
+```
+
+**Checked.** Ran here: /home/user/build/bin/check_core.sh /home/user/wt/lane-hdr lane-hdr both tests. Both builds pass and all 17 host tests pass. The warnings are in other files or on CC lines this change does not touch (7763, 7916, 1235, nolc build), so none are new. No WebUI or socket test was run: no command or state field changed, and the simulator skips the session. Needs the camera: Clear HDR 12 in cDNG, restart Core, then `set_record_format mlv` and record 2 s. The MLV RAWI must read 16/3201/65535, not 12/200/4095. Then `set_record_format cdng`, record, and check that `journalctl -u apertar-core | grep -i linearization` is empty.
+
+**Rule.** When a derived value (here the storage depth) starts to depend on a new input, every "did it change, do we need to redo X" check must compare the derived value, not the old inputs.
+
+
+---
+
+## C12. camera: entering Clear HDR on the IMX585 starts at 3840x2160
+
+Apertar-Core `93cab28`. Finding: HDR-D2. Reviewed by a second agent: fix-needed.
+
+**What was there.**
+
+The fork's colour Clear HDR start kept the SDR size, and the sanitiser took the nearest 12-bit Clear HDR row. A Full HD start therefore ran the binned 1920x1080 mode under a "4K Clear HDR" label (src/camera/CameraController.cpp setClearHdr@cinemate-port). Fork main instead pinned colour Clear HDR to 3840x2160 in the sanitiser, which blocked every other Clear HDR row. In the first version of this fix, the WebUI pill sent set_fps on every Clear HDR entry:
+  const fpsAgain = clearHdr && !snapshot.clear_hdr && Number.isFinite(fps) && fps > 0;
+
+**Why it is a problem.** In original Apertar, an explicit choice sets the state once in the controller setter, and the sanitiser only enforces limits, so it pins nothing. Explicit commands also keep their own scope. setFps outside a take always clears ladderOverride_ (CC:10711) and runs ladderRewriteLocked (CC:10712), even when the FPS does not change. So with the ladder enabled but overridden, a pill tap from SDR handed the mode back to the ladder.
+
+**How to spot it.** grep for `ladderOverride_ = false` in CameraController.cpp and list which socket commands end an override. Then check every WebUI path that chains commands (concat of set_* payloads) against that list.
+
+**Options.**
+
+- Pin 3840x2160 in the sanitiser as fork main does: this blocks every other Clear HDR row and set_resolution inside Clear HDR, so it was rejected
+- Set 3840x2160 in setClearHdr on the off-to-on edge: local, and leaves the sanitiser, ladder and mono rule untouched (chosen)
+- WebUI: always resend the FPS after entering Clear HDR: this breaks the ladder override (reviewer finding)
+- WebUI: resend the FPS only while the ladder is off, because the ladder owns the FPS when on (chosen)
+
+**Chosen, and why.** I set the 4K start in setClearHdr, and the WebUI resends the FPS only when ladder_enabled is not true. The reviewer was right: CC:10711-10712 clear the override unconditionally outside a take. The cost: with the ladder on, a Full HD SDR 50 fps to Full HD HDR pill tap keeps the 4K Clear HDR FPS cap until the operator or the ladder changes the FPS. Separately, set_resolution of a different size inside Clear HDR also ends the override (CC:10679). This is existing Core behaviour for any real size change, and setResolution runs no ladder rewrite, so the chosen mode holds.
+
+**After.**
+
+```
+    if (enabled && !settings_.clearHdr && sensorFamily == SensorFamily::Imx585)
+        next.resolution = Resolution{ 3840, 2160 };
+...
+      const fpsAgain = clearHdr && !snapshot.clear_hdr && snapshot.ladder_enabled !== true && Number.isFinite(fps) && fps > 0;
+```
+
+**Checked.**
+
+Here: check_core.sh both builds pass with 0 warnings, and all 17 host tests pass, including imx585_modes_test. In --simulate on port 8150, the WebUI loads with no page errors. Playwright (/home/user/build/sim/hdr-d2-pw/run.js) evaluated imx585BaseCommands:
+- Full HD SDR 50 to the hd-hdr pill: with ladder_enabled false it gives set_clear_hdr, set_resolution 1920x1080, set_fps 50; with ladder_enabled true it gives set_clear_hdr and set_resolution only.
+- 4K SDR 48 to the 4K HDR pill: set_fps 48 with the ladder off or the field absent, none with the ladder on.
+- HDR to HDR and HDR off send no set_fps.
+get_state works over /api/command.
+
+Needs the camera:
+- At Full HD, tap 4K Clear HDR, then run `printf '{"cmd":"get_state"}\n' | socat - UNIX-CONNECT:/tmp/apertar-core.sock`. It must show resolution 3840x2160, clear_hdr true, raw_bit_depth 12.
+- At Full HD 50 fps with the ladder off, the WebUI Full HD HDR pill must give 1920x1080 with Clear HDR on at 50 fps.
+- With the ladder overridden, an HDR pill tap must keep ladder_override true.
+
+UI lane, not edited here: the two touch-UI comment fixes from section D2 of REPORT.md (QML comments that say the touch UI enters 16-bit / keeps the size).
+
+**Rule.** Before a UI sends an extra command to restore a value, check what that command's Core setter resets as a side effect (overrides, ladder rewrite). Skip it where another owner, such as the Mode Ladder, controls that value.
+
+
+**Note from the lead: why the fix sits in Core, and what it cost.** Two programs send `set_clear_hdr`, and they expect different things. The touch UI's entry is called "4K Clear HDR": it sends only `set_clear_hdr` and then locks the size controls, a contract written when Core forced 4K (fork main). The WebUI's family pills send `set_clear_hdr` and then `set_resolution`, a contract written when Core took the nearest row. I first wanted the smaller fix: let the touch UI send the size it promises. That fails on the Mode Ladder: an explicit `set_resolution` ends a Clear HDR override (`ladderOverride_ = false` in `setResolution`), so the ladder would take the mode straight back. So the size has to be set inside `setClearHdr`, where the override is handled. The price is in the WebUI: entering Clear HDR now passes through 4K, which caps the FPS, so the pills send the FPS again afterwards (and not when the ladder owns the FPS). That is logic in the page that I would rather not have. It is four lines, it is in a port-only function, and two reviews went over the ladder cases. If the pills are ever reworked, the cleaner cure is one Core command that takes Clear HDR and the size together.
+
+---
+
+## C13. camera: hold back binned 1920x1080 in 12-bit Clear HDR
+
+Apertar-Core `a36c52f`. Finding: HDR-H1-interim. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/camera/Imx585Modes.hpp:78-79@cinemate-port listed the binned Full HD row first in the 12-bit Clear HDR class:
+    inline constexpr Mode kH12Modes[] = {
+        { 1920, 1080, true }, { 3840, 2160, false }, ...
+tools/imx585_modes_test.cpp:20 asserted `size() == 29`. src/web/WebControlPage.cpp:8918 mirrored it as `h12: "1920x1080b 3840x2160 ..."`. Before the setClearHdr fix that came earlier in this lane, a Full HD start in the touch UI landed in this mode under a "4K Clear HDR" label.
+
+**Why it is a problem.** The 12-bit Clear HDR samples are expanded with one curve: the full-resolution CCMP curve in cdng/ClearHdrCcmp.hpp, which libcamera's CcmpUnwrap mirrors. Neither side has a term for binning, and commit c1350b0 added the binned row "desk-only", with no curve check on a capture. If the sensor bins before the compander, mid-tones from about 4.6 % to 17.5 % of white come out about 16x too dark, with a step near 17.5 % (hdr12/REPORT.md section 1, V-H1.md). That cause is probable, not confirmed. Original Apertar 1.6.0 has no mode tables. The sizes it offers are sizes it records correctly (CAM-36: no silent downgrade of what is recorded; CAM-21: out-of-range requests are refused with a sentence).
+
+**How to spot it.** grep -n "binned\|true }" src/camera/Imx585Modes.hpp, then check each Clear HDR row: does ClearHdrCcmp.hpp (and libcamera CcmpUnwrap) have a term for that readout? If a mode came in with a commit that says "desk-only" or "not all BLC", ask which capture checked its curve. When you edit a table, grep for its hand copies too (the "1920x1080b" strings in WebControlPage.cpp, the counts in tools/imx585_modes_test.cpp).
+
+**Options.**
+
+- Delete the row from kH12Modes and mirror that in the WebUI fallback list and the test: 3 small edits; the operator loses binned Full HD at 12-bit Clear HDR until a capture is checked
+- Full fix: give ccmp::Params and libcamera CcmpUnwrap a binning factor: changes Core and libcamera together and needs a capture to verify, so it cannot be done or checked here
+- Keep the row and add a warning in the UIs: the mode still records possibly wrong samples, which breaks CAM-36
+- Pin colour Clear HDR to 4K in the sanitiser as fork main did: also blocks every 12-bit and 16-bit crop row, against the intent of caa0153
+
+**Chosen, and why.** Option 1, as the report's 'H1 interim, Core only' recommends. The table is the single source of truth: the probe (offered()), find()/nearest(), the set_resolution check, list_sensor_modes and the ladder pool all read it. One row deleted there reaches every Core user. The only copy that needed a hand edit was the WebUI's fallback string, used until the pool arrives. Given up: binned 1920x1080 at 12-bit Clear HDR, until the P7 capture pair passes. 16-bit Clear HDR and SDR keep their binned row. The driver still advertises the mode, so putting it back is a Core-only change.
+
+**After.**
+
+```
+// The driver also lists 1920x1080 binned here. Core holds it back until a capture shows that the 12-bit
+// companding curve, the full-resolution one, holds for the binned readout too. To offer it again, put
+// { 1920, 1080, true } back first, and "1920x1080b" in the WebUI's h12 list.
+inline constexpr Mode kH12Modes[] = {
+    { 3840, 2160, false }, { 2880, 2160, false }, { 2160, 2160, false },
+...
+    CHECK(im::all(im::Class::H12).size() == 28);   // the driver's binned 1920x1080 row is left out
+    CHECK(!im::find(im::Class::H12, 1920, 1080, 0));
+```
+
+**Checked.**
+
+Run here: /home/user/build/bin/check_core.sh /home/user/wt/lane-hdr lane-hdr both tests printed PASS for lc, nolc and the 17 host tests. The 3 nolc warnings are already there, in CameraController.cpp, which this commit does not change. The WebUI was driven with Playwright in --simulate on port 8147, with imx585 snapshots fed to the page functions. The h12 class has 28 rows. The hd-hdr pill is disabled at 12-bit SDR and 12-bit Clear HDR and enabled at 16-bit Clear HDR, where it gives 1920x1080. No page errors. The simulator has no IMX585, so list_sensor_modes returns an empty list there. Still needs the camera:
+1. With 12-bit Clear HDR on, run ac '{"cmd":"list_sensor_modes"}'. It must show no 1920x1080 12-bit Clear HDR mode.
+2. Run ac '{"cmd":"set_resolution","width":1920,"height":1080}'. It must be refused with "1920x1080 is not a mode of the IMX585 at 12-bit Clear HDR."
+3. To justify putting the row back, use a test build that has the row. At 1920x1080, record 12-bit and 16-bit Clear HDR of the same grey ramp, shutter and ISO (REPORT P7). Decode each through its own DNG tags and compare patch medians. They must match across the ramp, as the 4K pair does.
+
+**Rule.** A companded or binned sensor mode is offered only after one capture pair has checked its transfer curve against a linear mode. Until then, leave it out of the mode table rather than ship it unverified.
+
+
+---
+
+## C14. media: clip info tells a Clear HDR 12-bit clip from a Log clip
+
+Apertar-Core `56e135c`. Finding: HDR-D3. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/playback/ClipProbe.hpp:165-176@cinemate-port (01f170c; same lines at lane tip 2f49381):
+        // FORMAT row (design 4.3): 16-bit = Clear HDR; a LinearizationTable on 12-bit = companded
+        const bool table = !f.first.linearization.empty();
+        ...
+        if (f.first.bits == 16) look = "Clear HDR 16-bit";
+        else if (lossy3 && table) { ... }
+        else if (lossy5 && table) { ... }
+        else if (table) { look = "Clear HDR 12-bit companded"; f.companded = true; }
+        else look = "SDR " + std::to_string(f.first.bits) + "-bit";
+
+**Why it is a problem.** The rule was "any table on a non-16-bit file means Clear HDR 12-bit". But Log takes also write a table (the inverse of the Log curve), and they store fewer bits: cdngLogBits in include/apertar/core/Types.hpp goes 16 -> 12, 12 -> 10 and 10 -> 8. So an H16 Log take showed "Clear HDR 12-bit", and so did an SDR 12 Log take that holds 10 bits. A wrong label like that is one way the owner could have seen "12-bit Clear HDR looks strange" (hdr12/REPORT.md D3, V-H9 section 5). Original Apertar 1.6.0 has no playback code in Core (no src/playback/ in /home/user/wt/core-upstream), so this row is new ground and not a mismatch. The fix keeps the port's shape and makes the rule match what the encoder really writes: CameraController.cpp:4092 writes ccmp::expansionTable() for Clear HDR 12-bit, and :5129 writes the Log inverse table.
+
+**How to spot it.** Look for labels that branch on "has X" (!vec.empty(), a flag present) when more than one writer can produce X. Run grep -n "linearizationTable =" src and check that every writer it finds maps to its own label.
+
+**Options.**
+
+- Compare the table's contents with ccmp::expansionTable() (12 bits, 4096 entries, std::equal): no new state, the header is already part of Core, and it costs 4096 compares once per probe of a changed folder. Chosen.
+- Write a private DNG tag that marks Log or Clear HDR, and read it back: the label becomes exact and the source mode is kept, but the file format changes and files already on cards are not covered.
+- Guess from the clip name or from the bit depth alone: cheap, but a custom clip name template breaks it, and H16 Log and H12 both store 12 bits.
+
+**Chosen, and why.** Content compare. The file is the witness, which is the rule ClipProbe already follows. It needs no format change, and it is right for clips already recorded. What we lose: an H12 take with Log on now reads "Log 12-bit", and the file alone cannot tell which mode a Log take came from. That would need a tag and is out of scope. The lossy 3:1 / 5:1 rows and the "companded" JSON field ("has a table") stay as they were. Nothing in the WebUI reads that field.
+
+**After.**
+
+```
+        const bool table = !f.first.linearization.empty();
+        const auto &ccmpTable = ccmp::expansionTable();
+        const bool ccmpTableOn = f.first.bits == 12 && f.first.linearization.size() == ccmpTable.size()
+            && std::equal(ccmpTable.begin(), ccmpTable.end(), f.first.linearization.begin());
+        ...
+        else if (ccmpTableOn) { look = "Clear HDR 12-bit companded"; f.companded = true; }
+        else if (table) { look = "Log " + std::to_string(f.first.bits) + "-bit"; f.companded = true; }
+        else look = "SDR " + std::to_string(f.first.bits) + "-bit";
+```
+
+**Checked.**
+
+Run here:
+- The gate: /home/user/build/bin/check_core.sh /home/user/wt/lane-hdr lane-hdr both tests. Both builds pass, all 18 host tests pass.
+- The new test, built against the old ClipProbe.hpp: the Log 12 and Log 10 clips read "Clear HDR 12-bit companded", so it fails. It passes with the fix.
+- The simulator (apertar-core --simulate --media holding the four test clips): GET /api/media/clip?kind=folder&id=<clip> gives "Clear HDR 12-bit companded · uncompressed", "Log 12-bit · uncompressed", "Log 10-bit · uncompressed" and "SDR 12-bit · uncompressed".
+
+Still needs the camera: record H12 with Log off, H16 with Log on, and SDR 12 with Log on. Open each in the WebUI Clip Viewer, or run curl -s "http://<pi>:8000/api/media/clip?kind=folder&id=<clip>" | grep -o '"format":"[^"]*"'. They should read "Clear HDR 12-bit companded", "Log 12-bit" and "Log 10-bit".
+
+**Rule.** Tell a file's kind from what the file actually holds (the table's contents), not from whether some table is there.
+

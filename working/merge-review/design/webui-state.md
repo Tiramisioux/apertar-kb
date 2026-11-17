@@ -1,477 +1,470 @@
-# The WebUI: one state, one poll loop, its own parts: design
+# The WebUI: one state, one poll loop, its own parts: final plan
 
-Read: Apertar-Core `/home/user/wt/core-work` at `7dc6f7a` (port `01f170c` + 2 fixes), Apertar-UI `/home/user/wt/ui-work` at `ac1fc28`; measuring stick `/home/user/wt/core-upstream` `upstream-1.6.0` `35dbe67`. `P:` = `src/web/WebControlPage.cpp@7dc6f7a`, `U:` = the same file `@upstream-1.6.0`, `App:` = `src/ApertarCoreApp.cpp@7dc6f7a`, `CC:` = `src/camera/CameraController.cpp@7dc6f7a`.
+Read: Apertar-Core `/home/user/wt/core-work` at `0d13a6f` (port `01f170c` + 10 fixes; `git diff 7dc6f7a HEAD -- src/web/WebControlPage.cpp` changes 2 lines in place at P:5792 and P:16157, so every line number below holds), Apertar-UI `/home/user/wt/ui-work` at `ac1fc28`; measuring stick `/home/user/wt/core-upstream` `upstream-1.6.0` `35dbe67`. `P:` = `src/web/WebControlPage.cpp@0d13a6f`, `U:` = the same file `@upstream-1.6.0`, `App:` = `src/ApertarCoreApp.cpp@0d13a6f`, `CC:` = `src/camera/CameraController.cpp@0d13a6f`. All rows **confirmed** in code unless marked.
 
 ## In short
 
 1. Today the page has five stores where upstream has one: `state`, `frameBufferBar`, `controlsState` (plus 5 module-level sets and lets), `bootConfig`, `clipUi`/`settingsSearch`, and a nested `state.pb`.
-2. It has two network loops for camera state: `fetchState` at 1 Hz and `pollFrameBufferBar` at 4 Hz, and the second one edits the REC pill outside `renderSnapshot`, with 1000 ms freshness windows deciding which writer wins.
+2. It has two network loops for camera state: `fetchState` at 1 Hz and `pollFrameBufferBar` at 4 Hz. The second one edits the REC pill outside `renderSnapshot`, and 1000 ms freshness windows decide which writer wins.
 3. It has four doors to `/api/command`: `sendCommand`, `controlsCall`, `ladderRequest`, `clipRawCommand`.
-4. The Clip Browser and Viewer bring a second widget set (round buttons, a pop-up menu, a chip, a modal dialog, inline SVG, browser history, hold-to-repeat) and the Controls panel white dropdowns.
-5. Target: one `state` with flat fields; one loop that renders (`fetchState`), plus the lock-free `/api/buffer` poll kept as documented new ground that only merges into `state.snapshot` and redraws the pill through one function; one door (`sendCommand`, raw `fetch` only for background traffic, as upstream's `user_activity`); upstream's parts and names.
-6. Every feature stays. Nothing in Core, in any reply, in any file on the camera changes. Only `src/web/WebControlPage.cpp`.
-7. 24 commits, all in Apertar-Core, all page-only. About 1 100 lines removed, 450 added, plus about 1 400 lines of pure renames in 5 mechanical commits.
-8. Four owner decisions: phone Back in the Clip Browser, hold-to-repeat, where Remote controls lives, and whether the 1 500-line rename is worth it.
+4. The Clip Browser and Viewer bring a second widget set (round buttons, a pop-up menu, a chip, a modal dialog, inline SVG, browser history, hold-to-repeat), and the Controls panel brings white dropdowns.
+5. Target: one `state` with flat fields. One loop that renders everything (`fetchState`), plus the lock-free `/api/buffer` poll, kept as documented new ground: it merges into `state.snapshot` and redraws only the pill, through one function, in the shape of upstream's `updateTimecodeDisplay` (`U:9168-9238`). One door (`sendCommand`); a raw `fetch` only for background traffic, like upstream's `user_activity`. Upstream's parts and names.
+6. Every feature stays. Nothing in Core, in any reply, or in any file on the camera changes. Only `src/web/WebControlPage.cpp` changes.
+7. 21 commits in a chain plus 4 leaf commits that are owner options (22-25; take 24 or 25, not both). All are in Apertar-Core and change only the page. About 1 040 lines removed and 480 added, plus about 1 500 lines of pure renames in 7 mechanical commits.
+8. Six owner decisions: phone Back, hold-to-repeat, where Remote controls lives, the Clip Browser renames, nested or flat `state.clipViewer`, and white dropdowns.
+9. Left to other themes, with the facts below: the IMX585 resolution pills' source (camera-modes; deleting the pool costs a mono IMX585 its sizes) and the render-driven Mode Ladder fetch (camera-modes; `ladderRequest` stays until then).
 
 ## How it works in the port today
 
-Thread and lock: the page is single-threaded browser JS, so "thread" below is the browser timer or event that runs the code. On the Core side, the web server runs one detached thread per request (`src/web/WebServer.cpp:279-290`), so `/api/buffer` answers while `/api/state` waits.
+Thread and lock: the page is single-threaded browser JS, so "thread" below means the browser timer or event that runs the code. On the Core side, the web server runs one detached thread per request (`src/web/WebServer.cpp:279-290`), so `/api/buffer` answers while `/api/state` waits.
 
 ### Recording pill and write buffer
 
 | Value or path | Who writes | Who reads | Thread and lock | File it is saved in | Shown where |
 | --- | --- | --- | --- | --- | --- |
-| Buffer gauge (`used`, `capacity`, `active`, `ram`) | Raw writer queue (`CC:12520-12550` reads it) | `CameraController::frameBufferStatus()` `CC:12525` | Relaxed atomics; mode read under `try_lock` of `mutex_`, last answer reused while the command path holds it | none | `system.buffer_*` in `/api/state`; `/api/buffer`; socket event `buffer` `App:10845` (touch UI) |
-| Safety stop, stop percent, flush-discarded count | `bufferbudget::safetyStopState()` | `bufferSettingMembers()` `App:252-269` | Atomics | none | Same three places |
+| Buffer gauge (`used`, `capacity`, `active`, `ram`) | Raw writer queue | `CameraController::frameBufferStatus()` `CC:12527` | Relaxed atomics, plus one `try_lock` that never waits | none | `system.buffer_*` in `/api/state`; `/api/buffer`; socket event `buffer` (touch UI) |
+| Safety stop, stop percent, flush-discarded count | `bufferbudget::safetyStopState()` | `bufferSettingMembers()` `App:252-269` | Atomics, read when the reply string is built | none | Same three places. `buffer_flush_discarded` is "kept until the next safety stop" (`App:247-250`) |
 | Pre-roll active, fps, auto | `storagepreroll::*` | `bufferSettingMembers()` `App:260-264` | Atomics | `[storage]` of `apertar-hardware.conf` (preroll theme) | Same three places |
-| `GET /api/state` | `buildWebStateJson()` `App:9302`, route `App:8432-8437` | `fetchState` `P:16377` | Takes CC `mutex_` (`camera_.state()` `CC:12571-12574`); blocks while a stopped take drains | none | Whole page via `renderSnapshot` `P:15214` |
-| `GET /api/buffer` | Route `App:8422-8430`: `bufferMembers(...)` + `recording` = gauge active and not safety stop | `pollFrameBufferBar` `P:16491-16539` | Lock-free (comment `App:8422`) | none | REC pill only |
-| `frameBufferBar` (14 fields: `fill fillAtMs timer inFlight recording active safetyStop stopPercent stopSeen discardedSeen preroll prerollFps prerollAtMs prerollUntilMs`) | `pollFrameBufferBar` `P:16491`, `updateFrameBufferBar` `P:16547`, `noteBufferSafetyStop` `P:16458`, `notePrerollRequested` `P:16435` | `applyCommandSnapshotPatch` record_start `P:14381`; `renderSnapshot` `P:15389`, `P:15757-15759`; fps pills `P:15917`; `toggleRecord` `P:19272` | Second timer: `window.setInterval(pollFrameBufferBar, 250)` at `P:16432` and `P:16587`; stopped in `.finally` `P:16533-16538` | none | REC pill |
-| `state.snapshot.storage_preroll_*` | `fetchState` -> `renderSnapshot`, and directly by the 4 Hz poll `P:16505-16512` | `renderSnapshot` `P:15391`, `markPrerollFps` `P:8696` | Both timers write it | none | Pill text, FPS badge |
-| `.status-pill` classes `recording timelapse no-media buffer-bar buffer-drain preroll`, `#statusDot` classes, `#recordingStatus` text | `renderSnapshot` `P:15392`, `P:15752-15768`; and outside it `applyPrerollPill` `P:16441-16456` (writes "PRE-ROLL", rewrites to "READY") and `applyFrameBufferPillClasses` `P:16473-16489` (removes `recording`, rewrites "REC" to "READY") | browser | Two writers; `P:16553` and `P:16561` pick the poll's value when it is under 1000 ms old | none | Main page header pill |
-| Toasts "Recording stopped: the write buffer reached N %." and "Record pressed during the flush..." | `noteBufferSafetyStop` `P:16458-16471`, from both timers, de-duplicated by `stopSeen`/`discardedSeen` | toast | both timers | none | Toast |
-| Frame buffer bar option | `set_frame_buffer_bar_enabled` `P:16145`, patch `P:14241` | `updateFrameBufferBar` `P:16550` | 1 Hz | `UI.conf` `frameBufferBarEnabled` (`App:2096`, `App:7791`) | Settings pill; touch UI via bridge |
+| `GET /api/state` | `buildWebStateJson()` `App:9302`, route `App:8432-8437` | `fetchState` `P:16377` | Reads the gauge first (`App:9306`), then waits on CC `mutex_` in `camera_.state()` (`App:9307`, `CC:12573-12576`) while a stopped take drains; safety stop and pre-roll come from `bufferSettingMembers()` at string build (`App:9591`). **So after a drain the reply's `buffer_fill` can be seconds old, while its `buffer_safety_stop` is fresh** | none | Whole page via `renderSnapshot` `P:15213`, which lifts `system.buffer_*`/`storage_preroll_*` to the top level `P:15215-15221` |
+| `GET /api/buffer` | Route `App:8423-8430`: `bufferMembers(...)` + `recording` = gauge recording and not safety stop | `pollFrameBufferBar` `P:16491-16539` | Lock-free (comment `App:8422`) | none | REC pill only |
+| `frameBufferBar` (14 fields `P:16419-16421`) | `pollFrameBufferBar`, `updateFrameBufferBar` `P:16547`, `noteBufferSafetyStop` `P:16458`, `notePrerollRequested` `P:16435` | `applyCommandSnapshotPatch` record_start `P:14381`; `renderSnapshot` `P:15389`, `P:15757-15759`; fps pills `P:15917`; `toggleRecord` `P:19272` | Second timer: `window.setInterval(pollFrameBufferBar, 250)` at `P:16432` and `P:16587`; stopped in `.finally` `P:16533-16538` | none | REC pill |
+| `state.snapshot.storage_preroll_*` | `renderSnapshot`, and directly by the 4 Hz poll `P:16505-16512` | `renderSnapshot` `P:15391`, `markPrerollFps` `P:8696` | Both timers | none | Pill text, FPS badge |
+| `.status-pill` classes, `#statusDot` classes, `#recordingStatus` text | `renderSnapshot` `P:15388-15392`, `P:15752-15768`; outside it `applyPrerollPill` `P:16441-16456` and `applyFrameBufferPillClasses` `P:16473-16489` (removes `recording`, rewrites "REC" to "READY") | browser | Two writers; `P:16553` (pre-roll), `P:16560-16562` (safety stop) and `P:16575-16578` (fill) pick the poll's value while it is under 1000 ms old | none | Main page header pill |
+| Toasts "Recording stopped: the write buffer reached N %." and "Record pressed during the flush..." | `noteBufferSafetyStop` `P:16458-16471`, from both timers; de-duplicated by `stopSeen`, and `discardedSeen` starts at -1 so the first value seen never toasts (`P:16420`, `P:16460`) | toast | Both timers | none | Toast |
+| Frame buffer bar option | `set_frame_buffer_bar_enabled`, patch `P:14241` | `updateFrameBufferBar` `P:16550`; with the option off, `watchStop` `P:16566` still polls `/api/buffer` during a queue-backed take so the red pill drops at a safety stop | 1 Hz | `UI.conf` `frameBufferBarEnabled` (`App:2096`) | Settings pill; touch UI via bridge (`SettingsBridge.cpp:369`) |
+| `mergeCameraStateFields` `P:13784-13933` (upstream function `U:8595`, port added buffer lines) | `sendCommand` replies | - | - | - | Copies `buffer_setting`, `buffer_safety_stop`, `buffer_stop_percent`, `buffer_mode`, `storage_preroll_*`, `buffer_note` (`P:13841-13860`) and `recording` (`P:13889`); **not** `buffer_fill`, `buffer_flush_discarded` |
 
 ### Command doors
 
 | Value or path | Who writes | Who reads | Thread and lock | File | Shown where |
 | --- | --- | --- | --- | --- | --- |
-| `sendCommand(payload)` `P:14416-14448` | Every upstream handler | `/api/command` -> `handleCommand` under the command lock | Patches the snapshot, rolls back on `ok:false`, throws `Error(result.error)`, schedules `/api/state` in 140 ms | - | - |
-| `controlsCall(payload)` `P:16699-16705` | 16 call sites (`P:16920`, `17735`, `17966`, `18256`, `18300`, `18334-18335`, `18589`, `18627`, `18654`, `18659`, `18700`, `18729`, `18866`, `18966`) | Same route | Returns the JSON; callers test `ok` by hand; 7 sites without try/catch | - | Controls, Hardware and Config cards |
-| `ladderRequest(payload)` `P:8005-8015` | `fetchModeLadder` `P:8017`, ladder save and dry runs | Same route | Throws like `sendCommand`, no patch, no refresh | - | Modes panel |
-| `clipRawCommand(payload)` `P:14577-14586` | `clipPreviewThenSave` `P:14598` (`preview_clip_name`) | Same route | Same as `ladderRequest` | - | Record panel, clip-name composer |
+| `sendCommand(payload)` `P:14415-14450` | Every upstream handler | `/api/command` -> `handleCommand` under the command lock | Patches and renders before the request and again after it (`applyCommandSnapshotPatch` returns `true` for every command, `P:14408-14412`, so 2 renders per call); rolls back on `ok:false`; throws `Error(result.error)`; schedules `/api/state` in 140 ms. While in flight: `commandInFlightCount > 0` disables REC when not recording (`P:15770-15772`), `toggleRecord` returns early when not recording and not flushing (`P:19272-19275`), `fetchState` drops its reply (`P:16396`) | - | - |
+| `controlsCall(payload)` `P:16699-16705` | 16 call sites (`P:16920`, `17735`, `17966`, `18256`, `18300`, `18334-18335`, `18589`, `18627`, `18654`, `18659`, `18700`, `18729`, `18866`, `18966`) | Same route | Returns the JSON; callers test `ok` by hand; 7 sites have no try/catch | - | Controls, Hardware and Config cards |
+| `ladderRequest(payload)` `P:8005-8015` | One caller: `fetchModeLadder` `P:8017-8031` (`get_mode_ladder`). No dry run is sent from JS | Same route; `get_mode_ladder` takes CC `mutex_` (`CC:11041`) | Started from `renderModeLadder` `P:8395-8400` on every render: first fetch, 5 s retry, refetch on `ladder_active` change | `mode_ladder.conf` | Modes panel; main-page IMX585 pills via the pool |
+| `clipRawCommand(payload)` `P:14577-14586` | `clipPreviewThenSave` `P:14607` (`preview_clip_name`), after a 350 ms debounce | Same route | Like `ladderRequest` | - | Record panel, clip-name composer |
+| The port's `/api/config` save | `P:18999-19003` | `/api/config` | Throws `failure` with `failure.payload = payload` | - | Config card |
 | Listen poll | `setControlsListening` `P:18680-18720`: `setInterval(..., 300)` calling `controlsCall({cmd:"controls_last_input"})` | Controls rows | Third timer; `let controlsListenTimer/Seq` at module level `P:18672-18673`; no in-flight guard | - | Controls panel |
 
 ### Stores beside `state`
 
 | Value or path | Who writes | Who reads | Thread and lock | File it is saved in | Shown where |
 | --- | --- | --- | --- | --- | --- |
-| `controlsState` (18 fields) `P:16633-16652`; `controlsChipLines` `P:16799`, `controlsSeparateTurns` `P:16882`, `controlsReplaced` `P:17253` | `loadControls` `P:18325-18360` from `get_controls` (`App:12426`) and `list_actions`; editors | 165 `controlsState.` references | Events | `apertar-hardware.conf` via `set_controls` | Controls panel, Hardware card (Config), Remote controls card |
-| Remote controls card `P:4569-4580` | `renderRemoteControls` `P:18117`, buttons `buildRemoteButton` `P:18065-18112` (pointer capture, 450 ms delay, 140 ms repeat) | `test_input` | Bootstrap loop `P:20940-20949`: `loadControls` every 5 s until `controlsState.model` | - | **Main page**, under Camera settings |
-| `bootConfig` (11 fields) `P:19943-19955`; `BOOT_CONFIG_*` constants `P:19956-19960` | `loadBootConfig` `P:20265` from `/api/boot-config` (`App:9165-9216`) | 66 `bootConfig.` references; listeners in `installBootConfigInteractions` `P:20624-20678`, called from `P:20923` | Events | `/boot/firmware/config.txt` (boot-config-helpers theme) | System panel, Boot Config card |
-| `clipUi` (20 fields) `P:14491-14495`; `CLIP_PRESETS`, `CLIP_TOKEN_GROUPS`, `CLIP_TOKEN_INFO` `P:14457-14490` | Composer handlers; `clipPreviewThenSave` | 92 `clipUi.` references | Events, 350 ms debounce timer `clipUi.saveTimer` | `camera_settings.conf` via `set_clip_name_template` | Record panel |
+| `controlsState` (18 fields) `P:16633-16652`; `controlsChipLines` `P:16799`, `controlsSeparateTurns` `P:16882`, `controlsReplaced` `P:17253` | `loadControls` `P:18325-18360` from `get_controls` and `list_actions`; editors | 165 `controlsState.` references | Events | `apertar-hardware.conf` via `set_controls` | Controls panel, Hardware card (Config), Remote controls card |
+| Remote controls card `P:4569-4580` | `renderRemoteControls` `P:18117`; buttons `buildRemoteButton` `P:18065-18112` (pointer capture, 450 ms delay, 140 ms repeat) | `test_input` | Bootstrap loop inside `installInteractions` `P:20940-20949`: `loadControls` every 5 s until `controlsState.model`; the timer is not stored | - | **Main page**, under Camera settings |
+| `bootConfig` (11 fields) `P:19943-19955`; `BOOT_CONFIG_*` constants `P:19956-19960` | `loadBootConfig` `P:20265` from `/api/boot-config` | 66 `bootConfig.` references; listeners in `installBootConfigInteractions` `P:20624-20678`, **called from inside `installInteractions`** `P:20923` | Events | `/boot/firmware/config.txt` (boot-config-helpers theme) | System panel, Boot Config card |
+| `clipUi` (20 fields) `P:14491-14495`; `CLIP_PRESETS`, `CLIP_TOKEN_GROUPS`, `CLIP_TOKEN_INFO` `P:14457-14490` | Composer handlers; `clipPreviewThenSave` | 92 `clipUi.` references | Events; 350 ms debounce timer `clipUi.saveTimer` | `camera_settings.conf` via `set_clip_name_template` | Record panel |
 | `settingsSearch` `P:10184` | Search field, MutationObserver | 17 references | Events | none | Settings search |
-| `state.ladderServer` `P:6674`, filled by `applyModeLadder` `P:8034-8045` | `get_mode_ladder` (`App:14103`); pool built from the probe in `CC:11002-11034` | Ladder editor; **`imx585ClassRows` `P:8955-8968`** (main-page resolution and crop pills); fps pill sub-labels `P:15912` | Fetched from inside `renderModeLadder` `P:8395-8400`, which runs on every 1 Hz render | `mode_ladder.conf` beside `camera_settings.conf` (`CC:404-414`) | Modes panel; main-page resolution pills |
-| `state.pb` (22 keys, nested) `P:6723-6727`, and `state.pb.viewer` | 70 `pb*`/`pbv*` functions `P:11685-12940` | 144 `state.pb` references | Events; `requestAnimationFrame` tick; `v.awakeTimer` keep-awake `user_activity` fetch `P:12504-12509` | none (media listing from `/api/media`) | Clip Browser and Clip Viewer overlay |
+| `state.ladderServer` `P:6674`, filled by `applyModeLadder` `P:8034-8045` | `get_mode_ladder` | Ladder editor; `imx585ClassRows` `P:8955-8968` (main-page resolution and crop pills); fps pill sub-labels `P:15912` | Fetched from `renderModeLadder` | `mode_ladder.conf` | Modes panel; main-page resolution pills. A mono IMX585 gets its sizes only from the pool: without it, `imx585ClassRows` returns the running size only (`P:8961-8964`) and `imx585BaseResolutionOptions` hides families without rows (`P:9020-9028`) |
+| `state.pb` (22 keys, nested) `P:6723-6728`, and `state.pb.viewer` (about 40 fields incl. a `lanes` array, built by `pbvNewState`, dropped on close `P:12772`, `P:12862`) | 70 `pb*`/`pbv*` functions `P:11685-12940` | 144 `state.pb` references | Events; `requestAnimationFrame` tick; `v.awakeTimer` keep-awake `user_activity` fetch `P:12504-12509` | none (listing from `/api/media`) | Clip Browser and Clip Viewer overlay |
 
 ### Parts in the touch-UI look
 
 | Part | Where | Upstream part it stands beside |
 | --- | --- | --- |
-| Overlay `#playbackOverlay`, `h1.pb-h1` "Clip Browser" | `P:6345-6491` | `#mediaBrowserOverlay` with `h2.section-title` `U:3979-4030` |
-| Refresh / Back `.pb-top-button` with inline SVG | `P:6354-6373`, CSS `P:2061-2094` | `secondary-button` "Refresh Media", `icon-button settings-back-button` `U:3993`, `U:4008` |
-| SHOW pop-up `.pb-show-button` + `.pb-menu` (cyan active) | `P:6358-6369`, CSS `P:2086-2140` | Visible `.media-filter-button` row, white active `U:3999-4004`, `U:1238-1242` |
-| Sort chip `.pb-chip` | `P:6380`, CSS `P:2167` | `select.settings-select.media-sort-select` `U:4009-4012`, `U:1244-1253` |
-| Remove modal `#pbRemoveScrim` `role=alertdialog` | `P:6475-6486`, `pbOpenRemoveDialog` `P:12036`, guards `P:10137`, `P:12966` | `window.confirm` `U:10434` |
-| Browser history: `history.pushState` | `P:10129`, `P:12777`, `popstate` `P:20708` | none upstream |
-| Viewer `.pbv-circle`, `.pbv-icon-button`, `.pbv-info-button`; 4 SVGs in markup, 1 in JS `P:11833` | `P:6400-6456`, CSS `P:2743-2775` | `.icon-button` `U:194-215`, button variants `U:1632-1706`, PNGs in `src/web/icons` |
-| Hold-to-repeat: frame step `pbvRepeat` `P:12718-12729`; knob arrows `P:18090-18110` | - | none upstream |
-| White dropdowns: `[data-panel="controls"] .settings-select, #hardwareDevices .settings-select` + dark exception `.controls-pin-select`; tokens `--select-bg/--select-fg` | CSS `P:3484-3559`, `P:35-36`; class added `P:17388` | One `.settings-select` look `U:1532-1555` |
+| Overlay `#playbackOverlay`, eyebrow "PLAYBACK", `h1.pb-h1` "Clip Browser" | `P:6345-6491` | `#mediaBrowserOverlay`, folder icon, `h2.section-title`, one-line copy `U:3979-3991` |
+| Refresh / Back `.pb-top-button` with inline SVG (2 SVGs in the header: `P:6355`, `P:6371`) | `P:6354-6373`, CSS `P:2061-2094` | `secondary-button#refreshMediaBrowserButton` "Refresh Media", **text only** `U:4008`; `icon-button settings-back-button#closeMediaBrowserButton` `U:3993-3995` |
+| SHOW pop-up `.pb-show-button` + `.pb-menu` (cyan active) | `P:6358-6369`, CSS `P:2086-2140` | Visible `#mediaBrowserFilters` row of `.media-filter-button`, white active `U:3999-4004`, CSS `U:1224-1242` |
+| Sort chip `.pb-chip#pbSortButton` | `P:6380`, CSS `P:2167` | `select.settings-select.media-sort-select#mediaBrowserSortSelect` `U:4009-4012`, CSS `U:1244-1253` |
+| Selection actions without Clear | `P:6382-6386` | Select All, Clear, Download Selected, Delete Selected `U:4019-4022` |
+| Remove modal `#pbRemoveScrim` `role=alertdialog` | `P:6475-6486`, open/close `P:12036-12052`, `P:12108`, guards `P:10137`, `P:12966`, `P:20705` | `window.confirm` `U:10434` |
+| Browser history | `history.pushState` `P:10129`, `P:12777`; `popstate` `P:20708` | none upstream |
+| Viewer `.pbv-circle`, `.pbv-icon-button`, `.pbv-info-button`; 4 SVGs in markup (`P:6401`, `6433`, `6449`, `6455`), 1 in JS `P:11833` | `P:6400-6456`, CSS `P:2743-2775` | `.icon-button` `U:194-215`, button variants `U:1632-1706`, PNGs in `src/web/icons` |
+| Hold-to-repeat | frame step `pbvRepeat` `P:12718-12729` (no pointer capture, 400 ms / 90 ms); knob arrows `P:18086-18110` (pointer capture `P:18102`, 450 ms / 140 ms) | none upstream |
+| White dropdowns `[data-panel="controls"] .settings-select, #hardwareDevices .settings-select` + dark exception `.controls-pin-select`; tokens `--select-bg/--select-fg` | CSS `P:3484-3559`, `P:35-36`; class added `P:17388` | One `.settings-select` look `U:1532-1555` |
+| Inline SVG elsewhere | Mode Ladder `ladderIcons` `P:7644-7650`; search magnifier `P:4733` | 0 `<svg>` in U (WEB-9) |
 | `body.pb-open` declared twice | `P:69`, `P:1980` | `body.media-browser-open` `U:66` |
 
-Measured in `--simulate` (`/home/user/build/work-nolc/apertar-core`, this session): `/api/state` carries the buffer and pre-roll fields under `system.*` (`system.buffer_safety_stop`, `system.storage_preroll_active`, ...); `/api/buffer` carries the same keys flat plus `recording`. The replies of `get_controls`, `list_actions`, `controls_history`, `controls_last_input`, `get_mode_ladder`, `preview_clip_name` carry no key that `mergeCameraStateFields` (`P:13784`) copies (`state`, `resolution`, `width`, `fps`, ...): confirmed by listing their top-level keys.
+Measured in `--simulate` (`/home/user/build/work-nolc/apertar-core`): `/api/state` carries the buffer and pre-roll fields under `system.*`; `/api/buffer` carries the same keys flat plus `recording`. The replies of `get_controls`, `list_actions`, `controls_history`, `controls_last_input`, `get_mode_ladder`, `preview_clip_name` carry no key that `mergeCameraStateFields` copies (their top-level keys were listed).
 
 ## How original Apertar does this kind of thing
 
 | Precedent | Where `@upstream-1.6.0` | What it shows |
 | --- | --- | --- |
-| One store | `U:4204-4266` | `const state = {` with flat fields: `<x>Timer`, `<x>InFlight`, `<x>Dirty`, library payloads (`mediaLibraryPayload`, `presetLibrary`). No nested object, no second `const` store (WEB-12) |
-| One loop, one renderer | `U:11609` `window.setInterval(() => fetchState(true), 1000)`; `fetchState` -> `renderSnapshot` `U:9327` | Every DOM class on the REC pill is set in `renderSnapshot` `U:9794-9802` (WEB-7, WEB-13) |
-| Event toasts from a snapshot comparison | `U:9328-9333` | `if (snapshot.recording_error && snapshot.recording_error !== previousError) showToast(...)`: no "seen" flags |
+| One store | `U:4204-4266` | `const state = {` with flat fields: `<x>Timer`, `<x>InFlight`, `<x>Dirty`, library payloads. No nested object. Even a dozen WebGL handles that live and die together are flat `previewProcessing*` fields (`U:4255-4266`) (WEB-12) |
+| One loop, one renderer | `U:11609` `window.setInterval(() => fetchState(true), 1000)`; `fetchState` -> `renderSnapshot` `U:9327`; REC pill classes in `renderSnapshot` `U:9794-9802` | WEB-7, WEB-13 |
+| A small draw function outside `renderSnapshot`, driven by a second timer, reading only `state.snapshot` | `updateTimecodeDisplay` `U:9168-9216`, called from `updateLiveReadouts` `U:9219-9222`, run by `startLiveReadoutLoop` (`requestAnimationFrame`) `U:9224-9238`, started `U:11608` | The shape of `renderRecordingStatus`. Upstream has no second **network** poll |
+| Event toasts from a snapshot comparison | `U:9328-9333` | `if (snapshot.recording_error && snapshot.recording_error !== previousError) showToast(...)`; no "seen" flags |
 | One command door | `sendCommand` `U:9109-9145`; handlers `try { await sendCommand(...) } catch (error) { showToast(error.message, true) }` | WEB-3, WEB-14 |
-| A read-only command through the same door, its list in a flat field | `refreshAudioCaptureCapabilities` `U:11100-11113`: `sendCommand({cmd: "audio_capabilities"})` -> `state.audioCaptureModes`, `state.audioCapabilitiesBusy`; loaded on panel open `U:6162` | The Mode Ladder, clip preview and Controls reads take this shape |
-| Raw `fetch` for background traffic only | `user_activity` `U:11509-11513` | The Listen poll and the viewer keep-awake take this shape |
-| Library editor state | Config editor `U:10265-10359`: `state.configDirty`, `configFetchInFlight`, `configSaveInFlight` | Controls and Boot Config cards take this shape |
-| Panel data loads with the panel | `setSettingsPanel` `U:6149-6166` | Remote controls loads here, not at page start |
-| All listeners in one installer | `installInteractions` `U:11348-11610` | No second installer |
-| Clip Browser parts | Markup `U:3979-4030`; state `U:4237-4243` (`mediaFetchInFlight mediaLibrary mediaLibraryPayload mediaBrowserFilter mediaBrowserSort mediaSelection`); functions `renderMediaLibrary` `U:7669`, `fetchMediaLibrary` `U:10361`, `setMediaBrowserOpen` `U:6139` | Names and parts the Clip Browser returns to |
+| A user-started read through the same door, its list in a flat field | `refreshAudioCaptureCapabilities` `U:11100-11113` -> `state.audioCaptureModes`; started on panel open `U:6162`, never from a render | Clip preview and Controls reads take this shape |
+| Raw `fetch` for background traffic only | `user_activity` `U:11509-11513` | Listen poll, viewer keep-awake and the render-driven ladder read take this shape |
+| Library editor state | Config editor `U:10265-10359`: `state.configDirty`, `configFetchInFlight`, `configSaveInFlight` | Controls and Boot Config cards |
+| Panel data loads with the panel | `setSettingsPanel` `U:6149-6166` | Remote controls in the Controls panel |
+| Retry timer stored on `state` | `state.previewRetryTimer` `U:8561`, `U:8578` | The Remote controls loader if it stays on the main page |
+| Listeners | `installInteractions` `U:11348-11603`, plus a second feature installer `installPreviewStream` `U:8566`, called beside it `U:11606-11607` | A feature installer is upstream's shape; `installBootConfigInteractions` stays |
+| Clip Browser parts | Markup `U:3979-4030`; CSS `U:1156-1253`; state `U:4237-4243`; `renderMediaLibrary` `U:7669`, `fetchMediaLibrary` `U:10361`, `setMediaBrowserOpen` `U:6139` | Names, ids and parts the Clip Browser returns to |
 | Destructive asks | `window.confirm` `U:10307`, `U:10385`, `U:10434`, `U:10672`, `U:11266-11337` (8 confirms) | WEB-21 |
-| Buttons and selection | `.icon-button` `U:194-215`; `.primary-/.secondary-/.danger-button` `U:1632-1706`; white active `U:1238-1242`; `.media-select-control.selected` `U:1294-1330` | WEB-19: white = selected |
-| Icons | PNGs from `src/web/icons` via `GET /icons/<name>`, 0 `<svg>` in the page | WEB-9 |
-| Option lists | `const <x>Options` block `U:4039-4127` | Hand copies of Core's lists (WEB-8) |
-| `.hidden` class | `U:790-803` | No `hidden` attribute |
+| Buttons and selection | `.icon-button` `U:194-215`; `.primary-/.secondary-/.danger-button` `U:1632-1706`; white active `U:1238-1242`; `.media-select-control.selected` `U:1294-1330` | WEB-19 |
+| Icons | PNGs from `src/web/icons` via `GET /icons/<name>`, 0 `<svg>` | WEB-9 |
+| `.hidden` class | `U:790-803`; the one property use is `option.hidden` on an `<option>` `U:9526` | No `hidden` attribute elsewhere |
 
 No upstream precedent: a second network poll, browser history, a modal dialog, hold-to-repeat, a mutation observer, a client-side playback engine. Those are new ground (section below).
 
 ## The target
 
-Where each value lives after the plan. Core is untouched: who owns each value in Core and which command sets it stay as today.
+Core is untouched: who owns each value in Core and which command sets it stay as today.
 
 | Value | Owner and setter (unchanged) | Before (page) | After (page) |
 | --- | --- | --- | --- |
-| Buffer fill, safety stop, stop percent, flush-discarded, pre-roll active/fps | Core atomics; `record_start`, `record_stop`, `set_buffer_mode` | `frameBufferBar.fill/safetyStop/stopPercent/discardedSeen/preroll/prerollFps`, plus `state.snapshot.*` written by two timers | `state.snapshot.buffer_fill`, `buffer_safety_stop`, `buffer_stop_percent`, `buffer_flush_discarded`, `storage_preroll_active`, `storage_preroll_fps`: merged from `/api/state` by `renderSnapshot` and from `/api/buffer` by `applyBufferSnapshotPatch` |
-| "Frames still queued" from `/api/buffer` | Core gauge | `frameBufferBar.recording` | `state.snapshot.buffer_recording` (page-side name, never over `snapshot.recording`) |
-| Buffer poll bookkeeping | page | `frameBufferBar.timer/inFlight/prerollUntilMs/fillAtMs/prerollAtMs/stopSeen/active` | `state.bufferPollTimer`, `state.bufferPollInFlight`, `state.prerollPollUntilMs`; the other four are deleted |
+| Buffer fill, safety stop, stop percent, flush-discarded, pre-roll active/fps | Core atomics; `record_start`, `record_stop`, `set_buffer_mode` | `frameBufferBar.*`, plus `state.snapshot.*` written by two timers | `state.snapshot.buffer_fill`, `buffer_safety_stop`, `buffer_stop_percent`, `buffer_flush_discarded`, `storage_preroll_active`, `storage_preroll_fps`: from `/api/state` via `renderSnapshot`, and from `/api/buffer` via `applyBufferSnapshotPatch` -> `mergeCameraStateFields` (which gains `buffer_fill` and `buffer_flush_discarded`) |
+| One freshness rule | page | Three 1000 ms windows | While `state.bufferPollTimer` runs, `renderSnapshot` keeps `buffer_fill` from the previous `state.snapshot` (the poll owns the fill; `/api/state`'s fill can be seconds old after a drain) |
+| "Frames still queued" from `/api/buffer` | Core gauge | `frameBufferBar.recording` | `state.snapshot.buffer_recording`, never written over `snapshot.recording` (the merge copies `recording`, `P:13889`, so the patch renames it first) |
+| Buffer poll bookkeeping | page | `frameBufferBar.timer/inFlight/prerollUntilMs/...` | `state.bufferPollTimer`, `state.bufferPollInFlight`, `state.prerollPollUntilMs` |
 | REC pill classes and text | page | `renderSnapshot` + `applyPrerollPill` + `applyFrameBufferPillClasses` | `renderRecordingStatus(snapshot)`, called by `renderSnapshot` and by `fetchBufferState` |
-| Buffer toasts | page | `noteBufferSafetyStop` with seen-flags | Previous-vs-new comparison in `renderRecordingStatus`'s caller, like `recording_error` |
-| Controls model, edits, catalog, history, listen | Core `get_controls`/`set_controls`, `apertar-hardware.conf` | `controlsState.*`, 3 module sets/maps, 2 module lets | `state.controlsModel`, `controlsRevision`, `controlsPeripherals`, `controlsCatalog`, `controlsEdits`, `controlsButtons`, `controlsRemoved`, `controlsAdded`, `hardwareEdits`, `controlsBuses`, `controlsScans`, `controlsDpiLines`, `controlsGpioChips`, `controlsApply`, `controlsHistory`, `controlsLoadInFlight`, `controlsSaveInFlight`, `controlsListening`, `controlsListenTimer`, `controlsListenSeq`, `controlsListenInFlight`, `controlsChipLines`, `controlsSeparateTurns`, `controlsReplaced` |
-| Boot Config card | Core `/api/boot-config` (boot-config-helpers theme) | `bootConfig.*`; `installBootConfigInteractions` | `state.bootConfigPayload`, `bootConfigForm`, `bootConfigFetchInFlight`, `bootConfigSaveInFlight`, `bootConfigRebootWaiting`, `bootConfigSavedPendingReboot`, `bootConfigReview` (+ editor fields if boot-config-helpers keeps Edit file); listeners in `installInteractions` |
-| Clip-name composer | Core `set_clip_name_template`, `camera_settings.conf` | `clipUi.*`, `CLIP_*` | `state.clipName*` fields; `clipNamePresets`, `clipNameTokenGroups`, `clipNameTokenInfo` in the option-list block |
+| Buffer toasts | page | `noteBufferSafetyStop` with seen flags | Previous-vs-new comparison, like `recording_error`; the discard toast only when a previous snapshot exists |
+| Controls model, edits, catalog, history, listen | Core `get_controls`/`set_controls`, `apertar-hardware.conf` | `controlsState.*`, 3 module sets/maps, 2 module lets | `state.controlsModel`, `controlsRevision`, `controlsPeripherals`, `controlsCatalog`, `controlsEdits`, `controlsButtons`, `controlsRemoved`, `controlsAdded`, `hardwareEdits`, `controlsBuses`, `controlsScans`, `controlsDpiLines`, `controlsGpioChips`, `controlsApply`, `controlsHistory`, `controlsLoadInFlight`, `controlsSaveInFlight`, `controlsListening`, `controlsListenTimer`, `controlsListenSeq`, `controlsListenInFlight`, `controlsChipLines`, `controlsSeparateTurns`, `controlsReplaced`. Label tables stay where they are |
+| Boot Config card | Core `/api/boot-config` (boot-config-helpers theme) | `bootConfig.*` | `state.bootConfigPayload`, `bootConfigForm`, `bootConfigFetchInFlight`, `bootConfigSaveInFlight`, `bootConfigRebootWaiting`, `bootConfigSavedPendingReboot`, `bootConfigReview` (+ editor fields if boot-config-helpers keeps Edit file). `installBootConfigInteractions` stays |
+| Clip-name composer | Core `set_clip_name_template`, `camera_settings.conf` | `clipUi.*`, `CLIP_*` | `state.clipName*`; `clipNamePresets`, `clipNameTokenGroups`, `clipNameTokenInfo`, `clipNameDefaultTemplate` in place |
 | Settings search | page | `settingsSearch.*` | `state.settingsSearchActive`, `settingsSearchObserver`, `settingsSearchTimer`, `settingsSearchApplying` |
-| Clip Browser | Core `/api/media*` routes | `state.pb.*` (22 keys) | Upstream fields `state.mediaLibraryPayload`, `mediaLibrary`, `mediaBrowserFilter`, `mediaBrowserSort`, `mediaSelection`, `mediaFetchInFlight`, plus flat `mediaFetchQueued`, `mediaSelecting`, `mediaThumbCache`, `mediaThumbQueue`, `mediaThumbsInFlight`, `mediaThumbObserver`, `mediaHold`, `mediaSnapshotHold`, `mediaError`, `mediaRemoving`, `mediaLastOpenedKey`, `mediaBrowserPage`, `previewPausedForPlayback` (declared) |
-| Clip Viewer | page | `state.pb.viewer` | `state.clipViewer` (one object per open clip; new ground, see below) |
-| IMX585 resolution pills | Core class tables `src/camera/Imx585Modes.hpp`; set by `set_resolution` | `state.ladderServer.pool`, else `imx585ClassModes` | `imx585ClassModes` only (hand copy, WEB-8); `state.ladderServer` serves the Mode Ladder card and fps sub-labels only |
-| Command doors | Core `handleCommand` | `sendCommand`, `controlsCall`, `ladderRequest`, `clipRawCommand` | `sendCommand` (its error carries `error.result`); raw `fetch` for `controls_last_input` (Listen) and `user_activity` (viewer keep-awake) only |
-| Parts | - | `.pb-*`, `.pbv-*`, SVG, modal, history, hold-to-repeat, white selects | `.media-browser-*`, `.clip-viewer-*` for layout only; buttons from `.icon-button`/`.primary-/.secondary-/.danger-button`; `/icons/*.png`; `window.confirm`; one `.settings-select` |
-| Remote controls | Core `test_input` | Card on the main page, loaded at start, 5 s retry | `settings-card` in the Controls panel, loaded by `setSettingsPanel("controls")` |
+| Clip Browser | Core `/api/media*` routes | `state.pb.*` (22 keys) | Upstream fields `state.mediaLibraryPayload`, `mediaLibrary`, `mediaBrowserFilter`, `mediaBrowserSort`, `mediaSelection`, `mediaFetchInFlight`, plus flat `mediaFetchQueued`, `mediaSelecting`, `mediaThumbCache`, `mediaThumbQueue`, `mediaThumbsInFlight`, `mediaThumbObserver`, `mediaHold`, `mediaSnapshotHold`, `mediaError`, `mediaRemoving`, `mediaLastOpenedKey`, `mediaBrowserPage`, `previewPausedForPlayback` (declared); `mediaBrowserHistoryPushed`, `clipViewerHistoryPushed`, `mediaBrowserIgnorePop` until commit 22 |
+| Clip Viewer | page | `state.pb.viewer` | `state.clipViewer`, one object per open clip (owner decision 5) |
+| IMX585 resolution pills | Core class tables; `set_resolution` | `state.ladderServer.pool`, else `imx585ClassModes` | Unchanged here (camera-modes theme) |
+| Command doors | Core `handleCommand` | `sendCommand`, `controlsCall`, `ladderRequest`, `clipRawCommand` | `sendCommand` (its error carries `error.payload`, the name `P:19002` already uses); raw `fetch` for `controls_last_input` (Listen) and `user_activity` (viewer keep-awake); `ladderRequest` stays for the render-driven `get_mode_ladder` until camera-modes moves that fetch |
+| Parts | - | `.pb-*`, `.pbv-*`, SVG, modal, history, hold-to-repeat, white selects | Upstream header, ids and CSS (`U:3979-4022`, `U:1156-1253`); `.media-browser-*`, `.clip-viewer-*` for the port's grid and viewer; buttons from `.icon-button`/`.primary-/.secondary-/.danger-button`; `/icons/*.png`; `window.confirm`; one `.settings-select`; `.hidden` |
+| Remote controls | Core `test_input` | Main-page card, loaded at start, 5 s untracked retry | Owner decision 3: a `settings-card` in Controls loaded by `setSettingsPanel("controls")` (commit 24), or the main-page card with `state.controlsRetryTimer` (commit 25) |
 
-What reaches the touch UI does not change: it reads the socket (`get_state`, events `buffer`, `settings`), not the page. No reply field, no file key, no command changes, so requirement 4 (files on existing cameras) has nothing to take over.
+What reaches the touch UI does not change: it reads the socket (`get_state`, events `buffer`, `settings`), not the page. No reply field, file key or command changes, so requirement 4 (files on existing cameras) has nothing to take over. A stock camera and the owner's rig see the same page behaviour as today, except where an owner option (22-25) is taken.
 
 ## Commit plan
 
-All commits: repo Apertar-Core, file `src/web/WebControlPage.cpp` only, subject prefix `web:`. Order: the camera-critical pill first, then the command doors, then the stores, then the Clip Browser parts (deletions before renames, so the renames touch fewer lines), then the small parts.
+All commits: repo Apertar-Core, file `src/web/WebControlPage.cpp` only, subject prefix `web:`. Order: the camera-critical pill first, then the command doors, then the stores, then the Clip Browser parts (deletions before renames, so the renames touch fewer lines), then the small parts. Commits 22-25 are leaves: nothing depends on them, so an owner "keep it" drops the commit and nothing else.
 
 **Standard check here (every commit):**
-1. `/home/user/build/bin/check_core.sh /home/user/wt/core-work work both tests`: both builds and the host tests PASS.
-2. `/home/user/build/bin/smoke_core.sh /home/user/build/work-nolc/apertar-core 18741 after.txt` and `diff before.txt after.txt`: empty (the page is the only change, so reply shapes must be identical).
+1. `/home/user/build/bin/check_core.sh /home/user/wt/core-work work both tests`: both builds and the 17 host tests PASS.
+2. `/home/user/build/bin/smoke_core.sh /home/user/build/work-nolc/apertar-core 18741 > after.txt`, then `diff <(grep -v '^== GET / ' before.txt) <(grep -v '^== GET / ' after.txt)`: empty. The `GET /` line prints the page's byte count (`smoke_core.sh:41`) and changes on every page commit.
 3. Extract the page script from `curl -s http://127.0.0.1:18741/` (text between `<script>` and `</script>`) and run `node --check` on it.
-4. Node Playwright (`/opt/node22/lib/node_modules/playwright`) with `google-chrome` headless against `--simulate`: load `/`, open every settings panel and the Clip Browser, fail on any `pageerror` or `unhandledrejection`, take a screenshot.
-5. The grep named in the commit returns 0.
+4. Node Playwright (`/opt/node22/lib/node_modules/playwright`) with `/usr/bin/google-chrome` headless against `--simulate`: load `/`, open every settings panel and the Clip Browser, fail on any `pageerror` or `unhandledrejection`, take a screenshot.
+5. The grep named in the commit gives the stated count.
 
-**What a Pi adds in general:** the buffer and pre-roll paths need a real raw take (`--simulate` reports `buffer_mode: "none"`). The rest is page logic that `--simulate` drives fully.
+**What a Pi adds in general:** the buffer and pre-roll paths need a real raw take (`--simulate` reports `buffer_mode: "none"`). The rest is page logic that `--simulate` drives fully. Every change runs in the client's browser; Core work per request and request rates stay as today, so there is no Pi-model difference in Core (CM5, Pi 5, Pi 4, CM4 alike).
 
-### 1. web: the buffer poll keeps its fields in state
+### 1. web: the recording pill is drawn in one function, renderRecordingStatus
 
-- Files and functions: `state` literal; `startFrameBufferTimer`, `notePrerollRequested`, `prerollPollWanted`, `applyPrerollPill`, `noteBufferSafetyStop`, `applyFrameBufferPillClasses`, `pollFrameBufferBar`, `stopFrameBufferPolling`, `updateFrameBufferBar`, and the 5 outside readers (`P:14381`, `15389`, `15757-15759`, `15917`, `19272`).
-- Moves: the 14 fields of `frameBufferBar` to `state.buffer*`/`state.preroll*` with the same meaning (`state.bufferFill`, `state.bufferPollTimer`, ...). Deletes: `const frameBufferBar` `P:16419-16421`. Adds: the fields to the `state` literal. Pure move, no behaviour change.
-- Lines: -3 +14, about 55 lines edited in place.
-- Check here: standard; `grep -c frameBufferBar` = 0. Playwright with `page.route("/api/buffer")` returning a canned reply (`buffer_fill 0.5`, `recording true`) while `/api/state` is routed to a snapshot with `recording: true` and `ui.frame_buffer_bar_enabled: true`, `system.buffer_mode: "ram"`: the pill has `buffer-bar` and `--buffer-fill: 50.0%`.
-- Pi: nothing new (same behaviour).
-- Depends on: none.
-
-### 2. web: the recording pill is drawn in one function, renderRecordingStatus
-
-- Functions: `renderSnapshot`. Moves: the `#recordingStatus` text line `P:15388-15392` and the pill/dot class block `P:15752-15768` (with its `updateFrameBufferBar` call) into `function renderRecordingStatus(snapshot)`, next to `renderSnapshot`. `renderSnapshot` calls it at the old place. Pure extraction.
-- Why this split is allowed: WEB-24 says do not split `renderSnapshot` unasked. Here the pill has a second writer that cannot call all of `renderSnapshot` (880 lines, 4 times a second); the only way to keep one writer is to give the pill its own function. The rest of `renderSnapshot` stays whole.
+- Functions: `renderSnapshot`. Moves the `#recordingStatus` text block `P:15388-15392` and the pill/dot class block `P:15752-15768` (with its `updateFrameBufferBar` call) into `function renderRecordingStatus(snapshot)`, next to `renderSnapshot`. `renderSnapshot` calls it at the old place. The record button block `P:15769-15772` stays in `renderSnapshot`. Pure extraction.
+- Precedent: `updateTimecodeDisplay` `U:9168-9216`, a small draw function that reads only `state.snapshot` and is run by a second timer (`U:9219-9238`). The rest of `renderSnapshot` stays whole (WEB-24).
 - Lines: -30 +36.
 - Check here: standard; screenshot of the pill READY / NO MEDIA in `--simulate` identical to before (pixel diff).
 - Pi: nothing new.
-- Depends on: 1.
+- Depends on: none.
 
-### 3. web: the buffer poll merges its reply into the snapshot and redraws the pill
+### 2. web: the buffer poll merges its reply into the snapshot and redraws the pill
 
-- Functions: `pollFrameBufferBar` renamed `fetchBufferState` (async, `try/catch/finally`, `state.bufferPollInFlight`, `AbortController` 800 ms kept); new `applyBufferSnapshotPatch(payload)` (about 10 lines: copy the flat keys the reply shares with `/api/state system.*` through the existing `mergeCameraStateFields`, after moving `payload.recording` to `buffer_recording`); then `renderRecordingStatus(state.snapshot)` and `showPrerollFpsText`.
-- Deletes: `applyPrerollPill` `P:16441-16456`, `applyFrameBufferPillClasses` `P:16473-16489`, the READY/PRE-ROLL label rewrites, the direct `state.snapshot.storage_preroll_*` writes `P:16505-16512`, the 1000 ms freshness windows `P:16553`, `P:16561`, `P:16575`, and the derived fields `bufferFill`, `bufferRecording`, `bufferSafetyStop`, `bufferStopPercent`, `prerollActive`, `prerollFps`, `bufferFillAtMs`, `prerollAtMs`, `bufferBarActive` from commit 1.
-- `renderRecordingStatus` reads only `snapshot`: pill `recording` = `isRecording && !snapshot.buffer_safety_stop`; `buffer-drain` = bar active and `buffer_safety_stop` and `buffer_fill > 0`; `preroll` = `storage_preroll_active && !recording`. The 5 outside readers read `state.snapshot.buffer_safety_stop` and `storage_preroll_active`.
-- Why `buffer_recording`: `/api/buffer` reports `recording:false` during a safety stop (`App:8428`) while the take still drains; writing it over `snapshot.recording` would enable controls Core still refuses.
-- Lines: -150 +55.
-- Check here: standard; `grep -c 'applyPrerollPill\|applyFrameBufferPillClasses\|fillAtMs\|prerollAtMs'` = 0. Playwright with routed replies, four scenes: (a) `/api/state` recording, `/api/buffer` fill 0.4: pill REC red, bar 40 %; (b) `/api/buffer` `buffer_safety_stop: true`, fill 0.3, `/api/state` held (route never answers): pill READY green with `buffer-drain`, record button enabled; (c) `storage_preroll_active: true`, not recording: PRE-ROLL blue, FPS badge shows `storage_preroll_fps`; (d) all false: READY.
-- Pi (CM5 + CFexpress, then a Pi 4 + SD card, the slow case): RAM buffer mode, cDNG 16-bit 4K at the highest fps, frame buffer bar on in Settings > Record. Record until the safety stop. Look for: bar fills smoothly (4 Hz), at the stop the pill turns READY green with the drain bar before `/api/state` answers again, the toast appears once. Then press REC during the flush: the flush-discard toast appears once and a new take starts. Pre-roll: press the pre-roll button: PRE-ROLL pill within half a second.
-- Depends on: 2. Preroll theme: if it renames `storage_preroll_*` fields, rebase; the pill reads them in one place after this commit.
+- Deletes `const frameBufferBar` `P:16419-16421`. Adds to the `state` literal only the fields that survive: `bufferPollTimer`, `bufferPollInFlight`, `prerollPollUntilMs`, and, until commit 3, `bufferStopSeen`, `bufferDiscardSeen: -1`.
+- `pollFrameBufferBar` is renamed `fetchBufferState` (async, `try/catch/finally`, `state.bufferPollInFlight`, the 800 ms `AbortController` kept). New `applyBufferSnapshotPatch(payload)`, about 8 lines: move `payload.recording` to `payload.buffer_recording` and delete `recording` (the merge would copy it over `snapshot.recording`, `P:13889`; `/api/buffer` says `false` during a safety stop, `App:8428`, while Core still refuses some controls), then `mergeCameraStateFields(state.snapshot, payload)`, then `renderRecordingStatus(state.snapshot)` and `showPrerollFpsText`.
+- `mergeCameraStateFields` gains 4 lines: `buffer_fill` (clamped 0..1) and `buffer_flush_discarded`, beside the existing `buffer_*` lines `P:13841-13848`. Without them the bar would not move at 4 Hz.
+- One freshness rule replaces the three windows `P:16553`, `P:16560-16562`, `P:16575-16578`: in `renderSnapshot`, right after the `system.*` lift `P:15215-15221`: `if (state.bufferPollTimer && state.snapshot && isFiniteNumber(state.snapshot.buffer_fill)) snapshot.buffer_fill = state.snapshot.buffer_fill;`. The same condition keeps the buffer toasts with the poll (`noteBufferSafetyStop` is called from `renderSnapshot` only while no poll runs). This is the old `P:16560` rule, now keyed on the timer.
+- `noteBufferSafetyStop` stays (commit 3 removes it); it reads and writes `state.bufferStopSeen`/`bufferDiscardSeen` and no longer writes a safety flag.
+- Deletes `applyPrerollPill` `P:16441-16456`, `applyFrameBufferPillClasses` `P:16473-16489`, the READY/PRE-ROLL label rewrites, and the direct `state.snapshot.storage_preroll_*` writes `P:16505-16512`.
+- `renderRecordingStatus` reads only `snapshot`: `pillRecording = isRecording && !snapshot.buffer_safety_stop`; `buffer-drain` = bar active and `buffer_safety_stop` and `buffer_fill > 0`; `preroll` = `storage_preroll_active && !pillRecording && !buffer_recording`. The 5 outside readers (`P:14381`, `15389`, `15757-15759`, `15917`, `19272`) read `state.snapshot.buffer_safety_stop` and `storage_preroll_active`.
+- Lines: -150 +60.
+- Check here: standard; `grep -cE 'frameBufferBar|applyPrerollPill|applyFrameBufferPillClasses|fillAtMs|prerollAtMs'` = 0. Playwright with `page.route` replies, five scenes: (a) `/api/state` recording, `system.buffer_mode: "ram"`, `ui.frame_buffer_bar_enabled: true`, `/api/buffer` fill 0.4: pill REC red, `--buffer-fill: 40.0%`; (b) `/api/buffer` `buffer_safety_stop: true`, fill 0.3, `/api/state` held (the route never answers): pill READY green with `buffer-drain`, record button enabled; (c) `storage_preroll_active: true`, not recording: PRE-ROLL blue, FPS badge shows `storage_preroll_fps`; (d) all false: READY; (e) the poll says 0.3, then a late `/api/state` says `system.buffer_fill: 0.9`: bar stays 30 %. Scenes (a) and (b) again with `ui.frame_buffer_bar_enabled: false`: pill red, then READY green at the stop, no bar.
+- Pi (CM5 + CFexpress, then a Pi 4 + SD card, the slow drain): RAM buffer mode, cDNG 16-bit 4K at the highest fps. Run twice, with the frame buffer bar on and off (Settings > Record). Beside the page run `while :; do curl -s http://<pi>:8000/api/buffer | jq -c '{buffer_fill,buffer_safety_stop,buffer_flush_discarded,recording}'; sleep 0.25; done`. Record until the safety stop. Look for: the bar fills smoothly (bar on); the pill turns READY green within 0.5 s of `buffer_safety_stop: true`; the bar never jumps back up when `/api/state` answers after the drain; one toast. Then press REC during the flush: one flush-discard toast, and a new take starts. Pre-roll: press the pre-roll button: the PRE-ROLL pill appears within half a second.
+- Depends on: 1. Preroll theme: if it renames `storage_preroll_*` fields, rebase; after this commit the pill reads them in one place.
 
-### 4. web: buffer toasts and the buffer poll timer follow the snapshot
+### 3. web: buffer toasts and the buffer poll timer follow the snapshot
 
-- Functions: delete `noteBufferSafetyStop` and the seen flags (`stopSeen`, `discardedSeen`); add a 6-line comparison where the previous snapshot is known (top of `renderSnapshot`, and in `applyBufferSnapshotPatch` before the merge), shaped like `U:9331-9333`: `if (next.buffer_safety_stop && !previous.buffer_safety_stop) showToast(...)`; `if (next.buffer_flush_discarded > 0 && next.buffer_flush_discarded !== previous.buffer_flush_discarded) showToast(...)`. Replace `startFrameBufferTimer`, `stopFrameBufferPolling`, `prerollPollWanted` and the three start/stop sites with one `updateBufferPolling(snapshot)`: poll while (queue mode and (recording or safety stop or fill > 0)) or pre-roll active or `performance.now() < state.prerollPollUntilMs`; `notePrerollRequested` sets `state.prerollPollUntilMs` and calls it.
+- Deletes `noteBufferSafetyStop`, `state.bufferStopSeen`, `state.bufferDiscardSeen` and the toast half of the timer rule from commit 2. Adds one function `noteBufferEvents(previous, next)` (6 lines), called in `renderSnapshot` after the `system.*` lift with `state.snapshot` as `previous`, and in `applyBufferSnapshotPatch` before the merge. Shaped like `U:9331-9333`: `if (next.buffer_safety_stop && !(previous && previous.buffer_safety_stop)) showToast(...)` (toasts on page load during a stop, as today); `if (previous && next.buffer_flush_discarded > 0 && next.buffer_flush_discarded !== previous.buffer_flush_discarded) showToast(...)` (no toast on load, as `discardedSeen: -1` does today; the count stays in Core until the next safety stop, `App:247-250`). Both writers share `state.snapshot`, so a stop seen by the poll does not toast again when `/api/state` answers.
+- Replaces `startFrameBufferTimer`, `stopFrameBufferPolling`, `prerollPollWanted` and the start/stop sites with one `updateBufferPolling(snapshot)`, called at the end of `renderRecordingStatus`: poll while (queue mode and (`recording` or `buffer_safety_stop` or (bar active and `buffer_fill > 0`))) or `storage_preroll_active` or `performance.now() < state.prerollPollUntilMs`. This is today's rule (`P:16533-16538`, `P:16566-16570`, `P:16586-16587`) in one place. `notePrerollRequested` sets `state.prerollPollUntilMs` and calls it.
 - Lines: -60 +35.
-- Check here: standard; Playwright scene (b) of commit 3 repeated for 3 s: exactly one toast; scene with `buffer_flush_discarded` 0 -> 12: one toast; after all false, `state.bufferPollTimer` = 0 within 250 ms (read via `page.evaluate`).
-- Pi: the commit 3 steps; also leave the page open idle 5 min and check in the browser network tab that `/api/buffer` requests stop.
-- Depends on: 3.
+- Check here: standard; `grep -cE 'noteBufferSafetyStop|stopSeen|discardedSeen'` = 0. Playwright: scene (b) of commit 2 for 3 s: exactly one toast; `buffer_flush_discarded` 0 -> 12: one toast; page loaded with `buffer_flush_discarded: 12` already set: no toast; after all false, `state.bufferPollTimer` = 0 within 250 ms (`page.evaluate`).
+- Pi: the commit 2 steps; also leave the page open idle for 5 min and check in the browser network tab that `/api/buffer` requests stop.
+- Depends on: 2.
 
-### 5. web: Controls and Hardware commands go through sendCommand
+### 4. web: Controls and Hardware commands go through sendCommand
 
-- Functions: `sendCommand` (2 lines: `const error = new Error(result.error || "Command failed."); error.result = result; throw error;`, the same shape the port's `/api/config` save uses); `loadControls`, `saveControls`, `saveHardware`, `undoControls`, `loadControlsHistory`, `loadConfigVersion`, `checkConfigFile`, the Scan handler, the three Test handlers.
-- Each user action: `try { const result = await sendCommand(...) } catch (error) { showControlsMessage(error.message, error.result && error.result.issues, false) } finally { <flag> = false }`. Saves read `error.result.issues` / `error.result.code`. Scan resets "Scanning..." in `finally`. Undo sets the save flag.
-- Listen poll stays a raw `fetch` (it is background traffic like `user_activity`; through `sendCommand` it would schedule an `/api/state` refresh and push `deferFetchUntilMs` every 300 ms), now inside `try/catch` with an in-flight guard.
-- Deletes: `controlsCall` `P:16699-16705`.
+- `sendCommand`: `const error = new Error(result.error || "Command failed."); error.payload = result; throw error;` (+2; the name the port's config save uses, `P:19002`). Callers: `loadControls`, `saveControls`, `saveHardware`, `undoControls`, `loadControlsHistory`, `loadConfigVersion`, `checkConfigFile`, the Scan handler, the three Test handlers, `buildRemoteButton`'s `fire` (returns `true`/`false` from try/catch, so the repeat still stops on a refusal).
+- Each user action: `try { const result = await sendCommand(...) } catch (error) { showControlsMessage(error.message, error.payload && error.payload.issues, false) } finally { <flag> = false }`. Saves read `error.payload.issues` / `error.payload.code`. Scan resets "Scanning..." in `finally`. Undo sets the save flag.
+- The Listen poll stays a raw `fetch` (background traffic like `user_activity`; through `sendCommand` it would render twice, schedule `/api/state` and push `deferFetchUntilMs` every 300 ms), now inside `try/catch` with `state.controlsListenInFlight`.
+- Deletes `controlsCall` `P:16699-16705`.
 - Lines: -45 +80 (try/catch at 15 sites).
-- Check here: standard; `grep -c controlsCall` = 0. Playwright: open Controls, `page.route("/api/command")` to fail `scan_i2c` once: Scan button usable again, toast shown, no unhandled rejection; Save with a stale revision shows Core's "The file changed since you loaded it..." (reproduced above in `--simulate` with `set_controls base=x`).
-- Pi: Controls > Listen, press a GPIO button: its row lights up.
-- Depends on: none. Command-plane theme: if replies gain machine codes, `error.result.code` already carries them.
+- Check here: standard; `grep -c controlsCall` = 0. Playwright: open Controls; `page.route("/api/command")` fails `scan_i2c` once: the Scan button is usable again, a toast shows, no unhandled rejection. Save with a stale revision shows Core's "The file changed since you loaded it..." (reproduced in `--simulate` with `set_controls base=x`).
+- Pi: Controls > Listen, press a GPIO button: its row lights up. Remote controls: one tap on Record starts a take.
+- Depends on: none. Command-plane theme: if replies gain machine codes, `error.payload.code` carries them.
 
-### 6. web: the Mode Ladder and the clip-name preview go through sendCommand
+### 5. web: the clip-name preview goes through sendCommand
 
-- Functions: `fetchModeLadder`, the ladder save and dry-run callers, `clipPreviewThenSave`. Deletes: `ladderRequest` `P:8005-8015`, `clipRawCommand` `P:14577-14586`. Precedent: `audio_capabilities` through `sendCommand` `U:11109`.
-- Cost accepted: each call renders once from the unchanged snapshot and schedules one `/api/state` 140 ms later (the composer debounces at 350 ms; the ladder fetches on panel open and on `ladder_active` change).
-- Lines: -24 +3.
-- Check here: standard; `grep -c 'ladderRequest\|clipRawCommand'` = 0; Playwright: Modes panel lists the ladder; Record panel composer shows the example name after a drag.
+- `clipPreviewThenSave` calls `sendCommand({cmd: "preview_clip_name", value})`. Deletes `clipRawCommand` `P:14577-14586`. Precedent: `audio_capabilities` through `sendCommand` `U:11109`, a user-started read.
+- Cost: each preview renders twice from the unchanged snapshot and schedules one `/api/state` 140 ms later; REC is gated for the request's duration (tens of ms; the composer is disabled while recording, `P:14569`).
+- `ladderRequest` stays: its one caller, `get_mode_ladder`, is started from a render (`P:8395-8400`), not by the operator, and through `sendCommand` it would gate REC and drop `/api/state` replies while it waits on CC `mutex_` (`CC:11041`). It goes when camera-modes moves the fetch to panel open (WCP-04-F3) together with the pool question (WCP-04-F1).
+- Lines: -12 +1.
+- Check here: standard; `grep -c clipRawCommand` = 0; Playwright: Record panel composer shows the example name after a drag.
 - Pi: nothing new.
-- Depends on: 5 (the `error.result` line).
+- Depends on: 4 (the `error.payload` line).
 
-### 7. web: the Controls page keeps its state in state
+### 6. web: the Controls page keeps its state in state
 
-- Moves: the 18 fields of `controlsState` to flat `state.controls*` fields (names in the target table; `settingEdits` -> `hardwareEdits`, `loading`/`saving` -> `controlsLoadInFlight`/`controlsSaveInFlight`). Deletes: `const controlsState`. Label tables (`controlsGroups`, `controlsNewTitles`, `controlsKindNames`, `controlsStateNames`, `controlsOutputFunctions`, ...) move to the option-list block after `sleepModeOptions` (WEB-8). Mechanical, run as one `sed` map listed in the commit body.
-- Lines: -22 +20 declarations; about 165 lines edited in place; about 40 lines moved.
-- Check here: standard; `grep -c controlsState` = 0; Playwright: Controls panel renders the same rows as before (DOM text diff of `#controlsRows` before/after).
+- Moves the 18 fields of `controlsState` to flat `state.controls*` fields (names in the target table; `settingEdits` -> `hardwareEdits`, `loading`/`saving` -> `controlsLoadInFlight`/`controlsSaveInFlight`). Deletes `const controlsState`. The label tables stay where they are (upstream keeps meta tables beside the code that uses them too: `favoriteItemMeta` `U:4128`, `settingsPanelMeta` `U:4165`). Mechanical: one `sed` map, listed in the commit body.
+- Lines: -22 +20 declarations; about 165 lines edited in place.
+- Check here: standard; `grep -c controlsState` = 0; Playwright: Controls renders the same rows as before (DOM text diff of the Controls panel).
 - Pi: nothing new.
-- Depends on: 5.
+- Depends on: 4.
 
-### 8. web: the Controls page's sets, maps and Listen timer live in state
+### 7. web: the Controls page's sets, maps and Listen timer live in state
 
-- Moves: `controlsChipLines`, `controlsSeparateTurns`, `controlsReplaced` (`P:16799`, `16882`, `17253`), `let controlsListenTimer`, `let controlsListenSeq` (`P:18672-18673`) to `state`. Deletes: the 5 module-level declarations.
+- Moves `controlsChipLines`, `controlsSeparateTurns`, `controlsReplaced` (`P:16799`, `16882`, `17253`), `let controlsListenTimer`, `let controlsListenSeq` (`P:18672-18673`) to `state`. Deletes the 5 module-level declarations.
 - Lines: -5 +5; about 25 lines edited.
-- Check here: standard; `grep -nE '^    let ' P` lists no Controls name.
-- Pi: nothing.
-- Depends on: 7.
-
-### 9. web: the Boot Config card keeps its state in state and its listeners in installInteractions
-
-- Moves: `bootConfig.*` to `state.bootConfig*` (target table); `BOOT_CONFIG_TOGGLES`, `BOOT_CONFIG_MANAGED` to camelCase in the option-list block; the body of `installBootConfigInteractions` into `installInteractions` next to `restartSystemButton`. Deletes: `const bootConfig`, `installBootConfigInteractions` and its call `P:20923`.
-- Lines: -16 +14 declarations; about 70 lines edited; about 50 lines moved.
-- Check here: standard; `grep -c 'bootConfig\.\|installBootConfigInteractions'` = 0; Playwright: System panel shows the Boot Config card filled from `/api/boot-config` (`--simulate` answers it).
-- Pi: nothing new (no change in what is written).
-- Depends on: boot-config-helpers theme first (it moves the route and may delete Edit file, which removes `text`, `previewState`, `editorMarks`, `editorTimer`). Move only the fields that survive.
-
-### 10. web: the clip-name composer and settings search keep their state in state
-
-- Moves: `clipUi.*` to `state.clipName*` (e.g. `clipNameItems`, `clipNameSavedTemplate`, `clipNameDirty`, `clipNameSaveTimer`, `clipNameSeq`, `clipNameDrag*`, `clipNameStatusText`, ...), one-letter fields get words (`src` -> `clipNameDragSource`, `v` -> `value` in the token table); `CLIP_PRESETS`, `CLIP_TOKEN_GROUPS`, `CLIP_TOKEN_INFO`, `CLIP_DEFAULT_TEMPLATE` -> camelCase in the option-list block; `settingsSearch.*` -> `state.settingsSearch*`. Deletes: `const clipUi`, `const settingsSearch`.
-- Lines: -8 +24 declarations; about 110 lines edited.
-- Check here: standard; `grep -cE 'clipUi|settingsSearch\.|CLIP_'` = 0; Playwright: type "iso" in settings search, the ISO unit stays; composer saves `{format}_{date}_{clip}`.
+- Check here: standard; `grep -nE '^    (let|const) controls(ChipLines|SeparateTurns|Replaced|Listen)'` = 0.
 - Pi: nothing.
 - Depends on: 6.
 
+### 8. web: the Boot Config card keeps its state in state
+
+- Moves `bootConfig.*` to `state.bootConfig*` (target table); renames `BOOT_CONFIG_TOGGLES`, `BOOT_CONFIG_MANAGED` to `bootConfigToggles`, `bootConfigManaged` in place. Deletes `const bootConfig`. `installBootConfigInteractions` stays: it is called from inside `installInteractions` (`P:20923`), and upstream has a feature installer of its own (`installPreviewStream` `U:8566`).
+- Lines: -16 +12 declarations; about 70 lines edited.
+- Check here: standard; `grep -cE '\bbootConfig\.|BOOT_CONFIG_'` = 0; Playwright: the System panel shows the Boot Config card filled from `/api/boot-config` (`--simulate` answers it).
+- Pi: nothing new (nothing new is written).
+- Depends on: boot-config-helpers theme first (it moves the route and may delete Edit file, which removes `text`, `previewState`, `editorMarks`, `editorTimer`). Move only the fields that survive.
+
+### 9. web: the clip-name composer keeps its state in state
+
+- Moves `clipUi.*` to `state.clipName*` (`clipNameItems`, `clipNameSavedTemplate`, `clipNameDirty`, `clipNameSaveTimer`, `clipNameSeq`, `clipNameDragSource`, `clipNameStatusText`, ...); renames `CLIP_PRESETS`, `CLIP_TOKEN_GROUPS`, `CLIP_TOKEN_INFO`, `CLIP_DEFAULT_TEMPLATE` to camelCase in place. Deletes `const clipUi`.
+- Lines: -6 +18 declarations; about 92 lines edited.
+- Check here: standard; `grep -cE 'clipUi|CLIP_'` = 0; Playwright: the composer saves `{format}_{date}_{clip}`.
+- Pi: nothing.
+- Depends on: 5.
+
+### 10. web: settings search keeps its state in state
+
+- Moves `settingsSearch.*` to `state.settingsSearchActive`, `settingsSearchObserver`, `settingsSearchTimer`, `settingsSearchApplying`. Deletes `const settingsSearch` `P:10184`.
+- Lines: -2 +5; about 17 lines edited.
+- Check here: standard; `grep -c 'settingsSearch\.'` = 0; Playwright: type "iso" in settings search, the ISO unit stays visible.
+- Pi: nothing.
+- Depends on: none.
+
 ### 11. web: Remove in the Clip Browser asks with window.confirm
 
-- Functions: `pbOpenRemoveDialog` becomes `if (!window.confirm("Remove " + n + " clip(s)? This cannot be undone.")) return;` inside `pbRemoveSelected` (single clip: "Remove <name>? This cannot be undone."); "Removing..." goes to the status line `#pbStatus`. Deletes: `#pbRemoveScrim` markup `P:6475-6486`, `.pb-scrim`/`.pb-dialog*` CSS, the scrim guards `P:10137`, `P:12966`, `pb.removeTargets`.
+- `pbOpenRemoveDialog` becomes `if (!window.confirm("Remove " + n + " clips? This cannot be undone.")) return;` inside `pbRemoveSelected` (one clip: "Remove <name>? This cannot be undone."). "Removing..." goes to the status line `#pbStatus`. Deletes the `#pbRemoveScrim` markup `P:6475-6486`, `.pb-scrim`/`.pb-dialog*` CSS, the open/close code `P:12036-12052`, `P:12108`, the scrim guards `P:10137`, `P:12966`, `P:20705`, and `pb.removeTargets`. WEB-21 settles the wording shape (8 upstream confirms), so this is no owner question.
 - Lines: -95 +10.
 - Check here: standard; `grep -c pbRemoveScrim` = 0; Playwright with `page.on("dialog", d => d.accept())`: put a folder in the `--simulate` media dir, select it, Remove: it is gone; with `d.dismiss()`: it stays.
 - Pi: nothing.
 - Depends on: none.
 
-### 12. web: the Clip Browser adds no browser history entries
+### 12. web: the Clip Browser header uses upstream's title, Back, Refresh, filter row and sort select
 
-- Functions: `setMediaBrowserOpen(open)` loses `fromHistory`; `pbvOpen` loses `keepHistory`'s push; `pbvClose` loses its pop. Deletes: both `history.pushState` (`P:10129`, `P:12777`), the `popstate` listener `P:20708-...`, `pb.pushed`, `pb.viewerPushed`, `pb.ignorePop`. Back buttons and Escape close as today.
-- Lines: -30 +3.
-- Check here: standard; `grep -c 'pushState\|popstate'` = 0; Playwright: open browser, open a clip, Back, Back: overlay closed, `history.length` unchanged.
-- Pi: nothing. Owner decision 1 (phone Back).
-- Depends on: 11.
+- Markup: the header and toolbar become a copy of `U:3981-4012` with its ids: folder icon, `h2.section-title` "Clip Browser", the one-line copy, `icon-button settings-back-button#closeMediaBrowserButton`, `#mediaBrowserFilters` with four `.media-filter-button[data-media-filter]`, `secondary-button#refreshMediaBrowserButton` "Refresh Media" (text only, as `U:4008`), `select.settings-select.media-sort-select#mediaBrowserSortSelect`. The count pill keeps `#pbCount` until commit 15. The port's grid, sheet and selection actions stay.
+- CSS: re-adds upstream's header, toolbar, filter and sort rules `U:1156-1253` verbatim (the port deleted every `.media-browser-*`, `.media-filter-button`, `.media-sort-select` rule: 0 matches in P). Deletes `.pb-eyebrow`, `.pb-h1`, `.pb-top-button`, `.pb-show-*`, `.pb-menu*`, `.pb-chip` and their media-query copies (`P:2047-2178`, `P:2475-2500` in part).
+- Functions: `pbSetFilter` reads `data-media-filter`; `pbSetShowMenu` and its document click handler deleted; sort reads the select's `change`; listeners use the upstream ids. The 2 header SVGs (`P:6355`, `P:6371`) go.
+- Lines: -220 +100 (about 95 of the adds are upstream's CSS).
+- Check here: standard; `grep -cE 'pb-show|pb-menu|pb-chip|pb-top-button'` = 0; Playwright: the filter row switches Clips/Stills/Timelapse/Audio; the sort select reorders; screenshots at 1280 and 390 px width.
+- Pi: nothing.
+- Depends on: none.
 
-### 13. web: the Clip Browser header uses the page's buttons, filter row and sort select
+### 13. web: the Clip Browser has a Clear button beside Select All
 
-- Markup: `h1.pb-h1` -> `h2.section-title`; Back -> `icon-button settings-back-button` (as `closeMediaBrowserButton` `U:3993`); Refresh -> `secondary-button` "Refresh Media" with `/icons/refresh.png`; the SHOW pop-up -> a visible row of `media-filter-button` (`data-media-filter`, white active, `U:3999-4004`); the sort chip -> `select.settings-select.media-sort-select` (`U:4009-4012`); the Clear button returns beside Select All (`U:4020`, finding WCP-03-F3 in part).
-- Functions: `pbSetFilter` reads the row; `pbSetShowMenu` and its document click handler deleted; sort reads the select's `change`.
-- Deletes CSS: `.pb-h1`, `.pb-top-button`, `.pb-show-*`, `.pb-menu*`, `.pb-chip` and their media-query copies (`P:2047-2178`, `P:2475-2500` in part). 3 inline SVGs gone.
-- Lines: -220 +45.
-- Check here: standard; Playwright: filter row switches Clips/Stills/Timelapse/Audio; sort select reorders; screenshots at 1280 and 390 px width.
+- Adds `secondary-button media-select-button#clearMediaSelectionButton` "Clear" (as `U:4020`) to the selection actions; its click empties the selection and leaves selection mode. Fixes WCP-03-F3 in part.
+- Lines: -0 +8.
+- Check here: standard; Playwright: select two clips, Clear: the count shows 0 and the actions hide.
 - Pi: nothing.
 - Depends on: 12.
 
 ### 14. web: the Clip Viewer uses the page's buttons and /icons PNGs
 
-- Markup: Back -> `icon-button settings-back-button`; Download -> `secondary-button` "Download"; Info -> `secondary-button` with `/icons/info.png`; previous/next clip and play keep their PNGs on `icon-button`; frame step -> `icon-button` with `/icons/previous.png` / `/icons/next.png` at 18 px and `aria-label` "Previous frame"/"Next frame"; the card's selected check (SVG built in JS `P:11833`) -> a `media-select-control` element with `.selected` (`U:1294-1330`).
+- Markup: Back -> `icon-button settings-back-button`; Download -> `secondary-button` "Download"; Info -> `secondary-button` "Info"; previous/next clip and play keep their PNGs on `icon-button`; frame step -> `icon-button` with `/icons/previous.png` / `/icons/next.png` and `aria-label` "Previous frame"/"Next frame"; the card's selected check (SVG built in JS `P:11833`) -> a `media-select-control` element with `.selected` (`U:1294-1330`). Ids stay.
 - Deletes CSS: `.pbv-circle*`, `.pbv-icon-button`, `.pbv-info-button` (`P:2398-2450` in part, `P:2657-2678`, `P:2743-2775`); 4 inline SVGs in markup, 1 in JS.
 - Lines: -130 +35.
-- Check here: standard; `grep -c '<svg'` in the overlay range = 0; Playwright: open a clip from the simulate media dir (a cDNG folder made by `tools/flatten_clip.py` or any `.wav` for the audio path), Play, Pause, step, Info.
-- Pi: open a 4K cDNG clip on a phone over Wi-Fi: play, step, scrub as before.
-- Depends on: 13.
+- Check here: standard; `grep -c '<svg'` = 6 (Mode Ladder 5 and search 1, gone in commit 20); Playwright: open a clip from the simulate media dir (a cDNG folder made by `tools/flatten_clip.py`, or a `.wav` for the audio path): Play, Pause, step, Info.
+- Pi: open a 4K cDNG clip on a phone over Wi-Fi: play, step and scrub as before.
+- Depends on: 12.
 
-### 15. web: frame step and knob arrows send one step per click
+### 15. web: the Clip Browser's classes and ids use the media-browser and clip-viewer names
 
-- Deletes: `pbvRepeat` `P:12718-12729` and its two calls (click calls `pbvStep`; the left/right keys already repeat by key auto-repeat in the existing keydown handler `P:12961`); the `repeat` branch of `buildRemoteButton` `P:18090-18110` (pointer capture, 450 ms delay, 140 ms interval).
-- Lines: -45 +4.
-- Check here: standard; `grep -c 'setPointerCapture\|pbvRepeat'` = 0; Playwright: one click = one `test_input` (count requests) and one frame.
-- Pi: turn ISO up from the Remote controls card: one step per click.
-- Depends on: 14. Owner decision 2: if hold-to-repeat stays, skip this commit and document `buildRemoteButton` as new ground.
-
-### 16. web: the Clip Browser's classes and ids use the media-browser and clip-viewer names
-
-- Mechanical rename (map in the commit body): `.pb-*` -> `.media-browser-*`, `.pbv-*` -> `.clip-viewer-*`, `body.pb-open` -> `body.media-browser-open` (declared once; the second rule `P:1980` deleted), ids `pb*` -> `mediaBrowser*`, `pbv*` -> `clipViewer*`, `#playbackOverlay` -> `#mediaBrowserOverlay`.
-- Lines: about 650 lines edited, -4 +0.
-- Check here: standard; `grep -cE '\.pbv?-|id="pbv?[A-Z]'` = 0; Playwright screenshots identical to commit 15's (pixel diff).
+- Mechanical rename with a sed map in the commit body: `.pb-*` -> `.media-browser-*`, `.pbv-*` -> `.clip-viewer-*`, `body.pb-open` -> `body.media-browser-open` (declared once; the second rule `P:1980` deleted), ids `pb*` -> `mediaBrowser*`, `pbv*` -> `clipViewer*`, `#playbackOverlay` -> `#mediaBrowserOverlay`.
+- Lines: about 620 lines edited, -4 +0.
+- Check here: standard; `grep -cE '\.pbv?-|id="pbv?[A-Z]'` = 0; Playwright screenshots identical to commit 14's (pixel diff). Review: rerun the published sed map on the parent and diff against the commit (empty), instead of reading 620 lines.
 - Pi: nothing.
-- Depends on: 15. Owner decision 4.
+- Depends on: 14. Owner decision 4.
 
-### 17. web: the Clip Browser's state is flat on state under upstream names
+### 16. web: the Clip Browser's state is flat on state under upstream names
 
-- Moves: `state.pb.*` to the flat fields in the target table; `state.pb.viewer` -> `state.clipViewer`; declares `previewPausedForPlayback` (WCP-06-F12). Deletes: the nested `pb: {...}`.
+- Moves `state.pb.*` to the flat fields in the target table; `state.pb.viewer` -> `state.clipViewer`; declares `previewPausedForPlayback` (WCP-06-F12). Deletes the nested `pb: {...}`.
 - Lines: -5 +22 declarations; about 150 lines edited.
 - Check here: standard; `grep -c 'state\.pb\b'` = 0; Playwright as commit 14.
 - Pi: nothing.
-- Depends on: 16.
+- Depends on: 15. Owner decision 5 (if "flat": the viewer's 40 fields become `clipViewer*` on `state`, plus a reset in `closeClipViewer`; about +50 lines more).
 
-### 18. web: the Clip Browser's upstream jobs have their upstream names again
+### 17. web: the Clip Browser's upstream jobs have their upstream names again
 
-- Renames: `pbRender` -> `renderMediaLibrary`, `pbSorted` -> `sortedMediaItems`, `pbSelectedItems` -> `selectedMediaItems`, `pbToggle` -> `toggleMediaSelection`, `pbSetFilter` -> `setMediaBrowserFilter`, sort setter -> `setMediaBrowserSort`, `pbDownloadSelected` -> `downloadSelectedMediaItems`, `pbRemoveSelected` -> `deleteSelectedMediaItems`, selection pruning -> `pruneMediaSelection`, select-all -> `selectAllVisibleMedia`.
+- Renames `pbRender` -> `renderMediaLibrary`, `pbSorted` -> `sortedMediaItems`, `pbSelectedItems` -> `selectedMediaItems`, `pbToggle` -> `toggleMediaSelection`, `pbSetFilter` -> `setMediaBrowserFilter`, the sort setter -> `setMediaBrowserSort`, `pbDownloadSelected` -> `downloadSelectedMediaItems`, `pbRemoveSelected` -> `deleteSelectedMediaItems`, selection pruning -> `pruneMediaSelection`, select-all -> `selectAllVisibleMedia`.
 - Lines: about 60 lines edited.
 - Check here: standard; Playwright as commit 14.
 - Pi: nothing.
+- Depends on: 16.
+
+### 18. web: the Clip Viewer's functions have verb-first names
+
+- Renames the remaining `pb*`/`pbv*` functions and constants (map in the commit body), e.g. `pbBuildCard` -> `buildMediaCard`, `pbQueueThumb` -> `queueMediaThumbnail`, `pbvOpen` -> `openClipViewer`, `pbvClose` -> `closeClipViewer`, `pbvPlay` -> `playClip`, `pbvPause` -> `pauseClip`, `pbvStep` -> `stepClipFrame`, `pbvRepeat` -> `repeatClipFrameStep`, `pbvSeekTo` -> `seekClip`, `pbvFetchFrame` -> `fetchClipFrame`, `pbvDraw` -> `drawClipFrame`, `pbvNewState` -> `newClipViewerState`, `pbvInstall` -> `installClipViewerInteractions`, `pbvTimeline` -> `clipTimeline`; `pbFilters`, `pbvHoldText`, `pbvWidths` -> `mediaFilterLabels`, `clipHoldText`, `clipFrameWidths`.
+- Lines: about 300 lines edited.
+- Check here: standard; `grep -cE '\bpbv?[A-Z]\w*'` = 0; Playwright as commit 14.
+- Pi: nothing.
 - Depends on: 17.
 
-### 19. web: the Clip Viewer's functions have verb-first names
+### 19. web: dropdowns have one look on every panel
 
-- Renames the remaining `pb*`/`pbv*` functions and constants (map in the commit body): e.g. `pbBuildCard` -> `buildMediaCard`, `pbQueueThumb` -> `queueMediaThumbnail`, `pbvOpen` -> `openClipViewer`, `pbvClose` -> `closeClipViewer`, `pbvPlay` -> `playClip`, `pbvPause` -> `pauseClip`, `pbvStep` -> `stepClipFrame`, `pbvSeekTo` -> `seekClip`, `pbvFetchFrame` -> `fetchClipFrame`, `pbvDraw` -> `drawClipFrame`, `pbvApplyHold` -> `applyClipHold`, `pbvInstall` -> `installClipViewerInteractions`, `pbvTimeline` -> `clipTimeline`, `pbvNumberAtTime` -> `clipNumberAtTime`, `pbvInHole` -> `clipFrameInHole`; `pbFilters`, `pbvHoldText`, `pbvWidths` -> `mediaFilterLabels`, `clipHoldText`, `clipFrameWidths`.
-- Lines: about 300 lines edited.
-- Check here: standard; `grep -oE '\bpbv?[A-Z]\w*'` = 0; Playwright as commit 14.
-- Pi: nothing.
-- Depends on: 18.
-
-### 20. web: dropdowns have one look on every panel
-
-- Deletes: CSS `P:3484-3559` except the used-pin grey rule (kept as `.settings-select.controls-pin option[data-used]`), tokens `--select-bg/--select-fg` `P:35-36`, class `controls-pin-select` at `P:17388`. Fixes WCP-02-F7 (a new GPIO-in row got a white pin dropdown).
+- Deletes CSS `P:3484-3559` except the used-pin grey rule (kept as `.settings-select option[data-used]`), the tokens `--select-bg/--select-fg` `P:35-36`, and the class `controls-pin-select` at `P:17388`. Fixes WCP-02-F7 (a new GPIO-in row got a white pin dropdown).
 - Lines: -80 +3.
-- Check here: standard; `grep -c 'select-bg\|controls-pin-select'` = 0; Playwright screenshot of Controls and Config > Hardware.
+- Check here: standard; `grep -cE 'select-bg|select-fg|controls-pin-select'` = 0; Playwright screenshots of Controls and Config > Hardware.
 - Pi: nothing.
-- Depends on: none (can go first).
+- Depends on: none. Owner decision 6.
 
-### 21. web: Remote controls is a card in the Controls panel
+### 20. web: the Mode Ladder and settings search draw no inline SVG
 
-- Moves: the card `P:4569-4580` into the Controls `settings-panel` as `div.settings-card` > `settings-card-head` > `h3.settings-card-title` "Remote controls" + one-sentence `p.settings-card-copy`. Data: already loaded by `setSettingsPanel("controls")` `P:10166`. Deletes: the main-page card and the bootstrap loop `P:20940-20949`; the `#remoteControlsRows .pill-button` override `P:3420` if the pills render through `pill-grid`.
-- Lines: -30 +18.
-- Check here: standard; Playwright: main page has the four upstream cards; no `get_controls` request before Controls opens (`page.on("request")`); Controls shows the pad; one click on a button pill sends one `test_input`.
-- Pi: from the Controls panel, press "Record" on the pad: the camera records as with the hardware button.
-- Depends on: 15 if taken. Owner decision 3. Hardware-inputs theme: `test_input` refusing script actions lands in parallel; the pad shows its refusal through `showToast`.
-
-### 22. web: the IMX585 resolution pills read the page's class table
-
-- Deletes: the pool branch in `imx585ClassRows` `P:8956-8960` and in `imx585LadderFamily`; the comment `P:8911-8914` that names the pool. The mono branch (`snapshot.sensor_mono`) stays. `state.ladderServer` keeps serving the Mode Ladder card and the fps sub-labels.
-- Lines: -9 +1.
-- Check here: standard; `grep -c 'ladderServer.pool'` in the pill functions = 0; Playwright with `/api/state` routed to an IMX585 snapshot (`sensor: "imx585"`, `raw_bit_depth: "12-bit"`, `clear_hdr: false`): resolution pills and crop row as the class table `s12`.
-- Pi: on the owner's camera (port driver), Settings > Record shows the same pills as before; on a stock IMX585 (original driver) see Risks.
-- Depends on: camera-modes theme for the table's content (which sizes exist, the 1.85:1 names). The touch UI's IMX585 lists (`qml/CameraPage.qml:418`, `qml/SettingsPage.qml:161`) are the touch-ui theme's ("mode list").
-
-### 23. web: the Mode Ladder and settings search draw no inline SVG
-
-- Replaces: `ladderIcons` `P:7644-7650` (handle, up, down, remove, chevron) with text in `secondary-button`s ("Up", "Down", "Remove"; the handle and chevron become the row itself and a `.hidden` toggle), the search field's magnifier SVG `P:4733` with nothing (upstream fields carry no icon). After this, `grep -c '<svg'` on the page = 0 (WEB-9).
+- Replaces `ladderIcons` `P:7644-7650` (handle, up, down, remove, chevron) with text in `secondary-button`s ("Up", "Down", "Remove"; the handle and chevron become the row itself and a `.hidden` toggle), and drops the search field's magnifier SVG `P:4733` (upstream fields carry no icon).
 - Lines: -12 +10.
-- Check here: standard; Playwright: ladder rows move up/down.
+- Check here: standard; `grep -c '<svg'` = 0 (WEB-9); Playwright: ladder rows move up and down.
 - Pi: nothing.
-- Depends on: camera-modes theme if it rewrites the ladder editor (WCP-04-F5) first; then only the search icon is left.
+- Depends on: 14. Camera-modes theme: if it rewrites the ladder editor (WCP-04-F5) first, only the search icon is left.
 
-### 24. web: hidden elements use the .hidden class
+### 21. web: hidden elements use the .hidden class
 
-- Replaces: 26 `element.hidden = x` with `element.classList.toggle("hidden", x)` and the `hidden` attributes in markup (about 17) with `class="... hidden"`; deletes the 5 `[hidden]` CSS patches.
+- Replaces 25 of the 26 `element.hidden = x` with `element.classList.toggle("hidden", x)` and the `hidden` attributes in markup (about 17) with `class="... hidden"`; deletes the 5 `[hidden]` CSS patches. Keeps upstream's own `option.hidden` line `P:15437` (= `U:9526`; on an `<option>` a class does not hide in every browser).
 - Lines: -45 +35.
-- Check here: standard; `grep -c '\.hidden = \|\[hidden\]'` = 0; Playwright: every panel opens with the same visible text as before (text diff).
+- Check here: standard; `grep -c '\.hidden = '` = 1, `grep -c '\[hidden\]'` = 0; Playwright: every panel opens with the same visible text as before (text diff).
 - Pi: nothing.
-- Depends on: 9, 10, 21 (they touch the same lines).
+- Depends on: 8, 9, and the preroll theme (its rows `P:15830-15860`) and boot-config-helpers theme (its card `P:20095-20554`) landed first.
 
-Totals: about -1 100 / +450 lines, plus about 1 400 lines edited by renames in commits 1, 7, 16-19.
+### 22. web: the Clip Browser adds no browser history entries (leaf, owner decision 1)
+
+- `setMediaBrowserOpen(open)` loses `fromHistory`; `openClipViewer` loses its push; `closeClipViewer` loses its pop. Deletes both `history.pushState` (`P:10129`, `P:12777`), the `popstate` listener `P:20708-...`, `state.mediaBrowserHistoryPushed`, `clipViewerHistoryPushed`, `mediaBrowserIgnorePop`. The Back buttons and Escape close as today.
+- Lines: -30 +3.
+- Check here: standard; `grep -cE 'pushState|popstate'` = 0; Playwright: open the browser, open a clip, Back, Back: overlay closed, `history.length` unchanged.
+- Pi: nothing.
+- Depends on: 18 (it uses the new names). Nothing depends on it.
+
+### 23. web: frame step and knob arrows send one step per click (leaf, owner decision 2)
+
+- Deletes `repeatClipFrameStep` (today `pbvRepeat` `P:12718-12729`) and its two calls (a click calls `stepClipFrame`; the left/right keys already repeat by key auto-repeat in the keydown handler `P:12961`); deletes the `repeat` branch of `buildRemoteButton` `P:18086-18110` (pointer capture, 450 ms delay, 140 ms interval).
+- Lines: -45 +4.
+- Check here: standard; `grep -c repeatClipFrameStep` = 0, and `setPointerCapture` remains only in the scrub (`P:12678`) and the composer drag (`P:14730`): count = 2. Playwright: one click = one `test_input` (count requests) and one frame.
+- Pi: turn ISO up from the Remote controls pad: one step per click.
+- Depends on: 18. Nothing depends on it.
+
+### 24. web: Remote controls is a card in the Controls panel (leaf, owner decision 3a)
+
+- Moves the card `P:4569-4580` into the Controls `settings-panel` as `div.settings-card` > `settings-card-head` > `h3.settings-card-title` "Remote controls" + a one-sentence `p.settings-card-copy`. Data: already loaded by `setSettingsPanel("controls")` `P:10166`. Deletes the main-page card, the bootstrap loop `P:20940-20949`, and the `#remoteControlsRows .pill-button` override `P:3420` if the pills render through `pill-grid`.
+- Lines: -30 +18.
+- Check here: standard; Playwright: the main page has the four upstream cards; no `get_controls` request before Controls opens (`page.on("request")`); Controls shows the pad; one click on a button pill sends one `test_input`.
+- Pi: from the Controls panel, press "Record" on the pad: the camera records as with the hardware button.
+- Depends on: 7. Nothing depends on it. Not with 25.
+
+### 25. web: the Remote controls loader keeps its retry timer in state (leaf, owner decision 3b)
+
+- For the case the card stays on the main page: the 5 s retry `P:20943-20948` stores its timer as `state.controlsRetryTimer` (shape of `state.previewRetryTimer` `U:8578`), clears it before re-arming and when `state.controlsModel` arrives. Fixes WCP-10-F9.
+- Lines: -3 +5.
+- Check here: standard; Playwright: route `get_controls` to fail twice, then answer: exactly 3 requests, then none for 20 s.
+- Pi: nothing.
+- Depends on: 7. Nothing depends on it. Not with 24.
+
+Totals: about -1 040 / +480 lines (chain and commits 22-24), plus about 1 500 lines edited by renames in commits 6-10 and 15-18.
 
 ## What stays as new ground
 
 | Feature | Shape it keeps | Why that shape |
 | --- | --- | --- |
-| The lock-free `/api/buffer` poll at 4 Hz (WCP-08-F4) | One async `fetchBufferState`, its timer and in-flight flag on `state`, started and stopped by one `updateBufferPolling(snapshot)`, merging into `state.snapshot` and redrawing only through `renderRecordingStatus` | `/api/state` blocks on the controller mutex while a stopped take drains (`CC:12571-12574`), so at 1 Hz the page would show a safety stop seconds late and the buffer bar would jump. The shape is upstream's: one store, one renderer for the pill, raw `fetch` like `user_activity` |
-| Clip Viewer playback engine (frame fetch lanes, `requestAnimationFrame` tick, keep-awake `user_activity` interval) | `state.clipViewer`, one object per open clip, created and dropped by `openClipViewer`/`closeClipViewer` | A per-clip object keeps the timeline, lanes and timers that all die together; flattening 20 viewer fields onto `state` would scatter them. It is the one nested object left on `state` |
+| The lock-free `/api/buffer` poll at 4 Hz (WCP-08-F4) | One async `fetchBufferState`, its timer and in-flight flag on `state`, started and stopped by one `updateBufferPolling(snapshot)`, merging into `state.snapshot` through upstream's `mergeCameraStateFields` and drawing only through `renderRecordingStatus`; one freshness rule (the poll owns `buffer_fill` while it runs) | `/api/state` waits on the controller mutex while a stopped take drains (`App:9307`), so at 1 Hz the page would show a safety stop seconds late and the bar would jump. The draw side has upstream's shape (`updateTimecodeDisplay`); only a second network poll has no precedent |
+| Clip Viewer playback engine (frame fetch lanes, `requestAnimationFrame` tick, keep-awake `user_activity` interval) | `state.clipViewer`, one object per open clip, created by `openClipViewer` and dropped by `closeClipViewer` (owner decision 5) | Upstream flattens long-lived handles (`previewProcessing*`, created once); the viewer's 40 fields are created per clip and must all reset on close, which a fresh object does in one line |
 | Listen (300 ms `controls_last_input` while the operator listens, max 2 min) | Raw `fetch`, timer and in-flight flag on `state` | No upstream feature waits for a hardware press; a push channel would be bigger new ground (WEB-7) |
-| Settings search with a MutationObserver (WCP-05-F4, WCP-01-F12) | Flat `state.settingsSearch*` | Kept as reviewed ("keep") |
-| Remote controls pad (`test_input`) | A settings-card in Controls, pills, one command per click | The feature the owner restored (fork-log.md:163-164); upstream has no remote pad |
+| Settings search with a MutationObserver (WCP-05-F4, WCP-01-F12) | Flat `state.settingsSearch*` | Kept as reviewed |
+| Remote controls pad (`test_input`) | A settings-card in Controls (24) or the main-page card with a stored retry (25); pills | The feature the owner restored (`/home/user/apertar-kb/fork-log.md:162-164`); upstream has no remote pad |
 | Clip card grid with thumbnails (replaces upstream's list) | Grid and card CSS kept under `.media-browser-*` names | The reviewed rework keeps the grid, cards, thumbs, stage, scrub, histogram and metadata (WCP-02-F1) |
+| Browser history and hold-to-repeat, if the owner keeps them | Under the new names, documented | Owner decisions 1 and 2 |
 
 ## For the owner
 
 | # | Question | Options | Recommendation and cost |
 | --- | --- | --- | --- |
-| 1 | Should the phone's Back button close the Clip Browser? | a) Delete the history entries (commit 12). b) Keep `pushState`/`popstate` as documented new ground (about 25 lines) | a). Cost: on a phone, Back leaves the WebUI page instead of closing the overlay; the overlay's own Back and Escape still close it. Upstream has no history use at all |
-| 2 | Keep hold-to-repeat on the Remote controls knob arrows and on frame step? | a) One step per click (commit 15). b) Keep both, document as the one new widget behaviour | a). Cost: turning ISO by five steps takes five taps; on a desktop the arrow keys still repeat in the viewer |
-| 3 | Where does Remote controls live? | a) A card in the Controls panel (commit 21). b) Main page, as today | a). Cost: one more tap (Settings > Controls) from the main page. Upstream keeps the main page for the four camera-critical cards (WEB-2) |
-| 4 | Do the Clip Browser renames (commits 16-19, about 1 150 lines touched, no behaviour change) go in? | a) Yes. b) Keep the `pb`/`pbv` names and document them | a). The original developer finds his own names (`renderMediaLibrary`, `state.mediaSelection`) instead of an abbreviation no other part of the page uses. Cost: four large mechanical diffs; any open Playback branch must rebase (rerun the sed map) |
-| 5 | Where do the IMX585 resolution pills get their sizes? | a) The page's class table only (commit 22, upstream WEB-8). b) `list_sensor_modes` once through `sendCommand` into `state.sensorModes`, like `audio_capabilities` (needs Core to add the active size per mode, because the 16-bit frame carries optical-black rows) | a), with camera-modes deciding the table. Cost: a camera whose driver lacks a size shows the pill and gets Core's refusal or fallback (see Risks) |
-| 6 | White dropdowns for readability? | a) Delete (commit 20). b) Make `.settings-select` easier to read page-wide, as its own upstream-candidate commit | a) now; b) later if wanted. Cost of a): the Controls dropdowns look like every other dropdown again |
-| 7 | Remove dialog text | a) `window.confirm` one line (commit 11). b) Keep the modal | a). Cost: the confirm cannot list the clip names on several lines |
+| 1 | Should the phone's Back button close the Clip Browser? | a) Delete the history entries (commit 22). b) Keep `pushState`/`popstate` as documented new ground (about 25 lines) | a). Cost: on a phone, Back leaves the WebUI page instead of closing the overlay; the overlay's own Back and Escape still close it. Upstream uses no history at all |
+| 2 | Keep hold-to-repeat on the Remote controls knob arrows and on frame step? | a) One step per click (commit 23). b) Keep both, documented as the one new widget behaviour | a). Cost: turning ISO by five steps takes five taps; on a desktop the arrow keys still repeat in the viewer. With b), each repeat goes through `sendCommand` after commit 4, so `/api/state` pauses while a knob arrow is held |
+| 3 | Where does Remote controls live? | a) A card in the Controls panel (commit 24). b) The main page, as today, with its retry timer stored (commit 25) | a). Cost: one more tap (Settings > Controls) from the main page. Upstream keeps the main page for the four camera-critical cards (WEB-2) |
+| 4 | Do the Clip Browser renames (commits 15-18, about 1 130 lines touched, no behaviour change) go in? | a) Yes. b) Keep the `pb`/`pbv` names and document them | a). The original developer finds his own names (`renderMediaLibrary`, `state.mediaSelection`) instead of an abbreviation no other part of the page uses. Cost: four large mechanical diffs, reviewed by rerunning the sed maps; open Playback branches must rebase |
+| 5 | Clip Viewer state: one nested `state.clipViewer` or flat `clipViewer*` fields? | a) Nested, the one nested object on `state`. b) Flat, like `previewProcessing*` `U:4255-4266`, plus a 40-field reset on close | a). Cost: one exception to "no nested object" (WEB-12), documented. b) costs about 50 more lines and a reset that must list every field |
+| 6 | White dropdowns for readability? | a) Delete (commit 19). b) Make `.settings-select` easier to read page-wide, in its own upstream-candidate commit | a) now; b) later if wanted. Cost of a): the Controls dropdowns look like every other dropdown again |
+
+Handed to camera-modes for its owner list: where the IMX585 resolution pills get their sizes (WCP-04-F1). Deleting the pool read (`P:8956-8960`) takes resolution choice away from a mono IMX585 in the WebUI (`P:8961-8964`, `P:9020-9028`), and what a stock driver offers is not determined.
 
 ## Risks and what was not determined
 
 | Risk | What settles it |
 | --- | --- |
-| Commits 3-4 change the REC pill, the most camera-critical element of the page. Routed replies in Playwright prove the logic, not the timing on a real drain | Pi steps in commit 3, on CM5 and on a Pi 4 with an SD card (the slowest drain). Until done, keep commits 3-4 on their own branch |
-| `sendCommand` merges each reply through `mergeCameraStateFields`. A routed command whose reply gains a top-level `state`, `resolution`, `fps`, ... would overwrite the snapshot | Checked in `--simulate` for the 6 read replies (no such key). On the Pi: `curl -s -X POST -d '{"cmd":"get_controls"}' http://<pi>:8000/api/command \| jq 'keys'` and the same for `get_mode_ladder`, `preview_clip_name` |
-| A stock IMX585 (original driver `origin/apertar` `e5b74d3`) with commit 22 shows the class table's sizes; whether the driver offers them, and what Core does when it does not, is not determined. With the pool it showed only the driver's modes, which may also differ from 1.6.0's 20 crop sizes | On a stock camera: `curl ... get_mode_ladder \| jq '.mode_ladder.pool'` against the table; `git -C /home/user/imx585-v4l2-driver grep -n 2072 origin/apertar`. Owned by camera-modes |
-| Splitting `renderRecordingStatus` out of `renderSnapshot` touches a rough edge upstream keeps (WEB-24) | Argued in commit 2; the original developer may object. Fallback: keep the pill block inline and call `renderSnapshot(state.snapshot)` from the buffer poll at most once per second |
-| Renames (commits 7, 16-19) conflict with any branch that edits the same lines (Playback bugs WCP-06-F5..F8, preroll theme's pre-roll button, boot-config-helpers' card) | Land renames last within their area; publish each sed map so a branch can replay it |
-| Pi-model compatibility: all changes run in the client's browser; Core work per request is unchanged (same routes, same rates). The 4 Hz poll cost on a Pi Zero 2 / Pi 3 was not measured, today or after | `top` on the Pi while a phone keeps the page open during a take, before and after commit 4 |
-| Line estimates are from reading, not from doing the edits | - |
+| Commits 2-3 change the REC pill, the most camera-critical element of the page. Routed replies in Playwright prove the logic, not the timing on a real drain | The commit 2 Pi steps on CM5 and on a Pi 4 with an SD card (the slowest drain), bar on and off. Until done, keep commits 2-3 on their own branch |
+| The stale-fill rule assumes the poll runs during every drain the bar shows. If the poll stops (an abort, a lost reply) while `/api/state` still carries an old fill, the bar shows the old fill for up to one second | On the Pi, the `curl` loop from commit 2 beside the page: the bar never shows a fill above the loop's last value for more than 1 s |
+| `sendCommand` merges each reply through `mergeCameraStateFields`. A routed command whose reply gains a top-level `state`, `resolution`, `fps`, `recording`, `buffer_*` ... would overwrite the snapshot | Checked in `--simulate` for the 6 read replies (no such key). On the Pi: `curl -s -X POST -d '{"cmd":"get_controls"}' http://<pi>:8000/api/command \| jq 'keys'`, the same for `list_actions`, `controls_history`, `preview_clip_name` |
+| `sendCommand` gates REC while a Controls command or a clip preview is in flight (`P:15772`). A slow `scan_i2c` or `test_output` gates REC for its whole run | On the Pi: Controls > Scan on a bus with devices, and press REC on the main page in another tab during the scan. If REC stays grey for more than a second, the Scan handler goes back to a raw `fetch` as background traffic |
+| Splitting `renderRecordingStatus` out of `renderSnapshot` touches a rough edge upstream keeps (WEB-24) | Argued with `updateTimecodeDisplay` as the precedent; the original developer may still object. Fallback: keep the pill block inline and call `renderSnapshot(state.snapshot)` from the buffer poll at most once per second |
+| Renames (commits 6-10, 15-18) conflict with any branch that edits the same lines (Playback bugs WCP-06-F5..F8, the preroll theme's pre-roll button, boot-config-helpers' card) | Land renames last within their area; publish each sed map so a branch can replay it |
+| Pi-model cost of the 4 Hz poll on a Pi Zero 2 / Pi 3 was not measured, today or after. Request rates and Core work per request are unchanged | `top` on the Pi while a phone keeps the page open during a take: `apertar-core` CPU % before commit 2 and after commit 3, on a Pi 4 and a Pi 5 |
+| Line estimates come from reading, not from doing the edits | - |
 
 ## Findings covered
 
 | Finding | Commit |
 | --- | --- |
-| WCP-02-F1 | 13, 14 (Remove dialog part: 11) |
-| WCP-02-F2 | 20 |
-| WCP-03-F1 | 11 (dialog), 12 (history), 13 and 14 (SVG, h1), 17 (nested `state.pb`) |
-| WCP-04-F1 | 22 |
-| WCP-06-F1 | 17, 18, 19 |
-| WCP-08-F1 | 1, 2, 3, 4 |
-| WCP-09-F1 | 7, 8 |
-| WCP-09-F2 | 5 |
-| WCP-09-F3 | 21 (hold-to-repeat: 15) |
-| WCP-10-F2 | 9 |
-| X-state-consistency-3 | 22 for the WebUI side only. QML lists: touch-ui theme ("mode list"). Table content and the comment in `Imx585Modes.hpp`: camera-modes theme |
-| WCP-01-F8 | 16 |
-| WCP-02-F3 | 16 |
-| WCP-02-F7 | 20 |
-| WCP-02-F10 | 16 (body rule; the `.x.hidden` repeats in 24) |
+| WCP-02-F1 | 12, 14 (Remove dialog part: 11) |
+| WCP-02-F2 | 19 |
+| WCP-03-F1 | 11 (dialog), 12 and 14 (SVG, h1), 16 (nested `state.pb`), 22 (history) |
+| WCP-04-F1 | not here: camera-modes theme, with the mono fact above |
+| WCP-06-F1 | 16, 17, 18 |
+| WCP-08-F1 | 1, 2, 3 |
+| WCP-09-F1 | 6, 7 |
+| WCP-09-F2 | 4 |
+| WCP-09-F3 | 24 or 25 (hold-to-repeat: 23) |
+| WCP-10-F2 | 8 (fields only; the installer stays, precedent `installPreviewStream`) |
+| X-state-consistency-3 | not here: table content and the comment in `Imx585Modes.hpp`, camera-modes; QML lists, touch-ui theme ("mode list"). The page's copy stays one hand copy (WEB-8) |
+| WCP-01-F8 | 15 |
+| WCP-02-F3 | 15 |
+| WCP-02-F7 | 19 |
+| WCP-02-F10 | 15 (body rule; the `.x.hidden` repeats in 21) |
 | WCP-03-F3 | 13 (Clear button). Per-row Download/Delete: not covered, the viewer offers both per clip; see WCP-06-F4 |
-| WCP-03-F5 | 24 |
-| WCP-03-F8 | 21 |
-| WCP-04-F2 | 6 |
-| WCP-04-F3 | not covered: the render-driven ladder fetch also feeds the fps pill sub-labels; it goes with the Mode Ladder editor rework (camera-modes, WCP-04-F5) |
-| WCP-04-F9 | 14, 23 |
-| WCP-05-F5 | 12 |
+| WCP-03-F5 | 21 |
+| WCP-03-F8 | 24 |
+| WCP-04-F2 | not here: `ladderRequest` goes with the panel-open fetch (camera-modes) |
+| WCP-04-F3 | not here: camera-modes, together with WCP-04-F1 (the first fetch and retry exist for the main-page pool) |
+| WCP-04-F9 | 14, 20 |
+| WCP-05-F5 | 22 |
 | WCP-06-F2 | 11 |
-| WCP-06-F12 | 17 |
-| WCP-07-F2 | 10 |
-| WCP-07-F10 | 6 |
-| WCP-08-F2 | 3, 4 |
-| WCP-08-F3 | 3 (freshness windows), 4 |
+| WCP-06-F12 | 16 |
+| WCP-07-F2 | 9 |
+| WCP-07-F10 | 5 |
+| WCP-08-F2 | 2, 3 |
+| WCP-08-F3 | 2 (freshness windows), 3 |
 | WCP-08-F4 | kept as new ground (section above) |
-| WCP-09-F7 | 5 |
-| WCP-09-F8 | 5, 8 (timer and in-flight flag on `state`); the poll itself stays as new ground |
-| WCP-10-F9 | 21 |
-| WCP-10-F10 | 3 |
-| WCP-02-F8, WCP-06-F4 | not covered: the card grid replaced upstream's list on purpose; restoring size/fps/frame facts on cards is a feature choice, not a store or part. Owner list of the Playback fix list |
-| WCP-06-F9 (timecode helpers duplicated) | not covered: Playback internals, separate small commit in the Playback fix list |
+| WCP-09-F7 | 4 |
+| WCP-09-F8 | 4, 7 (timer and in-flight flag on `state`); the poll itself stays as new ground |
+| WCP-10-F9 | 24 (loop deleted) or 25 (timer stored) |
+| WCP-10-F10 | 2 |
+| WCP-02-F8, WCP-06-F4 | not covered: the card grid replaced upstream's list on purpose; restoring size/fps/frame facts on cards is a feature choice. Playback fix list |
+| WCP-06-F9 (timecode helpers duplicated) | not covered: Playback internals, a separate small commit in the Playback fix list |
 | WCP-02-F9, WCP-01-F5 (rules with no element) | not covered: slop pass (commit-clarity work) |
 | WCP-10-F1 (Boot Config route) | not covered: boot-config-helpers theme |
 
-## Challenge
+## What the challenge changed
 
-Read: `/home/user/wt/core-work` at `3650027` (the design read `7dc6f7a`; `git diff 7dc6f7a HEAD -- src/web/WebControlPage.cpp` is 2 text lines at P:5792 and P:16157, so every `P:` line above still holds). `U:` = `/home/user/wt/core-upstream@upstream-1.6.0`. `--simulate` run here: `/home/user/build/work-nolc/apertar-core` on port 18977. All rows **confirmed** in code unless marked.
+Each row was checked again at `0d13a6f` / `upstream-1.6.0`. Commit numbers on the right are the new ones.
 
-| Point | What the design says | What the code says, file:line | What must change |
-| --- | --- | --- | --- |
-| a. Precedent for the pill writer | Splitting the pill out of `renderSnapshot` is an exception to WEB-24; "No upstream precedent" for DOM edits outside it | Upstream already draws DOM outside `renderSnapshot` from a second timer: `updateTimecodeDisplay` `U:9168`, called by `updateLiveReadouts` `U:9219-9222` from `startLiveReadoutLoop` (requestAnimationFrame) `U:9224-9238`, started at `U:11608`, reading only `state.snapshot` and `state.*Base*` | Commit 2 cites `updateTimecodeDisplay` as the precedent: one small function that reads `state.snapshot`, called by the 1 Hz render and by a second timer. Only the network poll stays new ground |
-| a. One installer | "All listeners in one installer; no second installer" (commit 9 deletes `installBootConfigInteractions`) | Upstream has a second feature installer: `installPreviewStream` `U:8566` (adds `load`/`error` listeners), called beside `installInteractions` `U:11606-11608`. The design itself keeps `pbvInstall` `P:12928` (14 listeners) as `installClipViewerInteractions` (commit 19) | Be consistent and smaller: keep `installBootConfigInteractions` (rename only if the owner wants it) like `installPreviewStream`. Commit 9 drops its 50-line listener move |
-| a. Flat state for the viewer | `state.clipViewer` stays one nested object, "flattening would scatter" | Upstream flattens even a dozen WebGL handles that live and die together: `previewProcessingGl ... previewProcessingLastFrameMs` `U:4255-4266`. No nested object in `U:4204-4266` | A decision, not a given: put "nested `state.clipViewer` vs flat `clipViewer*`" on the owner's list (commit 17) |
-| a. Sort select and filter row | Refresh -> `secondary-button` with `/icons/refresh.png`; the new elements are renamed later in commit 16 | Upstream Refresh is text only `U:4008`; ids are `mediaBrowserFilters`, `refreshMediaBrowserButton`, `mediaBrowserSortSelect`, `closeMediaBrowserButton` `U:3993-4012`. The port deleted all `.media-browser-*`, `.media-filter-button`, `.media-sort-select` CSS (0 matches in P) | Commit 13 copies `U:3993-4012` markup with its ids and re-adds `U:1238-1253` CSS verbatim; commit 16 then has fewer ids to rename. Header SVGs are 2 (`P:6355`, `P:6371`), not 3 |
-| b. Merge of `/api/buffer` | `applyBufferSnapshotPatch` copies the reply "through the existing `mergeCameraStateFields`" | `mergeCameraStateFields` copies `buffer_setting`, `buffer_safety_stop`, `buffer_stop_percent`, `buffer_mode`, `storage_preroll_*`, `buffer_note` `P:13841-13859`, but not `buffer_fill`, `buffer_flush_discarded`, `buffer_used`, `buffer_capacity` (`/api/buffer` reply `App:301-309`, seen in `--simulate`) | Commit 3 adds the missing `buffer_fill` and `buffer_flush_discarded` lines to `mergeCameraStateFields` (+4), or the bar never moves at 4 Hz and commit 4's discard toast never fires from the poll |
-| b. Stale fill in `/api/state` | Delete the 1000 ms freshness windows `P:16553`, `P:16561`, `P:16575`, and `bufferFillAtMs` | `buildWebStateJson` reads the gauge before it blocks: `bufferStatus = camera_.frameBufferStatus()` `App:9306`, then `camera_.state()` `App:9307` waits on the controller mutex while a take drains. Safety stop and pre-roll come from `bufferSettingMembers()` at string build time (`App:9591`, fresh). So a drained-late `/api/state` carries a fill seconds old | Keep one rule, not three: while `state.bufferPollTimer` runs, `renderSnapshot` keeps `buffer_fill` from the previous `state.snapshot` (one line after the `system.*` lift `P:15216-15222`). The finding's own rework kept `bufferPolledAtMs` for this. Add Playwright scene (e): poll says 0.3, a late `/api/state` says 0.9: bar stays 30 % |
-| b. Commit 3 vs 4 split | Commit 3 deletes `bufferSafetyStop`, `bufferStopPercent` and the `P:16561` window; commit 4 deletes `noteBufferSafetyStop` | `noteBufferSafetyStop` `P:16458-16471` writes and reads those fields and is called from both timers; `P:16560-16562` is the guard that stops the 1 Hz path from re-feeding it | Commit 3 leaves `noteBufferSafetyStop` and its `stopSeen`/`discardedSeen`/`stopPercent` fields (on `state`) untouched; commit 4 removes them together |
-| b. First-load toast | Commit 4: `if (next.buffer_flush_discarded > 0 && next.buffer_flush_discarded !== previous.buffer_flush_discarded) showToast(...)`, "shaped like `U:9331-9333`" | `buffer_flush_discarded` is "kept until the next safety stop" (`App:247-250`). Old code starts `discardedSeen: -1` `P:16420` and skips the first value `P:16460`. Upstream's shape toasts on the first snapshot too (`previousError` undefined `U:9331`) | Guard on a previous snapshot: `state.snapshot && ...`. Without it every page open after a flush discard shows "Record pressed during the flush ..." until the next safety stop. Compare after the `system.*` lift. Playwright: load with `buffer_flush_discarded: 12`: no toast |
-| b. sendCommand side effects | Commit 6: each read "renders once from the unchanged snapshot and schedules one `/api/state`" | `applyCommandSnapshotPatch` returns `true` for every command (`default: break; ... return true` `P:14408-14412`), so `sendCommand` renders twice `P:14427-14428`, `P:14442-14443`. While in flight: `commandInFlightCount > 0` disables REC `P:15772`, `toggleRecord` returns early when not recording `P:19273-19275`, `fetchState` drops its reply `P:16396` | Correct the cost text. Real problem is the next row |
-| b. Render-driven `get_mode_ladder` through sendCommand | Commit 6 routes `fetchModeLadder` through `sendCommand` like `audio_capabilities` | `fetchModeLadder` is started from `renderModeLadder` on every render (`P:8395-8400`: first fetch, 5 s retry, `ladder_active` change), and `get_mode_ladder` takes the controller mutex (`CC:11041`), which a draining take holds. Through `sendCommand` the REC button goes disabled and `/api/state` is dropped for as long as it waits, also during a safety-stop flush where REC must stay live (`P:15770`). The precedent `audio_capabilities` is loaded on panel open only `U:6162` | Split commit 6: 6a `clipRawCommand` and the ladder save / dry runs go through `sendCommand`. 6b (`ladderRequest` deleted) only after the render-driven fetch moves to `setSettingsPanel("modes")` plus a snapshot comparison (WCP-04-F3), which the design left to camera-modes: name it as a dependency or do it here |
-| b. `error.result` | Commit 5 adds `error.result = result`, "the same shape the port's `/api/config` save uses" | The port's config save sets `failure.payload = payload` `P:19001-19003`; 0 `error.result` in P | Use one name: `error.payload` (matches `P:19002`) |
-| b. Outside readers | Page only; no other reader | Confirmed: `frameBufferBar`, `controlsState`, `playbackOverlay`, `pbGrid`, `pbRemoveScrim`, `remoteControlsRows` appear nowhere in Core, `tools/`, `/home/user/wt/ui-work` or the coding map except the UI.conf key `frameBufferBarEnabled` (`SettingsBridge.cpp:369`, `App:2096`), which no commit touches | None |
-| c. Mono IMX585 | Commit 22: "The mono branch (`snapshot.sensor_mono`) stays" | With the pool deleted, the mono branch returns only the running size `P:8961-8964`, and `imx585BaseResolutionOptions` hides the families without rows for mono `P:9020-9028`. Today a mono IMX585 gets every probed size from the pool `P:8956-8959` | Commit 22 takes resolution choice away from a mono IMX585 in the WebUI, and for a stock driver the design says itself it does not know what is offered (Risks). Drop it from this theme and hand it to camera-modes with these two facts. Owner item 5 is missing the mono cost |
-| c. Behaviour on the rig and a stock camera | "Every feature stays" | Commits 12 (phone Back), 15 (hold-to-repeat) and 21 (main-page pad) remove or move features the owner restored (`fork-log.md:162-164`, `1319967`) | Fine as owner options, but the chain makes option b) break the plan: 13 depends on 12, 16 and 21 on 15. Make 12, 15 and 21 leaves: nothing after them depends on them |
-| c. Remote controls option b) | Owner item 3 b) "main page, as today" | The 5 s retry loop `P:20940-20949` keeps an untracked timer (WCP-10-F9) | Missing commit for b): keep the card, store the retry as `state.controlsRetryTimer` like `state.previewRetryTimer` (`U:8578`), about -3 +4 |
-| d. Commit 1 | Pure move of 14 fields to `state.buffer*` | Commit 3 deletes 9 of the 14 again; commit 4 deletes 4 more | Drop commit 1. Commit 3 deletes `frameBufferBar` and declares only the fields that survive (`bufferPollTimer`, `bufferPollInFlight`, `prerollPollUntilMs`, plus the seen fields until commit 4). Saves about 55 edited lines |
-| d. Commit 7 | Moves the Controls label tables (`controlsGroups`, ...) to the option-list block too | WEB-8 is about pill option lists (`U:4039-4127`); upstream keeps meta tables beside `state` (`favoriteItemMeta` `U:4128`, `settingsPanelMeta` `U:4165`). The move is a second idea | Drop the 40-line move from commit 7, or make it its own commit |
-| d. Commit 10 | `clipUi` and `settingsSearch` in one commit | Two stores, two features | Split into two commits |
-| d. Standard check 2 | `smoke_core.sh` before/after diff is empty | `smoke_core.sh:41` prints `GET / -> 200, <bytes>, <lines>`: it changes on every page commit | Diff with that line removed (`grep -v '^== GET / '`) |
-| d. Commit 15 check | `grep -c 'setPointerCapture\|pbvRepeat'` = 0 | `pbvRepeat` `P:12718-12729` uses no pointer capture; `setPointerCapture` is also the scrub `P:12678` and the composer drag `P:14730`, both kept | Check `grep -c 'pbvRepeat'` = 0 and no `setPointerCapture` inside `buildRemoteButton` |
-| d. Commit 24 check | Replace 26 `element.hidden = x`; `grep -c '\.hidden = '` = 0 | One of the 26 is upstream's own line: `option.hidden = ...` `P:15437` = `U:9526` (on an `<option>`, where a class does not hide in every browser). `P:15830-15860` are the preroll theme's rows, `P:20095-20554` the boot-config-helpers card | Keep `P:15437`; check `= 1`. Land after preroll and boot-config-helpers |
-| d. Commit 16 size | About 650 lines edited | Mechanical | Review by rerunning the published sed map on the parent and diffing against the commit (empty), not by reading 650 lines |
-| e. Simpler | 24 commits | See rows above | Commit 1 and commit 22 go; commit 9 shrinks by the listener move; commit 13 copies upstream markup instead of new markup |
-| f. Hidden decisions | Owner list items 1-7 | Nested `state.clipViewer` (commit 17) and the mono loss (commit 22) are decided inside commits | Add both to the owner's list. Item 7 (confirm text) is the same decision as item 1 of WCP-02-F1's rework, already settled by WEB-21 (`U:10307` etc., 8 confirms): fold it into commit 11's body, no owner question needed |
-| g. Pi checks | Commit 3: RAM mode, frame buffer bar on, record until the safety stop | The bar-off path is separate code today: `watchStop` `P:16566` polls `/api/buffer` with the option off so the red pill drops at the stop | Run the commit 3 steps twice, bar on and bar off. To know a safety stop happened: `while :; do curl -s http://<pi>:8000/api/buffer \| jq -c '{buffer_fill,buffer_safety_stop,buffer_flush_discarded,recording}'; sleep 0.25; done` beside the page. Look for: pill READY green within 0.5 s of `buffer_safety_stop: true`, bar never jumps back up when `/api/state` answers after the drain (the stale-fill row), one toast |
-| g. Pi-model cost | `top` before and after commit 4 | Unchanged request rates; Core work per request unchanged | Stands. Say the reading to compare: `apertar-core` CPU % during a take with one phone on the page, Pi 4 and Pi 5 |
-
-Verdict
-
-| Commit | Verdict | Why |
+| Point | Decision | Why |
 | --- | --- | --- |
-| 1 | dropped | Its fields are deleted again in 3 and 4; 3 declares only the survivors |
-| 2 | stands | Cite `updateTimecodeDisplay` `U:9168-9238`; the record button block `P:15769-15772` stays in `renderSnapshot` |
-| 3 | changes | Add `buffer_fill`/`buffer_flush_discarded` to `mergeCameraStateFields`; keep one stale-fill rule; leave `noteBufferSafetyStop` for 4; Pi steps with bar on and off |
-| 4 | changes | Toasts only when a previous snapshot exists, compared after the `system.*` lift |
-| 5 | changes | `error.payload`, not `error.result` |
-| 6 | changes | Split: 6a preview and ladder save/dry run; 6b `get_mode_ladder` only after its render-driven fetch moves to panel open (WCP-04-F3) |
-| 7 | changes | Without the label-table move |
-| 8 | stands | |
-| 9 | changes | Keep `installBootConfigInteractions` (precedent `installPreviewStream`); move only the fields |
-| 10 | changes | Two commits |
-| 11 | stands | Confirm text settled by WEB-21; drop owner item 7 |
-| 12 | stands | As a leaf; owner item 1 |
-| 13 | changes | Upstream markup and ids `U:3993-4012`, upstream CSS `U:1238-1253` re-added, Refresh text only, 2 SVGs; Clear button its own commit |
-| 14 | stands | |
-| 15 | changes | Correct check; leaf |
-| 16 | stands | Sed-map review; owner item 4 |
-| 17 | changes | Nested vs flat `clipViewer` to the owner |
-| 18, 19 | stand | |
-| 20 | stands | |
-| 21 | stands | As a leaf; owner item 3 |
-| 22 | dropped | Mono IMX585 loses its sizes; stock offer undetermined; belongs to camera-modes |
-| 23 | stands | |
-| 24 | changes | Keep upstream's `option.hidden`; after preroll and boot-config-helpers |
-| missing | A | Remote controls option b): stored retry timer `state.controlsRetryTimer` (`U:8578` shape) |
-| missing | B | The Mode Ladder fetch moves from `renderModeLadder` to `setSettingsPanel("modes")` plus a `ladder_active` comparison (WCP-04-F3), before 6b, or a named dependency on camera-modes |
+| Precedent for the pill writer outside `renderSnapshot` | Challenger right | `updateTimecodeDisplay` `U:9168-9216`, run from the `requestAnimationFrame` loop `U:9219-9238`, reads only `state.snapshot`. Cited in commit 1; only the network poll stays new ground |
+| A second installer | Challenger right | `installPreviewStream` `U:8566`, called `U:11607`; `installBootConfigInteractions` is even called from inside `installInteractions` (`P:20923`). Commit 8 keeps it and moves fields only |
+| Flat `state.clipViewer` | Partly right | `previewProcessing*` is flat (`U:4255-4266`), so it is a decision: owner item 5. Recommendation stays nested: the viewer object is made per clip (`P:12772`) and dropped on close (`P:12862`), about 40 fields with a `lanes` array |
+| Header copies upstream markup, ids and CSS | Challenger right | `U:3981-4012` ids, Refresh text only `U:4008`, 0 `.media-browser-*` rules in P, 2 header SVGs (`P:6355`, `P:6371`). Commit 12; Clear button split out as commit 13 |
+| `buffer_fill` / `buffer_flush_discarded` not merged | Challenger right | `P:13841-13860` copies neither. Commit 2 adds 4 lines to `mergeCameraStateFields`. Also found: the merge copies `recording` (`P:13889`), so the patch must rename it first |
+| Stale fill in `/api/state` | Challenger right | `App:9306` reads the gauge before `App:9307` waits; `App:9591` builds safety stop fresh. Commit 2 keeps one rule keyed on `state.bufferPollTimer`, scene (e) added |
+| Commit 3/4 split around `noteBufferSafetyStop` | Challenger right | It reads the fields commit 3 deleted and is called from both timers. Commit 2 keeps it on `state` fields; commit 3 removes it with its seen flags |
+| First-load discard toast | Challenger right, narrowed | `discardedSeen: -1` (`P:16420`, `P:16460`) skips only the first discard value; the stop toast fires on load today (`stopSeen: false`). Commit 3 guards only the discard comparison on a previous snapshot, so both keep today's behaviour |
+| `sendCommand` renders twice, gates REC, drops `/api/state` | Challenger right on the facts | `P:14408-14412`, `P:14427-14443`, `P:15772`, `P:19273-19275`, `P:16396`. Cost text corrected in commit 5 and Risks |
+| `get_mode_ladder` through `sendCommand` breaks REC during a safety-stop flush | Partly right | During a flush the stale snapshot still says `recording`, so `P:15770` does not disable REC and `toggleRecord` passes by `flushing` (`P:19272`). The real costs are dropped `/api/state` replies while it waits on `CC:11041` and REC gated outside a take. Still enough: a render-started read is background traffic, so `ladderRequest` stays until camera-modes moves the fetch |
+| Split commit 6 into preview + ladder save/dry runs | Partly right | There is no ladder save or dry run through `ladderRequest`: its one caller is `get_mode_ladder` (`P:8023`). Commit 5 is the clip preview alone |
+| Missing commit B (ladder fetch to panel open) | Not taken here | The first fetch and 5 s retry exist for the main-page pool (WCP-04-F3's own text), so the move depends on the pool decision; both go to camera-modes as a named dependency |
+| `error.result` | Challenger right | `failure.payload` `P:19002`, 0 `error.result`. Commit 4 uses `error.payload` |
+| Outside readers | Challenger right (no change) | None outside the page except the UI.conf key |
+| Mono IMX585 loses its sizes | Challenger right | `P:8961-8964`, `P:9020-9028`. Old commit 22 dropped; handed to camera-modes with this fact |
+| Owner options in the middle of the chain | Challenger right | History, hold-to-repeat and Remote controls are now leaves 22-25 after the renames; nothing depends on them |
+| Remote controls option b) needs a commit | Challenger right | Commit 25, `state.controlsRetryTimer` like `U:8578` |
+| Commit 1 churn | Challenger right | Dropped; commit 2 declares only surviving fields |
+| Label-table move in the Controls commit | Challenger right | Dropped, not split: upstream keeps meta tables beside their code (`U:4128`, `U:4165`); moving them is churn |
+| `clipUi` and `settingsSearch` in one commit | Challenger right | Commits 9 and 10 |
+| Standard check 2 | Challenger right | `smoke_core.sh:41` prints the page size; the diff filters that line |
+| Commit 15 grep | Challenger right | `pbvRepeat` uses no pointer capture; scrub `P:12678` and drag `P:14730` keep theirs. Commit 23 checks the count = 2 |
+| Commit 24 grep | Challenger right | `option.hidden` `P:15437` = `U:9526` stays; commit 21 checks the count = 1, after preroll and boot-config-helpers |
+| Commit 16 review size | Challenger right | Review by rerunning the sed map (commit 15) |
+| Owner item 7 (confirm text) | Challenger right | Settled by WEB-21; dropped from the list |
+| Pi checks: bar on and off, a `curl` loop | Challenger right | `watchStop` `P:16566` is a separate path today. Added to commit 2 |
+| Pi-model cost reading | Challenger right | The reading to compare is named in Risks |
