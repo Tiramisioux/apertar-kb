@@ -172,3 +172,81 @@ with no modules, grep a new name before using it.
 
 **Rule.** A page may be simpler than the file, but it must not contradict the reader. When a UI checks input,
 it checks what the reader accepts: not more, not less.
+
+---
+
+## C2. core: the default hardware file template is the 720x720 screen again
+
+Apertar-Core `7dc6f7a`. Kind: **stock**. Findings: App-2-F1, X-knobs-2, X-stock-behaviour-1 (blocker).
+
+## U1. ui: the display fallback is the 720x720 square screen again
+
+Apertar-UI `6a59d83`. Same finding, the UI half. The two commits belong together.
+
+**What was there.** Two port commits (`7c41a27` in the UI, `7af9f13` in Core) changed what the camera does when
+it has no display settings. The UI's built-in fallback (`src/DisplayConfigBridge.cpp:11-12` @`cinemate-port`):
+
+```cpp
+constexpr int kDefaultUiWidth = 1920;
+constexpr int kDefaultUiHeight = 1080;
+...
+    m_uiLayout = QStringLiteral("landscape_large");
+    m_hdmiExternalOnly = true;
+```
+
+and the `[display]` block of the hardware file Core offers when there is none
+(`src/ApertarCoreApp.cpp:5089-5098` @`cinemate-port`):
+
+```ini
+ui_width=1920
+ui_height=1080
+ui_layout=landscape_large
+hdmi_external_only=true
+```
+
+**Why it is a problem.** Those are the values of one rig: Patrik's camera with an HDMI monitor. Original Apertar's
+camera has a 720x720 square touch screen, and its defaults say so (`src/DisplayConfigBridge.cpp:11-12`
+@`upstream-1.6.0`: `720`, `720`, `"square"`, `false`). `hdmi_external_only=true` tells the touch UI to stay off
+the built-in screen. After a merge, a stock camera with no hardware file (a fresh install) or with a file from
+before these keys existed would start with its touch UI hidden and laid out for a screen it does not have.
+
+The port commit's own reason was real: with the file moved away during a test, the rig came up square. But the
+cure changed the default for everyone to fix one machine's missing file.
+
+**How to spot it.** A default is a statement about the *stock* product. When a diff changes a literal in a
+default, a fallback or a template, ask: "whose hardware is this value true for?" Search a diff for changed
+defaults like this:
+
+```bash
+git diff origin/main cinemate-port -- src | grep -E '^[-+].*(kDefault|= *(true|false);|QStringLiteral\()' | head -40
+```
+
+**Options.**
+
+| Option | Cost |
+| --- | --- |
+| A. Restore the four values in both places | 14 lines. An HDMI rig must carry its `[display]` keys in its own file, as it did before `7c41a27` |
+| B. Keep HDMI as default, add detection ("is a DPI panel connected?") | New logic in a boot path the original developer tuned for cold-start time; and a wrong guess hides the touch UI |
+| C. Keep the port's values and document them | The stock camera breaks. Not an option for a merge |
+
+**Chosen: A, and why.** It is the smallest change and gives back exactly the original behaviour, which is what
+"a stock camera must not notice the merge" means. B might be a good feature one day, but it is a feature, to be
+offered to the original developer by itself, not smuggled in as a default. Nothing is lost for the HDMI rig as long
+as its file says what it is.
+
+**After.** Both places read as in 1.6.0 again: `720`, `720`, `square`, `hdmi_external_only=false`. Checked by
+diffing the six default lines against the `upstream-1.6.0` worktree: no difference.
+
+**Checked.**
+
+| Check | Result |
+| --- | --- |
+| Core builds with and without libcamera; 17 host tests | ok |
+| UI builds (Qt 6.4.2, QML ahead of time) | ok |
+| The six UI default lines against `upstream-1.6.0` | identical |
+| On the Pi | **before deploying**: `grep -A8 '^\[display\]' ~/apertar-hardware.conf` must show `ui_width`, `ui_height`, `ui_layout` and `hdmi_external_only`. With them, nothing changes for the rig |
+
+Still open, next to this: the port also removed the code that writes a first hardware file when none exists
+(`c9d841f`). That is finding X-stock-behaviour-2 and gets its own commit.
+
+**Rule.** Defaults, fallbacks and templates describe the stock camera. Your rig's settings live in your rig's file.
