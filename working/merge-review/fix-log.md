@@ -374,3 +374,315 @@ src/web/WebControlPage.cpp:16157   formatToggleLabel(uiState.audio_recorded_outl
 **Checked.** Ran here: both Core builds and the 17 host tests pass. `apertar-core --simulate` with no UI.conf: `GET /api/state` gives `ui.audio_recorded_outline_enabled: false` and still `ui.recording_red_timecode_enabled: true`. The reply shapes are the same as before (only the page is one byte shorter). Still needs the camera: nothing beyond the check named in U2.
 
 **Rule.** A UI.conf default exists three times: touch UI (`SettingsBridge.cpp`), Core (`UiSettingsSnapshot`), WebUI (`=== true` or `!== false`). Change all three in the same piece of work.
+
+---
+
+## C4. core: get_state sends media_state once
+
+Apertar-Core `e4246ee`. Finding: X-protocol-security-6. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12957@cinemate-port (line 12944 in the sweep report; it has moved since), in the get_state handler's `<<` chain:
+    const MediaSnapshot mediaState = mediaSnapshot();
+    ...
+         << ",\"media_state\":\"" << mediaSnapshot().stateName() << "\""   // second snapshot, extra key
+    ...
+         << ",\"media_state\":\"" << mediaState.stateName() << "\""
+         << ",\"media_alive\":" << (mediaState.mounted() ? "true" : "false")
+
+**Why it is a problem.** The reply is JSON with the same key twice. Most parsers (QJsonDocument, JSON.parse) silently keep the last one, so nothing broke. But the two values come from two separate snapshots, so in a race they can disagree, and the reply is not valid as a clean object. Upstream get_state has no media_state key at all (0 hits in /home/user/wt/core-upstream/src/ApertarCoreApp.cpp). The key is the port's. Upstream builds each reply as flat JSON from values it reads once at the start of the handler (BRIEF "Apertar way": flat JSON, scalar values; conventions C1-S03 for the handleCommand chain).
+
+**How to spot it.** Find keys that are written twice in one handler: `grep -o '\\\\"[a-z_]*\\\\":' file | sort | uniq -d` over the handler's lines. Watch for calls like `mediaSnapshot()` inside a `<<` chain when the handler already holds a local snapshot. To test, grep the raw reply text, because a JSON parser (and any smoke test built on one) hides duplicate keys.
+
+**Options.**
+
+- Delete the first line, the inline mediaSnapshot() one: one line, keeps media_state next to media_alive, both from the one snapshot (chosen)
+- Delete the second line: also one line, but then media_state and media_alive come from two different snapshots
+- Drop media_state completely to match upstream: breaks the port's WebUI and UI, which read the key
+
+**Chosen, and why.** I deleted the inline mediaSnapshot() line, as the item said. The one media_state key left is read from the same `mediaState` local as media_alive, so the two fields always agree. Nothing was lost: the value is the same and the key position does not matter in JSON.
+
+**After.**
+
+```
+         << ",\"recording_fault\":\"" << escapeJson(camera_.recordingFaultName()) << "\""
+         << ",\"recording_has_dropped_frames\":" << (camera_.recordingHasDroppedFrames() ? "true" : "false")
+    ...
+         << ",\"media_state\":\"" << mediaState.stateName() << "\""
+         << ",\"media_alive\":" << (mediaState.mounted() ? "true" : "false")
+```
+
+**Checked.** Here: the gate (`/home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests`) passes. The remaining warnings (StandbyPowerButtonInput.cpp:26, App:4742, CC:7763/7916/1235) were already there and are not in the edited lines. The smoke test (`smoke_core.sh .../apertar-core 8137 /home/user/build/sim/smoke-core1.txt`) shows no diff against smoke-work.txt. That is expected: the script parses JSON, which folds the duplicate key, so it could never have shown it. So I checked the raw text: with `--simulate --web-port 8138`, `curl -s -X POST http://127.0.0.1:8138/api/command -d '{"cmd":"get_state"}' | grep -o '"media_[a-z]*":[^,]*'` now prints media_state once (before the change it would print it twice). Nothing needs the camera.
+
+**Rule.** Read each value into one local at the top of a reply handler, write each key once, and build the reply from those locals.
+
+
+---
+
+## C5. core: the automatic storage pre-roll is off by default
+
+Apertar-Core `0977dd6`. Finding: X-stock-behaviour-5. Reviewed by a second agent: accept.
+
+**What was there.**
+
+The port turned the pre-roll on whenever nothing was configured. Code in src/util/StoragePreroll.hpp:92-98@cinemate-port:
+  inline bool automaticEnabled(const char *envValue, const PrerollConf &conf)
+  {
+      if (envValue && std::string(envValue) == "0") return false;
+      if (envValue && std::string(envValue) == "1") return true;
+      return conf.automatic.value_or(true);
+  }
+The published atomic also started as `std::atomic<bool> automatic{true};` (StoragePreroll.hpp:229). The hardware file template showed "# preroll=on" (src/ApertarCoreApp.cpp:5074).
+
+**Why it is a problem.** Each time Core started, a card went in or a card was formatted, a stock camera wrote a 2 s take at the mode's highest fps. That is about 0.7-1.5 GB. It then deleted the take. While the take ran, Core refused record, photo, format, eject and standby with "Storage pre-roll is running". Original Apertar 1.6.0 has no pre-roll: an unmodified camera never writes media unless the operator asks. Under rule CAM-32 (capture modes and media actions exclude each other, refused with a sentence), the take that is hidden by default blocks the operator's own commands. The port's own plan said "default off at first, never a hidden step" (working/drop-frames/README.md:341).
+
+**How to spot it.** Run `grep -rn "value_or(true)" src/` and, for each hit, ask whether a stock camera without that key would do something original Apertar never does. Also check `std::atomic<bool> x{true}` that mirrors a setting: its start value must match the parse default.
+
+**Options.**
+
+- value_or(false) plus the atomic's start value plus the texts that state the default: 8 lines across 4 files, no change in behaviour once someone has set the switch
+- Remove the automatic triggers and keep only the manual command: also fixes it, but drops a feature the owner wants as an option and touches the watcher, the UI controls and set_storage_preroll
+- Write preroll=off into the installed hardware file: hides the problem for new installs only and leaves the code default wrong
+
+**Chosen, and why.** I took option 1, as the lead's note asked: only the default changes. The atomic's start value had to change as well. Core reads that atomic in get_state before the first refresh, so leaving it at true would have reported "auto on" for a moment. Nothing was given up. Anyone who wants the warm-up sets preroll=on once, from the WebUI, the Config pane or set_storage_preroll. README.md has no line about the pre-roll default, so nothing was added there (no drive-by doc changes).
+
+**After.**
+
+```
+// APERTAR_STORAGE_PREROLL=0|1 (anything else counts as unset) beats the file; absent both: off.
+    return conf.automatic.value_or(false);
+    std::atomic<bool> automatic{false};
+# preroll=on runs it when Core starts, when a card is inserted and after a format (default off); the command storage_preroll always works. Read at each request.
+# preroll=off
+    check(!automaticEnabled(nullptr, PrerollConf{}), "default off");
+```
+
+**Checked.**
+
+Run here:
+- The gate (`check_core.sh /home/user/wt/lane-core1 lane-core1 both tests`): both builds pass, and all 17 host tests pass, storage_preroll_test included, which now asserts default off.
+- --simulate with no [media] key: `get_state` returns `storage_preroll_auto:false`. The WebUI page (Playwright) shows the On/Off row with Off selected. `set_storage_preroll` on, then off, flips the value.
+
+Side effect, cleaned up: in simulate mode set_storage_preroll writes to /home/pi/apertar-hardware.conf. My test added a [media] section there and a .bak file. I put the file back to its earlier two lines ([gpio_buttons] chip=/dev/gpiochip13) and removed the .bak.
+
+Still needs the camera: start Core with no preroll key, then run `journalctl -u apertar-core -b | grep "storage preroll"`. Expect "reason=start not requested (preroll is off ...)" and no pre-roll clip on the media. Insert a card and format it, and expect the same "not requested" line for each.
+
+**Rule.** A new feature that writes media, uses time or blocks commands is off by default. The operator turns it on.
+
+
+---
+
+## C6. cdng: lossy DNG drops each file's pages after the write again
+
+Apertar-Core `615b48c`. Finding: X-stock-behaviour-7. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/lossydng/LossyDngEncoder.cpp:102-105@cinemate-port. The page drop only ran in "writer" mode:
+    // The same knob as the cDNG writer (APERTAR_DNG_DONTNEED); lossy takes have no sync thread, so "sync" leaves
+    // the pages to the kernel like "off".
+    if (dngPageCacheDrop() == DngPageCacheDrop::Writer)
+        ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+The default mode is Sync (src/cdng/CdngEncoder.cpp:84-106).
+
+**Why it is a problem.** posix_fadvise(POSIX_FADV_DONTNEED) tells the kernel it may drop a file's cached pages. 1.6.0 calls it on every Lossy DNG file, with no condition (src/lossydng/LossyDngEncoder.cpp:82@upstream-1.6.0). The port changed the default to "sync", which means the drop runs on the once-a-second sync thread after the fsync. Only cDNG files reach that thread: noteWrittenFile is called only in the cDNG branch (src/camera/CameraController.cpp:5294). So a stock Lossy DNG take dropped nothing. Its frames stayed in the page cache until kswapd reclaimed them during the take, which is the pattern the port's own commit adac040 blames for lost frames.
+
+**How to spot it.** grep -rn "dngPageCacheDrop() ==" src/ and, for each hit, ask what happens under the default value. A comment saying "X behaves like off" for the default mode is the smell.
+
+**Options.**
+
+- Drop in the writer for every mode except Off: a one-line condition change, and it brings back 1.6.0's behaviour under the default. Cost: none.
+- Send lossy files through noteWrittenFile so the sync thread drops them: this needs the async lossy writer to report each finished path back to CameraController. More code and new coupling.
+- Make the default mode depend on the format: this adds a new rule to a knob that both writers share, for no gain over option 1.
+
+**Chosen, and why.** Option 1. In the lossy writer, "sync" now means the same as "writer", because lossy takes have no sync thread for the drop to run on. It is the smallest change and matches 1.6.0 exactly under the default. Given up: lossy files never get the cheaper drop of clean pages after the fsync. The drop runs while the pages are still dirty, which is exactly what 1.6.0 did.
+
+**After.**
+
+```
+    // The same knob as the cDNG writer (APERTAR_DNG_DONTNEED). Lossy takes have no sync thread, so "sync" drops
+    // here too, as 1.6.0 did after every file; only "off" leaves the pages to the kernel.
+    if (dngPageCacheDrop() != DngPageCacheDrop::Off)
+        ::posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+```
+
+**Checked.** Run here: /home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests. It built with and without libcamera with 0 warnings, and all 17 host tests passed. The WebUI and socket did not change, so no simulator run was needed. Still needs the camera: a 3-minute Lossy DNG take with default settings and no APERTAR_DNG_DONTNEED set. Run `vmstat 1` during the take and check that the "cache" column stays flat and no frames are lost. Then repeat with APERTAR_DNG_DONTNEED=off to see the old growth for comparison.
+
+**Rule.** When a shared knob changes its default, check every caller still does what it did before, above all callers that cannot use the new mode.
+
+
+---
+
+## C7. camera: preview temporal denoise switch leaves H.264, ProRes and photo mode alone
+
+Apertar-Core `b923c06`. Finding: X-stock-behaviour-6. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/camera/CameraController.cpp:7306-7318@cinemate-port. Inside the session's start(), the lambda that picks the file libcamera loads strips TDN for every record format:
+        std::string activePath;
+        const auto loadablePath = [&](const std::string &path) {
+            activePath = path;
+            if (!settings.previewTdn) {
+                std::string note;
+                activePath = tuning::previewTuningPath(path, tuningPipeline, note);
+Later, at :7412, `makeProresIspTuning(activePath, ...)` builds the ProRes ISP tuning from that stripped copy. Types.hpp:139 sets `bool previewTdn = false;` ("the raw DNGs never change").
+
+**Why it is a problem.** For H.264 and ProRes the ISP picture is the recording. A switch named "Preview" therefore took temporal denoise out of every stock H.264 and ProRes take, including with a tuning file the user picked, and nothing told the operator. Commit e625c68 only talks about DNGs. Original Apertar loads the resolved tuning file as it is: `applyProcessTuningFile(tuningPath)` at src/camera/CameraController.cpp:5266-5271@upstream-1.6.0, and ProRes derives from `tuningPath`. The rules: N8 (no silent downgrade of what is recorded) and N13 (monitoring changes stay out of the recording). All four reports (X-stock-behaviour-6, X-knobs-4, CC-6-F2, CC-3-F7) agree on the format test. Only CC-3-F7 prefers flipping the default.
+
+**How to spot it.** Ask "for which formats is this picture the recording?" each time a preview, monitor or ISP tweak is added. grep -n "previewTuningPath\|tuningPath\|activePath" src/camera/CameraController.cpp and look for a tuning or ISP change with no isProcessedVideoFormat test near it. Another sign is a commit or comment that says "the DNGs do not change" and says nothing about H.264 or ProRes.
+
+**Options.**
+
+- Strip only when the ISP output is not recorded: `!settings.photoModeEnabled && isProcessedVideoFormat(...)` keeps the full file. One line, keeps the speed gain for raw, and processed takes match 1.6.0 exactly. Cost: the switch does nothing in H.264/ProRes.
+- Default previewTdn = true. Upstream look everywhere, but raw shooters lose the measured ISP speed gain and it changes a default the owner chose on purpose.
+- Both. Safest, but it overrides the owner's default for raw without need.
+
+**Chosen, and why.** Option 1, the format test, which is the fix the four reports agree on. I used the codebase's own wording for "the ISP output is the recording": `!photoModeEnabled && isProcessedVideoFormat(recordingFormat)`. The same expression is at CC:3507 and CC:11385. Photo mode counts as raw, because stills are developed from the raw frame (writeProcessedStill -> processRawFrameToRgbStill) and not from the ISP. What we give up: in H.264/ProRes the preview stays as expensive as in 1.6.0. Format change check: setRecordingFormat sets requiresReconfigure whenever the current or the next format is H.264/ProRes (CC:11385-11389). applySettingsLocked then calls session_->reconfigure, which runs stop() and then start(settings) (CC:7551-7556). start() runs loadablePath again. A photo-mode toggle also forces a reconfigure (CC:12725). So every change that flips the condition picks the tuning file again (confirmed in code). The journal line still prints "preview_tdn=off active=<path>" for processed formats, and it now shows the full file there. I left it unchanged.
+
+**After.**
+
+```
+        // H.264 and ProRes record the ISP output, so they always get the tuning file as it is.
+        const bool ispOutputRecorded = !settings.photoModeEnabled && isProcessedVideoFormat(settings.recordingFormat);
+        std::string activePath;
+        const auto loadablePath = [&](const std::string &path) {
+            activePath = path;
+            if (!settings.previewTdn && !ispOutputRecorded) {
+```
+
+**Checked.** Run here: /home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests. Both builds and the 17 host tests pass. The remaining warnings (ApertarCoreApp.cpp:4742, and CC:1235, :7765, :7918 in the build without libcamera) are in code I did not touch. The changed lines sit inside the libcamera session start(), so --simulate cannot exercise them, and no command, state field or WebUI change needed a live run. Still needs the camera: with preview_tdn off, switch to H.264, then ProRes, then cDNG, and run `journalctl -u apertar-core | grep "tuning file"`. H.264 must show the original file as active; ProRes must show the derived file built from the original (the "ProRes colour:" line follows); cDNG must show `~/.cache/apertar-core/tuning/<name>_notdn.json`. Optionally record two dark ProRes takes, one before and one after this change, and compare the noise.
+
+**Rule.** A monitoring or preview setting must never change what is recorded. If the recording comes from the same pipeline stage (here the ISP for H.264/ProRes), gate the preview tweak on the record format.
+
+**Note from the lead.** The commit as pushed (`b923c06`) differs from the text above in one point: when I put it on the improvement branch I widened the test to `settings.photoModeEnabled || isProcessedVideoFormat(...)`, so photo mode also kept the full tuning file. That was wrong, and C10 takes it back. Read C10 for why.
+
+
+---
+
+## C8. core: test_input refuses script actions, a script needs a button press
+
+Apertar-Core `d1dcdee`. Finding: X-protocol-security-2. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12399-12421@cinemate-port (testInputReply) ran any saved action list for the key, scripts included:
+            if (line.actions.empty() || (line.actions.size() == 1 && line.actions[0] == "none"))
+                return errorReply(command.id, "Nothing is assigned to " + row.title + " " + line.label + ".");
+            const bool turn = ...;
+            handleHardwareInputAction(line.raw, !turn);
+remoteN rows also skip the section-on check, so remote0=run_script1 plus test_input was enough.
+
+**Why it is a problem.** test_input is reachable from the LAN (POST /api/command, the WebUI Try button). A client could save remote0=run_script1 and then fire it, and the runner runs /bin/bash -- <file> as pi, which has passwordless sudo on a stock image. So the LAN could start a root shell script with no one at the camera. In original Apertar handleHardwareInputAction is called only from the GPIO, NeoRotary and PCF8574 callbacks and the standby wake (core-upstream src/ApertarCoreApp.cpp:6786-6792, :8613): a script ran only after a physical press. The refusal is an operator sentence per CMD-28 / STY-10, and it sits at the top of the one command's block per CMD-4.
+
+**How to spot it.** grep -n "handleHardwareInputAction" src/ApertarCoreApp.cpp and compare the callers with core-upstream: any caller that is a command handler, not an input callback, is a remote door. Ask: what is the worst action this command can fire, and who can send it?
+
+**Options.**
+
+- Refuse script actions in testInputReply with an operator sentence: a 4-line local change, keeps every other Try action working (chosen).
+- Drop test_input altogether: closes the hole but loses the WebUI Try and Remote Controls feature.
+- Restrict the script runner (executable, not group/world-writable): changes stock runner behaviour upstream already ships; needs the original developer; left as an optional later step.
+- Refuse only in the WebUI JavaScript: useless, the socket and /api/command still accept the command (CMD-27: logic belongs in Core).
+
+**Chosen, and why.** Option 1, as the lead asked: the first step of the verified fix only. It puts back the upstream guarantee (scripts need a press) at the one place the port added a remote door. Given up: a user can no longer Try a script line from the WebUI; they press the button. The runner path checks are untouched.
+
+**After.**
+
+```
+            // A script starts from a physical press only, as in 1.6.0.
+            for (const std::string &action : line.actions)
+                if (hardware::scriptActionSlot(action) >= 0)
+                    return errorReply(command.id, "Scripts run from a button, not from the WebUI.");
+(line.actions holds each action already in canonical spelling; scriptActionSlot from src/hardware/ButtonActionList.hpp returns the slot 0-5 for run_script/script spellings, -1 otherwise.)
+```
+
+**Checked.** Here: the gate (both builds, 17 host tests) passes. In --simulate with the WebUI on 127.0.0.1:8147, set_controls saved remote0=run_script1, remote1=record_toggle, remote2=iso_up,script_2; test_input on remote0 and on remote2 (script inside a sequence) replied {"ok":false,"error":"Scripts run from a button, not from the WebUI."}; remote1 still started and stopped a take; Playwright calling the page's sendTestInput showed the sentence as a toast. The hardware file was restored to its earlier text afterwards. Needs the camera: map a GPIO button to run_script1 in Controls, press the button and check the script runs (e.g. it touches a file), then press Try on that row in the WebUI at http://<pi>:8000 and check the toast and that the file is not touched.
+
+**Rule.** A path that fires hardware actions for a remote client must not reach actions upstream only allows on a physical press; refuse them in Core with an operator sentence.
+
+**Note from the lead.** The worker's comment said "A script runs as root". It does not: the runner starts `/bin/bash` as the user Core runs as (the template says "Runs as pi, without automatic sudo", ApertarCoreApp.cpp:4334@upstream-1.6.0). A wrong "why" in a comment is worse than no comment, so the line was corrected before the push.
+
+
+
+---
+
+## C9. camera: preview temporal denoise is on by default, as in 1.6.0
+
+Apertar-Core `3650027`. Findings: CC-3-F7, X-knobs-4, X-stock-behaviour-6 (the default half). Made by hand. **This one changes a default the owner chose on purpose: see "Chosen, and why".**
+
+**What was there.**
+
+```
+include/apertar/core/Types.hpp:139@cinemate-port   bool previewTdn = false;   // Off (default) is much faster
+```
+
+The setting is saved as `preview_tdn=` in `camera_settings.conf`. When the file has no such line, the struct's initial value decides.
+
+**Why it is a problem.** Temporal denoise (TDN) is the step in the Pi's image processor (the ISP) that blends each frame with the one before it. The tuning file asks for it. Apertar 1.6.0 loads the tuning file as it is. With the port's default, a camera upgraded from 1.6.0 gets a tuning copy without TDN in every raw mode, so its live picture is noisier than before, and nothing on screen says why. C7 already took the recordings (H.264, ProRes) out of it; this is the rest: the monitor picture of a stock camera.
+
+**How to spot it.** For every new member of `CaptureSettings` (Types.hpp), ask: "what does a camera do that has never saved this key?" The initial value in the struct is the answer. If that answer is not what 1.6.0 does, a stock camera changes behaviour on upgrade.
+
+**Options.**
+
+- Keep off by default: the rig stays fast after a settings reset. A stock camera's preview is noisier than under 1.6.0.
+- On by default: a stock camera is as before. The rig keeps off through its saved `preview_tdn=false`; only after a settings reset does it have to be switched off again.
+- Off only in the heavy mode (4K Clear HDR 16-bit): a hidden coupling between a mode and a monitor setting. Original Apertar has no such automatic coupling for monitor aids.
+
+**Chosen, and why.** On by default. The campaign's first rule is that a camera with no port-specific settings behaves as 1.6.0. The speed gain (about 37 ms down to 6 ms per frame in the ISP back end at 4K Clear HDR 16-bit, the owner's measurement) is real, and it stays one switch away. What was given up: after a factory reset of the settings, the rig drops frames in 4K Clear HDR 16-bit at 25 fps until the switch is turned off again. This is the owner's call to overturn: reverting this one commit restores "off by default" and nothing else.
+
+**After.**
+
+```
+include/apertar/core/Types.hpp:139   bool previewTdn = true; // Temporal denoise in the preview ISP of raw takes. Off is much faster; H.264 and ProRes always keep it.
+```
+
+**Checked.** Ran here: both builds, the 17 host tests. `apertar-core --simulate` with no settings file: `GET /api/state` gives `preview_tdn: true`. Still needs the camera: `grep preview_tdn` in the rig's `camera_settings.conf`. If the line says `false`, nothing changes for the rig. If it is missing, switch "Preview temporal denoise" off once in the WebUI (Settings, System, Performance).
+
+**Rule.** The initial value of a new setting is what a 1.6.0 camera gets on upgrade. Make it the 1.6.0 behaviour, and let the new behaviour be the saved choice.
+
+
+---
+
+## C10. camera: photo mode follows the preview temporal denoise switch
+
+Apertar-Core `0d13a6f`. Corrects the lead's own change to C7. Made by hand.
+
+**What was there.** In C7 the worker wrote the test as "H.264 or ProRes video" and noted that photo mode counts as raw, "because stills are developed from the raw frame". When I integrated the commit I overruled that and added photo mode to the modes that always keep the full tuning file:
+
+```
+const bool ispOutputSaved = settings.photoModeEnabled || isProcessedVideoFormat(settings.recordingFormat);
+```
+
+My reason was a review finding (Camera-headers-F2) that said JPEG, PNG and TIFF stills are saved from the ISP output.
+
+**Why it is a problem.** The finding was wrong on that point, and I did not open the code before acting on it. Processed stills are developed by Core from the raw frame, in 1.6.0 and in the port:
+
+```
+src/camera/CameraController.cpp:6845   bool writeProcessedStill(FrameJob &job, ...)
+src/camera/CameraController.cpp:6850       job.frame.data = job.rawBytes.data();
+src/camera/CameraController.cpp:6852       if (!processRawFrameToRgbStill(job.frame, job.metadata, job.rendering, &image, error))
+```
+
+So in photo mode the ISP picture is only the monitor picture. My change made the switch do nothing in photo mode for no reason, and the commit message stated a mechanism that does not exist.
+
+**How to spot it.** A claim of the form "X comes from Y" in a review, a comment or a commit message is a pointer, not a fact. Before changing code because of it, find the function that writes X and read where its input comes from. Here: `grep -n "writeProcessedStill\|processRawFrameToRgbStill" src/camera/CameraController.cpp`, one minute.
+
+**Options.**
+
+- Leave it: harmless for the pictures, but the switch and its texts would lie about photo mode.
+- Rewrite the pushed commit: the branch history would look cleaner, but it was already pushed, and a rewritten branch is a trap for anyone who fetched it.
+- A small corrective commit: the history shows the misstep and the fix. The clean commit series planned for the end of the campaign folds the two into one.
+
+**Chosen, and why.** The corrective commit. It restores the worker's test exactly and corrects the three texts that repeated the wrong mechanism (README, the Types.hpp comment, the WebUI note).
+
+**After.**
+
+```
+        // H.264 and ProRes record the ISP output, so they always get the tuning file as it is.
+        const bool ispOutputRecorded = !settings.photoModeEnabled && isProcessedVideoFormat(settings.recordingFormat);
+```
+
+**Checked.** Ran here: both builds, the 17 host tests. Still needs the camera: with the switch off, enter photo mode and read `journalctl -u apertar-core | grep "tuning file"`: the line must end in `active=<...>_notdn.json`.
+
+**Rule.** Check a finding against the code before you act on it, also when a reviewer and a skeptic both signed it. Two readers can share one wrong assumption.
