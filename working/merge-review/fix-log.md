@@ -335,3 +335,42 @@ color: root.recordingActive && !!settingsBridge && settingsBridge.recordingRedTi
 
 **Rule.** A new option must leave a stock camera looking like 1.6.0 on every screen, and the HDMI monitor counts as its own screen.
 
+
+
+---
+
+## C3. core, web: audio meter red outline is off by default here too
+
+Apertar-Core `ff4c7c5`. Finding: X-stock-behaviour-13 (the Core half of U2). Made by hand, not by a worker.
+
+**What was there.**
+
+Core does not ask the touch UI for its settings. It reads `UI.conf` itself and keeps its own list of defaults for keys the file lacks, so that the state replies and the WebUI have a value for every setting:
+
+```
+src/ApertarCoreApp.cpp:1907   bool audioRecordedOutlineEnabled = true;
+src/web/WebControlPage.cpp:16157   formatToggleLabel(uiState.audio_recorded_outline_enabled !== false)
+```
+
+**Why it is a problem.** U2 changed the touch UI: a missing key now means "no outline". Core's copy of the default still said "on". On a camera with no such key, the meter had no outline, and the WebUI's Settings pane showed the switch as On. Two programs disagreed about one setting because the default is written in two code bases.
+
+**How to spot it.** When you change a default in the touch UI (`m_settings.value("<key>", <default>)` in `SettingsBridge.cpp`), grep the same key in `Apertar-Core/src`. Core's `UiSettingsSnapshot` struct (ApertarCoreApp.cpp, around line 1880) has a member for every UI.conf key Core publishes, each with its own initial value. In the WebUI string, look for `!== false` (reads "on unless told otherwise") against `=== true` (reads "off unless told otherwise").
+
+**Options.**
+
+- Leave Core alone: the UI is right, the WebUI label is wrong until someone flips the switch once.
+- Flip both Core places: 2 lines.
+- Make Core stop keeping defaults and publish "unset": a new idea in the protocol, and original Apertar keeps this same hand-written copy for every UI setting. Not ours to redesign.
+
+**Chosen, and why.** Option 2. Original Apertar already lives with the two copies (rule UIC in `apertar-conventions.md`: Core reads UI.conf with its own defaults). The cheap, in-style fix is to keep the copies equal. The neighbours show the two spellings side by side: `recording_frame_enabled === true` for an aid that is off by default, `recording_red_timecode_enabled !== false` for one that is on.
+
+**After.**
+
+```
+src/ApertarCoreApp.cpp:1907   bool audioRecordedOutlineEnabled = false;
+src/web/WebControlPage.cpp:16157   formatToggleLabel(uiState.audio_recorded_outline_enabled === true)
+```
+
+**Checked.** Ran here: both Core builds and the 17 host tests pass. `apertar-core --simulate` with no UI.conf: `GET /api/state` gives `ui.audio_recorded_outline_enabled: false` and still `ui.recording_red_timecode_enabled: true`. The reply shapes are the same as before (only the page is one byte shorter). Still needs the camera: nothing beyond the check named in U2.
+
+**Rule.** A UI.conf default exists three times: touch UI (`SettingsBridge.cpp`), Core (`UiSettingsSnapshot`), WebUI (`=== true` or `!== false`). Change all three in the same piece of work.
