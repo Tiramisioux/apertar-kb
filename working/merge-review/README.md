@@ -73,6 +73,20 @@ Checked in the review container (x86_64 Linux) on 2026-11-17, at `cinemate-port`
 | The port's 17 host tests (`tools/*_test.cpp`, `tools/*_test.sh`) | **confirmed**: 17 pass |
 | Anything that needs a sensor, GPIO, the CFexpress hat, a recording drive, HDMI | **not possible here**: every such claim in this campaign is labelled, with the Pi command that settles it |
 
+## Where the campaign stands (updated 2026-11-17, during the first session)
+
+| Part | State |
+| --- | --- |
+| Conventions (8 topics, each challenged) | topic files in `raw/conv-*.md`; the one-page `apertar-conventions.md` is written from them |
+| Unit review (37 units) and sweeps (9) | running: reports land in `raw/inv-*.md`, `raw/rev-*.md` (authoritative section: "Final findings"), `raw/sweep-*.md`. `raw/FINDINGS.md` lists every finding in one line; `raw/FINDINGS.json` and `raw/FEATURES.json` hold the full text |
+| Fix list, feature list, owner decisions | written from the findings: `fix-list.md` (+ `fix-list-<domain>.md`), `feature-list.md` (+ `feature-list-<area>.md`), `owner-decisions.md` |
+| 12-bit Clear HDR | nine reader reports in `hdr12/G*.md`, digest `hdr12/DIGEST.md`; hypotheses, skeptic verdicts and `hdr12/REPORT.md` follow |
+| Coding map | all six slices checked and rechecked: `coding-map/verify-*.md` (section "Final discrepancies"). Not applied to the map yet |
+| Fixes | Core `04fe197` (GPIO chip setting), entry C1 in `fix-log.md`. Draft PRs: Apertar-Core #7 (base `cinemate-port`), apertar-kb #16 |
+
+Workers: Opus for reviews, skeptics and the investigation, Sonnet for inventories and mechanical sweeps (asked for
+by Patrik, to save tokens). The scripts that drive the agents are not in this repo; the reports are.
+
 ## Results (filled in as they land)
 
 | Page | Holds |
