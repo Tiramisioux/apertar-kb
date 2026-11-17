@@ -886,3 +886,43 @@ Still needs the camera: record H12 with Log off, H16 with Log on, and SDR 12 wit
 
 **Rule.** Tell a file's kind from what the file actually holds (the table's contents), not from whether some table is there.
 
+
+
+---
+
+## D2-1. imx283: per-crop VMAX floors are off by default
+
+imx283-v4l2-driver `36d484b`. Findings: Driver-imx283-F2, X-knobs-17. Made by hand.
+
+**What was there.**
+
+```
+imx283.c:277@cinemate-port   static bool crop_vmax = true;
+imx283.c:2430@cinemate-port  if (crop_vmax && mode->crop_min_VMAX)
+                                     return mode->crop_min_VMAX;
+```
+
+VMAX is the number of lines the sensor counts per frame, blanking included. A lower VMAX means a shorter frame and a higher frame rate. `crop_vmax=1` lets each cropped row use its own, lower floor. The parameter's own help text calls those floors "experimental, UNMEASURED".
+
+**Why it is a problem.** Two defaults cancelled each other. The driver turned the experiment on. Core then capped the frame rate at the `crop_vmax=0` floor anyway, and `APERTAR.md` told every Apertar user to create `/etc/modprobe.d/imx283.conf` with `crop_vmax=0`. The installer (`setup.sh`, `dkms.postinst`) does not create that file. So a user who followed the README ran any other libcamera program on unmeasured sensor timings. The same driver already shows the pattern for an unvalidated feature: `experimental_modes` is off unless asked for (imx283.c:269).
+
+**How to spot it.** A setup guide that tells every user to switch a default off is a default that is wrong. `grep -n "module_param" imx283.c`, then read each default against what the guide tells the user to set.
+
+**Options.**
+
+- Delete `crop_vmax`, the `crop_min_VMAX` field and the macro argument: cleanest, but throws away the experiment's numbers before anyone has measured them.
+- Default off: one line of code. The numbers stay for the day someone measures them.
+- Leave on and ship a modprobe.d file from the installer: more moving parts to keep the wrong default.
+
+**Chosen, and why.** Default off. It is the smallest change, it matches `experimental_modes`, and it removes a setup step from `APERTAR.md`. Kernel style writes a flag that starts as false without an initialiser (`static bool crop_vmax;`), like the line above it.
+
+**After.**
+
+```
+/* The per-crop VMAX floors are unmeasured, so they are off unless asked for. */
+static bool crop_vmax;
+```
+
+**Checked.** Not built or loaded: this container has no kernel headers and no sensor. On the Pi: `cat /sys/module/imx283/parameters/crop_vmax` must print `N`, and Apertar must offer the frame rates it offered with `crop_vmax=0`.
+
+**Rule.** An unmeasured feature is off by default. If the guide tells every user to turn something off, turn it off in the code.
