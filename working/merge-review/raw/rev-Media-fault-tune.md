@@ -191,3 +191,133 @@ Rework: rewrite each as a one-line reason or delete; remove the test-file refere
 | Kernel tuning | never installed; only "no helper call after restart" (ebdcd08) |
 | Tune file / CLI | "desk only"; host test file named but absent |
 | UI automounter release | "pi build (see next run)" |
+
+## Skeptic
+
+Stage 3. Every finding re-read in code on both sides (port Core `01f170c`, UI `7ea9afc`; `core-upstream`, `ui-upstream`, `core-main`).
+
+| Id | Verdict | Why |
+| --- | --- | --- |
+| F1 | corrected | Confirmed. Refs fixed: the template has 54 lines and `raw_buffers = 8` is at `config/apertar-media-tune.conf:36` (not :144-174, :156). The env vars it wraps are themselves port additions: none of `APERTAR_RAW_CAMERA_BUFFERS`, `_DNG_DONTNEED`, `_DNG_WRITEBACK`, `_MEDIA_SYNC_MS`, `_MEDIA_TUNE` is in `core-upstream` or `core-main`. Rework risk adds owner sign-off: Patrik asked for the file. |
+| F2 | corrected (stronger) | Confirmed. Added: `save_once` (`scripts/apertar-media-tune:48-53`) runs `cat "$2" > "$STATE_DIR/$1"` as root. pi can rename the root-owned `tune/` (its parent is pi-owned) and plant a dangling symlink, so root creates a file of pi's choosing. The helper also takes any `<rootdisk>` from pi. Exposure only once installed, which nothing does yet. |
+| F3 | stands | Confirmed (`MediaProbe.hpp:257-290`, `MediaProfile.hpp:212-234`, `CC:10543`, `App:10889`). Upstream controller owns `mediaRoot_` (`core-upstream CC:8247`, `.hpp:118`). Rework risk added: the watcher must not wait on the controller mutex during configure. |
+| F4 | corrected | Severity major -> minor. Dead code with one misleading log line, no behaviour harm. The KB says the same: "nothing in any local repo consumes the eject flag yet (critic Y12)" (`working/yank-answer.md:75`). |
+| F5 | stands | Confirmed `MediaProfile.hpp:136-150`, `known()` true for `Other` (:160), `CC:4315-4330`; `core-main CC:3433` fixed `max(2, min(4, threads))`. |
+| F6 | stands | Confirmed `App:11331-11384`, `:12597-12600`. Upstream App reads env only for paths (`APERTAR_HARDWARE_CONFIG`, `core-upstream App:4254`), never to change a command's reply. |
+| F7 | corrected | Reload on save comes from the port-wide hot-apply commit `dcf09ee` (`App:12328-12329`), not from this unit. It is judged with Controls, so that step is removed from this rework. Upstream Core's `CFE_HAT_ENABLED = True` sits in the embedded automounter Python string (`core-upstream App:3394`). |
+| F8 | stands | Confirmed `App:12944` and `:12961` read two separate snapshots. |
+| F9 | corrected | "Apertar way" was wrong. Upstream acts on a single read for both edges: insert -> `mountPcie` (`ui-upstream CfeAutomounter.cpp:547-548`) and eject -> `unmountPcie` (:549-550). The difference is cost: a glitch now does a lazy unmount plus a PCIe remove during a take, and Core's own reader of the same byte demands two agreeing reads. Stays minor, probable. |
+| F10 | corrected | Deliberate yes, not no: the comment at `CC:4466-4467` says "this stop may be the user's, before any fault", and `0b1632f` records the hang that forced a reboot. The proposed rework (wait unless the watcher says Removed) brings that hang back, because the stall rule exists for "a pulled or hung medium the probe has not seen" (`CC:4833-4834`). New rework below. |
+| F11 | stands | Confirmed `MediaProfile.hpp:25,133,141,221`, `MediaProbe.hpp:179`. `tools/media_tune_test.cpp` is absent (`ls tools`). |
+| F12 | corrected | Rework reversed. Upstream's `normalizeMountPath`/`decodeProcMountField`/`isMountedPath`/`mountedDeviceForPath` (`core-upstream App:1937,1944,2014,2031`) are the original developer's code and should stay the primary parser. The port's copy should go, not upstream's. |
+| F13 | stands | Confirmed `MediaProfile.hpp:172-181` call_once; `scripts/apertar-tune:12` says "once, at start"; `conf:18` says "at start and when a take starts". Moot under F1. |
+
+No new findings.
+
+## Final findings
+
+### Media-fault-tune-F1 [mismatch, major] Media tuning file + tmpfs override + Python CLI form a second config system for developer knobs
+- where: `src/util/MediaTune.hpp:1-40`@cinemate-port; `scripts/apertar-tune:1,69-81`@cinemate-port; `config/apertar-media-tune.conf:1-54` (`raw_buffers = 8` at :36)@cinemate-port; `README.md:337-357`@cinemate-port; `src/camera/CameraController.cpp:1458-1470,4364-4365,4718`@cinemate-port; `src/cdng/CdngEncoder.cpp:91`@cinemate-port; `src/util/MediaProfile.hpp:172-181,195,230-234`@cinemate-port
+- port way: Two INI files (`/home/pi/apertar-media-tune.conf`, `/run/apertar-media/media-tune.override.conf`) with 8 keys and a 4-level section lookup. Precedence: env > override > base > code. A 487-line Python 3 editor. The key table is written three times (MediaTune.hpp, apertar-tune:69-81, the template's comments). The README documents the knobs for operators. The template sets `[default] raw_buffers = 8`, so `apertar-tune init` doubles SDR raw buffers (4 -> 8) in every raw mode.
+- Apertar way: Capture-pipeline knobs are `APERTAR_*` env vars read where they are used, clamped, kept out of settings and the README (C1-I22, I1). Example: `core-upstream/src/camera/CameraController.cpp:3329-3330`@upstream-1.6.0 `maxQueuedFrames_ = unsignedEnvValue("APERTAR_CDNG_QUEUE_FRAMES", defaultQueueFrames, 4, 64);`. Upstream `scripts/` holds only `start-apertar-core.sh` (bash, S10). No shared INI parser (HW-S2). Note: the env vars this file wraps are port additions too (none is in `core-upstream` or `core-main`).
+- why it matters: A third config surface, after `camera_settings.conf` and `apertar-hardware.conf`, whose job is A/B measurement on test nights. It needs a tmpfiles rule and a Python tool and keeps the key table in three places. The env vars still win over it.
+- rework: Delete `MediaTune.hpp`, `scripts/apertar-tune`, `config/apertar-media-tune.conf`, the override path, the README file paragraph (`README.md:339`) and `tune_override=` in the clip log line. Read sites go back to env plus code default: `CdngEncoder.cpp:85-110` `APERTAR_DNG_DONTNEED`; `CC:4718` `boolEnvValue("APERTAR_DNG_WRITEBACK", true)`; `CC:4364` `APERTAR_MEDIA_SYNC_MS`; `rawCameraBufferCount` `unsignedEnvValue("APERTAR_RAW_CAMERA_BUFFERS", base + extra, 3, 16)`. Per-filesystem writer values stay only as code defaults (F5). Move the env table to a developer note. Keep the A/B tooling in the test-rig or KB repo.
+- rework risk: Patrik asked for the file (2026-11-02), so this needs his sign-off. Test scripts that write the override (`b1-arm.sh`) must go back to systemd drop-ins. A stock image has no base file, so camera behaviour does not change.
+- effort M; deliberate yes. Evidence: KB `working/drop-frames/media-tune-file.md` ("Asked for by Patrik on 2026-11-02 ... test nights must be able to override it"); fork-log `2edc6d0`.
+
+### Media-fault-tune-F2 [security, major] Kernel tuning root helper is a shell script in Core with open sudoers, no timeout, no lock and a pi-owned state parent
+- where: `scripts/apertar-media-tune:1-112` (`save_once` :48-53, `restore_one` :55-65)@cinemate-port; `config/apertar-media.sudoers:3`@cinemate-port; `config/apertar-media.tmpfiles.conf:3-5`@cinemate-port; `src/ApertarCoreApp.cpp:11396-11429` (callers :10942, :10963)@cinemate-port
+- port way: A POSIX sh helper takes `apply|restore <rootdisk> <class> <fs>` and writes queue knobs, global `vm.dirty_*` and the `nvme_core` APST parameter. Sudoers: `pi ALL=(root) NOPASSWD: /usr/local/libexec/apertar-media-tune`, which allows any arguments. Originals are saved in the root-owned `tune/` inside the pi-owned `/run/apertar-media`. Core calls it as plain `sudo -n` on the media watcher thread, with no timeout. It is off by default, and nothing installs or has measured it.
+- Apertar way: S7/I6/N7/S9. A single-file, Qt-free C++ helper in UI/src, called as `/usr/bin/timeout 6s /usr/bin/sudo -n /usr/local/libexec/apertar-standby-usb <verb>` (`core-upstream/src/ApertarCoreApp.cpp:1541-1545`@upstream-1.6.0, "Fixed executable and arguments only"). The sudoers line lists each verb (`ui-upstream/systemd/apertar-standby-usb.sudoers:1`). The helper checks euid, lstat on a root-owned state dir, and flock (`ui-upstream/src/StandbyUsbPower.cpp:254-262`). System files live in `UI/systemd`.
+- why it matters: (1) pi can rename the root-owned `tune/`, because its parent is pi-owned, and plant saved values that `restore` writes as root to `/proc/sys/vm` and the block queue. pi can also plant a dangling symlink, which `save_once`'s `cat ... > "$STATE_DIR/$name"` follows, so root creates a file at a path pi picks (confirmed code path; exploit probable). (2) pi can pass any `<rootdisk>`. (3) Without a timeout, a hung helper blocks pull detection on the watcher thread. (4) A `dirty_bytes` of 1 GiB is half the RAM of a 2 GB Pi 5/CM5, and the code's own comment says it would undo the 1 s sync bound and that 16-bit 4K25 ran clean without it (`App:11398-11400`). Exposure exists only after an install step that nothing performs yet.
+- rework: Drop the feature from the merge. Delete `scripts/apertar-media-tune`, `config/apertar-media.sudoers`, the `tune` line of `config/apertar-media.tmpfiles.conf`, `ApertarCoreApp::applyMediaTuning` and its two calls in `runMediaWatcher`, and the `kernel_tune` key. If a measurement later justifies it, re-add it as recipe R3: `Apertar-UI/src/MediaTune.cpp` -> `apertar-media-tune` with literal verbs and no path argument (it derives the disk from the `/media/RAW` mount itself), a root-owned `/run/apertar-media-tune` checked with lstat and flock, `UI/systemd/apertar-media-tune.sudoers` listing each verb, and `/usr/bin/timeout` on the caller.
+- effort S; deliberate yes. Evidence: `26da30e` and `ebdcd08` messages (opt-in after testing); KB `media-tune-file.md` "kernel_tune stays off until B3 shows a kernel setting helping".
+
+### Media-fault-tune-F3 [mismatch, major] Process-global media snapshot and configuredMediaRoot() act as a hidden channel from App to CameraController
+- where: `src/util/MediaProbe.hpp:257-290`@cinemate-port; `src/util/MediaProfile.hpp:212-234`@cinemate-port; `src/camera/CameraController.cpp:1467,7735,10543`@cinemate-port; `src/cdng/CdngEncoder.cpp:91`@cinemate-port; `src/ApertarCoreApp.cpp:10889`@cinemate-port
+- port way: App's watcher thread writes a function-static mutex and a static `optional<MediaSnapshot>`, and CameraController and CdngEncoder read them. CameraController sets a static string `configuredMediaRoot()` that free functions read. If the watcher has not run yet, a blocking probe runs instead.
+- Apertar way: Parts talk to App only through `std::function` callbacks and setters; no part holds App state (C1-S19; `core-upstream/src/camera/CameraController.hpp:19-21`). The controller already owns the root: `core-upstream/src/camera/CameraController.cpp:8247`@upstream-1.6.0 `session_->startRecording(mediaRoot_, settings_, ...)`. Function-local statics are only private caches inside one file (C1-I19).
+- why it matters: Buffer count, writer topology and page-cache mode depend on a global that another class's thread fills. A reader of `rawCameraBufferCount` cannot see where its value comes from.
+- rework: Add `CameraController::setMediaProfile(const MediaProfile&)`, called from `runMediaWatcher` where `mediaProfile_` changes (App:10935-10940). Store it under a small dedicated mutex or as a copy guarded apart from the controller's main mutex, so the watcher never waits behind a configure. `rawCameraBufferCount(bool clearHdr, unsigned extra)` takes the extra from that copy, and `recorder_.setMediaProfile` at CC:7735 uses the same copy. Pass dontneed to `CdngEncoder` through its options. Delete `cachedMediaSnapshot*`, `updateCachedMediaSnapshot`, `configuredMediaRoot`, `mediaExtraRawBuffersForConfiguredRoot` and `mediaTuneForConfiguredRoot`.
+- rework risk: The watcher must not wait on the controller mutex. Before the first watcher cycle the profile is empty, which gives the upstream defaults (safe).
+- effort M; deliberate yes. Evidence: the comments "critic Y8" say configure time must not block on a dead device.
+
+### Media-fault-tune-F4 [slop, minor] Eject-intent flag protocol has no reader in Apertar
+- where: `src/util/MediaIntent.hpp:1-67`@cinemate-port; `src/ApertarCoreApp.cpp:4355,4386-4391,10917`@cinemate-port; `config/apertar-media.tmpfiles.conf:4`@cinemate-port
+- port way: Before an eject, Core writes `/run/apertar-media/eject/<dev>`. It clears the flag on mount or removal, so that "an automounter that treats udev change like add" does not remount (Cinemate `f01b6cd`).
+- Apertar way: Apertar's automounter is driven by the HAT button, not by udev (`ui-upstream/src/CfeAutomounter.cpp:544-553`@upstream-1.6.0). Nothing in `Apertar-UI`@cinemate-port or upstream reads `/run/apertar-media/eject` (grep empty).
+- why it matters: It is dead code for a Cinemate problem. Without the tmpfiles rule, every eject logs "an automounter may remount the drive", a risk that does not exist on Apertar. The KB agrees: "nothing in any local repo consumes the eject flag yet (critic Y12)" (`working/yank-answer.md:75`).
+- rework: Delete `MediaIntent.hpp`, the three call sites, `blockDeviceNodeExists` (unless another unit uses it) and the eject line of the tmpfiles file.
+- effort S; deliberate yes. Evidence: the `438a342` message and the header comment cite the Cinemate automounter.
+
+### Media-fault-tune-F5 [removed-upstream-behaviour, minor] Writer table changes upstream writer, queue and buffer defaults for vfat, ntfs and other filesystems without measurement
+- where: `src/util/MediaProfile.hpp:121-150,160`@cinemate-port; `src/camera/CameraController.cpp:4315-4330`@cinemate-port
+- port way: vfat/ntfs/ntfs-fuse get {2 workers, queue 16, +2 raw buffers}. `Other` (btrfs, xfs, f2fs) gets 2 workers, and `known()` is true for it. ext4 and exFAT stay at {4, 12, 0}.
+- Apertar way: `core-main/src/camera/CameraController.cpp:3433`@main (same as upstream :3324) `normalWorkerCount = std::max(2u, std::min(4u, hardwareThreads))`, queue 12, raw buffer count fixed.
+- why it matters: The port halves writers on FAT32, NTFS and other filesystems with Cinemate's values. Those values dropped frames when they were measured on exFAT (`MediaProfile.hpp:140-141`). The vfat, ntfs and other rows are unmeasured.
+- rework: Make every row equal the upstream default, or remove `writerSettingsFor` and keep MediaProfile for class and filesystem logging only. Delete the unused `directIo` field. Fix the stale comment at CC:4316-4318 ("exFAT/NTFS get 2").
+- effort S; deliberate yes. Evidence: header "starting points for the measurement in T29"; exFAT row reverted after C0106 (`0358fcf`).
+
+### Media-fault-tune-F6 [mismatch, minor] Record gate reads env switches in the command plane; the 1 GiB floor also gates stills
+- where: `src/ApertarCoreApp.cpp:11331-11384`@cinemate-port; `src/ApertarCoreApp.cpp:12597-12600`@cinemate-port
+- port way: `handleCommand` refuses `record_start`, `capture_photo` and `timelapse_start` through `mediaGateError()`. `APERTAR_MEDIA_REQUIRE_MOUNT=0` bypasses the gate, and `APERTAR_MEDIA_MIN_FREE_MB` sets the free-space floor (default 1024).
+- Apertar way: The guard shape conforms (C1-S04), and refusing on unmounted media has a precedent (`core-upstream/src/ApertarCoreApp.cpp:8351-8354` "Sound Recorder needs mounted media."). But the command plane reads no `APERTAR_*` switch (C1-S24). Upstream App reads env only for path overrides (`APERTAR_HARDWARE_CONFIG`, :4254), and launch options are `Options` members (`options_.simulateCamera`). Upstream records video and stills until the write fails.
+- why it matters: A hidden env switch changes command replies. A card with 900 MB free can no longer take a single DNG still.
+- rework: Add a `--allow-unmounted-media` `Options` member with a usage line and a README row. Make the floor a constant and apply it to `record_start` and `timelapse_start` only. Refuse `capture_photo` only when the medium is unmounted, removed or in error.
+- effort S; deliberate yes. Evidence: `438a342` message (record gate).
+
+### Media-fault-tune-F7 [mismatch, minor] CfeHat reader sits in src/util, is parsed by an App free function and defaults to off
+- where: `src/util/CfeHat.hpp:1-75`@cinemate-port; `src/ApertarCoreApp.cpp:5298-5345`@cinemate-port; `src/ApertarCoreApp.cpp:10860-10875,12328-12329`@cinemate-port
+- port way: A header-only `CfeHatReader` in `util`, and `loadCfeHatConfig` as a free function in App. The reader is enabled only when a `[cfexpress_hat]` section exists. It is re-read when `cfeHatGeneration_` changes, which is the port-wide hot-apply of Controls saves (`dcf09ee`).
+- Apertar way: Device classes are `src/hardware/<Device>.{hpp,cpp}` with their own `static Config loadConfig()` (HW-S1, HW-S2; e.g. `core-upstream/src/hardware/Pcf8574Input.hpp:40`). Upstream defaults the HAT to enabled: `ui-upstream/src/CfeAutomounter.cpp:106` `bool enabled = true;`, and `core-upstream/src/ApertarCoreApp.cpp:3394` `CFE_HAT_ENABLED = True` (in the embedded automounter script).
+- why it matters: A hardware reader outside the hardware layer, with a different default from the two upstream readers of the same HAT.
+- rework: Move it to `src/hardware/CfeHatSlot.{hpp,cpp}` with `static Config loadConfig()` (`enabled = true` by default; a failed open already returns Unknown) and list it in `add_executable`. Whether to reload on save follows the verdict on `dcf09ee` in the Controls unit, not this one.
+- effort S; deliberate unknown.
+
+### Media-fault-tune-F8 [bug, minor] Socket get_state emits media_state twice
+- where: `src/ApertarCoreApp.cpp:12944`@cinemate-port; `src/ApertarCoreApp.cpp:12961`@cinemate-port
+- port way: Two `"media_state"` members in one object, built from two separate snapshot reads (`mediaSnapshot()` at :12944, `mediaState` at :12961).
+- Apertar way: One flat object with each key once (C1-I09).
+- why it matters: QJsonDocument keeps the last value and a find-based flat parser takes the first, and the two can differ.
+- rework: Delete line 12944, which keeps the value that matches `media_alive`.
+- effort S; deliberate no.
+
+### Media-fault-tune-F9 [bug, minor] Automounter unmounts and PCIe-removes the drive on one HAT read
+- where: `Apertar-UI/src/CfeAutomounter.cpp:549-550`@cinemate-port; `Apertar-UI/src/CfeAutomounter.cpp:402-420,732-746`@cinemate-port
+- port way: `if (!lastInsert && insert && m_mounted) handleSurpriseRemoval();` with no debounce. `handleSurpriseRemoval` runs `umount2(MNT_DETACH)` and then writes `1` to the PCI device's `remove` (UI `dc471c1`).
+- Apertar way: Upstream also acts on single reads, but only for cheap or user-initiated edges: insert -> `mountPcie` and eject button -> `unmountPcie` (`ui-upstream/src/CfeAutomounter.cpp:547-550`@upstream-1.6.0). The port's own Core reader of the same byte needs two agreeing reads, because "a glitch must not end a take" (`CfeHat.hpp:35-36`@cinemate-port).
+- why it matters: Probable failure: one I2C read with bit 0 set during a take lazily unmounts the recording drive and removes it from PCIe.
+- rework: Call `handleSurpriseRemoval` only after the slot reads empty on two consecutive 100 ms polls.
+- effort S; deliberate no.
+
+### Media-fault-tune-F10 [bug, minor] A user stop on a slow but alive medium is judged 'removed' after 5 s without progress, and the clip is not finalised
+- where: `src/camera/CameraController.cpp:4441-4500`@cinemate-port (stall rule :4476-4483); `:4833-4842`; `:4859-4861`
+- port way: While `stop()` waits for writers, a 5 s stall (`APERTAR_WRITE_STALL_MS`) calls `failRecording(..., MediaFault::Removed)`, which sets `mediumGone_`. The writers then get 2 s more and are detached, and every finalise step that touches the medium (rename, fsync) is skipped, even when the writers do return.
+- Apertar way: Upstream joins all workers unconditionally (`core-upstream/src/camera/CameraController.cpp:3407`); there is no precedent for a bounded stop. The bounded stop is needed: `0b1632f` records a stop that hung on a pulled card until a reboot.
+- why it matters: Probable failure: a USB HDD or SD card that pauses for more than 5 s at stop leaves an unfinalised clip although the medium is alive. During the take, the same rule fires only with the queue full (:4837), when frames are already lost; at stop, waiting longer costs nothing except lock time.
+- rework: Keep the bounded wait. Do not make the stall at stop a fault by itself: mark the medium gone only if the writers are still stuck when a separate stop limit expires (for example 15 s, its own env value), or when the watcher reports Removed or Error. Writers that return before that limit go through the normal finalise. Do not make the wait unbounded, which would bring back the hang fixed in `0b1632f`.
+- effort S; deliberate yes. Evidence: comment at `CC:4466-4467` "this stop may be the user's, before any fault"; `0b1632f` message.
+
+### Media-fault-tune-F11 [slop, minor] Ticket ids, critic ids, dates, Cinemate hashes and stale claims in comments; the named host test is missing
+- where: `src/util/MediaProfile.hpp:21,25,133,141,221`@cinemate-port; `src/util/MediaProbe.hpp:23,179`@cinemate-port; `src/util/MediaTune.hpp:5,11`@cinemate-port; `src/util/MediaIntent.hpp:14`@cinemate-port; `scripts/apertar-media-tune:8,11,20`@cinemate-port; `src/ApertarCoreApp.cpp:10869,10901,10914,10938,10966,10976`@cinemate-port; `src/camera/CameraController.cpp:4316-4318`@cinemate-port
+- port way: Comments cite T24/T29/T39/T47/T48, critic Y1/Y8/S11, s2 §1, R4, C0106/C0101, dates and Cinemate commits. `MediaTune.hpp:5` names `tools/media_tune_test.cpp`, which is absent from `tools/`. The helper describes an O_DIRECT path that the fork does not carry. A comment says exFAT gets 2 workers, which is no longer true.
+- Apertar way: Comments are rare sentences that give a hazard or a reason, with no tickets (C1-I14).
+- why it matters: Meaningless or misleading to the original developer.
+- rework: Rewrite each as a one-line reason or delete it. Drop the test-file reference and the O_DIRECT sentence.
+- effort S; deliberate no.
+
+### Media-fault-tune-F12 [duplication, nit] Second mount-table parser beside upstream's isMountedPath and mountedDeviceForPath
+- where: `src/util/MediaProbe.hpp:81-130,154-175`@cinemate-port; `src/ApertarCoreApp.cpp:2327,2397,2414`@cinemate-port
+- port way: `decodeMountField`, `normalizeMountPathForProbe` and `findMountEntry` re-implement the `/proc/mounts` parsing. `rootDiskForDevice` derives the parent disk by string rules.
+- Apertar way: `core-upstream/src/ApertarCoreApp.cpp:1937,1944,2014,2031`@upstream-1.6.0 `normalizeMountPath`, `decodeProcMountField`, `isMountedPath`, `mountedDeviceForPath`; `:3312` `parentDriveForDevice` via `lsblk -no PKNAME`.
+- why it matters: Two parsers for the same file in one process, one of them the original developer's.
+- rework: Keep upstream's functions as the parser. Extend `mountedDeviceForPath` (or add a sibling next to it) to return the fstype too, and have the watcher pass that entry to the probe. Delete `decodeMountField`, `normalizeMountPathForProbe` and `findMountEntry`. `rootDiskForDevice` may stay (a shell `lsblk` once a second on the watcher is worse) with a one-line reason.
+- effort S; deliberate no.
+
+### Media-fault-tune-F13 [bug, nit] Tune summary is logged only for the first resolution; docs disagree on when the files are read
+- where: `src/util/MediaProfile.hpp:172-181`@cinemate-port; `scripts/apertar-tune:12`@cinemate-port; `config/apertar-media-tune.conf:18`@cinemate-port
+- port way: `std::call_once` logs the first resolution, which is often `unknown/none` before a medium is mounted. The CLI says the files are read "once, at start", while the conf file and README say "at start and when a take starts". The C++ parser treats lines before any header as `[default]`; the Python editor does not.
+- Apertar way: no precedent.
+- why it matters: The log claims to show the values in effect but does not. Moot if F1 is applied.
+- rework: Resolved by F1. Otherwise, log once per profile change.
+- effort S; deliberate no.

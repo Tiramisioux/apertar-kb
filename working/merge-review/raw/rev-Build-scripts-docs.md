@@ -175,3 +175,129 @@ Yardstick: `apertar-conventions.md` (rule ids below). Upstream code opened for e
 | Socket line 1 MiB | no effect | `set_controls` with `text` > 64 KiB dropped by original Core; command unknown there anyway |
 | HTTP 206/409/416 phrases | no effect (original WebUI does not call the new routes) | n/a |
 | New state fields in `CaptureSettings` | extra keys ignored (CMD-30) | missing fields default |
+
+## Skeptic
+
+Checked at `cinemate-port` `01f170c` against `upstream-1.6.0`. Every port line was opened; every upstream counter-example was opened.
+
+| Id | Verdict | Why |
+| --- | --- | --- |
+| F1 | stands | Confirmed: `config/apertar-media-tune.conf`, `scripts/apertar-tune` (487 lines), `src/util/MediaTune.hpp` (318), tmpfiles entry. Upstream `tuningOverride()` (`src/prores/ProresEncoder.cpp:771-813@upstream-1.6.0`) is a bench file for the same stated reason ("a restart between arms ... makes an A/B untrustworthy"), so the rework keeps the feature (no drop-in, no restart, except dontneed/writeback which the port also fixes per process). Owner asked for the file (`fork-log.md:142-143`, `sweep-knobs.md:402`). |
+| F2 | corrected | Table has 13 rows, not 14. "43 upstream knobs" replaced by the checkable claim: `grep -c APERTAR_ README.md@upstream-1.6.0` = 0. |
+| F3 | stands | Script, drop-in and `CC:9109-9122` confirmed. `chrt` is probed with `/bin/true`, `taskset` is not, so a bad `APERTAR_RT_CPUS` makes the final `exec taskset` fail and Core does not start. `lessons/hardware-log.md:954` "92 (6.1 %): no effect" confirmed. Commit c57c284 body: "keeps it as a test, not a default". |
+| F4 | corrected | Pattern and rework stand (upstream has no sh root helper in either tree; UI root helper is C++ with per-verb sudoers). Corrected: README carries two helper install recipes (boot-config, trim); the third README recipe installs the capture-priority drop-in; the media-tune/tmpfiles recipes sit in the config file headers. Added: the media-tune helper is called from Core (`App:11393-11411`) although never installed (26da30e: "added but not installed ... Core's sudo -n call fails and logs"). |
+| F5 | corrected | Confirmed (`App:3530-3609`, `fail(helper.output)` at 3589-3590). Added: the denied-path error at 3604-3607 puts two shell install commands into the operator message, the second STY-10 break. |
+| F6 | corrected | Mechanism confirmed (`/run/apertar-media 0755 pi pi`, `tune 0755 root root`, `save_once` writes, `restore_one` writes back and `rm -f`). Two claims softened: `APERTAR_MEDIA_RUN_DIR` is stripped by sudo's default `env_reset` (probable), so the env path is not the attack; the attack is pi renaming or removing `tune` in its own parent and planting a symlink. "Disables sudo" is unconfirmed (recent sudo can skip a bad sudoers.d file; settle with `sudo -V` and a test on the image). Real only once the helper and tmpfiles are installed. |
+| F7 | stands | All quoted texts found at the named places (`AppH:173-195`, `Types.hpp:141,181-189`, `apertar-media-tune:8,11`, `start-apertar-core.sh:20-24`, drop-in `:4-6`, `ControlServer.cpp:15`, README 320, 331, 335). |
+| F8 | stands | `AppH:179-200` methods among members, `ClipMergeOutcome` at 145, trim members at 324 after `clipMergeBlockUntilMs_` (323). Upstream header has 1 `//` line, port 37. |
+| F9 | stands | 15 `*_test.cpp`, 3 `*.sh`, 2 `.py` counted. Build lines differ as stated; also `buffer_budget_test.cpp` and `storage_buffer_conf_test.cpp` omit `-I include`, `dng_payload_write_test.cpp` has none (its `.sh` drives it). Upstream Core has no `tools/` (`ls` of the worktree). |
+| F10 | stands | `ControlServer.cpp:15-16,264` vs `64 * 1024` at `:261@upstream-1.6.0`; upstream `/api/config` POST at `App:7175`; no `set_controls` in `Apertar-UI/src`. |
+| F11 | stands | `Types.hpp:139` `bool previewTdn = false;`; README 315-323. Upstream has no tdn handling. |
+| F12 | stands | +90 lines (`git diff --stat`); 14 socket fields counted at README 211; three `sudo install` blocks (boot-config 199-203, trim 307-312, drop-in inside the knob table). |
+| F13 | stands | `diff` with `UI/third_party/liblj92/README.apertar.md@upstream-1.6.0`: identical; users are `src/playback/DngTags.hpp`, `DngFrameReader.hpp`. |
+
+## Final findings
+
+### Build-scripts-docs-F1 [mismatch, major] Media tuning file family beside upstream's `.apertar-tuning`
+- Where: `config/apertar-media-tune.conf:1-54`, `scripts/apertar-tune:1-487`, `config/apertar-media.tmpfiles.conf:1-5`, `src/util/MediaTune.hpp:1-318` @cinemate-port
+- Port: four layers per write-path knob (env > `/run/apertar-media/media-tune.override.conf` > `~/apertar-media-tune.conf` > default), own key names (`dontneed writeback sync_ms raw_buffers workers queue extra_raw_buffers kernel_tune`), per-medium INI sections, a 487-line Python editor, a tmpfiles entry.
+- Apertar way: `tuningOverride(name)` (`src/prores/ProresEncoder.cpp:771-813@upstream-1.6.0`): env wins, else `NAME=VALUE` from `/home/pi/.apertar-tuning`, same `APERTAR_*` names, re-read at clip open, absent in production; written for the same reason (A/B arms without a restart). CAM-24, CAM-19.
+- Why it matters: the original developer meets a second tuning mechanism with its own dialect and a Python tool, for a job his 40-line function already does.
+- Rework: move `tuningOverride()` to `src/util/TuningOverride.hpp`; read the write-path knobs at take start by their `APERTAR_*` names; per-medium defaults stay as a C++ table in `MediaProfile`; echo effective values in the `ApertarCore recording clip:` line. Delete `config/apertar-media-tune.conf`, `scripts/apertar-tune`, `src/util/MediaTune.hpp`, `config/apertar-media.tmpfiles.conf`.
+- Effort M. Deliberate yes: owner asked for the file 2026-11-02 (`fork-log.md:142-143`, `sweep-knobs.md:402`); removal is his call. Risk: per-medium override sections are lost.
+
+### Build-scripts-docs-F2 [mismatch, major] README table of env knobs and A/B instructions
+- Where: `README.md:337-358@cinemate-port`
+- Port: section "Write-path knobs for A/B tests": file/override instructions and a 13-row table of `APERTAR_*` vars with defaults, file keys and KB references.
+- Apertar way: README tables stop at launch options (`README.md:248-257@upstream-1.6.0`); `grep -c APERTAR_ README.md@upstream-1.6.0` = 0. STY-14, CAM-24, recipe R8 ("Not in ... README").
+- Why it matters: the README is for camera builders; experiment levers read like product features.
+- Rework: delete the section. Surviving knobs keep the `unsignedEnvValue`/`boolEnvValue` form and appear in the take-start log line. Documentation, if wanted, on a KB page.
+- Effort S. Deliberate yes: c57c284 "The README gets a table of the write-path knobs for A/B tests".
+
+### Build-scripts-docs-F3 [mismatch, major] RT scheduling in the start script; `LimitRTPRIO=80` under the "non-real-time" comment
+- Where: `scripts/start-apertar-core.sh:20-44`, `config/apertar-core-capture-priority.conf:4-7`, `src/camera/CameraController.cpp:9109-9122` @cinemate-port
+- Port: `APERTAR_RT=1` prefixes `exec` with `chrt -f 70 ionice -c2 -n0 taskset -c 1-3`; the drop-in gains `LimitRTPRIO=80` (unconditional); `APERTAR_RT_CAPTURE_PRIORITY` puts the completion thread on `SCHED_FIFO`.
+- Apertar way: drop-in = `LimitNICE=-5` under "# Permit only a bounded, non-real-time boost for the camera callback thread." (`config/apertar-core-capture-priority.conf@upstream-1.6.0`); script ends `exec "$CORE_BIN" --socket ... --media ...` (`scripts/start-apertar-core.sh:21@upstream-1.6.0`). PLT-14.
+- Why it matters: the drop-in contradicts its own comment. Capture-thread FIFO measured "no effect" (`lessons/hardware-log.md:954`); whole-process RT never measured. `chrt` is probed, `taskset` is not: a bad `APERTAR_RT_CPUS` makes the `exec` fail and Core does not start (PLT-22).
+- Rework: restore the upstream start script and drop-in; delete the `APERTAR_RT_CAPTURE_PRIORITY` block in `CC`.
+- Effort S. Deliberate yes: c57c284 "keeps it as a test, not a default"; README "An A/B instrument, not a recommendation".
+
+### Build-scripts-docs-F4 [mismatch, major] Three root helpers as `/bin/sh` scripts with sudoers and tmpfiles inside the Core repo
+- Where: `scripts/apertar-boot-config`, `scripts/apertar-media-trim`, `scripts/apertar-media-tune`, `config/apertar-boot-config.sudoers`, `config/apertar-media-trim.sudoers`, `config/apertar-media.sudoers`, `config/apertar-media.tmpfiles.conf`, callers `src/ApertarCoreApp.cpp:3580-3590,11393-11435` @cinemate-port
+- Port: POSIX sh helpers (`set -u`, `[ ]`) in Core `scripts/`, sudoers in Core `config/`; README install recipes for boot-config and trim; media-tune and tmpfiles recipes in the config file headers. Core calls the media-tune helper although it is never installed (26da30e).
+- Apertar way: simple privileged steps are `sudo -n` from App: `sudo -n install -m 644` (`App:3157`), `sudo -n mount` (`App:3623`), `sudo -n blockdev --flushbufs` (`App:3353`), `sudo -n sh -c 'echo 1 > sysfs'` (`App:3373`) @upstream-1.6.0 (PLT-5). A real root program is Qt-free C++ in the UI repo with a sudoers file listing every verb, e.g. `UI/systemd/apertar-standby-usb.sudoers@upstream-1.6.0`, called as `/usr/bin/timeout 6s /usr/bin/sudo -n /usr/local/libexec/apertar-standby-usb <verb>` (`App:1544`) (PLT-4). Neither upstream tree has a `#!/bin/sh` file; Core has only `scripts/start-apertar-core.sh`. STY-16.
+- Why it matters: a third shape for root work, in the repo that has none. The image already relies on broad `sudo -n`, so narrow rules add files without adding a boundary.
+- Rework: trim: in the trim worker call `/usr/bin/timeout 20s /usr/bin/sudo -n /usr/sbin/fstrim -v <shellQuote(media root)>`; discard and mount checks in App (no root needed); delete script, sudoers, `tools/media_trim_test.sh`. Media-tune: delete with `kernel_tune` and `APERTAR_MEDIA_TUNE`. Boot config: one route only, either upstream `sudo -n install` with App doing the checks and backup first, or the helper rewritten as `UI/src/BootConfigWriter.cpp` per R14 steps 5-6.
+- Effort M. Deliberate yes: dda1713 "Same shape as apertar-media-trim"; 26da30e "added but not installed".
+
+### Build-scripts-docs-F5 [duplication, minor] Three write routes for config.txt; raw helper stderr and shell commands in operator errors
+- Where: `src/ApertarCoreApp.cpp:3530-3609@cinemate-port`
+- Port: `writeBootConfigText` tries a direct write (root, or the `APERTAR_BOOT_CONFIG` copy), then the helper on stdin, then `sudo -n install` twice (backup, file). A helper refusal returns `helper.output` (3589-3590), e.g. "apertar-boot-config: input has no [pi5], [pi4] or [all] section: not the Apertar config.txt". A sudo refusal returns a message holding two `sudo install ...` command lines (3604-3607).
+- Apertar way: one route, `sudo -n install`, and a missing rule becomes "Changing the fan mode needs sudo permission." (`App:3157-3170@upstream-1.6.0`). PLT-5, STY-10.
+- Why it matters: three routes to test for one file write; operator errors break the one-sentence style.
+- Rework: keep one route (F4); map helper exit codes 2 and 3 to sentences; one-sentence permission error ("Writing config.txt needs sudo permission."); drop `APERTAR_BOOT_CONFIG`.
+- Effort S. Deliberate yes: the comment above `writeBootConfigText` lists the order.
+
+### Build-scripts-docs-F6 [security, minor] `apertar-media-tune` keeps root state in a pi-owned `/run` dir; sudoers pin the path only
+- Where: `config/apertar-media.tmpfiles.conf:3-5`, `scripts/apertar-media-tune:30,47-63`, `config/apertar-media.sudoers:3`, `config/apertar-media-trim.sudoers:4` @cinemate-port
+- Port: `/run/apertar-media` is `0755 pi pi` and holds `tune/` (`root root`). As root the helper runs `cat "$2" > "${STATE_DIR}/${1}"` and later writes those values to `/proc/sys/vm/*` and `rm -f`s them. Sudoers rules allow any arguments.
+- Apertar way: PLT-4: root-owned `/run/apertar-<name>`, sudoers listing every verb (`UI/systemd/apertar-standby-low-power.sudoers@upstream-1.6.0`).
+- Why it matters (probable, not run; real only once helper and tmpfiles are installed): pi owns the parent, so pi can rename or (after a restore) remove `tune` and put `ln -s /etc/sudoers.d /run/apertar-media/tune`; the next `sudo -n apertar-media-tune apply nvme0n1 pi-nvme exfat` makes root create `/etc/sudoers.d/queue_scheduler` containing "[mq-deadline] none" (a sudoers parse error; whether sudo then refuses depends on the sudo version, unconfirmed). A pi-owned replacement dir lets pi choose the values `restore` writes to `vm.dirty_*`. `STATE_DIR` from `APERTAR_MEDIA_RUN_DIR` is stripped by sudo's default `env_reset` (probable; `sudo -n env` on the image settles it).
+- Rework: removed with the helper (F4). If kept: root-owned parent, no env var, sudoers listing the `apply`/`restore` forms.
+- Effort S. Deliberate no.
+
+### Build-scripts-docs-F7 [slop, minor] Ticket ids, Cinemate hashes, KB paths and history narration in code, config and README
+- Where: `src/ApertarCoreApp.hpp:173-195` (T37, T39, T42, T50, Q23); `include/apertar/core/Types.hpp:141,181-189` (T31, 7 x T34); `scripts/apertar-media-tune:8,11`; `scripts/start-apertar-core.sh:20-24`; `config/apertar-core-capture-priority.conf:4-6`; `src/ipc/ControlServer.cpp:15`; `README.md:320,331,335,341` @cinemate-port
+- Port: "// T50, Q23: ...", "(Cinemate c8f06c9)", "T29 measures them", "the A/B in the kb (working/dng-chain) decides", "64 KiB used to drop the client without a word"; README "measured 2026-11-04, probable", KB file paths, "Apertar-UI 7ea9afc (local branch clip-split)".
+- Apertar way: STY-9 (no ticket numbers or other projects' hashes; 0 hits in both upstream trees), STY-8 (no history narration).
+- Why it matters: the ids mean nothing to the original developer; the text reads as lab notes.
+- Rework: delete ids and references; keep a present-tense why-line only where it names a hazard (e.g. "// A set_controls text carries the whole hardware file.").
+- Effort S. Deliberate no.
+
+### Build-scripts-docs-F8 [mismatch, minor] `ApertarCoreApp.hpp` layout: methods among members, split groups, commented header
+- Where: `src/ApertarCoreApp.hpp:145,171-200,255-330@cinemate-port`
+- Port: method declarations among data members (`runControlsWorker` 179, `noteInputSeen` 196); media-trim members (324) split from their group by the clip-merge group (323); `enum class ClipMergeOutcome` in the method list (145); 37 `//` comment lines.
+- Apertar way: CMD-20 owned components first, then state groups split by blank lines, mutex first (`AppH:110-124@upstream-1.6.0`); upstream header has 1 `//` line (STY-8).
+- Why it matters: the header no longer reads like upstream's; lock ownership is hard to see.
+- Rework: all new methods into the private method block after `joinMediaSpeedTest()`; each worker one contiguous group (mutex first, thread, flag, cv, state); at most one lock-rule comment per group; `handleReadOnlyHardwareCommand` follows the rev-App-4 rework.
+- Effort S. Deliberate no.
+
+### Build-scripts-docs-F9 [new-ground, minor] Host tests in `tools/` outside CMake; build lines disagree; test lines in the operator README
+- Where: `tools/*_test.cpp` header comments, `tools/clip_merge_test.cpp:2`, `tools/frame_path_test.cpp:3`, `tools/imx585_modes_test.cpp:2`, `src/util/MediaTune.hpp:5`, `README.md:325,335` @cinemate-port
+- Port: 15 C++ tests, 3 sh tests, 2 Python tools. Build lines mix `g++`/`c++`, `-std=c++17`/`c++20`, with and without warnings and `-I include`; `MediaTune.hpp:5` names `tools/media_tune_test.cpp`, which does not exist.
+- Apertar way: no precedent: upstream Core has no tests and no `tools/` (PLT-12, section 5). Core is C++20 (PLT-15).
+- Why it matters: outside CMake is the least foreign shape; the inconsistency and the README placement make it look accidental.
+- Rework: keep, simplify. One header line form `g++ -std=c++20 -O2 -Wall -Wextra -I src -I include tools/<name>.cpp -o /tmp/<name> && /tmp/<name>`; test lines out of operator README sections, one sentence in "For Developers"; fix or drop the dangling `media_tune_test` reference (goes with F1).
+- Effort S. Deliberate unknown.
+
+### Build-scripts-docs-F10 [protocol, minor] Socket request line raised from 64 KiB to 1 MiB for whole-file `set_controls`
+- Where: `src/ipc/ControlServer.cpp:15-16,264@cinemate-port`
+- Port: `constexpr size_t kMaxRequestLineBytes = 1024 * 1024;` because a `set_controls` text carries the whole hardware file.
+- Apertar way: socket line limited to 64 KiB (`ControlServer.cpp:261@upstream-1.6.0`); whole hardware-file text travels over `POST /api/config` (`App:7175@upstream-1.6.0`) under `WebServer.cpp:23` `kMaxRequestSize = 1024 * 1024`.
+- Why it matters: no break for an unmodified UI (touch UI never sends `set_controls`: 0 hits in `Apertar-UI/src`); the raise serves only external socket clients; memory per stalled client 16x.
+- Rework: follow the HW-config-text-store decision. If `set_controls` text gives way to `/api/config`, revert to `64 * 1024`; otherwise keep the constant with a one-line why.
+- Effort S. Deliberate yes: 5395fa4 "the socket takes 1 MiB lines".
+
+### Build-scripts-docs-F11 [removed-upstream-behaviour, minor] Preview temporal denoise off by default
+- Where: `include/apertar/core/Types.hpp:139`, `README.md:315-325` @cinemate-port
+- Port: `bool previewTdn = false;`; Core hands libcamera a `_notdn.json` copy of the tuning file.
+- Apertar way: libcamera loads the selected tuning file unchanged (`scripts/start-apertar-core.sh:15-18`, `src/camera/DefaultTuningSelection.hpp@upstream-1.6.0`), so tdn runs as the file says.
+- Why it matters: after an update the operator sees a noisier preview without changing anything; the reason was measured once, on one rig and mode.
+- Rework: owner decision. Default `true` (upstream behaviour) and switch it off on the rig, or keep `false` and state the reason in the commit and the handoff.
+- Effort S. Deliberate yes: README cites the 2026-11-04 measurement.
+
+### Build-scripts-docs-F12 [mismatch, minor] README growth: install recipes, socket field lists, measurements, misplaced sections
+- Where: `README.md:179-211,303-358@cinemate-port`
+- Port: +90 lines: a Boot Config section, three operator sections under "Where Are Recordings Saved?" plus the knob table, three `sudo install` recipes (boot-config, trim, capture-priority drop-in), a "Socket commands:" list of 14 fields, dated measurements.
+- Apertar way: STY-14 camera-builder voice, tables stop at launch flags; helpers get no install recipes: "depend on the installed panel drivers, helpers and permissions" (`UI/README.md:199@upstream-1.6.0`). PLT-6, PLT-24.
+- Why it matters: the README becomes a lab manual.
+- Rework: one short operator paragraph per feature (Boot Config card, split clips with the import warning, trim on/off); install recipes, socket lists, measurements and A/B notes to the handoff or KB; knob table deleted (F2).
+- Effort S. Deliberate yes: c57c284 and the feature commits add the sections on purpose.
+
+### Build-scripts-docs-F13 [slop, nit] Core's liblj92 `README.apertar.md` says "in the UI"
+- Where: `third_party/liblj92/README.apertar.md:7-8@cinemate-port`
+- Port: byte-identical to `UI/third_party/liblj92/README.apertar.md@upstream-1.6.0`: "Used to decode lossless JPEG tiles in the UI".
+- Apertar way: PLT-17: `README.apertar.md` names the purpose (`UI/third_party/liblj92/README.apertar.md:1-11@upstream-1.6.0`).
+- Why it matters: in Core the users are `src/playback/DngFrameReader.hpp` and `DngTags.hpp`; the stated purpose is wrong.
+- Rework: "Used by Core playback (src/playback/) to decode lossless JPEG tiles of recorded DNGs."
+- Effort S. Deliberate no.

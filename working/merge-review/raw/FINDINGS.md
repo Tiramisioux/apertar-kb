@@ -99,21 +99,41 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | App-5-F8 | nit | new-ground | S | yes | record_stop also ends a storage pre-roll; manual command named storage_preroll | src/ApertarCoreApp.cpp:14832-14836@cinemate-port; src/ApertarCoreApp.cpp:14603-14617@cinemate-port |
 | App-5-F9 | nit | new-ground | S | yes | set_iso_auto gains an enabled field (false = lock at measured gain) | src/ApertarCoreApp.cpp:12995-13001@cinemate-port; src/camera/CameraController.cpp:11146-11166@cinemate-port |
 
-## Unit Build-scripts-docs (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Build-scripts-docs.md)
+## Unit Boot-config (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Boot-config.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| Build-scripts-docs-F1 | major | mismatch | M | yes | Media tuning file family (INI + /run override + apertar-tune + tmpfiles) beside upstream's .apertar-tuning | config/apertar-media-tune.conf:1-54@cinemate-port; scripts/apertar-tune:1-60@cinemate-port |
+| Boot-config-F1 | major | mismatch | M | yes | Own POST /api/boot-config with cmd splice, revision header, 403/409 and an Origin-presence rule; one setter, two entry points | src/ApertarCoreApp.cpp:9170-9196@cinemate-port; src/ApertarCoreApp.cpp:3512-3517@cinemate-port |
+| Boot-config-F2 | major | mismatch | S | yes | Root helper of a new shape plus three write routes, where upstream has one sudo -n install | src/ApertarCoreApp.cpp:3533-3611@cinemate-port; scripts/apertar-boot-config:1-71@cinemate-port |
+| Boot-config-F3 | major | security | M | yes | set_boot_config text field writes any config.txt as root from any LAN client | src/ApertarCoreApp.cpp:3804-3836@cinemate-port; src/hardware/BootConfigText.hpp:1133-1139@cinemate-port |
+| Boot-config-F4 | major | new-ground | L | yes | 1355-line header-only engine; scope beyond what the card needs | src/hardware/BootConfigText.hpp:1-1355@cinemate-port; src/ApertarCoreApp.cpp:3651-3846@cinemate-port |
+| Boot-config-F5 | major | mismatch | S | unknown | include camera-selection.txt is invisible; the image's sensor mechanism is bypassed | src/hardware/BootConfigText.hpp:289-293@cinemate-port; src/hardware/BootConfigText.hpp:616-622@cinemate-port |
+| Boot-config-F6 | minor | mismatch | M | no | Engine in src/hardware writes wire JSON with its own jsonString | src/hardware/BootConfigText.hpp:1225-1340@cinemate-port; src/ApertarCoreApp.cpp:3676-3706@cinemate-port |
+| Boot-config-F7 | minor | removed-upstream-behaviour | S | yes | Touch UI fan mode now fails when Core is not running | Apertar-UI src/SystemActionBridge.cpp:66-97@cinemate-port; Apertar-UI src/SystemActionBridge.cpp:406-412@cinemate-port |
+| Boot-config-F9 | minor | pi-compat | S | no | Board model: unknown board read as Pi 5, Zero 2 W counted as pi3, link list trimmed only on Pi 4 | src/hardware/BootConfigText.hpp:91-96@cinemate-port; src/hardware/BootConfigText.hpp:114-116@cinemate-port |
+| Boot-config-F10 | minor | duplication | S | no | Two config.txt readers with two filter rules; second boolean parser | src/ApertarCoreApp.cpp:4976@cinemate-port; src/hardware/HardwareConfigText.hpp:1037-1070@cinemate-port |
+| Boot-config-F11 | minor | bug | S | no | Sensor list lacks IMX283 although the port supports it | src/hardware/BootConfigText.hpp:151-171@cinemate-port |
+| Boot-config-F12 | minor | mismatch | S | no | Permission error carries install commands; wrong advice when the helper exists without sudoers | src/ApertarCoreApp.cpp:3602-3608@cinemate-port |
+| Boot-config-F13 | minor | slop | S | no | Header essay with Cinemate history, section banners, per-field comments, non-ASCII label glyphs, sh-style helper | src/hardware/BootConfigText.hpp:2-28@cinemate-port; src/hardware/BootConfigText.hpp:42@cinemate-port |
+| Boot-config-F14 | minor | new-ground | S | yes | Host tests for engine and helper | tools/boot_config_test.cpp:1-427@cinemate-port; tools/boot_config_helper_test.sh:1-33@cinemate-port |
+| Boot-config-F8 | nit | bug | S | no | Helper refuses a config.txt without [pi5]/[pi4]/[all], fan mode included | scripts/apertar-boot-config:51-54@cinemate-port; src/ApertarCoreApp.cpp:3586-3592@cinemate-port |
+| Boot-config-F15 | nit | slop | S | no | README lists socket commands; commits authored Claude with a claude/* merge | README.md:211@cinemate-port; git f19b245 dda1713 2955ef8 8a56545 afa00e8 496817f 4581a69@cinemate-port |
+
+## Unit Build-scripts-docs (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Build-scripts-docs.md)
+
+| id | sev | category | effort | deliberate | title | where |
+| --- | --- | --- | --- | --- | --- | --- |
+| Build-scripts-docs-F1 | major | mismatch | M | yes | Media tuning file family (INI + /run override + apertar-tune + tmpfiles) beside upstream's .apertar-tuning | config/apertar-media-tune.conf:1-54@cinemate-port; scripts/apertar-tune:1-487@cinemate-port |
 | Build-scripts-docs-F2 | major | mismatch | S | yes | README table of env knobs and A/B instructions | README.md:337-358@cinemate-port |
 | Build-scripts-docs-F3 | major | mismatch | S | yes | RT scheduling in the start script; LimitRTPRIO=80 under upstream's 'non-real-time' comment | scripts/start-apertar-core.sh:20-44@cinemate-port; config/apertar-core-capture-priority.conf:4-7@cinemate-port |
 | Build-scripts-docs-F4 | major | mismatch | M | yes | Three root helpers as /bin/sh scripts, with sudoers and tmpfiles, inside the Core repo | scripts/apertar-boot-config@cinemate-port; scripts/apertar-media-trim@cinemate-port |
-| Build-scripts-docs-F5 | minor | duplication | S | yes | Three write routes for config.txt; the helper's raw stderr is shown to the operator | src/ApertarCoreApp.cpp:3530-3609@cinemate-port |
-| Build-scripts-docs-F6 | minor | security | S | no | apertar-media-tune: root-owned state dir inside a pi-owned /run dir, env-controlled state path, sudoers pin only the path | config/apertar-media.tmpfiles.conf:3-5@cinemate-port; scripts/apertar-media-tune:30,47-63@cinemate-port |
-| Build-scripts-docs-F7 | minor | slop | S | no | Ticket ids, Cinemate hashes, KB paths and history narration in code, config and README | src/ApertarCoreApp.hpp (T37, T39, T42, T50, Q23)@cinemate-port; include/apertar/core/Types.hpp (T31, 7 x T34)@cinemate-port |
-| Build-scripts-docs-F8 | minor | mismatch | S | no | ApertarCoreApp.hpp layout: methods among members, split member groups, commented header | src/ApertarCoreApp.hpp:171-200,255-330@cinemate-port |
+| Build-scripts-docs-F5 | minor | duplication | S | yes | Three write routes for config.txt; raw helper stderr and shell commands in operator errors | src/ApertarCoreApp.cpp:3530-3609@cinemate-port |
+| Build-scripts-docs-F6 | minor | security | S | no | apertar-media-tune keeps root state in a pi-owned /run dir; sudoers pin the path only | config/apertar-media.tmpfiles.conf:3-5@cinemate-port; scripts/apertar-media-tune:30,47-63@cinemate-port |
+| Build-scripts-docs-F7 | minor | slop | S | no | Ticket ids, Cinemate hashes, KB paths and history narration in code, config and README | src/ApertarCoreApp.hpp:173-195@cinemate-port; include/apertar/core/Types.hpp:141,181-189@cinemate-port |
+| Build-scripts-docs-F8 | minor | mismatch | S | no | ApertarCoreApp.hpp layout: methods among members, split member groups, commented header | src/ApertarCoreApp.hpp:145,171-200,255-330@cinemate-port |
 | Build-scripts-docs-F9 | minor | new-ground | S | unknown | Host tests in tools/ outside CMake, with build lines that disagree and test lines in the operator README | tools/*_test.cpp header comments@cinemate-port; tools/clip_merge_test.cpp:2@cinemate-port |
 | Build-scripts-docs-F10 | minor | protocol | S | yes | Socket request line raised from 64 KiB to 1 MiB for whole-file set_controls | src/ipc/ControlServer.cpp:15-16,264@cinemate-port |
-| Build-scripts-docs-F11 | minor | removed-upstream-behaviour | S | yes | Preview temporal denoise off by default | include/apertar/core/Types.hpp (previewTdn = false)@cinemate-port; README.md:315-323@cinemate-port |
+| Build-scripts-docs-F11 | minor | removed-upstream-behaviour | S | yes | Preview temporal denoise off by default | include/apertar/core/Types.hpp:139@cinemate-port; README.md:315-325@cinemate-port |
 | Build-scripts-docs-F12 | minor | mismatch | S | yes | README growth: install recipes, socket field lists, measurements, misplaced sections | README.md:179-211,303-358@cinemate-port |
 | Build-scripts-docs-F13 | nit | slop | S | no | Core's liblj92 README.apertar.md says 'in the UI' | third_party/liblj92/README.apertar.md:7-8@cinemate-port |
 
@@ -358,41 +378,41 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | HW-input-classes-F10 | nit | slop | S | no | Comments narrate Cinemate provenance and WebUI features inside src/hardware | src/hardware/ButtonGesture.hpp:2-3@cinemate-port; src/hardware/GpioInput.cpp:623,662,667,735@cinemate-port |
 | HW-input-classes-F11 | nit | duplication | S | no | Seen-key suffixes chosen by static_cast of the gesture enum into parallel arrays, three copies | src/hardware/GpioInput.cpp:643-645@cinemate-port; src/hardware/Pcf8574Input.cpp:458-459@cinemate-port |
 
-## Unit Media-buffer-split (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-buffer-split.md)
+## Unit Media-buffer-split (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-buffer-split.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| Media-buffer-split-F1 | blocker | mismatch | L | no | Recording/storage settings kept in apertar-hardware.conf and read by CameraController | src/camera/CameraController.cpp:2986-3006@cinemate-port; src/camera/CameraController.cpp:5502@cinemate-port |
+| Media-buffer-split-F1 | blocker | mismatch | L | no | Recording/storage settings kept in apertar-hardware.conf and read by CameraController | src/camera/CameraController.cpp:2986-3006@cinemate-port; src/camera/CameraController.cpp:4297@cinemate-port |
 | Media-buffer-split-F2 | major | mismatch | M | unknown | Cross-thread state through free-function statics and a global std::function hook | src/util/BufferBudget.hpp:221-334@cinemate-port; src/util/StoragePreroll.hpp:221-271@cinemate-port |
-| Media-buffer-split-F3 | major | mismatch | M | unknown | Buffer events and safety-stop threads poll instead of the 1 Hz wait() supervision | src/ApertarCoreApp.cpp:10993@cinemate-port; src/ApertarCoreApp.cpp:11083-11110@cinemate-port |
+| Media-buffer-split-F3 | major | mismatch | M | unknown | Buffer events and safety-stop threads poll instead of the 1 Hz wait() supervision | src/ApertarCoreApp.cpp:10993-11050@cinemate-port; src/ApertarCoreApp.cpp:11083-11110@cinemate-port |
 | Media-buffer-split-F4 | major | mismatch | M | yes | Root fstrim helper as shell script in Core with path argument and path-only sudoers | scripts/apertar-media-trim:1-90@cinemate-port; config/apertar-media-trim.sudoers:4@cinemate-port |
-| Media-buffer-split-F5 | major | bug | S | no | Ending a running trim signals sudo/sh, fstrim keeps running into the take | src/ApertarCoreApp.cpp:11955-11963@cinemate-port; scripts/apertar-media-trim:74-78@cinemate-port |
+| Media-buffer-split-F5 | major | bug | S | no | Ending a running trim signals sudo/sh, fstrim keeps running into the take | src/ApertarCoreApp.cpp:11955-11963@cinemate-port; scripts/apertar-media-trim:75-78@cinemate-port |
 | Media-buffer-split-F6 | major | removed-upstream-behaviour | S | yes | Drive trim and automatic storage pre-roll on by default change stock behaviour | src/util/StoragePreroll.hpp:91-99@cinemate-port; src/camera/CameraController.cpp:889,976@cinemate-port |
-| Media-buffer-split-F7 | minor | mismatch | S | yes | Capture and media commands wait for trim and merge under commandMutex_ | src/ApertarCoreApp.cpp:12610-12614@cinemate-port; src/ApertarCoreApp.cpp:11941-11963@cinemate-port |
+| Media-buffer-split-F7 | minor | mismatch | S | yes | Capture and media commands wait for trim and merge under commandMutex_ | src/ApertarCoreApp.cpp:12614-12619@cinemate-port; src/ApertarCoreApp.cpp:11905-11916@cinemate-port |
 | Media-buffer-split-F8 | minor | slop | S | no | Comments and README narrate history and cite KB paths, campaigns, other projects, commits | src/cdng/FramePath.hpp:9-11@cinemate-port; src/util/BufferBudget.hpp:6-7@cinemate-port |
 | Media-buffer-split-F9 | minor | slop | S | no | Env twin for every file key, *_env flags in state, unused speculative parameter | src/util/BufferBudget.hpp:303-329@cinemate-port; src/util/StoragePreroll.hpp:91-99,148-150@cinemate-port |
-| Media-buffer-split-F10 | minor | duplication | S | no | Frame-number rule in three copies; three copied store.edit command blocks | src/cdng/ClipMerge.hpp:140-151@cinemate-port; tools/flatten_clip.py:47-57@cinemate-port |
-| Media-buffer-split-F11 | minor | new-ground | S | yes | Host unit tests in tools/, outside the build | tools/buffer_budget_test.cpp@cinemate-port; tools/storage_preroll_test.cpp@cinemate-port |
-| Media-buffer-split-F12 | minor | new-ground | S | unknown | GET /api/buffer polled at 4 Hz beside /api/state | src/ApertarCoreApp.cpp:8419@cinemate-port; src/web/WebControlPage.cpp:16497@cinemate-port |
+| Media-buffer-split-F10 | minor | duplication | S | no | Frame-number rule in three copies; three copied store.edit command blocks | src/cdng/ClipMerge.hpp:61-63@cinemate-port; src/playback/ClipFrames.hpp:96@cinemate-port |
+| Media-buffer-split-F12 | minor | new-ground | S | unknown | GET /api/buffer polled at 4 Hz beside /api/state | src/ApertarCoreApp.cpp:8418-8425@cinemate-port; src/web/WebControlPage.cpp:16490-16500,20363@cinemate-port |
+| Media-buffer-split-F11 | nit | new-ground | S | yes | Host unit tests in tools/, outside the build | tools/buffer_budget_test.cpp@cinemate-port; tools/storage_preroll_test.cpp@cinemate-port |
 | Media-buffer-split-F13 | nit | mismatch | S | no | Namespace names and src/util placement differ from upstream | src/util/BufferBudget.hpp:45@cinemate-port; src/util/StoragePreroll.hpp:16@cinemate-port |
 | Media-buffer-split-F14 | nit | new-ground | S | yes | tools/flatten_clip.py desk tool | tools/flatten_clip.py@cinemate-port |
 
-## Unit Media-fault-tune (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-fault-tune.md)
+## Unit Media-fault-tune (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-fault-tune.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| Media-fault-tune-F1 | major | mismatch | M | yes | Media tuning file + tmpfs override + Python CLI form a second config system for developer knobs | src/util/MediaTune.hpp:8-28@cinemate-port; scripts/apertar-tune:69-81@cinemate-port |
-| Media-fault-tune-F2 | major | security | S | yes | Kernel tuning root helper is a shell script in Core with open sudoers, no timeout, no lock and a pi-owned state parent | scripts/apertar-media-tune:1-112@cinemate-port; config/apertar-media.sudoers:3@cinemate-port |
+| Media-fault-tune-F1 | major | mismatch | M | yes | Media tuning file + tmpfs override + Python CLI form a second config system for developer knobs | src/util/MediaTune.hpp:1-40@cinemate-port; scripts/apertar-tune:1,69-81@cinemate-port |
+| Media-fault-tune-F2 | major | security | S | yes | Kernel tuning root helper is a shell script in Core with open sudoers, no timeout, no lock and a pi-owned state parent | scripts/apertar-media-tune:1-112 (save_once :48-53, restore_one :55-65)@cinemate-port; config/apertar-media.sudoers:3@cinemate-port |
 | Media-fault-tune-F3 | major | mismatch | M | yes | Process-global media snapshot and configuredMediaRoot() act as a hidden channel from App to CameraController | src/util/MediaProbe.hpp:257-290@cinemate-port; src/util/MediaProfile.hpp:212-234@cinemate-port |
-| Media-fault-tune-F4 | major | slop | S | yes | Eject-intent flag protocol has no reader in Apertar | src/util/MediaIntent.hpp:1-67@cinemate-port; src/ApertarCoreApp.cpp:4355,4385-4392,10917@cinemate-port |
-| Media-fault-tune-F5 | minor | removed-upstream-behaviour | S | yes | Writer table changes upstream writer, queue and buffer defaults for vfat, ntfs and other filesystems without measurement | src/util/MediaProfile.hpp:129-150@cinemate-port; src/camera/CameraController.cpp:4315-4330@cinemate-port |
-| Media-fault-tune-F6 | minor | mismatch | S | yes | Record gate reads env switches in the command plane; the 1 GiB floor also gates stills; an unmounted media root is refused | src/ApertarCoreApp.cpp:11330-11384@cinemate-port; src/ApertarCoreApp.cpp:12597-12600@cinemate-port |
-| Media-fault-tune-F7 | minor | mismatch | S | unknown | CfeHat reader sits in src/util, is parsed by an App free function, reloads on save and defaults to off | src/util/CfeHat.hpp:1-75@cinemate-port; src/ApertarCoreApp.cpp:5298-5345@cinemate-port |
+| Media-fault-tune-F4 | minor | slop | S | yes | Eject-intent flag protocol has no reader in Apertar | src/util/MediaIntent.hpp:1-67@cinemate-port; src/ApertarCoreApp.cpp:4355,4386-4391,10917@cinemate-port |
+| Media-fault-tune-F5 | minor | removed-upstream-behaviour | S | yes | Writer table changes upstream writer, queue and buffer defaults for vfat, ntfs and other filesystems without measurement | src/util/MediaProfile.hpp:121-150,160@cinemate-port; src/camera/CameraController.cpp:4315-4330@cinemate-port |
+| Media-fault-tune-F6 | minor | mismatch | S | yes | Record gate reads env switches in the command plane; the 1 GiB floor also gates stills | src/ApertarCoreApp.cpp:11331-11384@cinemate-port; src/ApertarCoreApp.cpp:12597-12600@cinemate-port |
+| Media-fault-tune-F7 | minor | mismatch | S | unknown | CfeHat reader sits in src/util, is parsed by an App free function and defaults to off | src/util/CfeHat.hpp:1-75@cinemate-port; src/ApertarCoreApp.cpp:5298-5345@cinemate-port |
 | Media-fault-tune-F8 | minor | bug | S | no | Socket get_state emits media_state twice | src/ApertarCoreApp.cpp:12944@cinemate-port; src/ApertarCoreApp.cpp:12961@cinemate-port |
-| Media-fault-tune-F9 | minor | bug | S | no | Automounter unmounts and PCIe-removes the drive on one HAT read | Apertar-UI/src/CfeAutomounter.cpp:549-550@cinemate-port; Apertar-UI/src/CfeAutomounter.cpp:402-420@cinemate-port |
-| Media-fault-tune-F10 | minor | bug | S | no | A user stop on a slow but alive medium is judged 'removed' after 5 s without progress | src/camera/CameraController.cpp:4466-4486@cinemate-port |
+| Media-fault-tune-F9 | minor | bug | S | no | Automounter unmounts and PCIe-removes the drive on one HAT read | Apertar-UI/src/CfeAutomounter.cpp:549-550@cinemate-port; Apertar-UI/src/CfeAutomounter.cpp:402-420,732-746@cinemate-port |
+| Media-fault-tune-F10 | minor | bug | S | yes | A user stop on a slow but alive medium is judged 'removed' after 5 s without progress, and the clip is not finalised | src/camera/CameraController.cpp:4441-4500 (stall rule :4476-4483)@cinemate-port; src/camera/CameraController.cpp:4833-4842,4859-4861@cinemate-port |
 | Media-fault-tune-F11 | minor | slop | S | no | Ticket ids, critic ids, dates, Cinemate hashes and stale claims in comments; the named host test is missing | src/util/MediaProfile.hpp:21,25,133,141,221@cinemate-port; src/util/MediaProbe.hpp:23,179@cinemate-port |
-| Media-fault-tune-F12 | nit | duplication | S | no | Second mount-table parser beside App's isMountedPath and mountedDeviceForPath | src/util/MediaProbe.hpp:81-130,154-175@cinemate-port; src/ApertarCoreApp.cpp:2327,2397,2414@cinemate-port |
+| Media-fault-tune-F12 | nit | duplication | S | no | Second mount-table parser beside upstream's isMountedPath and mountedDeviceForPath | src/util/MediaProbe.hpp:81-130,154-175@cinemate-port; src/ApertarCoreApp.cpp:2327,2397,2414@cinemate-port |
 | Media-fault-tune-F13 | nit | bug | S | no | Tune summary is logged only for the first resolution; docs disagree on when the files are read | src/util/MediaProfile.hpp:172-181@cinemate-port; scripts/apertar-tune:12@cinemate-port |
 
 ## Unit Playback (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Playback.md)
@@ -607,26 +627,26 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | WCP-08-F3 | minor | slop | S | no | Narrating and out-of-date comments, three ad-hoc 1000 ms freshness windows | src/web/WebControlPage.cpp:16416-16425@cinemate-port; src/web/WebControlPage.cpp:16455@cinemate-port |
 | WCP-08-F4 | minor | new-ground | S | yes | Faster-than-1 Hz server poll exists only because /api/state blocks during a RAM drain | src/web/WebControlPage.cpp:16562-16572@cinemate-port; src/ApertarCoreApp.cpp:8418-8426@cinemate-port |
 
-## Unit WCP-09 (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-WCP-09.md)
+## Unit WCP-09 (verified; /home/user/apertar-kb/working/merge-review/raw/rev-WCP-09.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| WCP-09-F1 | major | mismatch | M | unknown | Second client store controlsState plus 18 module-level consts/lets | src/web/WebControlPage.cpp:16633@cinemate-port; src/web/WebControlPage.cpp:16798@cinemate-port |
-| WCP-09-F2 | major | mismatch | S | unknown | Second fetch wrapper controlsCall; hand-checked ok and missing try/catch | src/web/WebControlPage.cpp:16698-16705@cinemate-port; src/web/WebControlPage.cpp:17687@cinemate-port |
+| WCP-09-F1 | major | mismatch | M | unknown | Second client store controlsState plus module-level mutable state | src/web/WebControlPage.cpp:16633@cinemate-port; src/web/WebControlPage.cpp:16798@cinemate-port |
+| WCP-09-F2 | major | mismatch | S | unknown | Second fetch wrapper controlsCall; hand-checked ok, missing try/catch | src/web/WebControlPage.cpp:16698-16705@cinemate-port; src/web/WebControlPage.cpp:17687@cinemate-port |
 | WCP-09-F3 | major | mismatch | S | yes | Remote controls card on the main page with hold-to-repeat pills | src/web/WebControlPage.cpp:4569-4580@cinemate-port; src/web/WebControlPage.cpp:17995-18042@cinemate-port |
-| WCP-09-F4 | major | new-ground | L | yes | 2100-line structured hardware editor with extras; size and shape foreign | src/web/WebControlPage.cpp:16622-18710@cinemate-port; src/web/WebControlPage.cpp:16875-16880@cinemate-port |
-| WCP-09-F5 | minor | bug | S | no | Saving Controls or Hardware silently drops the other card's unsaved edits | src/web/WebControlPage.cpp:18240@cinemate-port; src/web/WebControlPage.cpp:18668@cinemate-port |
+| WCP-09-F4 | major | new-ground | L | yes | 2100-line structured hardware editor with extras; size and shape foreign | src/web/WebControlPage.cpp:16622-18740@cinemate-port; src/web/WebControlPage.cpp:16875-16880@cinemate-port |
+| WCP-09-F5 | minor | bug | S | no | Saving Controls or Hardware silently drops the other card's unsaved edits | src/web/WebControlPage.cpp:18240@cinemate-port; src/web/WebControlPage.cpp:18667@cinemate-port |
 | WCP-09-F6 | minor | bug | S | no | Pins recovered by regex from Core's display text | src/web/WebControlPage.cpp:17163-17189@cinemate-port; src/web/WebControlPage.cpp:17598@cinemate-port |
-| WCP-09-F7 | minor | bug | S | no | Unhandled rejections: Scan sticks at Scanning..., Listen overlaps requests | src/web/WebControlPage.cpp:18183-18189@cinemate-port; src/web/WebControlPage.cpp:18624-18648@cinemate-port |
-| WCP-09-F8 | minor | mismatch | S | yes | Listen is a third poll loop (300 ms) with its own timer outside state | src/web/WebControlPage.cpp:18609-18649@cinemate-port |
+| WCP-09-F7 | minor | bug | S | no | Unhandled rejections: Scan sticks at Scanning..., Listen overlaps, Undo unguarded | src/web/WebControlPage.cpp:18183-18189@cinemate-port; src/web/WebControlPage.cpp:18620-18648@cinemate-port |
+| WCP-09-F8 | minor | mismatch | S | yes | Listen is a second network poll loop (300 ms) with its timer outside state | src/web/WebControlPage.cpp:18600-18649@cinemate-port |
 | WCP-09-F9 | minor | new-ground | S | yes | Chip editor: duck-typed fake select with drag and drop | src/web/WebControlPage.cpp:16799-16872@cinemate-port; src/web/WebControlPage.cpp:16831-16835@cinemate-port |
-| WCP-09-F10 | minor | mismatch | S | yes | Inline message/review/pending boxes duplicate toasts | src/web/WebControlPage.cpp:18671-18673@cinemate-port; src/web/WebControlPage.cpp:18243-18245@cinemate-port |
-| WCP-09-F11 | minor | removed-upstream-behaviour | S | yes | Tally enabled hidden and derived from the pin; None/Remove erases the wiring | src/web/WebControlPage.cpp:17619-17646@cinemate-port; src/web/WebControlPage.cpp:17704-17705@cinemate-port |
-| WCP-09-F12 | minor | mismatch | M | yes | Hardware-file whole-text write through a command while upstream's door is /api/config | src/web/WebControlPage.cpp:18588@cinemate-port; src/web/WebControlPage.cpp:18264@cinemate-port |
-| WCP-09-F13 | minor | pi-compat | S | yes | Any DPI line greys GPIO 0-27 regardless of overlay | src/web/WebControlPage.cpp:17198-17200@cinemate-port; src/web/WebControlPage.cpp:17261-17264@cinemate-port |
-| WCP-09-F14 | minor | duplication | S | no | Issues box x3, Test handler x2, kind-name map x3, DPI loop x2 | src/web/WebControlPage.cpp:16718@cinemate-port; src/web/WebControlPage.cpp:18129@cinemate-port |
+| WCP-09-F11 | minor | bug | S | yes | Tally card cannot switch off with wiring kept: None/Remove erases the pin | src/web/WebControlPage.cpp:17617-17646@cinemate-port; src/web/WebControlPage.cpp:17704-17705@cinemate-port |
+| WCP-09-F12 | minor | mismatch | M | yes | Whole-file text through a command while upstream's door is /api/config | src/web/WebControlPage.cpp:18588@cinemate-port; src/web/WebControlPage.cpp:18795@cinemate-port |
+| WCP-09-F13 | minor | pi-compat | S | yes | Any DPI line greys GPIO 0-27, in the page and in Core's validator | src/web/WebControlPage.cpp:17198-17200@cinemate-port; src/web/WebControlPage.cpp:17260-17264@cinemate-port |
+| WCP-09-F14 | minor | duplication | S | no | Issue box x3, Test handler x2, kind-name map x3, pin sets x2 | src/web/WebControlPage.cpp:16718@cinemate-port; src/web/WebControlPage.cpp:18129@cinemate-port |
 | WCP-09-F15 | minor | slop | S | no | 127 comment lines incl. T39-T42 ticket ids and 'as in Cinemate' | src/web/WebControlPage.cpp:16795@cinemate-port; src/web/WebControlPage.cpp:16874@cinemate-port |
-| WCP-09-F16 | nit | mismatch | S | no | Yes/No select for bools, inline grid style, 'GPIO in' vs 'GPIO buttons', loadX naming | src/web/WebControlPage.cpp:17716-17726@cinemate-port; src/web/WebControlPage.cpp:18065@cinemate-port |
+| WCP-09-F10 | nit | mismatch | S | yes | Inline success message duplicates the toast | src/web/WebControlPage.cpp:18671-18673@cinemate-port; src/web/WebControlPage.cpp:18243-18245@cinemate-port |
+| WCP-09-F16 | nit | mismatch | S | no | Inline grid style, 'GPIO in' vs 'GPIO buttons', loadControls naming | src/web/WebControlPage.cpp:18065@cinemate-port; src/web/WebControlPage.cpp:17936-17940@cinemate-port |
 | WCP-09-F17 | nit | slop | S | no | One-entry Function dropdown for outputs | src/web/WebControlPage.cpp:17821@cinemate-port; src/web/WebControlPage.cpp:17859-17870@cinemate-port |
 
 ## Unit WCP-10 (verified; /home/user/apertar-kb/working/merge-review/raw/rev-WCP-10.md)

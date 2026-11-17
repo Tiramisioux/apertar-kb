@@ -311,3 +311,158 @@ filesystem that returns EINVAL makes the merge stop with "rename failed" (no run
 - Split clips keep frame names, sidecars stay in the clip root, merge uses `RENAME_NOREPLACE`: media is never
   overwritten (N10).
 - Manual install is stated in the README (S9 recipe step 6).
+
+## Skeptic
+
+Re-read at `cinemate-port` `01f170c` and `upstream-1.6.0` `35dbe67`. The host tests `buffer_budget`, `clip_merge`,
+`frame_path` and `storage_preroll` compile with `g++ -std=c++20 -I src` and pass on this machine.
+
+| Id | Verdict | Why |
+| --- | --- | --- |
+| F1 | stands | Confirmed: `loadBufferConf` is at `CC:2989-3006` and is called at `CC:4297` (frames per folder) and `CC:5505` (plan). Upstream CC has 0 hits for `apertar-hardware`. Upstream audio options come from UI settings (`App:2754` @upstream), not from the hardware file. Added to the where list: `CC:4297`. The port also has a second CC reader (`loadCameraSection`, `[camera]` ISO caps, `CC:2933-2950`). That reader belongs to another unit but follows the same pattern |
+| F2 | stands | All statics confirmed (`BufferBudget.hpp:224-334`). Upstream does have function-local statics (`Mpu6050RecordingSession.cpp:80`, `:1228` @upstream), but each one is private to a single function and none is shared between subsystems. The `RecordingDropWarning` precedent is confirmed (`RecordingDropWarning.hpp:10-27`, `CC:3251`, `CameraController.hpp:113` @upstream) |
+| F3 | corrected | The threads are confirmed. Rework gap: `runBufferEvents` also carries pre-roll active/fps/last and the dropped-frames count. Those have to be emitted at their own emit sites (the pre-roll thread, the drop latch callback), or they are lost when the thread goes |
+| F4 | stands | Confirmed: script, sudoers line 4, `execl("/usr/bin/sudo","sudo","-n",helper,mountPoint)` (`App:6434`), upstream `App:1543-1544` and `:3609`, and `git ls-files scripts config` @upstream = 2 files. Context: the port ships 3 more helper scripts (`apertar-media-tune`, `apertar-boot-config`, `apertar-tune`), so this is one case of a port-wide pattern |
+| F5 | stands | `waitForMediaTrim` (`App:11955-11960`) signals the `sudo` pid. `timeout 20 /usr/sbin/fstrim` (script :76) is not exec'd. GNU `timeout` also moves itself into its own process group, so even a relay to the group of `sh` does not reach it. Probable; settle it on the Pi as described |
+| F6 | stands, evidence added | Trim default on is deliberate (`ce0bd90` "default on"). The pre-roll default contradicts the KB's own plan: `working/drop-frames/README.md:341` "the port is a setting (`storage_preroll`, default off at first), never a hidden step". `StoragePreroll.hpp:98` `value_or(true)` |
+| F7 | corrected | The merge wait is at most 1 s (`App:11914`). `blockMs=5000` holds the merge worker off for 5 s and does not block the command, so it must stay. Worst-case stall: about 3.5 s for the trim plus 1 s for the merge |
+| F8 | corrected | The quotes are confirmed. Most of the README section "Write-path knobs" (`README.md:337-356`) belongs to other units (media tune, DNG chain). This unit owns rows `:355-356` and the narrative at `:329`, `:333` |
+| F9 | corrected | Confirmed, but the lines are wrong: `++remaining; ++remaining;` is at `ClipMerge.hpp:212-213`, and `decideGuard` is at `StoragePreroll.hpp:150` |
+| F10 | corrected | `detail::frameNumber` is at `ClipMerge.hpp:61-63`, not :140-151. Both C++ copies are port code (`src/playback` does not exist @upstream). Better rework: both headers already include `cdng/FramePath.hpp`, so the rule belongs there. That avoids a `cdng` -> `playback` include |
+| F11 | corrected | The flag mismatch is between the test heads themselves: `frame_path_test.cpp` and `clip_merge_test.cpp` say `-std=c++17` (matching the README), and `buffer_budget_test.cpp` says `-std=c++20`. The host-test pattern runs through the whole port (20 files in `tools/`). Severity lowered to nit |
+| F12 | corrected | Upstream `/api/state` builds the full state (`buildWebStateJson`, `App:7154` @upstream, via `camera_.state()` / `settings()`). A small lock-free read route at 4 Hz during a take therefore has a real reason. Lean keep, and document it |
+| F13 | corrected | Upstream naming is itself mixed: `prores_color`, `prores_repair` (snake_case), `settingsFile` (camelCase), `tuning`, `hardware`. The rename is optional; the placement point stands |
+| F14 | stands | Confirmed: 284 lines, `statistics` at :27/:184, `--unflatten` at :196. No test calls the script |
+
+## Final findings
+
+### Media-buffer-split-F1 [mismatch, blocker] Recording/storage settings kept in apertar-hardware.conf and read by CameraController
+- where: `src/camera/CameraController.cpp:2986-3006`, `:4297`, `:5505` @cinemate-port; `src/util/BufferBudget.hpp:97-194`; `src/util/StoragePreroll.hpp:22-89`; `src/ApertarCoreApp.cpp:12829-12925`; `src/hardware/HardwareConfigText.hpp:802,811` @cinemate-port
+- port way: these are hardware-file keys: `[storage] buffer`, `buffer_ram_fraction`, `buffer_ram_floor_mb`, `buffer_ram_max_fraction`, `buffer_stop_percent`, `frames_per_folder`, `clip_merge`, and `[media] preroll`, `preroll_seconds`. Two hand-written parsers read them. `CameraController::loadBufferConf` opens the hardware file at every take start, in two places. Commands write the keys through `hardware::configStore().edit`. In the same unit, `media_trim` is a `CaptureSettings` field in `camera_settings.conf`.
+- Apertar way: the camera never reads `apertar-hardware.conf` (S22): grep in `CameraController.cpp` @upstream-1.6.0 gives 0 hits. Camera settings persist only in `camera_settings.conf` (S20). Bench knobs are env vars read where they are used (`CameraController.cpp:3328-3329` @upstream-1.6.0 `unsignedEnvValue("APERTAR_CDNG_QUEUE_FRAMES", ...)`). Per-take inputs travel as option structs built by App (`Types.hpp:184-201` @upstream-1.6.0). The audio options come from UI settings (`ApertarCoreApp.cpp:2754` @upstream-1.6.0).
+- why it matters: the strict three-way split breaks: hardware file, camera_settings.conf, env. The camera gains a reader of the hardware file, and operator switches gain a second persistence route. `media_trim` and `clip_merge`, switches of the same kind, end up in different stores. The port also adds a second CC reader (`loadCameraSection`, `CC:2933-2950`, another unit).
+- rework:
+  1. `buffer` mode and `frames_per_folder` become `CaptureSettings` fields. That means an enum with `toString`, a loader branch, the three field lists and the global carry-over at `CC:7945-7951` @upstream. Add CC setters through `applySettingsLocked`; the commands reply `settingsBody`.
+  2. `clip_merge` and automatic `preroll` take the `media_trim` route.
+  3. The ram fraction, floor, max fraction, `buffer_stop_percent` and `preroll_seconds` become env-only, read at the point of use, and leave the README.
+  4. Delete `loadBufferConf`, `BufferConf`, `parseBufferConf`, `bufferConfProblem`, `PrerollConf`, `parsePrerollConf`, `prerollConfProblem` and `refreshBufferRequest`. Also delete the `[storage]`/`[media]` validator rules, the base/by revision handling and the template lines.
+  5. Keep the state member names (`buffer_setting`, `frames_per_folder`, `clip_merge_enabled`, `storage_preroll_auto`).
+- effort: L
+- deliberate: no. KB `working/drop-frames/README.md:73` states where the keys live and does not weigh the choice.
+
+### Media-buffer-split-F2 [mismatch, major] Cross-thread state through free-function statics and a global std::function hook
+- where: `src/util/BufferBudget.hpp:221-334`; `src/util/StoragePreroll.hpp:221-271`; `src/camera/CameraController.cpp:4629,4635,5018`; `src/ApertarCoreApp.cpp:7988-7995`, `:252-285` @cinemate-port
+- port way: these are process-wide mutable statics: `safetyStopState()`, `flushAbortMutex()`/`flushAbortFunction()`, `safetyStopHook()`, `bufferSettingStorage()`/`bufferSettingMutex()`, `framesPerFolderRequest()`, `clipMergeRequest()` and `prerollState()`. CC registers `flushAbortFunction() = [this]{ return abortSafetyFlush(); }`, and App assigns the global hook in its constructor body.
+- Apertar way: a clip-scoped latch with a callback injected through the constructor: `src/util/RecordingDropWarning.hpp:10-27` @upstream-1.6.0. It is a controller member (`CameraController.hpp:113`) and is passed to the queue (`CameraController.cpp:3251` `explicit DngRecordingQueue(RecordingDropWarning *warning = nullptr)`). `RecordingFailure` is a recorder member (`CameraController.cpp:3901`). The upstream function-local statics (`Mpu6050RecordingSession.cpp:80`, `:1228`) are private to one function and never shared.
+- why it matters: ownership is hidden. The controller calls into App through a global instead of a callback.
+- rework: add `src/util/RecordingSafetyStop.hpp` shaped like `RecordingDropWarning`, with atomics `active`, `stopPercent`, `flushDiscarded` and a `changed` callback. Make it a CC member, passed to the `DngRecordingQueue` constructor. Add `CameraController::bufferStatus()` and `abortSafetyStopFlush()`, which take only the queue mutex; comment why. Pre-roll active/fps/last become App atomic members. `framesPerFolderRequest`, `clipMergeRequest` and `bufferSettingSnapshot` go with F1. Delete the statics.
+- effort: M
+- deliberate: unknown. The comments name lock-freedom as the reason (`BufferBudget.hpp:221`, `:254`); a latch member gives the same lock-freedom.
+
+### Media-buffer-split-F3 [mismatch, major] Buffer events and safety-stop threads poll instead of the 1 Hz wait() supervision
+- where: `src/ApertarCoreApp.cpp:10993-11050`, `:11083-11110` @cinemate-port
+- port way: `runBufferEvents` loops every 250 ms or 1 s and emits `buffer` events, including the pre-roll and dropped-count changes. `runBufferSafetyStop` waits on a cv with a 100 ms backstop, then dispatches `record_stop`. Two extra threads, about 10 members.
+- Apertar way: periodic supervision is the 1 Hz `wait()` loop (`ApertarCoreApp.cpp:7021-7053` @upstream-1.6.0). It checks `camera_.checkRecordingFailure()` and dispatches `enter_standby` via `handleCommand`. Events are emitted at their source, for example the `audio_level` callback (`ApertarCoreApp.cpp:8380-8384` @upstream-1.6.0).
+- why it matters: two more threads with their own synchronisation, one of them a backstop for a lost wake-up, for checks that fit next to `checkRecordingFailure`.
+- rework: check the safety latch in `wait()` and at `handleCommand` entry (next to `App:12584`), and dispatch `record_stop` there. Publish the `buffer` event from the latch's `changed` callback for flag flips and from `wait()` for the level. Emit the pre-roll changes from the pre-roll thread and the dropped count from the drop latch callback. Delete both threads and their members. A 1 s reaction leaves seconds of headroom at 90 % of a GiB-sized budget; say so in the commit. If the bar needs 4 Hz, see F12.
+- effort: M
+- deliberate: unknown. KB `drop-frames/README.md:74` describes the thread and weighs no alternative.
+
+### Media-buffer-split-F4 [mismatch, major] Root fstrim helper as shell script in Core with path argument and path-only sudoers
+- where: `scripts/apertar-media-trim:1-90`; `config/apertar-media-trim.sudoers:4`; `tools/media_trim_test.sh`; `src/ApertarCoreApp.cpp:6415-6447`, `:11484-11513`; `README.md:303-313` @cinemate-port
+- port way: a POSIX sh root helper validates a mount-point argument and runs `timeout 20 /usr/sbin/fstrim -v`. The sudoers line `pi ALL=(root) NOPASSWD: /usr/local/libexec/apertar-media-trim` allows any argument. Core runs `execl("/usr/bin/sudo","sudo","-n",helper,mountPoint)`. This is one of 4 port helper scripts in `scripts/`.
+- Apertar way: simple privileged tools are called directly with `sudo -n` and `shellQuote`: `ApertarCoreApp.cpp:3609` @upstream-1.6.0 `runShellCommand("sudo -n mkdir -p " + shellQuote(mountPath), ...)`, and likewise mount, mkfs and `blockdev --flushbufs`. Real helpers are C++ in UI/src with UI sudoers and literal verbs only (`ApertarCoreApp.cpp:1543-1544` @upstream-1.6.0: "Fixed executable and arguments only; never accept paths from WebUI/config."). Core ships no helper scripts: `git ls-files scripts config` @upstream-1.6.0 gives 2 files.
+- why it matters: it adds another way to get root, a shell script in Core that takes a data argument. The sudoers grant is wider than upstream's literal-verb rules, and the README gains a manual install of two files for one fstrim call.
+- rework: delete the script, the sudoers file, `tools/media_trim_test.sh` and the README install block. Fork/exec `/usr/bin/timeout 20s /usr/bin/sudo -n /usr/sbin/fstrim -v <mediaRoot>` and keep the pid of `timeout` (owned by pi) for the kill. Check discard support in Core without privilege (`/sys/block/<disk>/queue/discard_max_bytes`). Map a missing sudo rule to "Trim needs sudo permission."
+- effort: M
+- deliberate: yes. Comment `App:11435` "(sudo -n, like apertar-media-tune)" copies the port's own helper, not upstream.
+
+### Media-buffer-split-F5 [bug, major] Ending a running trim signals sudo/sh, fstrim keeps running into the take
+- where: `src/ApertarCoreApp.cpp:11955-11963`; `scripts/apertar-media-trim:75-78` @cinemate-port
+- port way: `waitForMediaTrim` sends SIGTERM and then SIGKILL to the `sudo` pid. sudo relays SIGTERM to `sh` only. The foreground child `timeout 20 /usr/sbin/fstrim` is not exec'd and runs in its own process group (GNU timeout), so it gets no signal. SIGKILL is never relayed.
+- Apertar way: no precedent. Upstream wraps `sudo` in `/usr/bin/timeout` (`ApertarCoreApp.cpp:1544` @upstream-1.6.0), so the process it would signal is `timeout`, which forwards the signal.
+- why it matters: start a trim that runs longer than 2 s (a mount trim on a slow card), then send `record_start`. Core logs "ended a trim that ran longer than 2 s" and starts the take while fstrim holds the filesystem for up to 20 s, the stall the wait exists to prevent. Probable, not run here. To settle it on the Pi: `kill -TERM <sudo pid>` during a trim, then `pgrep -a fstrim`.
+- rework: fixed by the F4 rework (signal `timeout`). Minimum stop-gap: `exec timeout 20 /usr/sbin/fstrim -v "$MNT"` in the script.
+- effort: S
+- deliberate: no
+
+### Media-buffer-split-F6 [removed-upstream-behaviour, major] Drive trim and automatic storage pre-roll on by default change stock behaviour
+- where: `src/util/StoragePreroll.hpp:91-99`; `src/camera/CameraController.cpp:889,976`; `src/ApertarCoreApp.hpp:299`; `src/ApertarCoreApp.cpp:12588-12592` @cinemate-port
+- port way: `media_trim` defaults to true. It trims after any delete of 1 GiB or more, at every mount and after a format, so deleted takes cannot be recovered (KB `drop-frames/README.md:69` "no undelete"). `[media] preroll` defaults to on (`value_or(true)`). At Core start, every card insert and every format, a 2 s raw take runs. Meanwhile record, photo, timelapse, media actions and standby are refused with "Storage pre-roll is running. One moment."
+- Apertar way: upstream never discards free space and never writes to the media without an operator action. It records as soon as it is Ready. It refuses commands only for work the operator started (`ApertarCoreApp.cpp:9095-9117` @upstream-1.6.0).
+- why it matters: two stock behaviours change silently: deleted clips become unrecoverable, and the camera is unavailable for seconds after boot or a card insert. The KB's own plan said the pre-roll should be "a setting (`storage_preroll`, default off at first), never a hidden step" (`drop-frames/README.md:341`). The port made `apertar-media-tune` opt-in for a similar reason (`e9dd6b2`).
+- rework: set both defaults off: `CaptureSettings{}.mediaTrimEnabled = false`, `mediaTrimSetting_{false}`, automatic pre-roll off. Keep the WebUI switches. The README says what turning trim on costs (no undelete).
+- effort: S
+- deliberate: yes for trim (`ce0bd90` "default on"). The pre-roll default contradicts the documented plan.
+
+### Media-buffer-split-F7 [mismatch, minor] Capture and media commands wait for trim and merge under commandMutex_
+- where: `src/ApertarCoreApp.cpp:12614-12619`, `:11905-11916`, `:11941-11963` @cinemate-port
+- port way: `record_start`, `capture_photo`, `timelapse_start` and the media actions call `waitForMediaTrim(name, 5000)` and `waitForClipMerge(name, 5000)` inside `handleCommand`. The trim wait is up to about 3.5 s (2 s + 1 s + 0.5 s) and the merge wait up to 1 s. In both calls, 5000 holds the worker off and does not block the command.
+- Apertar way: upstream refuses with a sentence instead of waiting on a background media job (`ApertarCoreApp.cpp:9108-9110` @upstream-1.6.0, "Wait for the media speed test to finish first."). One lock serialises all commands.
+- why it matters: while a trim winds down, every socket, WebUI and button command waits behind `commandMutex_`, for up to about 4.5 s.
+- rework: keep "record always starts" if the owner wants it. After F4 the trim ends through `timeout`, so the wait shortens. Keep the 5 s hold-off of both workers. Document the choice for the original developer.
+- effort: S
+- deliberate: yes. KB `drop-frames/README.md:69`.
+
+### Media-buffer-split-F8 [slop, minor] Comments and README narrate history and cite KB paths, campaigns, other projects, commits
+- where: `src/cdng/FramePath.hpp:9-11`; `src/util/BufferBudget.hpp:6-7`; `src/ApertarCoreApp.cpp:11114`, `:11626-11627`; `src/camera/CameraController.cpp:5546`; `README.md:329`, `:333`, `:355-356` @cinemate-port
+- port way: examples are "(apertar-kb working/drop-frames/nvme-campaign/probe-exfat-dir.md)", "follow cinepi-raw's DNG encoder (cinepi/dng_encoder.cpp ...)", "(the NVMe campaign does, for its A/B)", "CineMate's storage warm-up", "the rule since db17860", "measured 2026-11-08", "local branch `clip-split`", plus this unit's env rows in the README table "Write-path knobs for A/B tests". Most of that table belongs to other units.
+- Apertar way: no tickets or other projects' commits in source (C8-S9). Comments are rare one-line why-notes (C1-I14), e.g. `ApertarCoreApp.cpp:1543` @upstream-1.6.0. No env-knob tables in the README (C8-S12).
+- why it matters: these references mean nothing to the original developer, and they age badly.
+- rework: keep one-line technical reasons ("exFAT walks every entry of the target folder on create"). Drop KB paths, campaign names, dates, hashes and other-project references. Remove rows `:355-356`; the rest of the table is for the units that own it.
+- effort: S
+- deliberate: no
+
+### Media-buffer-split-F9 [slop, minor] Env twin for every file key, *_env flags in state, unused speculative parameter
+- where: `src/util/BufferBudget.hpp:303-329`; `src/util/StoragePreroll.hpp:91-99`, `:148-150`; `src/ApertarCoreApp.cpp:262-285`; `src/cdng/ClipMerge.hpp:212-213` @cinemate-port
+- port way: env > file > default chains for buffer, frames_per_folder, clip_merge, preroll and stop percent. State exposes `frames_per_folder_env`, `clip_merge_env_off`, `storage_preroll_auto_env` and `media_trim_env_off`. `decideGuard(const GuardInputs &, Trigger)` ignores the Trigger, "so a future rule can differ". `refreshBufferRequest` parses the same text three times. And `++remaining; ++remaining;`.
+- Apertar way: env knobs are read where they are used and not shown to clients (`CameraController.cpp:3328-3329` @upstream-1.6.0). Comments state a present reason.
+- why it matters: these are experiment leftovers and generality built ahead of need; they double the precedence logic.
+- rework: after F1, at most one bench env var per knob, read at the point of use. Drop the `*_env` state members and the `Trigger` parameter. Parse once. Write `remaining += 2`.
+- effort: S
+- deliberate: no
+
+### Media-buffer-split-F10 [duplication, minor] Frame-number rule in three copies; three copied store.edit command blocks
+- where: `src/cdng/ClipMerge.hpp:61-63`; `src/playback/ClipFrames.hpp:96`; `tools/flatten_clip.py:47-57`; `src/ApertarCoreApp.cpp:12829-12850`, `:12857-12895`, `:12900-12925` @cinemate-port
+- port way: `detail::frameNumber` is commented "Same rule as playback/ClipFrames.hpp frameNumberFromName". Both C++ copies are port code, and a Python copy exists too. There are three ~20-line `store.edit`/`StoreFlags`/`controlsErrors_`/`wakeControlsWorker`/`refreshBufferRequest` blocks.
+- Apertar way: a shape repeated inside one function becomes a local lambda (C1-I17; `ApertarCoreApp.cpp:9478`, `:8671` @upstream-1.6.0).
+- why it matters: two C++ copies of one parsing rule can drift, and so can the copied command blocks.
+- rework: move the rule into `cdng/FramePath.hpp`, which both headers already include, and call it from both. The Python copy is fine for a desk tool. The `store.edit` blocks go away with F1; otherwise use one local lambda.
+- effort: S
+- deliberate: no
+
+### Media-buffer-split-F11 [new-ground, nit] Host unit tests in tools/, outside the build
+- where: `tools/buffer_budget_test.cpp`, `tools/storage_preroll_test.cpp`, `tools/storage_buffer_conf_test.cpp`, `tools/clip_merge_test.cpp`, `tools/frame_path_test.cpp`, `tools/media_trim_test.sh`; `README.md:335` @cinemate-port
+- port way: standalone g++ programs, each with its own `check()` and a compile line in a comment. None of them is in `CMakeLists.txt`. The compile lines disagree: `frame_path` and `clip_merge` say `-std=c++17`, `buffer_budget` says `-std=c++20`. The four `.cpp` tests here compile with c++20 and pass. The same pattern runs through the whole port (20 files in `tools/`).
+- Apertar way: no precedent. Upstream Core has no tests and no `tools/`.
+- why it matters: it is new ground, not a mismatch. The tests cost the build nothing.
+- rework: keep them. Drop `storage_buffer_conf_test.cpp` and `media_trim_test.sh` with F1/F4. Use one compile command (c++20, matching Core) and one README line under For Developers.
+- effort: S
+- deliberate: yes. Commits `d7dd337` and `ba0658d` record desk test runs.
+
+### Media-buffer-split-F12 [new-ground, minor] GET /api/buffer polled at 4 Hz beside /api/state
+- where: `src/ApertarCoreApp.cpp:8418-8425`; `src/web/WebControlPage.cpp:16490-16500`, `:20363` @cinemate-port
+- port way: a lock-free read-only route returns the buffer and pre-roll members. The WebUI polls it about 4 times a second while the bar or the pre-roll pill shows.
+- Apertar way: the WebUI polls `GET /api/state` at 1 Hz, with no push channel (C1-S26). `/api/state` builds the full state through controller calls (`ApertarCoreApp.cpp:7154` @upstream-1.6.0). Extra read-only GET routes exist (`/api/media`, `/api/config`, `/api/presets`).
+- why it matters: the bar gets a second state endpoint and a second polling rate. Polling the full state at 4 Hz during a take would cost more.
+- rework: keep the route and state its reason (a smooth bar during a take, without the controller lock) in the handoff. Drop it only if 1 Hz from `/api/state` is enough.
+- effort: S
+- deliberate: unknown
+
+### Media-buffer-split-F13 [mismatch, nit] Namespace names and src/util placement differ from upstream
+- where: `src/util/BufferBudget.hpp:45`; `src/util/StoragePreroll.hpp:16`; `src/cdng/FramePath.hpp:18`; `src/cdng/ClipMerge.hpp:21` @cinemate-port
+- port way: `apertar::bufferbudget`, `storagepreroll`, `clipmerge`, `framepath`. `BufferBudget.hpp` and `StoragePreroll.hpp` sit in `src/util`.
+- Apertar way: upstream nested names are mixed: `apertar::settingsFile` (`SettingsFile.hpp:17`), `apertar::tuning`, `apertar::hardware`, `prores_color`, `prores_repair`. `src/util` @upstream holds only `AtomicStillFile`, `RecordingDropWarning`, `RecordingFailure` and `SettingsFile`. Subsystem logic sits next to its owner (`src/camera/StillBracketing.hpp`).
+- why it matters: small reading frictions.
+- rework: move `BufferBudget.hpp` next to the queue (`src/camera` or `src/cdng`) and `StoragePreroll.hpp` next to App. Optionally rename to camelCase (`bufferBudget`, ...) to match `settingsFile`.
+- effort: S
+- deliberate: no
+
+### Media-buffer-split-F14 [new-ground, nit] tools/flatten_clip.py desk tool
+- where: `tools/flatten_clip.py` @cinemate-port
+- port way: a 284-line stdlib Python script with dry run, `--apply` and `--unflatten N`. It reports timing statistics (`statistics` at :27, :184-189).
+- Apertar way: no precedent. Core ships no helper scripts (C1-S29), and upstream has no `tools/`.
+- why it matters: it is useful when a card leaves the camera before the merge worker has run, and nothing else covers that case on a computer.
+- rework: keep it. Drop the statistics report. Keep `--unflatten` only if a test uses it; no test does now.
+- effort: S
+- deliberate: yes. Commit `9ec37b5` and `README:331`.

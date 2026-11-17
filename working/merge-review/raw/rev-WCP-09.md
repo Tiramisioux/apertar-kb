@@ -270,3 +270,165 @@ function dropdown).
   `danger-button`, `pill-button`, `select-block`, `select-topline`, `online-pill` (C3-I8).
 - `renderHardwareConfig` extended by 5 lines, new fields on `state` (P:18716-18721; C3-I2).
 - ids camelCase with kind suffix: `saveControlsButton`, `reloadHardwareButton`, `controlsRows` (C3-I6).
+
+## Skeptic
+
+Checked at `cinemate-port` `01f170c` (P:) against `upstream-1.6.0` (U:). Commits read with `git show -s`; fork-log and `working/controls/decisions.md` read for intent.
+
+| Id | Verdict | Why |
+| --- | --- | --- |
+| F1 | stands | `controlsState` P:16633-16651 confirmed; module-level `controlsChipLines` P:16798, `controlsSeparateTurns` P:16881, `let controlsListenTimer/Seq` P:18601-18602. Upstream has only `const state` U:4204 plus constant option lists U:4039-4091. |
+| F2 | corrected | 15 call sites (not 16). Rework fixed: Listen must not go through `sendCommand`, which schedules a 140 ms `/api/state` refresh and moves `state.deferFetchUntilMs` on every call (U:9112-9141); at 300 ms that adds about 3 state fetches/s. Background polls keep a plain fetch, precedent U:11509-11513 (`user_activity`, `.catch(() => {})`). |
+| F3 | corrected | Card, retry loop and pointer capture confirmed (P:4569-4580, 20870-20878, 18032-18038). Owner chose to keep Remote controls on 2026-11-04 ("everything back", fork-log.md:163-164). Rework moves the pad into the Controls panel instead of deleting it. |
+| F4 | stands | 74 functions in P:16622-18740 confirmed; `controlsClaimPin` removes another control after a confirm (P:17312-17343). Deliberate (decisions.md:47 "T39-T45 built lean"). |
+| F5 | stands | `saveHardware`/`saveControls` call `loadControls(true)` with `discard` undefined, so no confirm, and it resets `settingEdits`, `edits`, `added`, `removed`, `buttons` (P:18240, 18256-18297, 18667). |
+| F6 | stands | Regexes P:17174, 17183 confirmed; Core builds `detail` with `value_or("?")` (ControlsModel.hpp:193-194) and only a numeric `pin` per row (:353). |
+| F7 | corrected | Scan stays stuck until the page is reloaded, not until Reload: `scans` is written only at P:18184/18187 and `loadControls` does not clear it. Also: Undo (P:18577-18597) sets no busy flag, so Save can run during it. |
+| F8 | corrected | Loop confirmed (P:18620-18648). Rework no longer routes it through `sendCommand` (see F2). |
+| F9 | stands | `Object.defineProperty` value/disabled, synthetic change, `draggable`, `__several__` (P:16799-16872). No draggable or defineProperty anywhere upstream. |
+| F10 | corrected | Severity nit. Persistent status lines have upstream precedent (`settingsImuCalibrationStatus` U:3007, set U:9572), so the issues list and pending note stay; only the inline success sentence duplicates the toast. |
+| F11 | corrected | Category bug, not removed-upstream-behaviour: Core still reads `enabled` and `line` independently (RecordingIndicatorOutput.cpp:339, 349); the port card cannot express "off, wiring kept" and writes `line=-1`/`pcf_pin=-1` (P:17900-17913). |
+| F12 | corrected | Where adds Check: `set_controls ... text=... dry_run=true` (P:18795) is a third text path through the command. |
+| F13 | corrected | The 0-27 rule is Core's too (HardwareConfigText.hpp:844-845, 869-871); the page mirrors it. Rework starts in Core. |
+| F14 | stands | Three identical issue-box bodies (P:16718, 18129, 18686), two literal kind maps beside `controlsKindNames` (P:17232, 17388, 17445), two `test_output` handlers (P:17688, 17896). |
+| F15 | stands | 95 full-line + 32 trailing comments in P:16622-18740; T39-T42 and "as in Cinemate" confirmed; upstream script has 2 comment lines. |
+| F16 | corrected | Bool-as-select dropped: upstream uses selects for on/off (U:3791-3794 "Keep On"/"Off"; `createFavoriteSelectBlock` with `toggleOptions` U:6850). Inline `gridTemplateColumns` (P:18065 vs class toggle U:9150), "GPIO in" retitle (P:17936-17940) and `loadControls` vs `fetch*` (U:10207-10361) stand. |
+| F17 | stands | `controlsOutputFunctions` one entry, fixed select (P:17821, 17859-17870). |
+
+## Final findings
+
+### WCP-09-F1 [mismatch, major] Second client store `controlsState` plus module-level mutable state
+- where: src/web/WebControlPage.cpp:16633@cinemate-port; :16798; :16881; :17216; :18601-18602
+- port way: `const controlsState = { loading, saving, revision, model, peripherals, catalog, edits, buttons, removed, added, settingEdits, buses, scans, dpiLines, apply, history, listening }`; besides it `controlsChipLines`, `controlsSeparateTurns`, `controlsReplaced`, `let controlsListenTimer`/`controlsListenSeq`, and 13 const tables.
+- Apertar way: one `const state = {` src/web/WebControlPage.cpp:4204-4266@upstream-1.6.0; timers `state.<x>Timer`, busy `state.<x>InFlight`; config editor `state.configDirty/configFetchInFlight/configSaveInFlight` (:10265-10359). C3-I2.
+- why it matters: the original developer looks for page state in `state` and finds a second store (four with WCP-06 `pb` and WCP-08 `frameBufferBar`).
+- rework: flat fields on `state`: `controlsModel`, `controlsRevision`, `controlsCatalog`, `controlsPeripherals`, `controlsEdits`, `controlsButtons`, `controlsRemoved`, `controlsAdded`, `hardwareEdits`, `controlsLoadInFlight`, `controlsSaveInFlight`, `controlsListenTimer`, `controlsChipLines`, `controlsSeparateTurns`, `controlsReplaced`. Delete `controlsState`. Label tables go to the option-list block at the top of the script (C3-S6, U:4039-4127).
+- effort M; deliberate unknown (no commit discusses it; the port itself keeps config-text state on `state`, P:18716, 18720).
+
+### WCP-09-F2 [mismatch, major] Second fetch wrapper `controlsCall`; hand-checked `ok`, missing try/catch
+- where: src/web/WebControlPage.cpp:16698-16705@cinemate-port; :17687; :18183; :18556; :18583-18588
+- port way: `async function controlsCall(payload)` posts to `/api/command` and returns the JSON; 15 call sites test `result.ok` by hand; 7 have no try/catch.
+- Apertar way: `sendCommand` src/web/WebControlPage.cpp:9109-9145@upstream-1.6.0 is the door for actions; it throws `new Error(result.error || "Command failed.")`; handlers `try { await sendCommand(...) } catch (error) { showToast(error.message, true) }` (C3-S3, C3-I4). A plain fire-and-forget fetch exists only for background traffic (`user_activity`, :11509-11513).
+- why it matters: two command paths with different error semantics; failures at unguarded sites become unhandled rejections (F7).
+- rework: in `sendCommand`: `const error = new Error(result.error || "Command failed."); error.result = result; throw error;` (same as the port's `/api/config` save, P:18930-18931). User-action calls (save, undo, scan, test, history, get_controls, list_actions) use `sendCommand` in try/catch; save paths read `error.result.issues/.code`. The Listen poll stays a plain fetch (sendCommand would schedule a `/api/state` refresh per poll) wrapped in try/catch with an in-flight flag on `state`. Delete `controlsCall`.
+- effort S; deliberate unknown (probable reason: `set_controls` failures carry `issues`/`code` that `sendCommand` drops).
+
+### WCP-09-F3 [mismatch, major] Remote controls card on the main page with hold-to-repeat pills
+- where: src/web/WebControlPage.cpp:4569-4580@cinemate-port; :17995-18042; :18047-18112; :20870-20878
+- port way: a "Remote controls" card under Camera settings in the main grid; pills call `test_input`; knob arrows repeat while held (pointer capture, 450 ms delay, 140 ms interval); bootstrap retries `get_controls` every 5 s until Core answers.
+- Apertar way: the main grid holds only preview, Camera settings, System, Current capture (src/web/WebControlPage.cpp:2456-2726@upstream-1.6.0; C3-S2). No hold-to-repeat anywhere upstream. Panel data loads in `setSettingsPanel` (:6164-6166).
+- why it matters: changes the camera-critical main page; duplicates the Try buttons on every Controls line; adds a load-time request loop.
+- rework: keep the feature (owner restored it 2026-11-04, fork-log.md:163-164) but move it off the main page: a settings-card in the Controls panel, pills built with `buildOptionButtons`, one command per click, data loaded from `setSettingsPanel("controls")`. Delete the main-page card and the bootstrap retry loop. Hold-to-repeat goes, or stays as the one documented new-ground widget.
+- effort S; deliberate yes (1319967: "The main page gets a Remote controls card under Camera settings").
+
+### WCP-09-F4 [new-ground, major] 2100-line structured hardware editor with extras
+- where: src/web/WebControlPage.cpp:16622-18740@cinemate-port; :16875-16880; :17312-17343; :18452-18486
+- port way: 74 functions: per-device cards, gesture dropdowns, chips, Turn-adjusts pairing by `_up/_down` id and label regex, a pin claim that removes another control after a confirm, a review in words that re-derives moved rows, Listen, Undo, history, Scan, Test.
+- Apertar way: no precedent for a structured editor; upstream edits `apertar-hardware.conf` as text via `POST /api/config` (src/web/WebControlPage.cpp:10330-10359@upstream-1.6.0); a typical WebUI feature is 20-40 lines in 3-5 places (conv-webui section 0).
+- why it matters: the original developer must maintain a client application larger than any upstream feature, with pin-ownership rules duplicated from Core's validator.
+- rework: simplify. Keep rows, action dropdown from `list_actions`, gesture dropdown, add/remove, pin dropdowns with disabled "used by" options, revision-checked `set_controls` save, Hardware card fields. Drop the chip editor (F9), the main-page card (F3), the moved-row re-derivation in `renderControlsReview` (the Config diff shows the change), the `controlsClaimPin` cascade (a disabled option is the upstream rule, C3-I11), the one-entry function dropdown (F17); keep Turn adjusts only if Core's catalog sends the pair. Document what stays as new ground for the original developer.
+- effort L; deliberate yes (d282de9 Why; extras in fa3a798, 8be1ab5, 1319967; decisions.md:47).
+
+### WCP-09-F5 [bug, minor] Saving Controls or Hardware silently drops the other card's unsaved edits
+- where: src/web/WebControlPage.cpp:18240@cinemate-port; :18667; :18256-18297
+- port way: `saveHardware` and `saveControls` call `loadControls(true)` (no `discard`, so no confirm), which resets `settingEdits`, `edits`, `added`, `removed`, `buttons`; each save sends only its own card's edits. The text-editor save guards with `if (!controlsDirty() && !hardwareDirty())` (P:18938).
+- Apertar way: no precedent for two editors; upstream asks before discarding edits: `window.confirm("Reload Apertar config and discard unsaved edits?")` src/web/WebControlPage.cpp:10307@upstream-1.6.0 (C3-N3).
+- why it matters: change GPIO 6 Press on Controls (unsaved), change a NeoRotary setting on Config, press Save Hardware: the GPIO 6 change is gone without a prompt.
+- rework: after a save, reload the model only if the other card is clean; otherwise update the revision and keep the other card's edits (they are key-level), or ask with `window.confirm`.
+- effort S; deliberate no.
+
+### WCP-09-F6 [bug, minor] Pins recovered by regex from Core's display text
+- where: src/web/WebControlPage.cpp:17163-17189@cinemate-port; :17598; src/hardware/ControlsModel.hpp:163@cinemate-port; :193-194; :353
+- port way: `controlsRowPinInfo` parses `row.title` `/^GPIO (\d+)(?: \+ (\d+))?$/` and `row.detail` `/^A (\d+), B (\d+), push (\d+|none)$/`; `controlsPcfPinsInUse` takes the PCF pin from the title's trailing digits. Core builds those strings for display, with `value_or("?")`.
+- Apertar way: render reads data fields from the snapshot (`state.snapshot` src/web/WebControlPage.cpp:9334@upstream-1.6.0; C3-I3); no label parsing.
+- why it matters: `encoder0_b` missing gives detail "A 5, B ?, push none", the regex fails, the encoder gets no pin dropdowns and its pins are absent from `controlsPinOwners`, so GPIO 5 is offered unmarked to another control (Core refuses on save; probable).
+- rework: Core adds `"pins":"5,6,13"` (one string) per row next to `"pin"` (ControlsModel.hpp:353); `controlsRowPinInfo` splits it; delete the regexes.
+- effort S; deliberate no.
+
+### WCP-09-F7 [bug, minor] Unhandled rejections: Scan sticks at "Scanning...", Listen overlaps, Undo unguarded
+- where: src/web/WebControlPage.cpp:18183-18189@cinemate-port; :18620-18648; :18516-18528; :18577-18597
+- port way: Scan sets `scans[bus]={loading:true}` then awaits `controlsCall` with no catch; a network error or non-JSON reply leaves Scan disabled and "Scanning..." until the page is reloaded (`loadControls` never clears `scans`). Listen `setInterval(async, 300)` has no in-flight guard. Undo awaits two calls without try/catch and without a busy flag.
+- Apertar way: every fetch in try/catch/finally with `state.<x>InFlight` guards (`fetchConfigFile` src/web/WebControlPage.cpp:10304-10327@upstream-1.6.0).
+- why it matters: stuck UI after one failed request; a slow Core receives stacked Listen requests; Save can run during an Undo.
+- rework: with F2: `sendCommand` in try/catch, `loading` cleared in `finally`; `state.controlsListenInFlight` for the poll; Undo sets `state.controlsSaveInFlight`.
+- effort S; deliberate no.
+
+### WCP-09-F8 [mismatch, minor] Listen is a second network poll loop (300 ms) with its timer outside `state`
+- where: src/web/WebControlPage.cpp:18600-18649@cinemate-port
+- port way: `setInterval` 300 ms on `controls_last_input`, auto-off after 120 s or when the panel is hidden; timer and seq in module-level `let`.
+- Apertar way: one network poll: `window.setInterval(() => fetchState(true), 1000)` src/web/WebControlPage.cpp:11609@upstream-1.6.0 (C3-I3, C3-N8); timers on `state`.
+- why it matters: with WCP-08's `/api/buffer` poll the page has three loops; timing state is scattered.
+- rework: either keep the short user-started poll with timer, seq and in-flight flag on `state`, as a plain fetch in try/catch (not `sendCommand`, see F2); or add `controls_last_input_seq/section/key` to `/api/state` and highlight from `renderSnapshot` (1 s latency, no new loop).
+- effort S; deliberate yes (8be1ab5 "Listen lights the row of the control you press"; decisions.md:24).
+
+### WCP-09-F9 [new-ground, minor] Chip editor: duck-typed fake select with drag and drop
+- where: src/web/WebControlPage.cpp:16799-16872@cinemate-port; :16831-16835
+- port way: a div that defines `value` and `disabled` via `Object.defineProperty`, dispatches a synthetic `change`, draggable chips with x buttons, a `__several__` sentinel option.
+- Apertar way: no precedent; choices are pill grids or native selects (C3-I5, violation example "custom dropdown components"). The port's own `buildControlsSelect` already shows an unknown value as "(as written in the file)" (P:16785-16790).
+- why it matters: a widget behaviour no other control on the page has; hard to maintain.
+- rework: drop the chip box; multi-action lines show "(as written in the file)" and are edited in Config text. If kept, a plain `settings-input` holding `iso200,fps24`.
+- effort S; deliberate yes (8be1ab5, T41).
+
+### WCP-09-F10 [mismatch, nit] Inline success message duplicates the toast
+- where: src/web/WebControlPage.cpp:18671-18673@cinemate-port; :18243-18245; :18509-18513
+- port way: a save writes "Saved. Core applies it now." into `controlsMessage`/`hardwareMessage` and toasts "Controls saved."/"Hardware settings saved.".
+- Apertar way: one toast, `showToast` src/web/WebControlPage.cpp:7804-7813@upstream-1.6.0; `saveConfigFile` toasts only (:10351); C3-N4 ("inline success banners"). Persistent status lines do exist upstream (`settingsImuCalibrationStatus` :3007, :9572).
+- why it matters: two feedback channels for one event.
+- rework: success and "applies after the take" go into the toast text; keep the issue list (line numbers) and the pending note as status lines.
+- effort S; deliberate yes (8be1ab5 "Saves say Core applies them now, or after the take").
+
+### WCP-09-F11 [bug, minor] Tally card cannot switch off with wiring kept: None/Remove erases the pin
+- where: src/web/WebControlPage.cpp:17617-17646@cinemate-port; :17704-17705; :17900-17913
+- port way: `enabled` field hidden; `syncTallyEnabled` writes `enabled` from "pin set"; pin None and Remove write `line=-1`, `pcf_pin=-1`; a file with `enabled=false` shows its pin as None.
+- Apertar way: Core reads `enabled` (RecordingIndicatorOutput.cpp:339@upstream-1.6.0) and `line` (:349) independently, so the LED can be off with its wiring kept.
+- why it matters: switching the tally off from Controls erases its pin; turning it on again needs the pin re-entered.
+- rework: show `enabled` as an On/Off control over `toggleOptions`; leave `line`/`pcf_pin` untouched; delete `tallyFileEnabled`, `syncTallyEnabled` and the special cases in `tallyShown` and Remove.
+- effort S; deliberate yes (comment P:17617-17618).
+
+### WCP-09-F12 [mismatch, minor] Whole-file text through a command while upstream's door is `/api/config`
+- where: src/web/WebControlPage.cpp:18588@cinemate-port; :18795; :18264
+- port way: Undo sends the whole history text via `set_controls text=`; Check sends the editor text via `set_controls text= dry_run=true`; the text editor saves through `POST /api/config`.
+- Apertar way: whole-file work is a route: `POST /api/config` src/web/WebControlPage.cpp:10336-10340@upstream-1.6.0, App:7175-7195@upstream-1.6.0 (C3-S9). Key-level command writes have precedent (`set_imu_*`, conv-hardware-config 7).
+- why it matters: two doors with different checks for the same file (`set_controls text=` skips the `/api/config` empty/size/NUL checks, rev-HW-config-text-store F5).
+- rework: Undo posts the history text through `POST /api/config`; Check uses a dry-run on the same route (header or query flag); `set_controls` drops `text`. Key-level `set_controls` stays.
+- effort M; deliberate yes (8be1ab5).
+
+### WCP-09-F13 [pi-compat, minor] Any DPI line greys GPIO 0-27, in the page and in Core's validator
+- where: src/web/WebControlPage.cpp:17198-17200@cinemate-port; :17260-17264; :18209; src/hardware/HardwareConfigText.hpp:844-845@cinemate-port; :869-871
+- port way: `if (dpiLines.length > 0) for (pin = 0; pin <= 27; ++pin) taken.add(pin)`; Core's validator refuses any `gpio <= 27` when a DPI line exists; the note says "it holds GPIO 0 to 27".
+- Apertar way: no precedent.
+- why it matters: probable: 16/18-bit DPI modes leave upper GPIO free; those pins become unusable for buttons. Settle by reading the overlays in use and their pin maps.
+- rework: Core computes the pins each detected overlay holds and sends them (`dpi_pins`); validator and page use that set; the page drops its own 0-27 loops.
+- effort S; deliberate yes (9b5ea14; DPI greying tested desk only).
+
+### WCP-09-F14 [duplication, minor] Issue box x3, Test handler x2, kind-name map x3, pin sets x2
+- where: src/web/WebControlPage.cpp:16718@cinemate-port; :18129; :18686; :17687-17690; :17895-17898; :17232; :17388; :17445
+- port way: `showControlsMessage`/`showHardwareMessage`/`showConfigIssues` have the same body; `test_output` click handler twice; kind names in `controlsKindNames` and two literal maps; `controlsPinsTaken` and `controlsPinOwners` compute nearly the same set.
+- Apertar way: shared helpers by role: `setText`, `setFormValue`, `buildOptionButtons`, `showToast` (src/web/WebControlPage.cpp:6172-6189, 9147-9167, 7804@upstream-1.6.0); `request<Action>` naming (C3-I6).
+- why it matters: every fix must be made in several places.
+- rework: one `showIssueBox(id, title, issues, isInfo)`; one `requestTestOutput(peripheral)`; `controlsKindNames` everywhere; `controlsPinsTaken` = keys of `controlsPinOwners`.
+- effort S; deliberate no.
+
+### WCP-09-F15 [slop, minor] 127 comment lines incl. T39-T42 ticket ids and "as in Cinemate"
+- where: src/web/WebControlPage.cpp:16795@cinemate-port; :16874; :16983; :17066; :17679; :18176; :18397; :18531; :18554; :18600
+- port way: 95 full-line and 32 trailing `//` comments; T41 x3, T42 x4, T40, T39; "as in Cinemate".
+- Apertar way: 2 JS comment lines in the whole upstream script (src/web/WebControlPage.cpp:8474-8475@upstream-1.6.0); C3-I7.
+- why it matters: ticket ids and Cinemate references mean nothing to the original developer.
+- rework: delete ticket ids, Cinemate references and narration; keep at most one-line reasons where a rule is not obvious.
+- effort S; deliberate no.
+
+### WCP-09-F16 [mismatch, nit] Inline grid style, "GPIO in" vs "GPIO buttons", `loadControls` naming
+- where: src/web/WebControlPage.cpp:18065@cinemate-port; :17936-17940; :18256
+- port way: `grid.style.gridTemplateColumns` set inline; the GPIO card retitled "GPIO in" on Controls only; `loadControls`.
+- Apertar way: column classes toggled on the pill grid (`three-col`, src/web/WebControlPage.cpp:9150@upstream-1.6.0, CSS :755); `fetch<X>` for loaders (:10207, 10246, 10304, 10361) (C3-I6).
+- why it matters: small deviations from the page's own layout and naming vocabulary.
+- rework: column classes instead of inline style; one name for the GPIO card; rename `loadControls` to `fetchControls`.
+- effort S; deliberate no.
+
+### WCP-09-F17 [slop, nit] One-entry Function dropdown for outputs
+- where: src/web/WebControlPage.cpp:17821@cinemate-port; :17859-17870
+- port way: `const controlsOutputFunctions = [["tally", "Tally light"]]` with comment "Tally light for now; add more"; a select with one fixed option.
+- Apertar way: no precedent.
+- why it matters: over-built generality; a control that cannot change anything.
+- rework: drop the select and the constant; title the row "Tally light".
+- effort S; deliberate no.
