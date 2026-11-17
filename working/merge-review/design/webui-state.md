@@ -468,3 +468,85 @@ Each row was checked again at `0d13a6f` / `upstream-1.6.0`. Commit numbers on th
 | Owner item 7 (confirm text) | Challenger right | Settled by WEB-21; dropped from the list |
 | Pi checks: bar on and off, a `curl` loop | Challenger right | `watchStop` `P:16566` is a separate path today. Added to commit 2 |
 | Pi-model cost reading | Challenger right | The reading to compare is named in Risks |
+
+## Checked against the owner's recorded decisions
+
+Audit 2026-11-17. Sources: `owner-recorded-decisions-a.md` (DA-*), `owner-recorded-decisions-b.md` (DB-*), and the pages they cite, read around the rows: `working/playback/design-playback.md` §2.9 (D1-D22), §3.2 (B1-B24), §3.3 (V1-V21), §9 (O1); `working/playback/decisions.md`; `working/playback/measurements.md:107-126`; `working/controls/decisions.md`; `fork-log.md:102`, `:138`, `:148`, `:162-165`; `working/drop-frames/README.md:72`, `:87`, `:99`; `working/tools/controls_page_test.js`. Code: `P7:` = `src/web/WebControlPage.cpp@7f188a5` (core-work HEAD; markup lines equal the plan's `P:`, script lines after `P:10100` sit about 6 higher), `U:` = `@upstream-1.6.0`. All rows **confirmed** in the KB text and the code unless marked.
+
+The rule used: a recorded decision stays unless it makes a stock camera (original driver, 720x720 screen, a 1.6.0 hardware file, no port keys) behave differently from 1.6.0; then it becomes an operator setting, not a deletion.
+
+The main finding: the Clip Browser and Clip Viewer are not loose port parts. They are the element-by-element map Patrik approved (DA-43 "the WebUI playback looks and behaves like the touch UI's Clip Browser and Clip Viewer", DB-75; all Q1-Q30 answered or "accept the defaults", `working/playback/decisions.md:7-46`), built and tried by him (T49, T50 "works well", `fork-log.md:102`). Commits 11, 12, 14, 22 and 23 as written take parts of that map back to the 1.6.0 list overlay. The fix in each case is to keep the touch-UI part and build it from upstream's classes, ids and `/icons` PNGs, which is what the playback design itself prescribed (§3.1 "Parts used").
+
+| commit | touches decision (id, his words) | verdict | what changes in the commit |
+| --- | --- | --- | --- |
+| 1 pill in `renderRecordingStatus` | none | fine | none |
+| 2 buffer poll merges into the snapshot | Pill READY green while the buffer drains, also with the bar off (`working/drop-frames/README.md:99`, `fb5801c`); "Frame buffer bar" option, off by default (`README.md:72`); DB-61 "discard, the old clip is cut short" | fine | none. Scenes (a)/(b) with the bar off and the Pi step "press REC during the flush: a new take starts" already cover them. Keep `toggleRecord`'s flush pass reading `state.snapshot.buffer_safety_stop` |
+| 3 buffer toasts from the snapshot | DB-61 (the flush-discard toast reports his choice) | fine | none |
+| 4 Controls through `sendCommand` | DA-6 "Save during a take: allowed"; DA-20 stale save "merge per key ... otherwise refuse"; T43 Check reads `issues` from an `ok:false` dry run (`checkConfigFile` `P7:18870-18885`); DA-23 "Listen + phone covers it" | fine | Keep in every catch: `error.payload.code` `stale`/`conflict` -> "Your settings stay on the page" (`P7:18309`, `:18738`), and `error.payload.new_errors` / `issues` for Check. Listen stays a raw fetch (already planned). Rerun `working/tools/controls_page_test.js` (60/60, `working/controls/HANDOFF-next.md:31`): its mock must answer the `/api/state` refresh that `sendCommand` now schedules |
+| 5 clip-name preview through `sendCommand` | clip names kept (DA-104 "everything back") | fine | none |
+| 6 `controlsState` -> `state.controls*` | Patrik's Controls test harness `working/tools/controls_page_test.js:240`, `:246` evaluates `controlsState.added.length`, `controlsState.removed.size`, `controlsState.edits.size` in the page | conflict (breaks a KB test) | Same change set: apply the commit's sed map to `controls_page_test.js` (KB commit, 3 expressions -> `state.controlsAdded.length`, `state.controlsRemoved.size`, `state.controlsEdits.size`) and rerun it; ids it reads (`saveControlsButton`, `controlsStatePill`, `hardwareDevices`, ...) do not change |
+| 7 Controls sets and Listen timer on `state` | none | fine | none |
+| 8 Boot Config fields on `state` | DA-21 DPI box, DA-78..DA-81 config.txt rules (Core side) | fine | none (fields only) |
+| 9 clip-name composer on `state` | none | fine | none |
+| 10 settings search on `state` | none | fine | none |
+| 11 Remove asks with `window.confirm` | DA-43, design B23: "Remove Selected Clips?" dialog, "the old `window.confirm` is removed from the delete helpers (F36)", button "Removing... (N files)" and disabled; V12 "Remove Clip?" dialog; V17 the dialog closes the Info overlay; tried in T49 (`measurements.md:115-116`) | conflict | Drop commit 11. The dialog stays as documented new ground (row added below), renamed in commit 15 (`.media-browser-dialog*`, `#mediaBrowserRemoveDialog`); its buttons already are `.secondary-button` / `.danger-button`. Stock: the dialog exists only inside the port's Clip Browser (see last row) |
+| 12 header becomes upstream's | DA-43, B2 "PLAYBACK" eyebrow; B3 "Clip Browser" / "Still Browser" / "Timelapse Browser" / "Audio Browser"; B5 "SHOW / Clips" button opening Clips, Stills, Timelapse, Audio; DA-49 (Q2) "filter only (opens on Stills in photo mode)" (`P7:10132`); B6 Refresh "with `refresh.png`", "Scanning..."; B10 sort chip "NEWEST FIRST / OLDEST FIRST" "replaces today's `<select>`" | conflict | Reshape, do not copy `U:3981-4012`. Keep eyebrow, per-category title, the SHOW button and its menu, the sort chip, Refresh's "Scanning...". Take upstream parts: Back = upstream's own markup `icon-button settings-back-button` with the text "Back" / "Cancel" (`U:3993-3995`; no arrow SVG); Refresh = `secondary-button` + `/icons/refresh.png` (the touch UI's icon, design F27) + "Refresh Media"; SHOW and the chip = `secondary-button` (B5). Upstream ids where the job is the same (`closeMediaBrowserButton`, `refreshMediaBrowserButton`, `mediaBrowserCountPill`). Deleted: the 2 header SVGs, `.pb-top-button`, `.pb-h1` (title -> `h2.section-title`, as B3 says). Not added: the filter row, the `<select>`, the copy line. Check grep becomes `grep -cE 'pb-top-button|pb-h1'` = 0; Playwright: SHOW menu filters, photo mode opens on Stills, chip toggles order. About -60 +25 |
+| 13 Clear button | DA-43, B4 "Back (... 'Cancel' in selection)": Back already reads Cancel and leaves selection (`P7:11975`); DA-50 keeps Download and Select All, Clear is not in the touch UI | needs his answer | Recommend drop: Cancel does Clear's job. WCP-03-F3's Clear point is met by B4 |
+| 14 viewer buttons and PNGs | DA-43, V8 "three circles ... round `.icon-button`s with `previous` / `play` / `pause` / `next` PNGs"; DA-48 (Q9) O1 "Frame step ◀ ▶ (hold to repeat)"; V5 Info button | conflict in part | Base class `.icon-button` (upstream) plus one round modifier for the transport row (`border-radius: 50%`, renamed `.clip-viewer-transport .icon-button`), instead of `.pbv-circle*`. Frame step: text glyphs in `.icon-button`, not `/icons/previous.png` / `next.png`, which already mean previous/next clip in V8. Info keeps `info.png` + "Info" on `secondary-button` (as built `P7:6435-6437`). Download as a text `secondary-button` is fine (no download icon in `src/web/icons`). The selected-check SVG -> `.media-select-control.selected` is fine (B17 asks only for a red circle with a check) |
+| 15 class and id renames | none (operator-visible strings unchanged) | fine | Owner Q4 stays open. The sed map also covers the kept dialog, menu, chip and history names |
+| 16 flat Clip Browser state | none | fine | Owner Q5 stays open |
+| 17 upstream job names | none | fine | none |
+| 18 verb-first viewer names | none | fine | `repeatClipFrameStep` survives (see 23) |
+| 19 one dropdown look | No recorded decision. The white look came in `d44b177` (under his name, built by Claude in the drop-frames work he directed, DB-91): "like CineMate's web GUI, so they are easy to see"; `working/drop-frames/README.md:87` later describes the pins as "a dark dropdown" | needs his answer (owner Q6) | none. Stock: Controls and Config > Hardware exist only in the port, so either answer leaves a stock camera as 1.6.0 |
+| 20 no inline SVG in the Mode Ladder | DB-51 "no drag and drop, the ladder orders itself by quality", "'Max' boxes between rows"; DB-49 "one column of collapsible groups"; DA-32 "the Controls card gets white SVG blueprint sketches of each accessory" (wish, not built: 0 matches for a sketch in `P7`) | conflict (in the plan text) | Only `ladderIcons.down` (the arrow on the Max line, `P7:8195`) and `.chevron` (group head, `P7:8307`) are used; `handle`, `up`, `remove` are dead. Do **not** add "Up"/"Down"/"Remove" buttons (that brings back the manual order DB-51 removed). Delete the 3 dead icons; the Max line loses its arrow; the chevron becomes a CSS triangle drawn like `.settings-select`'s arrow (`U:1535-1541`, two `linear-gradient`s), turned by `[aria-expanded="true"]`. Do not state "0 `<svg>`" as a page rule: DA-32's sketches, when built, are files in `src/web/icons` served by `GET /icons/<name>` like every other icon |
+| 21 `.hidden` class | none | fine | none |
+| 22 no browser history | DA-43, design D19 "the browser's Back gesture and button close the viewer, then the browser (`history.pushState` / `popstate`)", reason "a phone's Back would leave the WebUI"; DA-56 (Q10) "design for iPhone and Android"; built and tried: "phone Back leaves the viewer first" (`fork-log.md:102`, `measurements.md:132`) | conflict | Drop commit 22 (owner Q1 option b): history stays as documented new ground under the new names (about 25 lines). Stock: `pushState` runs only when the overlay or the viewer opens (`P7:10135`, `P7:12783`), so the rest of the page behaves as 1.6.0 |
+| 23 one step per click | Frame step: DA-48 (Q9) O1 "Frame step ◀ ▶ (hold to repeat)" (`design-playback.md:1473`, "long takes and finding the clap need it"; built `fork-log.md:102`). Knob arrows: from `1319967` ("another session", `fork-log.md:148`), no decision recorded | conflict in part | Split: keep `repeatClipFrameStep` and its two calls (`P7:12940-12941`). Owner Q2 shrinks to the Remote controls knob arrows. If he removes their repeat, the same commit changes the card copy "Hold an arrow to keep turning." (`P7:4577`) |
+| 24 Remote controls in the Controls panel | DA-104 / DB-65 "everything back" keeps Remote controls; where it lives is not decided | fine (the stock rule picks it) | none. Today the card is on every camera's main page (`P7:4569-4580`, never hidden) and fetches `get_controls` every 5 s until a model arrives: a stock main page differs from 1.6.0. Commit 24 makes it 1.6.0 again and keeps the feature |
+| 25 Remote controls stays on the main page | as 24 | conflict with the stock rule (not with a decision) | Take 24. If he still wants the main-page card, it must be an operator option off by default, a `UI.conf` key in the shape of `frameBufferBarEnabled` (`App:1905`, `:2096`, `:7791`; command `set_frame_buffer_bar_enabled`); that needs Core and is outside this page-only plan |
+| Plan as a whole | DA-43 vs the stock rule: the port's Clip Browser and Viewer replace 1.6.0's list overlay (`U:3979-4030`) on every camera, stock included | needs his answer (playback theme) | Not in this plan. This plan keeps the feature as built. If he wants a stock camera to open 1.6.0's list, the shape is one `UI.conf` switch like `frameBufferBarEnabled`, default 1.6.0, and keeping upstream's overlay beside the port's (about 400 lines kept, not deleted) |
+
+Plan claims corrected by this audit:
+- "Every feature stays" (In short 6) holds only with commits 11, 12, 14, 22 and 23 changed as above.
+- "WEB-21 settles the wording shape, so this is no owner question" (commit 11): a recorded decision settles it the other way (B23).
+- Commit 20's "Up", "Down", "Remove" buttons describe controls the ladder does not have.
+- What a Pi adds: his camera is a CM5 with the CFexpress hat and an HDMI monitor, no touch screen (DA-77). The Pi 4 + SD-card steps (commit 2, Risks) and the "Pi 4 and Pi 5" CPU reading need another board; on his rig they read "not run".
+- His NVMe campaign ran with `frameBufferBarEnabled=true` (`working/drop-frames/nvme-campaign/run-20261110/audio-forensics/*/UI.conf:34`), and in real use a WebUI client is connected (`working/drop-frames/nvme-campaign/plan.md:92`). Commits 2-3 must keep the `/api/buffer` request rate and its start/stop rule exactly as today, or a later campaign is not comparable with his. `working/tools/webui_client.py` mirrors only `/api/state` 1 Hz and the preview, so it stays valid.
+- No tutorial (`tutorials/`) and no other tool in `working/tools` or `working/drop-frames` names a page function, id or store this plan renames (grep for `pb*`, `playbackOverlay`, `controlsState`, `frameBufferBar`, `bootConfig`, `clipUi`, `settingsSearch`: only `controls_page_test.js`).
+
+Rows to add to "What stays as new ground":
+
+| Feature | Shape it keeps | Why that shape |
+| --- | --- | --- |
+| The touch UI's browser header: "PLAYBACK" eyebrow, per-category title, SHOW pop-up menu, sort chip | Upstream parts (`h2.section-title`, `secondary-button`, `icon-button settings-back-button`, `/icons/refresh.png`), the menu as the one pop-up, under `.media-browser-*` names | DA-43, DA-49; design B2-B6, B10 |
+| Remove dialog (browser and viewer) | Scrim and card under `.media-browser-dialog*`, `secondary-button` / `danger-button`, "Removing... (N files)" | DA-43; design B23, V12, V17 |
+| Round transport circles in the viewer | `.icon-button` with one round modifier | DA-43; design V8 |
+| Frame step hold-to-repeat | `repeatClipFrameStep`, no pointer capture, 400 ms / 90 ms | DA-48 (O1) |
+
+### Decisions this plan must keep
+
+1. The Clip Browser and Viewer look and behave like the touch UI's (DA-43, DB-75): eyebrow "PLAYBACK", "Clip / Still / Timelapse / Audio Browser", SHOW menu, sort chip, Back that reads Cancel in selection, round transport, Remove dialog. Change the parts to upstream classes, ids and `/icons` PNGs, not the shape.
+2. SHOW only filters; it opens on Stills when the camera is in photo mode (DA-49).
+3. The phone's Back closes the viewer, then the browser (design D19; tried, `fork-log.md:102`).
+4. Frame step repeats while held (DA-48, O1).
+5. Download, Select All, Timelapse and Audio stay (DA-50); "1 item" wording (DA-54); thumbnails fill the card to the top and sides (DA-74); keep-awake `user_activity` only while playing (DA-57); Space plays and pauses (DA-64).
+6. The REC pill turns READY green while the buffer drains after a safety stop, with the bar on or off; REC during the flush discards and starts a new take at once, with its toast (DB-61, `drop-frames/README.md:99`). The "Frame buffer bar" stays an option, off by default.
+7. The `/api/buffer` poll rate and its start/stop rule stay as today (his campaigns ran with the bar on).
+8. The Mode Ladder orders itself, has Max boxes between rows and collapsible groups (DB-49, DB-51); no manual Up/Down.
+9. Controls: Save during a take is allowed (DA-6); a stale save keeps the operator's edits on the page (DA-20); Listen stays (DA-23); Check shows Core's issues with line numbers (T43).
+10. Remote controls stays as a feature (DA-104); off the stock main page.
+11. Do not make "no SVG" a rule that blocks DA-32's accessory sketches; they go to `src/web/icons`.
+12. Rerun `working/tools/controls_page_test.js` after commits 4, 6 and 7, updated by the same sed map.
+
+### Open questions a recorded decision already answers
+
+| Question (For the owner) | Decision | The answer |
+| --- | --- | --- |
+| 1. Should the phone's Back close the Clip Browser? | DA-43 + design D19; DA-56; tried (`fork-log.md:102`, "works well") | Yes: option b, keep `pushState` / `popstate` as new ground. Commit 22 goes |
+| 2. Hold-to-repeat on frame step and knob arrows? | DA-48 (Q9: O1 "Frame step ◀ ▶ (hold to repeat)") | Frame step: keep. The knob arrows have no decision: the question stays, for them only |
+| 3. Where does Remote controls live? | DA-104 keeps the feature; the stock rule (the card changes a stock main page) | Controls panel (commit 24). Not a decision of his on the place: tell him, do not ask again unless he objects |
+| 7 (dropped by the plan). Remove: `window.confirm` or the dialog? | DA-43 + design B23, V12 ("the old `window.confirm` is removed") | The dialog stays. Commit 11 goes |
+| Header: upstream filter row and sort `<select>`, or SHOW and the chip? (not asked by the plan) | DA-43 + design B5, B10; DA-49 | SHOW menu and the chip stay, built from `secondary-button` |
+| 4, 5, 6 (renames, nested `state.clipViewer`, white dropdowns) | none recorded | still open |
+| New: Clear button beside Select All (commit 13) | DA-43 + B4 (Cancel already clears) | not answered; recommend drop |
+| New: should a stock camera keep 1.6.0's media list? | DA-43 vs the stock rule | not answered; playback theme |

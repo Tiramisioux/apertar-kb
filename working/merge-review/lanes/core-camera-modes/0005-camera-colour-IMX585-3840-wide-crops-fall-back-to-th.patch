@@ -1,0 +1,59 @@
+From 9393db112bb16c91ccbe42ff68a1d23d21c74265 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:22:39 +0000
+Subject: [PATCH] camera: colour IMX585 3840-wide crops fall back to the
+ automatic sensor configuration again
+
+Why: The configure loop tries an explicit sensorConfig first and an
+automatic one only when allowAutoSensorConfigFallback is true. In the port
+that was mono, IMX294 and IMX577 only. 1.6.0 also lets the IMX585 3840-wide
+raw12 crops fall back to the automatic configuration
+(CameraController.cpp:5993-5996@upstream-1.6.0), so a driver that has no
+explicit mode for a crop still gives a picture and Core crops in software.
+Without it, a 3840-wide crop the installed driver lacks (for example a
+saved 3840x2076 on the cinemate-port driver with the probe off, or a crop
+the original driver does not list) has no configuration at all.
+
+What: allowAutoSensorConfigFallback also holds for the IMX585 when the
+sanitised size is 3840 wide and isImx585LegacyCropResolution knows it.
+That is 1.6.0's clause on the existing helper, with no second size list;
+the helper also has 3840x2072, which 1.6.0's list lacked. The automatic
+result passes the IMX477/577 size rule added in the previous commit (same
+raw width, height at least the requested height), so a driver that hands
+back a smaller stream is still refused. Mono is unchanged.
+
+Tested: check_core.sh both builds (libcamera and without) and the host
+tests pass. Not run on a sensor. Needs the camera, journal command:
+journalctl -u apertar-core -b | grep -E 'camera configured|adjusted to too-small|rejected by'
+Port driver (cd548ef), APERTAR_SENSOR_PROBE=0 in the unit environment:
+set_resolution 3840x1744 configures explicitly as before; a hand-edited
+resolution_height=2076 in camera_settings.conf shows the explicit try
+rejected, then either an auto configure with raw 3840x2160 or the
+"adjusted to too-small stream 3840x2072" refusal, never a configured raw
+3840x2072. Original driver (e5b74d3): set_resolution 3840x1744 configures.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/camera/CameraController.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 701b9c2..fb96e08 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -8307,7 +8307,10 @@ private:
+             ? std::array<bool, 2>{ false, true }
+             : std::array<bool, 2>{ true, false };
+         const bool allowAutoSensorConfigFallback = monochromeSensor_ || sensorFamily_ == SensorFamily::Imx294 ||
+-                                                   sensorFamily_ == SensorFamily::Imx577;
++                                                   sensorFamily_ == SensorFamily::Imx577 ||
++                                                   (sensorFamily_ == SensorFamily::Imx585 &&
++                                                    sanitized.resolution.width == 3840 &&
++                                                    isImx585LegacyCropResolution(sanitized.resolution));
+         std::ostringstream rejectionLog;
+ 
+         for (const SensorModeSelection &sensorMode : sensorModes) {
+-- 
+2.43.0
+

@@ -1,0 +1,102 @@
+diff --git a/qml/ClipNameCard.qml b/qml/ClipNameCard.qml
+index 0e5ea35..b2eafd7 100644
+--- a/qml/ClipNameCard.qml
++++ b/qml/ClipNameCard.qml
+@@ -8,6 +8,8 @@ Item {
+     id: card
+ 
+     property var bridge: null
++    property Item popupParent: null
++    property var dropdownController: null
+     readonly property bool editable: !!bridge && !bridge.recording
+ 
+     // Asks the owner to open the text keyboard; `current` is the existing text when editing a pill.
+@@ -21,9 +23,9 @@ Item {
+     readonly property int pillFontSize: largeLandscape ? 22 : (standardLandscape ? 16 : 14)
+ 
+     readonly property var presetList: [
+-        { label: "Original", template: "{format}_{date}_{clip}" },
+-        { label: "Time of day, dashes", template: "{format}_{date_}_{tc-}_{clip}" },
+-        { label: "Time of day, compact", template: "{format}_{date_}_{tc}_{clip}" }
++        { value: "{format}_{date}_{clip}", label: "Original" },
++        { value: "{format}_{date_}_{tc-}_{clip}", label: "Time of day, dashes" },
++        { value: "{format}_{date_}_{tc}_{clip}", label: "Time of day, compact" }
+     ]
+     readonly property var paletteGroups: [
+         { title: "Time", kind: "token", items: ["date", "date_", "yy", "mm", "dd", "time", "time-", "tc", "tc-"] },
+@@ -50,12 +52,12 @@ Item {
+     property int textInsertIndex: -1        // >= 0: where a new text pill goes, -1 = at the end
+ 
+     readonly property bool dirty: !!bridge && currentTemplate !== bridge.clipNameTemplate
+-    readonly property bool matchesNoPreset: {
++    readonly property string presetLabel: {
+         for (var i = 0; i < presetList.length; ++i) {
+-            if (presetList[i].template === currentTemplate)
+-                return false
++            if (presetList[i].value === currentTemplate)
++                return presetList[i].label
+         }
+-        return true
++        return "Custom"
+     }
+ 
+     implicitHeight: content.implicitHeight
+@@ -347,36 +349,16 @@ Item {
+         width: card.width
+         spacing: 10
+ 
+-        Text {
+-            width: parent.width
+-            text: "Pattern"
+-            color: "white"
+-            font.pixelSize: 14
+-        }
+-
+-        Flow {
+-            width: parent.width
+-            spacing: 12
+-
+-            Repeater {
+-                model: card.presetList
+-
+-                ActionTile {
+-                    required property var modelData
+-                    width: (content.width - 12) / 2
+-                    label: modelData.label
+-                    tone: card.currentTemplate === modelData.template ? "accent" : "default"
+-                    actionEnabled: card.editable
+-                    onClicked: card.applyPreset(modelData.template)
+-                }
+-            }
+-        }
+-
+-        Text {
++        InlineDropdownField {
+             width: parent.width
+-            text: card.matchesNoPreset ? "Custom pattern" : " "
+-            color: "#9aa5b1"
+-            font.pixelSize: 12
++            label: "Pattern"
++            value: card.currentTemplate
++            displayValue: card.presetLabel
++            options: card.presetList
++            fieldEnabled: card.editable
++            popupParent: card.popupParent
++            dropdownController: card.dropdownController
++            onValueSelected: function(v) { card.applyPreset(v) }
+         }
+ 
+         // The pattern row: pills in order, a drop target for dragged pills.
+diff --git a/qml/SettingsPage.qml b/qml/SettingsPage.qml
+index 325ff46..5e1bd5a 100644
+--- a/qml/SettingsPage.qml
++++ b/qml/SettingsPage.qml
+@@ -4027,6 +4027,8 @@ Item {
+                 id: clipNameCard
+                 width: parent.width
+                 bridge: (typeof apertarControlBridge !== "undefined") ? apertarControlBridge : null
++                popupParent: dropdownOverlay
++                dropdownController: sharedDropdownController
+                 onTextRequested: function(current) { root.openClipTextPopup(current) }
+ 
+                 Connections {

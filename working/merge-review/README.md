@@ -3,7 +3,8 @@
 Is `cinemate-port` ready to merge into Apertar `main`, and what has to change so the original developer reads it
 as Apertar and not as a second code base inside it? This folder holds the review, its raw notes and its results.
 
-Status of this page: **in progress**. Results pages are listed at the bottom as they land.
+Status: **paused on 2026-11-17 at Patrik's request.** `STATE.md` says where everything stands, what is pushed, what is saved
+as patches, what the audit against his recorded decisions found, and how to resume. Read that page first.
 
 ## What Patrik asked for (2026-11-17)
 
@@ -115,4 +116,9 @@ by Patrik, to save tokens). The scripts that drive the agents are not in this re
 | `commit-plan.md` | The clean commit series |
 | `hdr12/REPORT.md` | 12-bit Clear HDR |
 | `coding-map/` | What was wrong in the coding map, what was added |
-| `design/` | One page per large rework: how the port does it, how original Apertar does that kind of thing, the target, the commit plan, decisions for the owner |
+| `design/` | One page per large rework: how the port does it, how original Apertar does that kind of thing, the target, the commit plan, decisions for the owner. `design/decisions-audit-summary.md`: the plans checked against Patrik's recorded decisions |
+| `STATE.md` | Where the campaign stands at the pause, and how to resume |
+| `owner-decisions.md` | The review's open questions to Patrik (to be redone after the audit: several are already answered by his recorded decisions) |
+| `owner-recorded-decisions-a.md`, `-b.md` | Every decision Patrik recorded in this KB, collected with source lines (211 rows) |
+| `lanes/` | Worker commits not yet on the improvement branch, as patches |
+| `tools/` | The gate scripts and agent workflows of the review |

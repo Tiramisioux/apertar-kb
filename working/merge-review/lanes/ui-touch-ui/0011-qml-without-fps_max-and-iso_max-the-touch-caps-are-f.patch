@@ -1,0 +1,83 @@
+From 210ffe5fba7964703b2e64a3971b4c0e03fc964f Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:18:45 +0000
+Subject: [PATCH] qml: without fps_max and iso_max the touch caps are fork
+ main's again
+
+Why: CameraPage.qml keeps fixed ISO and fps caps for a Core that sends no
+iso_max or fps_max. The port changed these fallbacks: 4K Clear HDR 16-bit
+on the IMX585 stopped at 25 fps, without iso_max lossless offered the whole
+ISO list with Auto (1600 only without a bridge), and the IMX585 lossless
+fps cap was an empty block. Core today always sends fps_max and sends
+iso_max above 0 in lossless and Clear HDR modes, so these lines only run
+without those fields, and there they differed from the merge target.
+Apertar 1.6.0 and fork main cap lossless at ISO 800 without Auto, the
+IMX585 4K modes at 30 fps and IMX585 lossless at 30 fps
+(ui-upstream qml/CameraPage.qml:511-513, :815-816).
+
+What: maximumSupportedFpsForResolution is fork main's function again (the
+25 branch and its comment are gone). isoOptions takes Core's isoMax only
+when it is above 0; otherwise lossless stops at 800 and offers no Auto.
+fpsCeiling caps IMX585 lossless at 30 again when Core sends no fps_max.
+
+Tested: check_ui.sh lane-ui1 PASS (QML compiled ahead of time, 0 warnings);
+maximumSupportedFpsForResolution diffs empty against ui-main. Nothing on a
+screen here. On the camera there is nothing to see with this Core: the
+lines run only against a Core without fps_max and iso_max.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ qml/CameraPage.qml | 18 ++++++++++--------
+ 1 file changed, 10 insertions(+), 8 deletions(-)
+
+diff --git a/qml/CameraPage.qml b/qml/CameraPage.qml
+index 4236cc4..c4410a4 100644
+--- a/qml/CameraPage.qml
++++ b/qml/CameraPage.qml
+@@ -521,12 +521,15 @@ Item {
+     readonly property var builtInWbSteps: [2500, 2800, 3000, 3200, 3400, 3600, 4000, 4500, 4800, 5000, 5200, 5400, 5600, 5800, 6000, 6500, 7000, 7500, 8000]
+     // isoMax is Core's ISO ceiling for the current mode (Clear HDR, lossless cDNG), 0 = none:
+     // values above it greyed, the ceiling added in green when not in the list; no Auto in Clear
+-    // HDR; with auto on, Lock freezes the gain in use.
++    // HDR; with auto on, Lock freezes the gain in use. Without iso_max, lossless stops at 800
++    // without Auto, as the fixed list did.
+     readonly property var isoOptions: {
+-        const maximum = root.controlBridge ? root.controlBridge.isoMax : (root.losslessIsoLimitedMode ? 1600 : 0)
++        const coreMaximum = root.controlBridge ? root.controlBridge.isoMax : 0
++        const losslessFallback = !(coreMaximum > 0) && root.losslessIsoLimitedMode
++        const maximum = coreMaximum > 0 ? coreMaximum : (losslessFallback ? 800 : 0)
+         const entries = root.cappedValueEntries(root.valueSteps(settingsState ? settingsState.isoSteps : [], root.builtInIsoSteps),
+                                                 maximum, v => String(Math.round(v)))
+-        if (root.clearHdrActive)
++        if (root.clearHdrActive || losslessFallback)
+             return entries
+         return (root.iso === "Auto" ? ["Auto", "Lock"] : ["Auto"]).concat(entries)
+     }
+@@ -817,9 +820,8 @@ function maximumSupportedFpsForResolution(resolutionValue) {
+ 
+     if (root.imx585Detected) {
+         var imx585Max = 60.0
+-        // Clear HDR 16-bit stops at 25, as in Core's tableMaximumFpsForResolution().
+         if (resolutionValue === "3856x2180" || resolutionValue === "3840x2160")
+-            imx585Max = root.clearHdrActive && root.rawBitDepthValue === "16-bit" ? 25.0 : 30.0
++            imx585Max = 30.0
+         else if (resolutionValue === "3840x2024" ||
+                  resolutionValue === "3840x2076" ||
+                  resolutionValue === "3840x1920" ||
+@@ -909,9 +911,9 @@ function fpsCeiling() {
+         var normalizedResolution = root.normalizedResolutionForCurrentSensor(root.resolution)
+         max = Math.min(max, root.imx477MaximumUncompressedFpsForResolution(normalizedResolution))
+     }
+-    if (root.losslessImx585Mode) {
+-        // Core's fps_max carries the IMX585 lossless ceiling (the mode's own maximum); no fixed cap here
+-    } else if (root.losslessFourKMode)
++    if (root.losslessImx585Mode)
++        max = Math.min(max, 30.0)
++    else if (root.losslessFourKMode)
+         max = Math.min(max, root.isApproximatelyFourThree(root.resolution) ? 24.0 : 30.0)
+     else if (root.losslessTwoKMode)
+         max = Math.min(max, 60.0)
+-- 
+2.43.0
+
