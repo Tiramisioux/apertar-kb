@@ -208,26 +208,25 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | CC-6-F10 | nit | duplication | S | no | clipNameSensorLocked duplicates sensorName | src/camera/CameraController.cpp:11816-11822@cinemate-port; src/camera/CameraController.cpp:12596-12603@cinemate-port |
 | CC-6-F11 | nit | new-ground | S | yes | emitLogAppliedIfChangedLocked + lastEmittedLogApplied_ for one runtime field | src/camera/CameraController.cpp:12875-12879@cinemate-port; src/camera/CameraController.cpp:12778@cinemate-port |
 
-## Unit Camera-headers (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Camera-headers.md)
+## Unit Camera-headers (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Camera-headers.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| Camera-headers-F1 | major | mismatch | M | yes | TDN strip: own JSON parser, atomic writer and sidecar where upstream derives tuning files with libyaml | src/camera/TuningTdnStrip.hpp:43-249@cinemate-port; src/camera/TuningTdnStrip.hpp:350-387@cinemate-port |
-| Camera-headers-F2 | major | bug | S | unknown | preview_tdn defaults to off and the stripped tuning reaches H.264/ProRes recordings and processed stills | include/apertar/core/Types.hpp (CaptureSettings::previewTdn)@cinemate-port; src/camera/CameraController.cpp:7308-7326@cinemate-port |
+| Camera-headers-F1 | major | mismatch | M | yes | TDN strip: own JSON parser, atomic writer and sidecar where upstream derives tuning files with libyaml | src/camera/TuningTdnStrip.hpp:43-249@cinemate-port; src/camera/TuningTdnStrip.hpp:350-378@cinemate-port |
+| Camera-headers-F2 | major | bug | S | unknown | preview_tdn defaults to off and the stripped tuning reaches H.264/ProRes recordings and processed stills | include/apertar/core/Types.hpp:139@cinemate-port; src/camera/CameraController.cpp:7306-7326@cinemate-port |
 | Camera-headers-F3 | major | removed-upstream-behaviour | S | yes | IMX585 lossless cDNG 30 fps cap lifted by default | src/camera/FpsCeiling.hpp:27-45@cinemate-port; src/camera/CameraController.cpp:3115-3142@cinemate-port |
 | Camera-headers-F4 | major | removed-upstream-behaviour | S | yes | FPS ceiling: the probe beats the hard-coded table by default | src/camera/FpsCeiling.hpp:12-19@cinemate-port; src/camera/CameraController.cpp:3397-3423@cinemate-port |
-| Camera-headers-F5 | major | mismatch | M | unknown | Mode ladder persists in its own mode_ladder.conf | src/camera/ModeLadder.hpp:316-342@cinemate-port; src/camera/CameraController.cpp:404-414@cinemate-port |
-| Camera-headers-F6 | minor | mismatch | S | no | Rung::compression is a free string mixing record format and compression | src/camera/ModeLadder.hpp:22-44@cinemate-port |
-| Camera-headers-F7 | minor | mismatch | S | no | Ladder and clip-name setters return data through out-params instead of bool + lastError() | src/camera/CameraController.hpp (setModeLadder, applyLadderToPreset, setClipNameTemplate)@cinemate-port |
-| Camera-headers-F8 | minor | protocol | M | no | get_mode_ladder / set_mode_ladder reply is deeply nested JSON | src/camera/ModeLadder.hpp:265-314@cinemate-port |
-| Camera-headers-F9 | minor | mismatch | M | no | Nine ladder runtime fields (a vector and a UTF-8 display string among them) added to CaptureSettings | include/apertar/core/Types.hpp (fpsTakeMax, ladderActive ... ladderText)@cinemate-port |
-| Camera-headers-F10 | minor | duplication | S | no | Sensor tables: own Size types, two nearest-mode metrics, legacy IMX585 lists duplicated beside the table | src/camera/Imx283Modes.hpp:19-22,114-135@cinemate-port; src/camera/Imx585Modes.hpp:34-38,236-252@cinemate-port |
+| Camera-headers-F5 | major | mismatch | M | yes | Mode ladder persists in its own mode_ladder.conf | src/camera/ModeLadder.hpp:316-342@cinemate-port; src/camera/CameraController.cpp:403-414@cinemate-port |
+| Camera-headers-F6 | minor | mismatch | S | no | Rung::compression is a free string mixing record format and compression | src/camera/ModeLadder.hpp:22-44@cinemate-port; src/camera/ModeLadder.hpp:160-166@cinemate-port |
+| Camera-headers-F7 | minor | mismatch | S | no | Ladder setters and clip-name preview return errors and data through out-params instead of bool + lastError() | src/camera/CameraController.hpp:92@cinemate-port; src/camera/CameraController.hpp:102-109@cinemate-port |
+| Camera-headers-F9 | minor | mismatch | S | yes | Display text and redundant ladder fields in CaptureSettings | include/apertar/core/Types.hpp:181-189@cinemate-port |
 | Camera-headers-F11 | minor | duplication | S | no | Env-var parsing re-implemented three times | src/camera/Imx585Modes.hpp:105-114@cinemate-port; src/camera/FpsCeiling.hpp:29-38@cinemate-port |
-| Camera-headers-F12 | minor | slop | S | no | Ticket numbers, Cinemate narration and a stale comment in code and in the user's config file | src/camera/ModeLadder.hpp:1,319@cinemate-port; include/apertar/core/Types.hpp (9 x T31/T34)@cinemate-port |
-| Camera-headers-F13 | minor | slop | S | yes | conformFps is persisted and settable but has no effect and no UI | include/apertar/core/Types.hpp (conformFps)@cinemate-port; src/camera/CameraController.cpp:696-697@cinemate-port |
-| Camera-headers-F15 | minor | new-ground | S | yes | Host tests: four files, three styles, no build hook; phase lock untested in the repo | tools/fps_ceiling_test.cpp@cinemate-port; tools/imx283_modes_test.cpp@cinemate-port |
-| Camera-headers-F14 | nit | slop | S | yes | Compatibility for spellings that never shipped; CdngLog::Auto means On | include/apertar/core/Types.hpp (cdngLogFromString)@cinemate-port; src/camera/ModeLadder.hpp:168,337@cinemate-port |
-| Camera-headers-F16 | nit | new-ground | S | yes | FpsCeiling.hpp splits three one-line rules into a header for a test | src/camera/FpsCeiling.hpp:1-47@cinemate-port |
+| Camera-headers-F12 | minor | slop | S | no | Ticket numbers, Cinemate narration and a stale comment in code and in the user's config file | src/camera/ModeLadder.hpp:1,319@cinemate-port; include/apertar/core/Types.hpp:141,181-189@cinemate-port |
+| Camera-headers-F13 | minor | slop | S | yes | conformFps is persisted and settable but has no effect and no UI | include/apertar/core/Types.hpp:135-137@cinemate-port; src/camera/CameraController.cpp:172,696-697,817-818,942,11354,11364,11806-11812@cinemate-port |
+| Camera-headers-F15 | minor | new-ground | S | yes | Host tests of this unit: three styles, no build hook; phase-lock simulator only in the KB | tools/fps_ceiling_test.cpp@cinemate-port; tools/imx283_modes_test.cpp@cinemate-port |
+| Camera-headers-F10 | nit | duplication | S | no | Sensor tables: own Size types and two nearest-mode metrics | src/camera/Imx283Modes.hpp:19-22,114-135@cinemate-port; src/camera/Imx585Modes.hpp:34-38,236-252@cinemate-port |
+| Camera-headers-F14 | nit | slop | S | yes | Compatibility for spellings that never shipped; CdngLog::Auto means On | include/apertar/core/Types.hpp:59-62,326-346@cinemate-port; src/camera/ModeLadder.hpp:168,337@cinemate-port |
+| Camera-headers-F16 | nit | new-ground | S | yes | FpsCeiling.hpp splits one-line rules into a header for a test | src/camera/FpsCeiling.hpp:1-47@cinemate-port |
 
 ## Unit Driver-imx283 (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Driver-imx283.md)
 
@@ -266,44 +265,43 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | Driver-imx585-F7 | nit | slop | S | no | Unused min_vmax_default override and two wrong min_vmax literals | imx585.c:384-387@cinemate-port; imx585.c:3289-3299@cinemate-port |
 | Driver-imx585-F13 | nit | new-ground | S | yes | The read-only geometry controls (+10..+14) have no Apertar consumer | imx585.c:44-50@cinemate-port; imx585_update_mode_metadata imx585.c:3354-3367@cinemate-port |
 
-## Unit Encoders-audio (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Encoders-audio.md)
+## Unit Encoders-audio (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Encoders-audio.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| Encoders-audio-F1 | major | mismatch | S | yes | DONTNEED policy read from a tuning file inside the cDNG encoder | src/cdng/CdngEncoder.cpp:84-108@cinemate-port; src/cdng/CdngEncoder.cpp:7@cinemate-port |
-| Encoders-audio-F2 | major | removed-upstream-behaviour | M | yes | Writer-side DONTNEED default changed for cDNG and silently removed for Lossy DNG | src/cdng/CdngEncoder.cpp:1897-1898@cinemate-port; src/lossydng/LossyDngEncoder.cpp:101-105@cinemate-port |
+| Encoders-audio-F1 | major | mismatch | S | yes | DONTNEED policy read from a tuning file inside the cDNG encoder | src/cdng/CdngEncoder.cpp:84-108@cinemate-port; src/cdng/CdngEncoder.cpp:7,21@cinemate-port |
+| Encoders-audio-F2 | major | removed-upstream-behaviour | M | yes | Writer-side DONTNEED default changed for cDNG and dropped for Lossy DNG | src/cdng/CdngEncoder.cpp:1897-1898@cinemate-port; src/lossydng/LossyDngEncoder.cpp:101-105@cinemate-port |
 | Encoders-audio-F3 | minor | slop | S | no | Comments narrate history, dates, clip ids, tutorial numbers and Cinemate hashes | src/cdng/CdngEncoder.hpp:13-16@cinemate-port; src/cdng/CdngEncoder.hpp:44@cinemate-port |
-| Encoders-audio-F4 | minor | slop | S | unknown | 'CineMate Log' product name in Core code and log lines | src/cdng/LogCurve.hpp:13@cinemate-port; src/cdng/LogCurve.hpp:18@cinemate-port |
-| Encoders-audio-F5 | minor | mismatch | S | no | Audio writer queue unbounded, heap block per read | src/audio/AudioRecordingSession.cpp:734-745@cinemate-port; src/audio/AudioRecordingSession.cpp:766-771@cinemate-port |
-| Encoders-audio-F6 | minor | new-ground | S | yes | Clip name template: over-built token set and placed in src/util | src/util/ClipName.hpp:29-35@cinemate-port; src/camera/CameraController.cpp:1160-1165@cinemate-port |
-| Encoders-audio-F7 | minor | new-ground | S | unknown | LossyDngEncoder::setCdngLog keeps raw pointers with a lifetime contract | src/lossydng/LossyDngEncoder.hpp:24-30@cinemate-port; src/lossydng/LossyDngEncoder.cpp:905@cinemate-port |
-| Encoders-audio-F8 | minor | new-ground | S | yes | Drift fit still resamples anywhere in 20..2000 ppm | src/audio/AudioRecordingSession.cpp:486-498@cinemate-port; src/audio/AudioRecordingSession.cpp:588-605@cinemate-port |
-| Encoders-audio-F9 | minor | bug | S | no | After a writer failure the WAV counts queued bytes that were never written (probable) | src/audio/AudioRecordingSession.cpp:534-536@cinemate-port; src/audio/AudioRecordingSession.cpp:772-779@cinemate-port |
+| Encoders-audio-F4 | minor | slop | S | unknown | 'CineMate Log' product name in Core code and log lines | src/cdng/LogCurve.hpp:13,18,48,63@cinemate-port; src/lossydng/LossyDngEncoder.cpp:51@cinemate-port |
+| Encoders-audio-F5 | minor | mismatch | S | no | Audio writer queue unbounded, heap block per read | src/audio/AudioRecordingSession.cpp:734-746@cinemate-port; src/audio/AudioRecordingSession.cpp:485@cinemate-port |
+| Encoders-audio-F6 | minor | new-ground | S | yes | Clip name template: over-built token set, placed in src/util | src/util/ClipName.hpp:29-35@cinemate-port; src/util/ClipName.hpp:121,130-132@cinemate-port |
+| Encoders-audio-F9 | minor | bug | S | no | After a writer failure the WAV is built from queued bytes that were never written (probable) | src/audio/AudioRecordingSession.cpp:534-536@cinemate-port; src/audio/AudioRecordingSession.cpp:771-779@cinemate-port |
+| Encoders-audio-F8 | nit | new-ground | S | yes | Drift fit still resamples anywhere in 20..2000 ppm | src/audio/AudioRecordingSession.cpp:486-498@cinemate-port; src/audio/AudioRecordingSession.cpp:588-608@cinemate-port |
 | Encoders-audio-F10 | nit | new-ground | S | yes | ALSA hw params set by hand; ring env knob left after the reverted 1 s experiment | src/audio/TimestampedAudioCapture.cpp:192-219@cinemate-port; src/audio/TimestampedAudioCapture.hpp:27-28@cinemate-port |
 | Encoders-audio-F11 | nit | new-ground | S | yes | Dropped-frame running total added to RecordingDropWarning | src/util/RecordingDropWarning.hpp:11-27@cinemate-port |
-| Encoders-audio-F12 | nit | removed-upstream-behaviour | S | yes | MLV declares different black level than 1.6.0 at 12/16-bit | src/mlv/MlvEncoder.cpp:1152-1157@cinemate-port |
+| Encoders-audio-F12 | nit | removed-upstream-behaviour | S | yes | MLV declares a different black level than 1.6.0 at 12/16-bit | src/mlv/MlvEncoder.cpp:1151-1157@cinemate-port |
 | Encoders-audio-F13 | nit | slop | S | no | Knob area names and include order | src/cdng/CdngEncoder.cpp:118@cinemate-port; src/cdng/CdngEncoder.cpp:137@cinemate-port |
-| Encoders-audio-F14 | nit | new-ground | S | yes | tools/ host tests plus a Python golden-value generator | tools/gen_log_curve.py@cinemate-port; tools/log_curve_test.cpp:3-6@cinemate-port |
+| Encoders-audio-F14 | nit | new-ground | S | yes | Host tests in tools/ plus a Python golden-value generator | tools/gen_log_curve.py@cinemate-port; tools/log_curve_test.cpp:1-6@cinemate-port |
 
-## Unit HW-config-text-store (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-HW-config-text-store.md)
+## Unit HW-config-text-store (verified; /home/user/apertar-kb/working/merge-review/raw/rev-HW-config-text-store.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| HW-config-text-store-F1 | major | removed-upstream-behaviour | S | yes | Config page save refused on new validator errors; WebUI has no override | src/hardware/HardwareConfigStore.cpp:336-342@cinemate-port; src/ApertarCoreApp.cpp:8640-8642@cinemate-port |
-| HW-config-text-store-F2 | major | removed-upstream-behaviour | S | yes | [run_script] paths refused from the browser; also blocks Undo and restore | src/hardware/HardwareConfigStore.cpp:34-42@cinemate-port; src/hardware/HardwareConfigStore.cpp:330-335@cinemate-port |
-| HW-config-text-store-F3 | major | new-ground | M | yes | hwconf is a second, table-driven model of every reader in a 1141-line header; already drifted | src/hardware/HardwareConfigText.hpp:27-69@cinemate-port; src/hardware/HardwareConfigText.hpp:157-208@cinemate-port |
-| HW-config-text-store-F4 | minor | bug | S | no | Key edit on a duplicated section writes the copy the readers ignore | src/hardware/HardwareConfigText.hpp:541-550@cinemate-port; src/hardware/HardwareConfigStore.cpp:298@cinemate-port |
-| HW-config-text-store-F5 | minor | bug | S | no | set_controls text= skips the upstream empty/size/NUL checks | src/ApertarCoreApp.cpp:12763-12799@cinemate-port; src/ApertarCoreApp.cpp:6227-6248@cinemate-port |
-| HW-config-text-store-F6 | minor | bug | S | yes | IMU write on a /boot-only rig creates a partial /home/pi file that hides /boot from the IMU | src/hardware/Mpu6050RecordingSession.cpp:605-623@cinemate-port; src/hardware/HardwareConfigStore.cpp:276-320@cinemate-port |
-| HW-config-text-store-F7 | minor | new-ground | S | yes | Text merge-review path has no in-tree caller | src/hardware/HardwareConfigText.hpp:1103-1139@cinemate-port; src/hardware/HardwareConfigStore.hpp:21@cinemate-port |
-| HW-config-text-store-F8 | minor | protocol | S | yes | POST /api/config from a browser without X-Apertar-Revision gets 409 | src/ApertarCoreApp.cpp:8630-8638@cinemate-port |
+| HW-config-text-store-F1 | major | removed-upstream-behaviour | S | yes | The Config page's text save is refused on new validator errors, and the WebUI has no override | src/hardware/HardwareConfigStore.cpp:336-342@cinemate-port; src/ApertarCoreApp.cpp:8640-8642@cinemate-port |
+| HW-config-text-store-F2 | major | removed-upstream-behaviour | S | yes | The browser cannot change [run_script] paths, and the same check blocks Undo and restore | src/hardware/HardwareConfigStore.cpp:34-42@cinemate-port; src/hardware/HardwareConfigStore.cpp:330-335@cinemate-port |
+| HW-config-text-store-F3 | major | new-ground | M | yes | hwconf is a second, table-driven model of every reader in one 1141-line header, and it has already drifted | src/hardware/HardwareConfigText.hpp:27-69@cinemate-port; src/hardware/HardwareConfigText.hpp:157-208@cinemate-port |
+| HW-config-text-store-F4 | minor | bug | S | no | A key edit on a duplicated section writes the copy the readers ignore | src/hardware/HardwareConfigText.hpp:541-550@cinemate-port; src/hardware/HardwareConfigStore.cpp:298@cinemate-port |
+| HW-config-text-store-F5 | minor | bug | S | no | set_controls text= skips the upstream empty, size and NUL checks | src/ApertarCoreApp.cpp:12763-12799@cinemate-port; src/ApertarCoreApp.cpp:6227-6248@cinemate-port |
+| HW-config-text-store-F6 | minor | bug | S | yes | An IMU write on a /boot-only rig creates a partial /home/pi file that hides the /boot file from every reader | src/hardware/Mpu6050RecordingSession.cpp:605-623@cinemate-port; src/hardware/HardwareConfigStore.cpp:154-163@cinemate-port |
+| HW-config-text-store-F7 | minor | new-ground | S | yes | The text merge-review path has no in-tree caller | src/hardware/HardwareConfigText.hpp:1103-1139@cinemate-port; src/hardware/HardwareConfigStore.hpp:21@cinemate-port |
+| HW-config-text-store-F8 | minor | protocol | S | yes | POST /api/config from a browser without X-Apertar-Revision gets a 409 | src/ApertarCoreApp.cpp:8628-8638@cinemate-port |
 | HW-config-text-store-F9 | minor | mismatch | M | unknown | StoreResult machine codes and issue arrays in error replies | src/hardware/HardwareConfigStore.hpp:25-38@cinemate-port; src/ApertarCoreApp.cpp:8650-8654@cinemate-port |
-| HW-config-text-store-F10 | minor | mismatch | S | no | src/hardware header includes capture-pipeline util headers | src/hardware/HardwareConfigText.hpp:5-6@cinemate-port; src/hardware/HardwareConfigText.hpp:800-815@cinemate-port |
-| HW-config-text-store-F11 | minor | duplication | S | no | Second config.txt parser and sudo command builder duplicate BootConfigText | src/hardware/HardwareConfigText.hpp:1029-1101@cinemate-port; src/hardware/BootConfigText.hpp:248@cinemate-port |
+| HW-config-text-store-F10 | minor | mismatch | S | no | A src/hardware header includes capture-pipeline util headers | src/hardware/HardwareConfigText.hpp:5-6@cinemate-port; src/hardware/HardwareConfigText.hpp:800-815@cinemate-port |
+| HW-config-text-store-F11 | minor | duplication | S | no | A second config.txt parser, mostly dead, duplicates BootConfigText | src/hardware/HardwareConfigText.hpp:1029-1101@cinemate-port; src/ApertarCoreApp.cpp:4976@cinemate-port |
 | HW-config-text-store-F12 | minor | pi-compat | S | unknown | parseConfigTxt applies only [all] and [pi5] blocks | src/hardware/HardwareConfigText.hpp:1037@cinemate-port; src/hardware/HardwareConfigText.hpp:1051@cinemate-port |
-| HW-config-text-store-F13 | minor | slop | S | no | Owner name, ticket numbers, out-of-tree client and history narration in code and operator text | src/hardware/HardwareConfigText.hpp:1082@cinemate-port; src/hardware/HardwareConfigText.hpp:116@cinemate-port |
-| HW-config-text-store-F14 | minor | duplication | S | no | Four storage handlers repeat the store.edit block; post-write block twice | src/ApertarCoreApp.cpp:12829-12925@cinemate-port; src/ApertarCoreApp.cpp:8655-8660@cinemate-port |
-| HW-config-text-store-F15 | nit | bug | S | no | by written raw into hardware-state.conf; 100 ms sleep under the store mutex | src/hardware/HardwareConfigStore.cpp:406-414@cinemate-port; src/hardware/HardwareConfigStore.cpp:102-115@cinemate-port |
+| HW-config-text-store-F13 | minor | slop | S | no | Owner name, ticket numbers, an out-of-tree client and history narration in code and operator text | src/hardware/HardwareConfigText.hpp:1082@cinemate-port; src/hardware/HardwareConfigText.hpp:116@cinemate-port |
+| HW-config-text-store-F14 | minor | duplication | S | no | Three storage blocks repeat the store.edit shape, and the post-write block appears twice more | src/ApertarCoreApp.cpp:12828-12925@cinemate-port; src/ApertarCoreApp.cpp:8655-8660@cinemate-port |
+| HW-config-text-store-F15 | nit | bug | S | no | `by` is written raw into hardware-state.conf, and a 100 ms sleep runs under the store mutex | src/hardware/HardwareConfigStore.cpp:406-414@cinemate-port; src/hardware/HardwareConfigStore.cpp:101-114@cinemate-port |
 
 ## Unit HW-controls-model (verified; /home/user/apertar-kb/working/merge-review/raw/rev-HW-controls-model.md)
 
@@ -326,21 +324,21 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | HW-controls-model-F12 | nit | duplication | S | no | gpioChipScore moved out of one of its three copies | src/hardware/GpioChipInfo.cpp:30-54@cinemate-port; src/hardware/GpioInput.cpp:475@cinemate-port |
 | HW-controls-model-F16 | nit | slop | S | no | get_controls parses the hardware file eight times per call | src/ApertarCoreApp.cpp:12439-12447@cinemate-port |
 
-## Unit HW-input-classes (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-HW-input-classes.md)
+## Unit HW-input-classes (verified; /home/user/apertar-kb/working/merge-review/raw/rev-HW-input-classes.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| HW-input-classes-F1 | major | removed-upstream-behaviour | S | no | Standby wake press seeds click/Hold gestures; upstream consumes the wake press | src/hardware/ButtonGesture.hpp:21-55@cinemate-port; src/hardware/GpioInput.cpp:489-501@cinemate-port (diff lines) |
-| HW-input-classes-F2 | major | bug | S | no | 1-0-1 inversion and switch start-apply re-run on every device reopen | src/hardware/Pcf8574Input.cpp:410-431@cinemate-port; src/hardware/GpioInput.cpp run() lineFd<0 block (diff 587-668)@cinemate-port |
-| HW-input-classes-F3 | minor | mismatch | S | yes | Edge-event loop not shaped like upstream's poll() input: 250 ms idle wake, no kernel timestamps | src/hardware/GpioInput.cpp sleepMs kIdleWakeMs=250 (diff 555-570)@cinemate-port; src/hardware/GpioInput.cpp event read (diff 670-693)@cinemate-port |
-| HW-input-classes-F4 | minor | mismatch | S | no | GpioInput::run() rebuilt around large capturing lambdas | src/hardware/GpioInput.cpp process lambda (diff 458-553), sleepMs (557-570), toMs (452-455)@cinemate-port |
-| HW-input-classes-F5 | minor | bug | S | no | Edge drain applies stale queued edges on top of a fresh full-level read | src/hardware/GpioInput.cpp edge read + catch-up read (diff 670-693)@cinemate-port |
-| HW-input-classes-F6 | minor | new-ground | S | yes | Switch positions apply toggle actions at start; position and state drift | src/hardware/GpioInput.cpp switches block (diff 505-530)@cinemate-port; src/hardware/GpioInput.cpp loadConfig gpio_switches (diff 219-245)@cinemate-port |
-| HW-input-classes-F7 | minor | mismatch | S | no | Seen callback injected by setter, not constructor | src/hardware/GpioInput.hpp:21@cinemate-port; src/hardware/Pcf8574Input.hpp:21@cinemate-port |
+| HW-input-classes-F1 | major | removed-upstream-behaviour | S | no | Standby wake press seeds click/Hold gestures; upstream consumes the wake press | src/hardware/ButtonGesture.hpp:21-55@cinemate-port; src/hardware/GpioInput.cpp:641-653,565-570@cinemate-port |
+| HW-input-classes-F2 | minor | bug | S | no | 1-0-1 inversion and switch start-apply re-run on every device reopen | src/hardware/Pcf8574Input.cpp:409-433@cinemate-port; src/hardware/GpioInput.cpp:742-815,620-668@cinemate-port |
+| HW-input-classes-F3 | minor | mismatch | S | no | Edge-event loop stops via a 250 ms idle wake, not an eventfd as upstream's poll() input does | src/hardware/GpioInput.cpp:714-731@cinemate-port; src/hardware/GpioInput.cpp:818-847@cinemate-port |
+| HW-input-classes-F4 | minor | mismatch | S | no | GpioInput::run() rebuilt around large capturing lambdas | src/hardware/GpioInput.cpp:618-712@cinemate-port; src/hardware/GpioInput.cpp:716-731@cinemate-port |
+| HW-input-classes-F5 | minor | bug | S | no | Edge drain applies stale queued edges on top of a fresh full-level read | src/hardware/GpioInput.cpp:829-849@cinemate-port |
+| HW-input-classes-F6 | minor | new-ground | S | yes | Switch positions apply toggle actions at start and on every Controls save; position and state drift | src/hardware/GpioInput.cpp:656-686@cinemate-port; src/ApertarCoreApp.cpp:12302-12319@cinemate-port |
 | HW-input-classes-F8 | minor | duplication | S | yes | gpioChipScore half-shared: one moved, two private copies remain | src/hardware/GpioChipInfo.cpp:31-55@cinemate-port; src/hardware/TriggerOutput.cpp:195@cinemate-port |
-| HW-input-classes-F9 | minor | removed-upstream-behaviour | S | yes | IMU writes always go to ~/apertar-hardware.conf, not the file the loader read | src/hardware/Mpu6050RecordingSession.cpp:603-640@cinemate-port; src/hardware/HardwareConfigStore.cpp:118-123@cinemate-port |
-| HW-input-classes-F10 | nit | slop | S | no | Comments narrate Cinemate provenance and WebUI features inside src/hardware | src/hardware/ButtonGesture.hpp:2@cinemate-port; src/hardware/GpioInput.cpp:623,662,735@cinemate-port |
-| HW-input-classes-F11 | nit | duplication | S | no | Seen-key suffixes chosen by static_cast of the gesture enum into parallel arrays, three copies | src/hardware/GpioInput.cpp (diff 491-493)@cinemate-port; src/hardware/NeoRotary4Input.cpp (diff 1440-1441)@cinemate-port |
+| HW-input-classes-F7 | nit | mismatch | S | no | Seen callback injected by setter, not constructor | src/hardware/GpioInput.hpp:21-22@cinemate-port; src/hardware/Pcf8574Input.hpp:21-22@cinemate-port |
+| HW-input-classes-F9 | nit | removed-upstream-behaviour | S | yes | IMU writes can create a sparse ~/apertar-hardware.conf that shadows /boot/firmware | src/hardware/Mpu6050RecordingSession.cpp:603-628@cinemate-port; src/hardware/HardwareConfigStore.cpp:118-123,160-163@cinemate-port |
+| HW-input-classes-F10 | nit | slop | S | no | Comments narrate Cinemate provenance and WebUI features inside src/hardware | src/hardware/ButtonGesture.hpp:2-3@cinemate-port; src/hardware/GpioInput.cpp:623,662,667,735@cinemate-port |
+| HW-input-classes-F11 | nit | duplication | S | no | Seen-key suffixes chosen by static_cast of the gesture enum into parallel arrays, three copies | src/hardware/GpioInput.cpp:643-645@cinemate-port; src/hardware/Pcf8574Input.cpp:458-459@cinemate-port |
 
 ## Unit Playback (verified; /home/user/apertar-kb/working/merge-review/raw/rev-Playback.md)
 
@@ -554,21 +552,43 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | WCP-08-F3 | minor | slop | S | no | Narrating and out-of-date comments, three ad-hoc 1000 ms freshness windows | src/web/WebControlPage.cpp:16416-16425@cinemate-port; src/web/WebControlPage.cpp:16455@cinemate-port |
 | WCP-08-F4 | minor | new-ground | S | yes | Faster-than-1 Hz server poll exists only because /api/state blocks during a RAM drain | src/web/WebControlPage.cpp:16562-16572@cinemate-port; src/ApertarCoreApp.cpp:8418-8426@cinemate-port |
 
-## Unit WCP-10 (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-WCP-10.md)
+## Unit WCP-09 (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-WCP-09.md)
 
 | id | sev | category | effort | deliberate | title | where |
 | --- | --- | --- | --- | --- | --- | --- |
-| WCP-10-F1 | major | mismatch | M | no | Boot Config posts to its own route instead of /api/command | src/web/WebControlPage.cpp:20004-20016@cinemate-port; src/ApertarCoreApp.cpp:9170-9196@cinemate-port |
-| WCP-10-F2 | major | mismatch | M | no | bootConfig page-side store and own timers beside state | src/web/WebControlPage.cpp:19872-19884@cinemate-port; src/web/WebControlPage.cpp:20553-20606@cinemate-port |
+| WCP-09-F1 | major | mismatch | M | unknown | Second client store controlsState plus 18 module-level consts/lets | src/web/WebControlPage.cpp:16633@cinemate-port; src/web/WebControlPage.cpp:16798@cinemate-port |
+| WCP-09-F2 | major | mismatch | S | unknown | Second fetch wrapper controlsCall; hand-checked ok and missing try/catch | src/web/WebControlPage.cpp:16698-16705@cinemate-port; src/web/WebControlPage.cpp:17687@cinemate-port |
+| WCP-09-F3 | major | mismatch | S | yes | Remote controls card on the main page with hold-to-repeat pills | src/web/WebControlPage.cpp:4569-4580@cinemate-port; src/web/WebControlPage.cpp:17995-18042@cinemate-port |
+| WCP-09-F4 | major | new-ground | L | yes | 2100-line structured hardware editor with extras; size and shape foreign | src/web/WebControlPage.cpp:16622-18710@cinemate-port; src/web/WebControlPage.cpp:16875-16880@cinemate-port |
+| WCP-09-F5 | minor | bug | S | no | Saving Controls or Hardware silently drops the other card's unsaved edits | src/web/WebControlPage.cpp:18240@cinemate-port; src/web/WebControlPage.cpp:18668@cinemate-port |
+| WCP-09-F6 | minor | bug | S | no | Pins recovered by regex from Core's display text | src/web/WebControlPage.cpp:17163-17189@cinemate-port; src/web/WebControlPage.cpp:17598@cinemate-port |
+| WCP-09-F7 | minor | bug | S | no | Unhandled rejections: Scan sticks at Scanning..., Listen overlaps requests | src/web/WebControlPage.cpp:18183-18189@cinemate-port; src/web/WebControlPage.cpp:18624-18648@cinemate-port |
+| WCP-09-F8 | minor | mismatch | S | yes | Listen is a third poll loop (300 ms) with its own timer outside state | src/web/WebControlPage.cpp:18609-18649@cinemate-port |
+| WCP-09-F9 | minor | new-ground | S | yes | Chip editor: duck-typed fake select with drag and drop | src/web/WebControlPage.cpp:16799-16872@cinemate-port; src/web/WebControlPage.cpp:16831-16835@cinemate-port |
+| WCP-09-F10 | minor | mismatch | S | yes | Inline message/review/pending boxes duplicate toasts | src/web/WebControlPage.cpp:18671-18673@cinemate-port; src/web/WebControlPage.cpp:18243-18245@cinemate-port |
+| WCP-09-F11 | minor | removed-upstream-behaviour | S | yes | Tally enabled hidden and derived from the pin; None/Remove erases the wiring | src/web/WebControlPage.cpp:17619-17646@cinemate-port; src/web/WebControlPage.cpp:17704-17705@cinemate-port |
+| WCP-09-F12 | minor | mismatch | M | yes | Hardware-file whole-text write through a command while upstream's door is /api/config | src/web/WebControlPage.cpp:18588@cinemate-port; src/web/WebControlPage.cpp:18264@cinemate-port |
+| WCP-09-F13 | minor | pi-compat | S | yes | Any DPI line greys GPIO 0-27 regardless of overlay | src/web/WebControlPage.cpp:17198-17200@cinemate-port; src/web/WebControlPage.cpp:17261-17264@cinemate-port |
+| WCP-09-F14 | minor | duplication | S | no | Issues box x3, Test handler x2, kind-name map x3, DPI loop x2 | src/web/WebControlPage.cpp:16718@cinemate-port; src/web/WebControlPage.cpp:18129@cinemate-port |
+| WCP-09-F15 | minor | slop | S | no | 127 comment lines incl. T39-T42 ticket ids and 'as in Cinemate' | src/web/WebControlPage.cpp:16795@cinemate-port; src/web/WebControlPage.cpp:16874@cinemate-port |
+| WCP-09-F16 | nit | mismatch | S | no | Yes/No select for bools, inline grid style, 'GPIO in' vs 'GPIO buttons', loadX naming | src/web/WebControlPage.cpp:17716-17726@cinemate-port; src/web/WebControlPage.cpp:18065@cinemate-port |
+| WCP-09-F17 | nit | slop | S | no | One-entry Function dropdown for outputs | src/web/WebControlPage.cpp:17821@cinemate-port; src/web/WebControlPage.cpp:17859-17870@cinemate-port |
+
+## Unit WCP-10 (verified; /home/user/apertar-kb/working/merge-review/raw/rev-WCP-10.md)
+
+| id | sev | category | effort | deliberate | title | where |
+| --- | --- | --- | --- | --- | --- | --- |
+| WCP-10-F1 | major | mismatch | M | unknown | Boot Config posts to its own route instead of /api/command | src/web/WebControlPage.cpp:20004-20016@cinemate-port; src/ApertarCoreApp.cpp:9170-9196@cinemate-port |
+| WCP-10-F2 | major | mismatch | M | no | bootConfig page-side store and own installer beside state | src/web/WebControlPage.cpp:19872-19884@cinemate-port; src/web/WebControlPage.cpp:20553-20606@cinemate-port |
 | WCP-10-F3 | major | new-ground | M | yes | Boot Config card over-built: Edit file, live managed-line marks, legend, own-lines hint | src/web/WebControlPage.cpp:19868-20606@cinemate-port; src/web/WebControlPage.cpp:20490-20515@cinemate-port |
-| WCP-10-F4 | major | security | S | unknown | Edit file sends the whole config.txt to a root-write route; guard is Origin presence only | src/web/WebControlPage.cpp:19999@cinemate-port; src/ApertarCoreApp.cpp:3790-3794@cinemate-port |
+| WCP-10-F4 | major | security | S | unknown | Edit file sends whole config.txt to a root write; set_boot_config has no revision guard on /api/command | src/web/WebControlPage.cpp:19999@cinemate-port; src/ApertarCoreApp.cpp:3790-3794@cinemate-port |
 | WCP-10-F5 | minor | mismatch | S | yes | Display-change checkbox gate instead of window.confirm | src/web/WebControlPage.cpp:20282-20314@cinemate-port |
-| WCP-10-F6 | minor | bug | S | no | Reboot wait polls /api/buffer; the 60 s never-down rule misreports a slow shutdown | src/web/WebControlPage.cpp:20356-20403@cinemate-port |
-| WCP-10-F7 | minor | mismatch | S | no | Config Check and Save use two transports; Check falls back to base "h" | src/web/WebControlPage.cpp:18795@cinemate-port; src/web/WebControlPage.cpp:18918-18927@cinemate-port |
+| WCP-10-F6 | minor | bug | S | no | Reboot wait polls /api/buffer; the 60 s never-down rule misreports a slow shutdown | src/web/WebControlPage.cpp:20355-20403@cinemate-port |
+| WCP-10-F7 | minor | mismatch | S | no | Config Check and Save use two transports; Check falls back to base "h" and then always fails | src/web/WebControlPage.cpp:18795@cinemate-port; src/web/WebControlPage.cpp:18918-18927@cinemate-port |
 | WCP-10-F8 | minor | duplication | S | no | Two diff renderers; bootConfigOption re-implements ensureSelectEntries | src/web/WebControlPage.cpp:18854-18887@cinemate-port; src/web/WebControlPage.cpp:20225-20317@cinemate-port |
 | WCP-10-F9 | minor | mismatch | S | yes | Remote controls loader runs its own untracked 5 s setTimeout loop | src/web/WebControlPage.cpp:20869-20878@cinemate-port |
-| WCP-10-F10 | minor | new-ground | S | yes | toggleRecord decides 'flushing' from page-side frameBufferBar | src/web/WebControlPage.cpp:19199-19204@cinemate-port; src/web/WebControlPage.cpp:19237@cinemate-port |
 | WCP-10-F11 | minor | slop | S | no | T43 tags, Cinemate history and a banner in comments; 32 comment lines | src/web/WebControlPage.cpp:18758@cinemate-port; src/web/WebControlPage.cpp:18792@cinemate-port |
+| WCP-10-F10 | nit | new-ground | S | yes | toggleRecord decides 'flushing' from page-side frameBufferBar | src/web/WebControlPage.cpp:19199-19204@cinemate-port; src/web/WebControlPage.cpp:19240@cinemate-port |
 | WCP-10-F12 | nit | new-ground | S | yes | Save Config now takes two clicks (diff, then Save these changes) | src/web/WebControlPage.cpp:20884@cinemate-port; src/web/WebControlPage.cpp:18854-18887@cinemate-port |
 | WCP-10-F13 | nit | mismatch | S | no | Toast 'Storage pre-roll started' lacks the period | src/web/WebControlPage.cpp:19828@cinemate-port |
 
