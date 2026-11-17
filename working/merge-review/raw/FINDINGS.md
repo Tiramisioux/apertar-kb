@@ -99,6 +99,24 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | App-5-F8 | nit | new-ground | S | yes | record_stop also ends a storage pre-roll; manual command named storage_preroll | src/ApertarCoreApp.cpp:14832-14836@cinemate-port; src/ApertarCoreApp.cpp:14603-14617@cinemate-port |
 | App-5-F9 | nit | new-ground | S | yes | set_iso_auto gains an enabled field (false = lock at measured gain) | src/ApertarCoreApp.cpp:12995-13001@cinemate-port; src/camera/CameraController.cpp:11146-11166@cinemate-port |
 
+## Unit Build-scripts-docs (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Build-scripts-docs.md)
+
+| id | sev | category | effort | deliberate | title | where |
+| --- | --- | --- | --- | --- | --- | --- |
+| Build-scripts-docs-F1 | major | mismatch | M | yes | Media tuning file family (INI + /run override + apertar-tune + tmpfiles) beside upstream's .apertar-tuning | config/apertar-media-tune.conf:1-54@cinemate-port; scripts/apertar-tune:1-60@cinemate-port |
+| Build-scripts-docs-F2 | major | mismatch | S | yes | README table of env knobs and A/B instructions | README.md:337-358@cinemate-port |
+| Build-scripts-docs-F3 | major | mismatch | S | yes | RT scheduling in the start script; LimitRTPRIO=80 under upstream's 'non-real-time' comment | scripts/start-apertar-core.sh:20-44@cinemate-port; config/apertar-core-capture-priority.conf:4-7@cinemate-port |
+| Build-scripts-docs-F4 | major | mismatch | M | yes | Three root helpers as /bin/sh scripts, with sudoers and tmpfiles, inside the Core repo | scripts/apertar-boot-config@cinemate-port; scripts/apertar-media-trim@cinemate-port |
+| Build-scripts-docs-F5 | minor | duplication | S | yes | Three write routes for config.txt; the helper's raw stderr is shown to the operator | src/ApertarCoreApp.cpp:3530-3609@cinemate-port |
+| Build-scripts-docs-F6 | minor | security | S | no | apertar-media-tune: root-owned state dir inside a pi-owned /run dir, env-controlled state path, sudoers pin only the path | config/apertar-media.tmpfiles.conf:3-5@cinemate-port; scripts/apertar-media-tune:30,47-63@cinemate-port |
+| Build-scripts-docs-F7 | minor | slop | S | no | Ticket ids, Cinemate hashes, KB paths and history narration in code, config and README | src/ApertarCoreApp.hpp (T37, T39, T42, T50, Q23)@cinemate-port; include/apertar/core/Types.hpp (T31, 7 x T34)@cinemate-port |
+| Build-scripts-docs-F8 | minor | mismatch | S | no | ApertarCoreApp.hpp layout: methods among members, split member groups, commented header | src/ApertarCoreApp.hpp:171-200,255-330@cinemate-port |
+| Build-scripts-docs-F9 | minor | new-ground | S | unknown | Host tests in tools/ outside CMake, with build lines that disagree and test lines in the operator README | tools/*_test.cpp header comments@cinemate-port; tools/clip_merge_test.cpp:2@cinemate-port |
+| Build-scripts-docs-F10 | minor | protocol | S | yes | Socket request line raised from 64 KiB to 1 MiB for whole-file set_controls | src/ipc/ControlServer.cpp:15-16,264@cinemate-port |
+| Build-scripts-docs-F11 | minor | removed-upstream-behaviour | S | yes | Preview temporal denoise off by default | include/apertar/core/Types.hpp (previewTdn = false)@cinemate-port; README.md:315-323@cinemate-port |
+| Build-scripts-docs-F12 | minor | mismatch | S | yes | README growth: install recipes, socket field lists, measurements, misplaced sections | README.md:179-211,303-358@cinemate-port |
+| Build-scripts-docs-F13 | nit | slop | S | no | Core's liblj92 README.apertar.md says 'in the UI' | third_party/liblj92/README.apertar.md:7-8@cinemate-port |
+
 ## Unit CC-1 (verified; /home/user/apertar-kb/working/merge-review/raw/rev-CC-1.md)
 
 | id | sev | category | effort | deliberate | title | where |
@@ -339,6 +357,25 @@ Built from the agents' structured results (after the skeptic where it ran). Full
 | HW-input-classes-F9 | nit | removed-upstream-behaviour | S | yes | IMU writes can create a sparse ~/apertar-hardware.conf that shadows /boot/firmware | src/hardware/Mpu6050RecordingSession.cpp:603-628@cinemate-port; src/hardware/HardwareConfigStore.cpp:118-123,160-163@cinemate-port |
 | HW-input-classes-F10 | nit | slop | S | no | Comments narrate Cinemate provenance and WebUI features inside src/hardware | src/hardware/ButtonGesture.hpp:2-3@cinemate-port; src/hardware/GpioInput.cpp:623,662,667,735@cinemate-port |
 | HW-input-classes-F11 | nit | duplication | S | no | Seen-key suffixes chosen by static_cast of the gesture enum into parallel arrays, three copies | src/hardware/GpioInput.cpp:643-645@cinemate-port; src/hardware/Pcf8574Input.cpp:458-459@cinemate-port |
+
+## Unit Media-buffer-split (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-buffer-split.md)
+
+| id | sev | category | effort | deliberate | title | where |
+| --- | --- | --- | --- | --- | --- | --- |
+| Media-buffer-split-F1 | blocker | mismatch | L | no | Recording/storage settings kept in apertar-hardware.conf and read by CameraController | src/camera/CameraController.cpp:2986-3006@cinemate-port; src/camera/CameraController.cpp:5502@cinemate-port |
+| Media-buffer-split-F2 | major | mismatch | M | unknown | Cross-thread state through free-function statics and a global std::function hook | src/util/BufferBudget.hpp:221-334@cinemate-port; src/util/StoragePreroll.hpp:221-271@cinemate-port |
+| Media-buffer-split-F3 | major | mismatch | M | unknown | Buffer events and safety-stop threads poll instead of the 1 Hz wait() supervision | src/ApertarCoreApp.cpp:10993@cinemate-port; src/ApertarCoreApp.cpp:11083-11110@cinemate-port |
+| Media-buffer-split-F4 | major | mismatch | M | yes | Root fstrim helper as shell script in Core with path argument and path-only sudoers | scripts/apertar-media-trim:1-90@cinemate-port; config/apertar-media-trim.sudoers:4@cinemate-port |
+| Media-buffer-split-F5 | major | bug | S | no | Ending a running trim signals sudo/sh, fstrim keeps running into the take | src/ApertarCoreApp.cpp:11955-11963@cinemate-port; scripts/apertar-media-trim:74-78@cinemate-port |
+| Media-buffer-split-F6 | major | removed-upstream-behaviour | S | yes | Drive trim and automatic storage pre-roll on by default change stock behaviour | src/util/StoragePreroll.hpp:91-99@cinemate-port; src/camera/CameraController.cpp:889,976@cinemate-port |
+| Media-buffer-split-F7 | minor | mismatch | S | yes | Capture and media commands wait for trim and merge under commandMutex_ | src/ApertarCoreApp.cpp:12610-12614@cinemate-port; src/ApertarCoreApp.cpp:11941-11963@cinemate-port |
+| Media-buffer-split-F8 | minor | slop | S | no | Comments and README narrate history and cite KB paths, campaigns, other projects, commits | src/cdng/FramePath.hpp:9-11@cinemate-port; src/util/BufferBudget.hpp:6-7@cinemate-port |
+| Media-buffer-split-F9 | minor | slop | S | no | Env twin for every file key, *_env flags in state, unused speculative parameter | src/util/BufferBudget.hpp:303-329@cinemate-port; src/util/StoragePreroll.hpp:91-99,148-150@cinemate-port |
+| Media-buffer-split-F10 | minor | duplication | S | no | Frame-number rule in three copies; three copied store.edit command blocks | src/cdng/ClipMerge.hpp:140-151@cinemate-port; tools/flatten_clip.py:47-57@cinemate-port |
+| Media-buffer-split-F11 | minor | new-ground | S | yes | Host unit tests in tools/, outside the build | tools/buffer_budget_test.cpp@cinemate-port; tools/storage_preroll_test.cpp@cinemate-port |
+| Media-buffer-split-F12 | minor | new-ground | S | unknown | GET /api/buffer polled at 4 Hz beside /api/state | src/ApertarCoreApp.cpp:8419@cinemate-port; src/web/WebControlPage.cpp:16497@cinemate-port |
+| Media-buffer-split-F13 | nit | mismatch | S | no | Namespace names and src/util placement differ from upstream | src/util/BufferBudget.hpp:45@cinemate-port; src/util/StoragePreroll.hpp:16@cinemate-port |
+| Media-buffer-split-F14 | nit | new-ground | S | yes | tools/flatten_clip.py desk tool | tools/flatten_clip.py@cinemate-port |
 
 ## Unit Media-fault-tune (NOT verified; /home/user/apertar-kb/working/merge-review/raw/rev-Media-fault-tune.md)
 
