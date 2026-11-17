@@ -73,18 +73,34 @@ Checked in the review container (x86_64 Linux) on 2026-11-17, at `cinemate-port`
 | The port's 17 host tests (`tools/*_test.cpp`, `tools/*_test.sh`) | **confirmed**: 17 pass |
 | Anything that needs a sensor, GPIO, the CFexpress hat, a recording drive, HDMI | **not possible here**: every such claim in this campaign is labelled, with the Pi command that settles it |
 
-## Where the campaign stands (updated 2026-11-17, during the first session)
+## Where the campaign stands (updated 2026-11-17, late in the first session)
 
 | Part | State |
 | --- | --- |
-| Conventions (8 topics, each challenged) | topic files in `raw/conv-*.md`; the one-page `apertar-conventions.md` is written from them |
-| Unit review (37 units) and sweeps (9) | running: reports land in `raw/inv-*.md`, `raw/rev-*.md` (authoritative section: "Final findings"), `raw/sweep-*.md`. `raw/FINDINGS.md` lists every finding in one line; `raw/FINDINGS.json` and `raw/FEATURES.json` hold the full text |
-| Fix list, feature list, owner decisions | written from the findings: `fix-list.md` (+ `fix-list-<domain>.md`), `feature-list.md` (+ `feature-list-<area>.md`), `owner-decisions.md` |
-| 12-bit Clear HDR | nine reader reports in `hdr12/G*.md`, digest `hdr12/DIGEST.md`; hypotheses, skeptic verdicts and `hdr12/REPORT.md` follow |
-| Coding map | all six slices checked and rechecked: `coding-map/verify-*.md` (section "Final discrepancies"). Not applied to the map yet |
-| Fixes | Core `04fe197` (GPIO chip setting), entry C1 in `fix-log.md`. Draft PRs: Apertar-Core #7 (base `cinemate-port`), apertar-kb #16 |
+| Conventions (8 topics, each challenged) | done: `apertar-conventions.md` (audited), topic files in `raw/conv-*.md` |
+| Unit review (37 units) and sweeps (9) | done: 598 verified findings (8 blockers, 133 major). `raw/FINDINGS.md` lists each in one line; `raw/FINDINGS.json` holds the full text |
+| Fix list, feature list, owner decisions | domain lists done (`fix-list-core-app.md`, `-hardware.md`, `-camera.md`, `-recording.md`, `-webui.md`, `-touch-ui.md`, `-text-history.md`); the one-page `fix-list.md`, `feature-list.md` and `owner-decisions.md` are being written |
+| 12-bit Clear HDR | done: `hdr12/REPORT.md`. Three confirmed defects fixed (fix log C11, C12, C14), the probable cause held back as an interim (C13) until a capture pair from the camera confirms it |
+| Coding map | step 1 done: 50 corrections applied and re-checked (`coding-map/applied.md`), draft PR apertar-coding-map #1. Step 2 (what the port added) follows |
+| Designs for the large reworks | eight pages in `design/`: each written, challenged against the code, and rewritten as a commit plan. Final: command-plane, boot-config-helpers, webui-state, touch-ui, hardware-inputs, camera-modes, preroll. In work: storage-settings |
+| Fixes | on the improvement branches, one commit per fix, each logged in `fix-log.md`: Core C1 to C14, UI U1 to U3, imx283 driver D2-1. In work: bug fixes, command plane, hardware file and inputs, touch UI, camera modes |
 
-Workers: Opus for reviews, skeptics and the investigation, Sonnet for inventories and mechanical sweeps (asked for
+Draft pull requests (all from `claude/awesome-pasteur-qzsiow`):
+
+| Repo | PR | Base |
+| --- | --- | --- |
+| Apertar-Core | #7 | `cinemate-port` |
+| Apertar-UI | #1 | `cinemate-port` |
+| imx283-v4l2-driver | #1 | `cinemate-port` |
+| apertar-coding-map | #1 | `main` |
+| apertar-kb | #16 | `main` |
+
+How a fix is made: a worker (Opus) implements one item in its own worktree and runs the gate (both Core builds, the host
+tests, or the UI build); a second worker reviews the commit against the item and the conventions; the lead reads every
+commit before it goes onto the improvement branch, runs the gate and the reply-shape comparison again, and writes or
+corrects the fix-log entry. Two of the lead's corrections so far are themselves in the log (C8, C10).
+
+Workers: Opus for reviews, skeptics, designs and implementation, Sonnet for inventories and mechanical sweeps (asked for
 by Patrik, to save tokens). The scripts that drive the agents are not in this repo; the reports are.
 
 ## Results (filled in as they land)
@@ -99,3 +115,4 @@ by Patrik, to save tokens). The scripts that drive the agents are not in this re
 | `commit-plan.md` | The clean commit series |
 | `hdr12/REPORT.md` | 12-bit Clear HDR |
 | `coding-map/` | What was wrong in the coding map, what was added |
+| `design/` | One page per large rework: how the port does it, how original Apertar does that kind of thing, the target, the commit plan, decisions for the owner |
