@@ -1,8 +1,20 @@
-# Merge review: paused on 2026-11-17
+# Merge review: paused on 2026-11-20 (first paused 2026-11-17)
 
 Patrik asked to pause. All worker agents are stopped. Nothing is half-written on a pushed branch: every pushed
 commit passed its gate. Work that was still in flight is saved as patches in `lanes/`. This page says where things
 stand and how to pick the campaign up again.
+
+## Since the first pause (2026-11-20, a short session)
+
+| What | Result |
+| --- | --- |
+| 11 more Core commits, integrated and pushed | C20 to C30 in `fix-log.md`: two hardware-store bugs, the first five command-plane commits (`get_controls` and `controls_history` become `GET /api/config` and `GET /api/config/history`; the I2C scan gives up after 1 s; `list_actions` slimmer; three commands take the command lock), three hardware-file commits |
+| Your Q2 (script paths over ssh only) | Kept, as a switch: `APERTAR_SCRIPT_PATHS=ssh` in Core's environment. Unset, a stock camera behaves as 1.6.0 (C28, C29) |
+| Your KB tools | `working/tools/controls_page_test.js` serves both the old commands and the new routes and can run with any Chrome (`CHROME=<path>`); `tutorials/tutorial.py` lets `GET /api/config` through and still refuses writes. The page test stops at the same check on `cinemate-port` and on the improvement branch: it was out of date before this review |
+| Checks | Both Core builds, the 18 host tests, and the 1.6.0 reply-shape check (`tools/bin/shape_subset.py`: every 1.6.0 field present with the same type) pass at the pushed tip `8bfc242` |
+| Audit of touch-ui, camera-modes, boot-config-helpers and the fixes made | Started again and stopped again at your pause, while still reading. Nothing written. To be re-run first on resume |
+| Held | The step-list fix (FPS and ISO lists end at the last listed value, `lanes/core-bugs/`): it reverses something marked as your request 24 (T33), so it waits for the audit |
+| Tooling | The workflow runner is switched off in this session; work runs through individual agents instead. The implementer instructions are saved in `tools/workflows/implementer-prompt.md`. The brief now points agents at read-only `cinemate-port` checkouts (`/home/user/wt/core-port`, `/home/user/wt/ui-port`); the checkouts `/home/user/Apertar-Core` and `/home/user/Apertar-UI` sit at an older improvement tip and are not used |
 
 ## In short
 
@@ -23,7 +35,7 @@ stand and how to pick the campaign up again.
 
 | Repo | Draft PR | Base | Holds |
 | --- | --- | --- | --- |
-| Apertar-Core | #7 | `cinemate-port` | 19 commits: fix log C1 to C19 (C3 is by hand, C9 and C10 are the lead's) |
+| Apertar-Core | #7 | `cinemate-port` | 30 commits: fix log C1 to C30 (C3, C9, C10, C28, C29 are the lead's) |
 | Apertar-UI | #1 | `cinemate-port` | 3 commits: fix log U1 to U3 |
 | imx283-v4l2-driver | #1 | `cinemate-port` | 1 commit: fix log D2-1 |
 | apertar-coding-map | #1 | `main` | 2 commits: 50 corrections to the existing map (step 1 of 2) |
@@ -38,6 +50,7 @@ The pushed Core fixes, by kind (the reasoning for each is in `fix-log.md`):
 | Protocol, security | C4 duplicate `media_state`; C8 `test_input` refuses script actions |
 | 12-bit Clear HDR | C11 storage depth after a cDNG/MLV switch; C12 "4K Clear HDR" starts at 3840x2160; C13 binned 1920x1080 held back (interim, probable cause); C14 clip labels |
 | Bugs | C15 playback JPEG handle leak; C16 clip-name example without disk probes under the camera lock; C17 part folders made by the writers; C18 audio writer queue bounded; C19 `audio_url` encoding |
+| Hardware file and command plane (2026-11-20) | C20, C21 hardware-store bugs; C22 to C26 command plane; C27 to C30 whole-file saves (report instead of refuse, script-path rule as a switch, sanity checks) |
 
 Every one of these passed: Core built with and without libcamera, the host tests (18 now), and a comparison of the
 reply shapes against the build before. None was run on a camera. Each fix-log entry names the check to run on the Pi.
@@ -50,9 +63,9 @@ because of the audit below.
 
 | Lane (folder) | Commits | Reviewed | Audit | On resume |
 | --- | --- | --- | --- | --- |
-| Bugs (`core-bugs/`) | 3: FPS/ISO step lists end at the last listed value; a key edit goes into every copy of a duplicated section; a first save on a /boot-only rig starts from the /boot copy | 2 of 3 (the last not yet) | not needed (plain bugs) | review the third, integrate |
-| Command plane (`core-command-plane/`) | 5: Controls page reads `GET /api/config`; history from `GET /api/config/history`; I2C scan gives up after 1 s; `list_actions` flat; three commands take the command lock | 5 of 5 | done: no code conflict; KB tools must change alongside (`tutorials/tutorial.py`, `working/tools/controls_page_test.js`) | integrate, update the two KB tools, continue with commits 8, 10, 16 |
-| Hardware inputs (`core-hardware-inputs/`) | 3: whole-file save reports instead of refusing; script paths (rewritten by hand to keep your Q2); sanity checks on every whole-file save | 2 of 3 (the rewritten one is the lead's own) | done: 4 conflicts, see below | apply the audit's variants, then continue |
+| Bugs (`core-bugs/`) | 1 left: FPS/ISO step lists end at the last listed value (the other two are in, C20 and C21) | yes | **held**: may reverse your request 24 | wait for the audit |
+| Command plane | the first 5 are in (C22 to C26); commits 6, 7, 8, 10, 15, 16 not started; 9 waits for the Boot Config audit; 11 to 14 overlap the touch UI and storage plans | - | done | next lane |
+| Hardware inputs | 3 are in, plus the script-path switch (C27 to C30); commits 4, 6 to 11, 15, 16 not started (5 and 12 dropped by the audit; 13 and 14 were the bug fixes C20, C21) | - | done | next lane |
 | Camera modes (`core-camera-modes/`) | 5: tables list both 1.85:1 heights; a size follows the height the driver has; pills send what they show; readout check accepts the original driver; auto fallback back | 4 of 5 | **not done** | audit first, then integrate |
 | Touch UI (`ui-touch-ui/`) | 11: invokables return bool; Log and Write Buffer as dropdowns; poll reset; events through `applyCoreState`; presets carry the new settings; timecode (tap sets both again unless set apart); labels; caps | 11 of 11 | **not done** | audit first. You have no touch screen: these are compile-checked only, and each needs a look on HDMI with a mouse |
 
@@ -85,7 +98,7 @@ step each (see "Before you put the improvement branch on the rig"):
 | U3 HDMI timecode white until set | Red timecode on all three screens | HDMI turns white unless `recordingRedTimecodeEnabled` is in `UI.conf` |
 | C9 preview temporal denoise on by default | Off, for 4K Clear HDR 16-bit at 25 fps | Stays off only if `preview_tdn=false` is already saved |
 
-The audit of the fixes made, of touch-ui, of camera-modes and of boot-config-helpers was not finished.
+The audit of the fixes made, of touch-ui, of camera-modes and of boot-config-helpers was not finished (started twice, stopped at both pauses while still reading).
 
 ## Held for you (nothing was done)
 
@@ -109,6 +122,7 @@ Your camera has no touch screen (HDMI and WebUI only), so check these first:
 | `grep -n "ui_width\|ui_height\|ui_layout\|hdmi_external_only" ~/apertar-hardware.conf` | The display fallback is the stock 720x720 touch panel again (C2, U1). The KB copy of your file (2026-11-08) has all four keys (1920, 1080, landscape_large, true), so nothing should change. If the live file lost them, the HDMI-only layout is gone until they are back |
 | `grep preview_tdn ~/.config/apertar-core/camera_settings.conf` | If the line is missing, switch "Preview temporal denoise" off once in the WebUI before a 4K Clear HDR 16-bit take (C9) |
 | Send `set_storage_preroll value=on` once, or add `preroll=on` under `[media]` in `~/apertar-hardware.conf` | The automatic pre-roll is off by default now (C5) |
+| Add `Environment=APERTAR_SCRIPT_PATHS=ssh` to a drop-in of `apertar-core.service`, then `sudo systemctl daemon-reload` and restart Core | Keeps your Q2 on the rig: the WebUI cannot set a new script path (C29). Without it the rig behaves as a stock camera (1.6.0: the WebUI may change script paths) |
 | `grep recordingRedTimecodeEnabled ~/.config/CinePi/UI.conf` | HDMI timecode is red only when the key is in the file (U3). Switching "Red timecode" off and on once in the WebUI writes it |
 | Binned 1920x1080 in 12-bit Clear HDR is not offered (C13) | Interim for the probable cause of the strange output. Reverting commit `a36c52f` brings it back |
 
@@ -124,7 +138,7 @@ dark) is **probable, not confirmed**: it needs one capture pair from the camera.
 
 ## How to resume
 
-Say "resume the campaign". The order I would take:
+Say "resume the campaign". The order I would take (the first step is the audit, which was stopped twice):
 
 1. Finish the audit (touch-ui, camera-modes, boot-config-helpers, fixes made). Redo `owner-decisions.md` from it:
    fewer questions, each with the decision you already made next to it.
