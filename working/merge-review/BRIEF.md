@@ -18,8 +18,10 @@ commit clarity, handoff documents.
 
 | What | Path | Ref |
 | --- | --- | --- |
-| Port, Core | `/home/user/Apertar-Core` | HEAD = `cinemate-port` `01f170c` (branch `claude/awesome-pasteur-qzsiow`) |
-| Port, UI | `/home/user/Apertar-UI` | HEAD = `cinemate-port` `7ea9afc` |
+| Port, Core | `/home/user/wt/core-port` | `cinemate-port` `01f170c` (read-only checkout) |
+| Port, UI | `/home/user/wt/ui-port` | `cinemate-port` `7ea9afc` (read-only checkout) |
+| Port with the review's fixes, Core | `/home/user/wt/core-work` | branch `work/improve` = `claude/awesome-pasteur-qzsiow` on GitHub |
+| Port with the review's fixes, UI | `/home/user/wt/ui-work` | branch `work/improve` = `claude/awesome-pasteur-qzsiow` on GitHub |
 | Original developer's Core 1.6.0 | `/home/user/wt/core-upstream` | tag `upstream-1.6.0` `35dbe67` (= Apertar-Studio `main` today) |
 | Original developer's UI 1.6.0 | `/home/user/wt/ui-upstream` | tag `upstream-1.6.0` `43888e5` (= Apertar-Studio `main` today) |
 | Merge target, Core | `/home/user/wt/core-main` | fork `origin/main` `f60e301` = upstream 1.6.0 + 8 commits (Clear HDR set, sensor probe) |
@@ -34,9 +36,9 @@ commit clarity, handoff documents.
 | Coding map | `/home/user/apertar-coding-map` | `main` `bff7bd5`, one file `index.html` |
 | This campaign's files | `/home/user/apertar-kb/working/merge-review/` | `raw/` holds agent reports |
 
-The port diff: `git -C /home/user/Apertar-Core diff --minimal origin/main cinemate-port -- <paths>` (187 commits,
+The port diff: `git -C /home/user/wt/core-port diff --minimal origin/main cinemate-port -- <paths>` (187 commits,
 about +40 600 / -8 200 lines; use `--minimal`, the default heuristic overstates deletions in `WebControlPage.cpp`).
-UI: `git -C /home/user/Apertar-UI diff --minimal origin/main cinemate-port` (39 commits). Commit list:
+UI: `git -C /home/user/wt/ui-port diff --minimal origin/main cinemate-port` (39 commits). Commit list:
 `git -C <repo> log --reverse --format='%h %s' origin/main..cinemate-port`. One commit: `git -C <repo> show <sha>`.
 
 ## Vocabulary

@@ -12,10 +12,29 @@ WF = '/root/.claude/projects/-home-user/c92f0a57-d507-5425-af34-ea239a4bf210/sub
 LOG = '/home/user/apertar-kb/working/merge-review/fix-log.md'
 REPO = {'C': 'Apertar-Core', 'U': 'Apertar-UI', 'D5': 'imx585-v4l2-driver', 'D2': 'imx283-v4l2-driver'}
 
+def load_notes(directory):
+    # notes written by an implementer agent: one JSON file per commit, the fields of the lane schema; a reviewer
+    # agent may add a file <same name>.review.json with {verdict, issues, notes}
+    import glob, os
+    results, reviews = {}, {}
+    for path in sorted(glob.glob(os.path.join(directory, '*.json'))):
+        if path.endswith('.review.json'):
+            continue
+        r = json.load(open(path))
+        if r.get('status', 'done') == 'done' and r.get('sha'):
+            results[r['id']] = r
+            rv = path[:-5] + '.review.json'
+            if os.path.exists(rv):
+                reviews[r['id']] = json.load(open(rv))
+    return results, reviews
+
 def main():
     run, letter, n, wt = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
     labels, results, reviews = {}, {}, {}
-    for line in open(WF + run + '/journal.jsonl'):
+    import os
+    if os.path.isdir(run):
+        results, reviews = load_notes(run)
+    for line in ([] if os.path.isdir(run) else open(WF + run + '/journal.jsonl')):
         j = json.loads(line)
         if j.get('type') == 'started':
             labels[j['agentId']] = j.get('label', '')
