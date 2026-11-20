@@ -3,8 +3,9 @@
 # compared (a field that vanished or changed type shows up in a diff).
 #   smoke_core.sh <apertar-core binary> <port> [outfile]
 BIN=${1:?binary}; PORT=${2:?port}; OUT=${3:-/dev/stdout}
-DIR=/home/user/build/sim/smoke-$PORT; mkdir -p "$DIR/media" /home/pi
-HOME=$DIR timeout 60 "$BIN" --simulate --socket "$DIR/core.sock" --media "$DIR/media" --web-bind 127.0.0.1 --web-port "$PORT" > "$DIR/core.log" 2>&1 &
+# A fresh folder per run, and its own hardware-file path, so a run never reads or writes /home/pi/apertar-hardware.conf.
+DIR=/home/user/build/sim/smoke-$PORT; rm -rf "$DIR"; mkdir -p "$DIR/media"
+HOME=$DIR APERTAR_HARDWARE_CONFIG=$DIR/apertar-hardware.conf timeout 60 "$BIN" --simulate --socket "$DIR/core.sock" --media "$DIR/media" --web-bind 127.0.0.1 --web-port "$PORT" > "$DIR/core.log" 2>&1 &
 PID=$!
 for i in $(seq 1 40); do curl -s -m 1 "http://127.0.0.1:$PORT/api/state" > /dev/null 2>&1 && break; python3 -c "import time; time.sleep(0.25)"; done
 python3 - "$PORT" > "$OUT" <<'PY'
