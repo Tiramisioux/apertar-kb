@@ -1146,3 +1146,556 @@ src/ApertarCoreApp.cpp:7387@cinemate-port (line 7391 at lane tip before the fix)
 
 **Rule.** Build a URL by URL-encoding each query value (urlEncodeComponent), then JSON-escape the whole URL once where it goes into the reply.
 
+
+---
+
+## C20. hw: write a key edit into every copy of a duplicated section
+
+Apertar-Core `6a05fe5`. Finding: HW-17. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/hardware/HardwareConfigText.hpp:537-550@cinemate-port, the Set branch of hwconf::applyEdit:
+    for (size_t i = 0; i < L.size(); ++i) {
+        if (L[i].kind == Kind::Section && L[i].section == edit.section && !firstHeader) firstHeader = i;
+        if (!firstHeader || L[i].section != edit.section) continue;
+        if (L[i].kind == Kind::Section && i != *firstHeader) break;   // a second copy of the section: leave it
+        ...
+            if (replaced) drop.push_back(i);
+            else replaced = i;
+
+**Why it is a problem.** If a section is in the file twice, every reader takes the later line. The port changed only the first copy, so the later copy's old value stayed in effect. Trusted writes skip checkEdits' refusal of duplicated sections (IMU calibration and orientation, set_buffer_mode, set_frames_per_folder, set_clip_merge, set_storage_preroll). They replied ok and the setting was lost: after calibrate_gyro, for example, the old bias stayed. Original Apertar's writeHardwareConfigValue sets inTargetSection again at every header of that name and rewrites the key in each copy (src/hardware/Mpu6050RecordingSession.cpp:628-668@upstream-1.6.0). Conventions rule HW-8: programmatic writes edit one key in place.
+
+**How to spot it.** grep -n "break;.*copy\|second copy" in any INI writer. Ask "which line does the reader use when the section or key appears twice, and which one does the writer change?" A smell: an edit that stops at the first match while the parser lets later lines win.
+
+**Options.**
+
+- Replace the key in every copy of the section, the way upstream writeHardwareConfigValue does (small change, keeps comments and line order)
+- Merge the copies into one section while editing (regenerates part of the file, against HW-8, and surprises anyone who reads the file by hand)
+- Refuse trusted writes on duplicated sections as set_controls does (the IMU and storage commands start failing on files that 1.6.0 accepted)
+
+**Chosen, and why.** Option 1, the upstream behaviour. The loop no longer stops at the second header. A flag, keyInCopy, is reset at each header of the section. The first line of the key in each copy is rewritten, and later lines of the key inside the same copy are dropped as before. lastInSection now ends up in the last copy, so a new key is added there. Given up: the file still has two copies. Merging them stays the operator's job in Settings > Config, as the checkEdits message says.
+
+**After.**
+
+```
+    bool keyInCopy = false;
+    for (size_t i = 0; i < L.size(); ++i) {
+        if (L[i].kind == Kind::Section && L[i].section == edit.section && !firstHeader) firstHeader = i;
+        if (!firstHeader || L[i].section != edit.section) continue;
+        if (L[i].kind == Kind::Section) keyInCopy = false;   // a new copy of the section
+        if (L[i].kind != Kind::Blank) lastInSection = i;
+        if (L[i].kind == Kind::Key && L[i].key == edit.key) {
+            if (keyInCopy) drop.push_back(i); else replaced.push_back(i);
+            keyInCopy = true;
+```
+
+**Checked.** Run here: the gate (/home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests) passed. A scratch g++ program called hwconf::applyEdit on text with [mpu6050] twice (gyro_bias_x=1 and =2 in the first copy, =12 in the second) and set gyro_bias_x=5. Both copies came out as 5, the duplicate line was dropped and the inline comment kept on its own line. A new key (gyro_bias_y) went into the last copy. Live check: APERTAR_HARDWARE_CONFIG=<file with [storage] twice> apertar-core --simulate, then curl -X POST /api/command -d '{"cmd":"set_frames_per_folder","value":"500"}' wrote 500 in both copies and get_state reported frames_per_folder 500. (The file's mtime had to be set a minute back first. Otherwise the store answers being_written for a file changed in the last second.) Needs the camera: nothing.
+
+**Rule.** A key write into an INI file must follow the reader's rule: if the reader takes the later line, write every copy.
+
+
+---
+
+## C21. hw: a write to a missing hardware file starts from the /boot copy
+
+Apertar-Core `0c85297`. Finding: HW-18. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/hardware/HardwareConfigStore.cpp:276@cinemate-port (saveLocked). After refreshLocked() the store had cleared text_ for a missing file (:160-163), so the edit started from nothing:
+    const std::string current = text_;
+    const std::string currentRevision = revision_;
+    ...
+    next = hwconf::applyEdits(current, *edits);
+The IMU calls store.edit(store.currentRevision(), edits, "imu", flags) (Mpu6050RecordingSession.cpp:616-619), and the store's path is always the editable one.
+
+**Why it is a problem.** Every reader (GpioInput, Pcf8574Input, the IMU and others) opens the first file that exists in the list env -> /home/pi -> /boot/firmware -> /boot (HW-2, HW-9). A /home/pi file with only [mpu6050] or [imu] in it wins over the full /boot file, so after the next start the buttons, displays and the other sections are gone. Original Apertar writes only the editable path (HW-9, App:4271-4276@upstream-1.6.0), and its IMU wrote the file the loader had read (Mpu6050RecordingSession.cpp:1297-1300@upstream-1.6.0), so nothing was lost. The port's own Config page already seeds a missing file from the /boot copy (buildHardwareConfigFileJson, App:6215-6227 at the tip).
+
+**How to spot it.** Look for any write path that treats "file missing" as "text is empty" while the readers walk a candidate list. Run grep -n "text_.clear\|kAbsentRevision" src/hardware and ask: when this file does not exist, which file do the readers use instead, and does the write keep its contents?
+
+**Options.**
+
+- Seed current in saveLocked from the /boot copy when the editable file is missing: about 10 lines, one place, every writer (IMU, set_controls, WebUI replace) gets it
+- Have the IMU write the file the loader found, as upstream did: this breaks HW-9 (never write /boot) and the single store path
+- Refuse the write with an error that names both paths: safe, but calibrate_gyro then fails on a /boot-only rig until someone copies the file by hand
+- Copy the /boot file to /home/pi at start: a new side effect at boot, and it writes a file nobody asked for
+
+**Chosen, and why.** Option 1. It is the item's rework, the smallest change, and it repeats the rule buildHardwareConfigFileJson already uses (same two paths, same order). current stays at revision kAbsentRevision, so a caller that loaded the missing file (the IMU, or the WebUI, which serves revision h0000000000000000) still matches the base and does not get "stale". The diff and the new-error check now run against the /boot text, so they report only the real change. Given up: when APERTAR_HARDWARE_CONFIG points to a missing file and /home/pi exists, the readers would read /home/pi first, but the seed skips it and looks only at /boot. That matches the Config page, and that setup is a bench-only case.
+
+**After.**
+
+```
+    // A missing file starts from a /boot copy when there is one: the readers take its sections, so a write must keep them.
+    std::string current = text_;
+    if (!stamp_.exists) {
+        for (const char *candidate : { "/boot/firmware/apertar-hardware.conf", "/boot/apertar-hardware.conf" }) {
+            if (std::filesystem::is_regular_file(candidate, error)) {
+                current = readTextFile(candidate);
+                break;
+            }
+        }
+    }
+```
+
+**Checked.** Gate here: /home/user/build/bin/check_core.sh /home/user/wt/lane-core1 lane-core1 both tests (all PASS). Run-time check here: the script /home/user/build/sim/hw18-check.sh, run as unshare -m bash /home/user/build/sim/hw18-check.sh. It runs in a private mount namespace (a Linux feature that gives one process tree its own view of mounts) with a tmpfs over /boot, so the real /boot and other lanes do not see it. It writes /boot/firmware/apertar-hardware.conf with [gpio], [imu] and [display], sets APERTAR_HARDWARE_CONFIG to a missing file, starts --simulate on port 8157 and sends set_imu_sync_offset 12. The new file held all three sections with sync_offset_ms=12. Needs the Pi: nothing. An optional look on a rig with only /boot/firmware/apertar-hardware.conf: run calibrate_gyro, then check that /home/pi/apertar-hardware.conf holds every section.
+
+**Rule.** A writer that creates the editable file must start from the file the readers would otherwise read, never from empty text.
+
+
+---
+
+## C22. core, web: the Controls page reads the hardware file through GET /api/config
+
+Apertar-Core `fe269e7`. Finding: command-plane commit 1. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp@cinemate-port: get_controls ran in a second dispatcher ahead of the command lock. It parsed the hardware file eight times and wrote controlsErrors_/controlsWarnings_ from a read. WebControlPage.cpp loadControls:
+  const [controls, catalog] = await Promise.all([
+    controlsCall({ cmd: "get_controls" }),
+    controlsState.catalog ? Promise.resolve(null) : controlsCall({ cmd: "list_actions" }),
+  ]);
+  controlsState.revision = String(controls.controls.revision || "");
+
+**Why it is a problem.** A second door to the hardware file: it went past the command lock, parsed the file many times and changed state during a read. Original Apertar serves a read that must not wait for the lock as an HTTP GET on the web server's thread, and GET /api/config already returns this file (buildHardwareConfigFileJson, ApertarCoreApp.cpp:5290-5321 and 7168-7173@upstream-1.6.0).
+
+**How to spot it.** grep -n 'cmd == "get_' src/ApertarCoreApp.cpp for commands handled before the lock; in the page JS, look for an await before an independent request that used to sit in a Promise.all.
+
+**Options.**
+
+- Extend GET /api/config with the page's fields and delete get_controls: one read path, small diff (chosen)
+- Keep get_controls but move it under the lock: still two doors to one file
+- Add a new /api/controls route: a new endpoint the original does not have
+
+**Chosen, and why.** I extended the upstream GET /api/config and deleted get_controls, as the design page says. After review, the page keeps its old Promise.all shape, so a first load is still one round trip. The cost: smoke_core.sh's get_controls call now gets Unknown command, which is expected.
+
+**After.**
+
+```
+const [payload, catalog] = await Promise.all([
+  fetch("/api/config", { cache: "no-store" }).then((response) => response.json()),
+  controlsState.catalog ? Promise.resolve(null) : controlsCall({ cmd: "list_actions" }),
+]);
+if (!payload.ok)
+  throw new Error(payload.error || "Could not load the controls.");
+controlsState.revision = String(payload.revision || "");
+```
+
+**Checked.** Gate passed. The one warning is unchanged and was already there (convertPlanarYuv420ToRgb unused, ApertarCoreApp.cpp:4742; not on a line this commit touches). Ran --simulate on port 8147 and drove the page with Playwright (/home/user/build/sim/hdr-pw.js): on the first load GET /api/config and POST list_actions go out side by side, a reload sends only GET /api/config, the revision and model are set, 7 peripherals load, no page errors. grep -rn get_controls src finds nothing. controls_page_test.js was not copied or changed. Needs the camera: open Settings > Controls while a take runs, then check that curl -s localhost:8000/api/state shows recording_dropped_frames 0.
+
+**Rule.** A read the UI needs without the command lock goes through an HTTP GET route like upstream's /api/config, not through a socket command that skips the lock; parallel requests stay parallel.
+
+
+---
+
+## C23. core, web: saved hardware-file versions come from GET /api/config/history
+
+Apertar-Core `3660aab`. Finding: command-plane commit 2. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12463@cinemate-port (lane tip 1c5c76a), inside handleReadOnlyHardwareCommand, the dispatcher that runs before the command lock:
+    if (command.name == "controls_history") {
+        if (const auto name = command.string("name"); name && !name->empty()) {
+            const auto text = store.historyText(*name);
+            if (!text)
+                return errorReply(command.id, "No saved version called " + *name + ".");
+            ...
+The page called it at three places (WCP:18634, :18661, :18973) as controlsCall({ cmd: "controls_history", name }) and checked reply.ok each time.
+
+**Why it is a problem.** It was a second door to a file the WebUI already reads through GET /api/config, answered by a second dispatcher in front of handleCommand (CMD-2, CMD-3). The original code serves a library read as an HTTP GET route on the web server's own connection thread, with no commandMutex_. It picks one item with a query parameter: GET /api/presets at App:7360@upstream-1.6.0, queryParameterValue at App:7198-7199@upstream-1.6.0. That is WEB-4 (file-library reads are /api routes) and WEB-5 (one if-branch per route, okReply/errorReply with id -1, an HTTP status on refusal).
+
+**How to spot it.** Look for a command whose block only reads a store or a file and never touches camera_ or UI.conf. Check: grep -n 'command.name ==' src/ApertarCoreApp.cpp and read the blocks that are handled outside handleCommand's lock. Then ask whether the page already fetches a route for the same file.
+
+**Options.**
+
+- Move the block into GET /api/config/history with ?name= (the plan): about -18/+26 in App, +13 in WCP, follows the presets route
+- Keep controls_history as an ordinary command under the lock: smallest diff, but the file keeps two doors and a history read waits behind a take start
+- Fold the history list into GET /api/config: one fetch less, but every config read gets heavier and one version still needs its own call
+
+**Chosen, and why.** The route, as the plan says. The block moved nearly line for line. The only changes are -1 as the id, response.body, and a 404 status on an unknown name. In the page, one async helper replaces three inline calls. Each caller wraps it in try/catch and shows error.message, the way the original library fetches show Core's sentence (WEB-14, WEB-16). Given up: socket clients such as core.py lose the command. Over ssh the replacement is curl -s localhost:8000/api/config/history (owner row a in the design page).
+
+**After.**
+
+```
+if (request.method == "GET" && request.path == "/api/config/history") {
+    ...
+    if (const auto name = queryParameterValue(request.query, "name"); name && !name->empty()) {
+        const auto text = store.historyText(*name);
+        if (!text) {
+            response.status = 404;
+            response.body = errorReply(-1, "No saved version called " + *name + ".");
+            return response;
+        }
+```
+
+**Checked.**
+
+Run here:
+- The gate (check_core.sh lane-hdr both tests): PASS. The single warning is the old convertPlanarYuv420ToRgb unused-function warning at App:4742, not in these lines.
+- --simulate with its own APERTAR_HARDWARE_CONFIG and HOME, under curl:
+  - the list works;
+  - a save adds an entry;
+  - ?name= returns the text;
+  - an unknown name gives 404 and the sentence;
+  - controls_history now answers "Unknown command";
+  - help no longer lists it.
+- Playwright against that --simulate page:
+  - the Config history select lists the saved versions;
+  - picking one puts its text in the editor, unsaved;
+  - a bad name toasts the sentence;
+  - Controls Undo restores the file, through GET history?name= and then set_controls;
+  - no page errors.
+- smoke_core.sh compared with the commit-1 output (smoke-after.txt): only the help list (132 to 131) and the controls_history reply (now an error) changed, both expected. Note: smoke_core.sh needs the lead's edit: drop controls_history and add /api/config/history to its route list.
+
+controls_page_test.js: it fails at the same check ("Controls shows the GPIO, the NeoRotary and the PCF8574") on commit 1 as on this commit. That is a fixture or page drift from before this commit. So its Undo check does not run, and the Playwright run above covers it. The test also hard-codes the macOS Chrome path; I used a temporary copy with the Linux path for the run.
+
+The copy at /home/user/build/sim/hdr/controls_page_test.js now has a GET /api/config/history mock placed before the /api/config handler. It logs { route: "config_history", name }. The controls_history command mock is removed, and the Undo check looks for route === "config_history". The lead applies this.
+
+Camera: nothing beyond the page check. On the Pi, open Settings > Config > history and press Undo in Controls.
+
+**Rule.** A read of a file library is a GET route with a query parameter, not a socket command.
+
+
+---
+
+## C24. core: an I2C scan gives up after one second
+
+Apertar-Core `bdef3d1`. Finding: command-plane commit 3. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12538@cinemate-port (lane-hdr tip 7625476): the loop probes every address from 0x03 to 0x77 with no limit on the total time:
+    for (int address = 0x03; address <= 0x77; ++address) {
+        ...
+        const hardware::I2cProbe probe = hardware::probeI2cAddress(bus, address);
+        if (!probe.busExists)
+            return errorReply(...);
+        if (!probe.found)
+            continue;
+
+**Why it is a problem.** On a stuck bus (SDA held low), each of up to 117 addresses costs one adapter timeout. Command-plane commit 5 moves scan_i2c under commandMutex_, so a slow scan would hold up every other command. Which errno a stuck address returns depends on the adapter (bcm2835, RP1 designware, i2c-gpio) and has not been measured, so a list of errnos to stop on cannot be trusted. Original Apertar bounds a wait with a steady_clock deadline: waitForTimedatectlNetworkSync, src/ApertarCoreApp.cpp:2979-2980@upstream-1.6.0 (`const auto deadline = std::chrono::steady_clock::now() + timeout; while (now() < deadline)`).
+
+**How to spot it.** Look for a for-loop that calls open/ioctl/read, or a probe function, once per item with no deadline. Ask: "If every call took its worst-case timeout, how long would this hold the lock?" To find candidates: grep -n "for (int address\|probeI2cAddress\|::read(" src.
+
+**Options.**
+
+- Time bound with a steady_clock deadline in the loop: +3 lines, works on every Pi without knowing the adapter's errno; a very slow but healthy bus (i2c-gpio) could be refused
+- Stop on certain errnos (ETIMEDOUT, EREMOTEIO...): not measured per adapter, so it could miss the stuck case or refuse a good bus
+- Run the scan in a worker thread whose status the client polls, like the media speed test: about +40 lines and a new status command; only worth it if a healthy scan is slow
+
+**Chosen, and why.** The time bound, as the plan says. It reuses upstream's bounded-wait shape and needs no knowledge of the adapter. What we give up: a healthy scan that runs past 1 s is refused. The owner row in the design page says to measure on a Pi 4 and switch to the worker option if a healthy scan goes over about 0.5 s. The check runs only after a real probe. Addresses Core already holds are skipped without a probe, so they cost no time.
+
+**After.**
+
+```
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+        for (int address = 0x03; address <= 0x77; ++address) {
+            ...
+                if (!probe.busExists)
+                    return errorReply(...);
+                if (std::chrono::steady_clock::now() >= deadline)
+                    return errorReply(command.id, "I2C bus " + std::to_string(bus) + " does not answer: check the wiring.");
+                if (!probe.found)
+```
+
+**Checked.**
+
+Run here:
+- The gate, check_core.sh /home/user/wt/lane-hdr lane-hdr both tests: all PASS. Its one warning is the existing unused convertPlanarYuv420ToRgb at App:4742, not in my lines.
+- --simulate on port 8143: `scan_i2c bus=1` still answers "Bus 1 does not exist on this Pi.", and `scan_i2c` with no bus still gets its sentence. This machine has no /dev/i2c-*, so the deadline itself could not be exercised.
+
+Needs the camera:
+- On Pi 4, Pi 5/CM5 and CM4: `time python3 ~/apertar-kb/working/tools/core.py scan_i2c bus=1` must list the same addresses as `i2cdetect -y -r 1` and take well under 1 s.
+- Optional bench check: jumper SDA (GPIO 2) to GND through a 1 kOhm resistor, never directly. The scan should return the sentence within about 1 s plus one adapter timeout.
+
+**Rule.** Any loop that does blocking I/O for every item (a probe or read per address or file) gets a steady_clock deadline, so the time it can take is bounded no matter how the hardware fails.
+
+
+---
+
+## C25. core: list_actions answers the action list only
+
+Apertar-Core `d40a1d6`. Finding: command-plane commit 4. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12550@cinemate-port (lane tip before this commit), inside handleReadOnlyHardwareCommand:
+    if (command.name == "list_actions") {
+        const SharedUiSettingsSnapshot uiSettings = readSharedUiSettings();
+        const CaptureSettings cameraSettings = camera_.settings();
+        ...
+        std::string body = hardware::actions::catalogJson();   // "{...}": the reply wants the members
+        body = body.substr(1, body.size() - 2);
+        body += ",\"values\":{\"iso\":" + jsonNumberArray(pcfIsoOptions(...)) ...
+        body += ",\"values_for\":\"" + ...;  body += ",\"gestures\":{...}";
+
+**Why it is a problem.** The reply sent three members nobody reads. The WebUI keeps only catalog.actions (WebControlPage.cpp:16757, 16829, 16883, 18062, 18511). row.gestures in the page comes from the controls model, not from this reply. To fill values, every call read UI.conf and copied the camera settings. The builder also wrapped its output in braces, and the caller then cut them off again with substr. In original Apertar a builder returns the members and okReply(id, fragment) adds the braces (ApertarCoreApp.cpp:108-128@upstream-1.6.0; flat okReply/errorReply replies, conventions CMD rules). Source finding: App-4-F20 (catalogJson members), HW-controls-model-F8.
+
+**How to spot it.** grep -n 'substr(1, .*size() - 2)' src/ApertarCoreApp.cpp finds braces cut off a builder's output. For each member of a reply, grep the WebUI and the touch UI for its name; a member with no reader is a candidate to delete. A read command that calls readSharedUiSettings() or camera_.settings() for something the page never shows is the same smell.
+
+**Options.**
+
+- Delete the unread members and have catalogJson return members without braces: -21/+3, one helper changes its contract, and its only in-tree caller is list_actions
+- Keep catalogJson with braces and strip only the extra members: smaller diff in the .hpp, but the substr brace strip stays
+- Keep values for a future picker: costs a UI.conf read and a settings copy per call for nothing, and the reply is still not flat
+
+**Chosen, and why.** Option 1, as the design page says. The builder now follows okReply's fragment contract, so the caller is one line. Given up: the values lists. No client reads them, and any future picker can ask for the value-step lists, which have their own commands. analog_targets and trigger_events stay, though nothing reads them today either (HW-controls-model-F6 belongs to the hardware-inputs theme).
+
+**After.**
+
+```
+// The members of the list_actions reply, without the braces.
+inline std::string catalogJson()
+{
+    std::ostringstream out;
+    out << "\"actions\":[";
+    ...
+    out << "],\"max_per_mapping\":" << maxButtonActions;
+
+    if (command.name == "list_actions")
+        return okReply(command.id, hardware::actions::catalogJson());
+```
+
+**Checked.**
+
+Run here: the gate (check_core.sh /home/user/wt/lane-hdr lane-hdr both tests, all PASS, 1 warning as before). In --simulate, curl POST /api/command {"cmd":"list_actions"} returns ok, actions (53), analog_targets, trigger_events and max_per_mapping 6. smoke_core.sh (/home/user/build/sim/hdr/smoke-c4.txt) diffed against smoke-c2.txt: the only change is values, values_for and gestures leaving the list_actions reply. Headless Chromium (Playwright) on Settings > Controls (/home/user/build/sim/hdr/pickers.js): the catalog loads with the 5 members, the action selects fill (25 options in the first one), no page errors. controls_page_test.js could not run here because it starts Chrome from a macOS path (line 101). The camera needs no check: the change touches no hardware path.
+
+Check-tool change for the lead to apply: in the copy /home/user/build/sim/hdr/controls_page_test.js, line 32 (the gen.cpp "actions" branch) changes from `std::cout << "{\"ok\":true," << hardware::actions::catalogJson().substr(1);` to `std::cout << "{\"ok\":true," << hardware::actions::catalogJson() << "}";`, because catalogJson() no longer has braces. smoke_core.sh needs no edit; its list_actions shape changes as described above, which is expected.
+
+**Rule.** A JSON builder that feeds okReply returns the members only. Never build braces and cut them off again, and never send a member no client reads.
+
+
+---
+
+## C26. core, web: controls_last_input, scan_i2c and list_actions take the command lock like every command
+
+Apertar-Core `4b5ad25`. Finding: command-plane commit 5. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12486-12560@cinemate-port (lane tip before this commit). There was a second dispatcher in front of the lock:
+  // The hardware commands that only read: they run without the command lock.
+  std::optional<std::string> ApertarCoreApp::handleReadOnlyHardwareCommand(const ControlCommand &command)
+  { if (command.name == "controls_last_input") {...} if (command.name == "scan_i2c") {...} if (command.name == "list_actions") ... return std::nullopt; }
+  std::string ApertarCoreApp::handleCommand(const ControlCommand &command) {
+      if (const auto reply = handleReadOnlyHardwareCommand(command))
+          return *reply;
+In WebControlPage.cpp (Listen) it was: controlsListenTimer = window.setInterval(async () => { ... await controlsCall({ cmd: "controls_last_input" }) ... }, 300);
+
+**Why it is a problem.** In upstream, handleCommand takes commandMutex_ on its first line and every command is one block in one flat if chain ending in "Unknown command" (App:9091-9093, App:10820@upstream-1.6.0; BRIEF "one command entry point"). When a read must not wait for the lock, upstream makes it an HTTP GET route on the web thread (WS:276-287, App:7168-7173@upstream-1.6.0), not a second door into the command chain. The early door also had a real bug: a take could start in the middle of an I2C scan, because the scan checked recordingGateActive() only once. And setInterval does not wait for an async callback, so while a long command held the lock, Listen piled up a new request every 300 ms. The missing-argument sentence follows STY-10 (C1-I07): "<command> requires <field>.".
+
+**How to spot it.** grep -n "std::optional<std::string> .*Command(" src/ApertarCoreApp.hpp, and look for any call above the std::lock_guard in handleCommand. In page JS, grep -n "setInterval(async" src/web/WebControlPage.cpp: an async setInterval does not wait for its reply, so requests pile up when Core is slow.
+
+**Options.**
+
+- Move the three blocks under the lock and turn Listen into a setTimeout chain (the plan): a pure move plus about 10 lines; Listen and scan now wait behind a long command.
+- Make the three reads GET routes, as was done for get_controls: no lock, but three more routes for live state and command data, and more page churn.
+- Leave the pre-lock helper and only document it: no work, but the second dispatcher and the scan-versus-take race stay.
+
+**Chosen, and why.** Option 1, as the design page says. The blocks moved byte for byte (git diff --minimal shows a pure move), apart from the bus sentence, which became "scan_i2c requires bus.". The comment above test_input was already there and already says why it stays before the lock, so I kept it and did not add the planned line. In the WebUI, each tick awaits its reply and then schedules the next tick 300 ms later. A module variable controlsListenStarted lets a stopped or restarted Listen end the old chain once its reply comes back. A .catch keeps the chain alive after a network error, the way setInterval kept firing before. Given up: while the safety-stop drain or record_start holds the lock, the Listen highlight and the scan now wait for it. The 1 s scan bound from commit 3 caps how long a scan can hold the lock.
+
+**After.**
+
+```
+    if (command.name == "scan_i2c") {
+        if (recordingGateActive())
+            return errorReply(command.id, "Not during a take: scan the I2C bus when the camera is idle.");
+        const auto busValue = command.number("bus");
+        if (!busValue || *busValue < 0 || *busValue > 255)
+            return errorReply(command.id, "scan_i2c requires bus.");
+  // WebUI: const listen = async () => { ...; const reply = await controlsCall(...).catch(() => ({ ok: false }));
+  //   if (!controlsState.listening || controlsListenStarted !== started) return; controlsListenTimer = window.setTimeout(listen, 300); ... };
+```
+
+**Checked.** Run here: /home/user/build/bin/check_core.sh /home/user/wt/lane-hdr lane-hdr both tests gave PASS on both builds and 18 host tests. The one warning, convertPlanarYuv420ToRgb unused at App:4742, was already there in code this commit does not touch. I ran --simulate with APERTAR_HARDWARE_CONFIG set to a copy of the controls fixture (/home/user/build/sim/hdr/hw.conf) and sent controls_last_input, scan_i2c (with and without bus), list_actions and help over curl POST /api/command. I drove Settings > Controls in Playwright with /home/user/build/sim/hdr/listen.js. Listen lit row 0 from a routed controls_last_input reply. With a 1.5 s reply delay, at most one request was in flight. Stop ended the polls. A quick stop/start leaves the old chain's one request plus the new one in flight, and the old chain then ends. There were no page errors. I did not run controls_page_test.js: it needs a fixture beside it and still mocks get_controls, which earlier commits removed. Its copy at /home/user/build/sim/hdr/controls_page_test.js is unchanged, and its Listen check (:264-266) stays valid. Note that test_input does not call noteInputSeen, so in --simulate Listen can only be tried with a routed reply. Needs the camera: start a take, press Listen and turn a knob; the row lights within about 0.3 s and recording_dropped_frames stays 0. Press Listen, then start and stop a take; at the stop REC updates within 1 s and DevTools > Network shows at most one pending controls_last_input. Then run python3 ~/apertar-kb/working/tools/core.py scan_i2c bus=1 during a take; it is refused.
+
+**Rule.** One door, one lock: every command is a block of handleCommand's chain under commandMutex_. A read that must not wait becomes a GET route, not a second dispatcher before the lock.
+
+
+---
+
+## C27. hw: a whole-file save writes the file and reports what the checker found
+
+Apertar-Core `43d8a19`. Finding: hardware-inputs commit 1. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/hardware/HardwareConfigStore.cpp:336-342@cinemate-port (saveLocked). The checker could veto every save, whole-file text saves included:
+    result.newErrors = hwconf::newErrors(hwconf::validate(current, facts), result.issues);
+    if (!result.newErrors.empty() && !flags.force) {
+        result.code = "errors";
+        result.error = "Not saved: " + ... + result.newErrors.front().message;
+        return result;
+    }
+POST /api/config never sets force. The WebUI Check said ". Save is refused until the errors are fixed." (WebControlPage.cpp:18885).
+
+**Why it is a problem.** The port's checker, hwconf::validate, is a second copy of the readers' rules, and it disagrees with them. It refused files every reader accepts. Example: d17=capture twice in [gpio_buttons] is a duplicate_key "error", but the reader just takes the later line. Original Apertar checks a whole-file save only for empty, 256 KiB and NUL bytes, then writes it with .bak and .tmp+rename (saveHardwareConfigFile, src/ApertarCoreApp.cpp:5323-5386@upstream-1.6.0). The readers are the authority: they keep their defaults for anything they cannot use and ignore unknown keys (HW-12). The WebUI is for a trusted LAN (WEB-6), so the operator's whole file wins.
+
+**How to spot it.** Look for a validator result that ends in a `return` with ok=false on a path where upstream has no such check: grep -n 'validate(' src/hardware/HardwareConfigStore.cpp, then compare with saveHardwareConfigFile at App:5323-5386@upstream-1.6.0. Ask: does any reader really refuse this file? If the reader only logs or keeps a default, the save must not be refused.
+
+**Options.**
+
+- Compute newErrors only when edits is set, so the existing refusal block fires for key edits only: +1 line, no re-indent, and new_errors keeps meaning 'what blocked the save' (chosen)
+- Wrap the whole refusal block in if (edits) { ... }: same behaviour, but 6 lines re-indented for review
+- Keep computing newErrors for every save and test 'edits && ...' in the condition: text-save refusals for other reasons would then carry a non-empty new_errors, and the page shows that list first
+- Make key edits advisory too: owner question 5 says keep the refusal, because the page writes keys the operator did not type
+
+**Chosen, and why.** I made newErrors a key-edit-only result: `if (edits) result.newErrors = ...;`. The refusal below it is unchanged. Text saves leave newErrors empty, so the refusal cannot fire for them and no error reply carries a misleading new_errors list. What we give up: a stale text save that the port merges key by key (it still has a null edits pointer) is not refused on new errors either. That merge path is deleted by commit 5 of this page and already stops at needs_review / merge_review. The plan's Check example was wrong: a key edit that sets d18=capture next to d17=capture adds no error. The test used set.gpio_buttons.d18=no_such_action instead, which raises an unknown_action error.
+
+**After.**
+
+```
+    // A whole-file save is written whatever the checker finds, as in 1.6.0: the readers skip what they cannot use
+    // and the reply names the issues. A key edit that adds an error is refused: the page writes keys nobody typed.
+    if (edits)
+        result.newErrors = hwconf::newErrors(hwconf::validate(current, facts), result.issues);
+    if (!result.newErrors.empty() && !flags.force) {
+HardwareConfigStore.hpp:  bool force = false;         // key edits only: save although the edit adds errors
+WebControlPage.cpp:  ". Save writes the file anyway; the readers skip what they cannot use."
+```
+
+**Checked.**
+
+Gate: /home/user/build/bin/check_core.sh /home/user/wt/lane-core3 lane-core3 both tests: PASS, PASS, PASS, and no warnings in the touched files. I then ran /home/user/build/lane-core3-lc/apertar-core --simulate on port 8180, with APERTAR_HARDWARE_CONFIG, XDG_CONFIG_HOME and HOME pointed at a scratch folder. Results:
+(1) curl -X POST --data-binary @dup.conf /api/config, where dup.conf has d17=capture twice: ok:true, written:true, errors:1, one duplicate_key issue, and the file holds the text.
+(2) set_controls with set.gpio_buttons.d18=no_such_action: refused with "Not saved: 1 new error. Unknown action ...", and the file is unchanged. The same call with force=true and dry_run=true returns ok.
+(3) Playwright/Chromium: Check on the dup text shows "Checked: 1 error, 0 warnings. Save writes the file anyway; the readers skip what they cannot use."; Save writes the file and shows "Saved. Core found 1 thing to look at".
+Pi: nothing to check, because no hardware path changed.
+
+**Rule.** A checker that copies the readers' rules may advise on a whole-file save, never veto it: the readers decide what a file means.
+
+
+---
+
+## C28. hw: Undo and restore put back a kept version with its script paths
+
+Apertar-Core `1a417c8`. Plan: `design/hardware-inputs.md` commit 2, **rewritten by the lead**. Finding: HW-config-text-store-F2. Recorded decision: controls Q2 (DA-4).
+
+**What was there.** The port's hardware-file store compares the `[run_script]` paths of the text it is asked to save with the paths in the file, and refuses the save when they differ:
+
+```
+src/hardware/HardwareConfigStore.cpp:330@cinemate-port
+    if (scriptPaths(nextDoc) != scriptPaths(currentDoc)) {
+        result.code = "script_paths";
+        result.error = "Script paths are changed over ssh, not here.";
+```
+
+The same test runs for Undo (`set_controls text=<history version> by=webui_undo`), for a History version and for `restore=true`.
+
+**Why it is a problem.** Two problems, and they pull in opposite directions.
+
+1. The refusal also hits Undo. Change a path over ssh, then press Undo in the WebUI: the version Undo wants to put back has the old path, so it is refused. A saved version could never be brought back across a path change.
+2. The plan said: delete the test, as in 1.6.0 (the 1.6.0 Config page writes the whole file without any check). A worker made that commit (`7e3a0c0`). But the test is not the port's accident: it is Patrik's decision Q2 of 2026-10-29, "`[run_script]` paths: ssh only; the browser cannot write them", recorded in `working/controls/decisions.md:10`. The review's plan was written without reading that page. I found it by chance while checking a different item, stopped the lane and threw the worker's commit away.
+
+**How to spot it.** A check that looks over-strict may be a decision. Before deleting a rule, grep the knowledge base for its message text and for the feature's decision page: `grep -rn "ssh" ~/apertar-kb/working/controls/`. Here the refusal text "changed over ssh" leads straight to Q2.
+
+**Options.**
+
+- Delete the test (the plan): 1.6.0 behaviour, but it reverses Patrik's decision.
+- Keep the test and exempt Undo and restore by the client's word (`by=webui_undo`): small, but any client can send that word, so the rule would be gone in practice.
+- Keep the test and let a save through when its paths are the paths of a version **Core itself kept** (the history folder, the last text it wrote): those paths were on the camera before, set over ssh once.
+
+**Chosen, and why.** The third. It compares the paths themselves, so it cannot be fooled by what the client says it is. In C++ terms: `keptScriptPaths()` loops over the files in `hardware-history/` with `std::filesystem::directory_iterator`, parses each with the same `hwconf::parse` the store already uses, and compares the two `std::map<std::string, std::string>` path maps with `==` (a map compares equal only when every key and value match).
+
+**After.**
+
+```
+    const auto nextPaths = scriptPaths(hwconf::parse(next));
+    if (nextPaths != scriptPaths(currentDoc) && !keptScriptPaths(notes_, nextPaths)) {
+        result.code = "script_paths";
+```
+
+**Checked.** Ran here, `--simulate` with a hardware file holding `path1=a.sh`: a browser save with a new path is refused; a save of another key is written; after the file is changed outside Core to `b.sh`, Undo to the earlier version is written and the file holds `a.sh` again; an "Undo" that carries a path no kept version has is refused. Both builds and the host tests pass.
+
+**Rule.** Before removing a rule the port added, look for the decision behind it in the knowledge base. A rule Patrik decided stays; the review only changes how it reaches a stock camera (next entry).
+
+
+---
+
+## C29. hw: the ssh-only rule for script paths is a switch, off as in 1.6.0
+
+Apertar-Core `f4de756`. Plan: the decisions audit of `design/hardware-inputs.md`. Made by the lead.
+
+**What was there.** After C28 the script-path rule ran on every camera.
+
+**Why it is a problem.** The campaign has one rule for features the port added: a stock camera (original driver, 720x720 screen, a 1.6.0 hardware file) behaves as Apertar 1.6.0 until the operator turns the feature on. On 1.6.0, the WebUI's Config page can change script paths. With C28 alone, a stock camera loses that after the merge. Patrik's decision is about his camera and his Controls design; the original developer has not made it for every camera.
+
+**How to spot it.** For each rule the port adds, ask: "what does a camera that has never heard of this feature do after the update?" If the answer differs from 1.6.0, the rule needs a switch with the 1.6.0 value as its default.
+
+**Options.**
+
+- A key in the hardware file, for example `[run_script] browser_paths=false`: but the browser can write the hardware file, so it could switch the protection off with the same save it wants to make. A lock whose key hangs on the door.
+- A camera setting in `camera_settings.conf`: Core would need a new setting, a command to change it, and that command would be reachable from the network again.
+- An environment variable of the Core service. Only someone with a shell on the camera (ssh) can change it, which is exactly the boundary Q2 draws. Upstream already reads switches this way at the point of use (`std::getenv("APERTAR_LOSSYDNG_ASYNCWRITE")` in `LossyDngEncoder.cpp`).
+
+**Chosen, and why.** The environment variable `APERTAR_SCRIPT_PATHS=ssh`. Unset means 1.6.0. Its value names what it does, so a drop-in file reads as a sentence. The cost: the protection is off on a stock camera, as it was in 1.6.0. The handoff recommends to the original developer that it become the default, as a separate decision for him.
+
+**After.**
+
+```
+    // APERTAR_SCRIPT_PATHS=ssh: a new [run_script] path is set over ssh only (1.6.0 lets the browser write it).
+    const char *scriptPathsEnv = std::getenv("APERTAR_SCRIPT_PATHS");
+    const auto nextPaths = scriptPaths(hwconf::parse(next));
+    if (scriptPathsEnv && std::string(scriptPathsEnv) == "ssh" && nextPaths != scriptPaths(currentDoc) &&
+        !keptScriptPaths(notes_, nextPaths)) {
+```
+
+`std::getenv` returns `nullptr` when the variable is not set, so the `scriptPathsEnv &&` test comes first: comparing a null pointer as a string would crash.
+
+**Checked.** Ran here, each case with a fresh state folder: unset, a browser save with a new path is written (1.6.0); with `APERTAR_SCRIPT_PATHS=ssh` it is refused with "Script paths are changed over ssh, not here." and a save of another key is written. (A first run shared one state folder between the two cases, and the second case wrongly passed: the first had saved the new path, so it counted as a kept version. The rule worked; the test did not. Fresh folder per case.) Needs the camera: add `Environment=APERTAR_SCRIPT_PATHS=ssh` to a drop-in of `apertar-core.service` on the rig, `sudo systemctl daemon-reload`, restart Core, and check the Config page refuses a changed path.
+
+**Rule.** A security switch lives where the attacker cannot reach it. A setting the browser can write cannot protect against the browser.
+
+---
+
+## C30. hw: every whole-file save gets the empty, size and binary checks
+
+Apertar-Core `8bfc242`. Finding: hardware-inputs commit 3. Reviewed by a second agent: accept.
+
+**What was there.**
+
+The port ran the upstream sanity checks only on POST /api/config, at src/ApertarCoreApp.cpp:8628@cinemate-port. The set_controls branch (src/ApertarCoreApp.cpp:12780-12803@cinemate-port) passed its text straight to the store:
+    if (!text && edits.empty())
+        return errorReply(command.id, "set_controls needs text= ...");
+    hardware::StoreFlags flags;
+    ...
+    ? hardware::configStore().replace(*base, *text, by, flags, hardwareConfigFacts())
+That covers text= (WebUI Undo, history restore) and the text that restore=true resolves.
+
+**Why it is a problem.** There were two doors for writing the whole file, and only one of them was guarded. An empty text, a text with a NUL byte or a huge text could reach the hardware file through Undo, a socket client or restore=true. The store's own base and no-change tests do not catch these. Original Apertar has one whole-file save, saveHardwareConfigFile (src/ApertarCoreApp.cpp:5325-5341@upstream-1.6.0). It refuses empty text ("Config file cannot be empty."), text over 256 KiB ("Config file is too large.") and NUL bytes ("Config file contains invalid binary data.") before it writes anything. Finding HW-config-text-store-F5.
+
+**How to spot it.** grep -n 'configStore().replace(' src/ApertarCoreApp.cpp, then check that every call is preceded by checkHardwareConfigText. More generally: when a guard sits on one HTTP route, ask which socket command or restore path reaches the same writer without it.
+
+**Options.**
+
+- Call checkHardwareConfigText in the set_controls branch after restore=true resolves the text: +3 lines, checks stay in App where 1.6.0 has them (chosen)
+- Move the three checks into HardwareConfigStore::replace: every caller is covered, but upstream-shaped App code moves into the port's store and POST /api/config would change
+- Make the WebUI send Undo and restore through POST /api/config: changes the page and the restore flow; that is webui-state's item WCP-09-F12, not this one
+
+**Chosen, and why.** Option 1. It is the smallest change. It reuses the existing helper, and its error sentences are identical to 1.6.0. The check sits after the restore=true block, so the restored text is checked too. It also sits before the store's base test, so an empty text is refused even with a stale base. Given up: a new whole-file caller of the store outside App would have to call the helper itself. Today there is none: the IMU and storage writers make key edits, not whole-file saves.
+
+**After.**
+
+```
+        // A whole file, restored text included, gets the same checks as POST /api/config.
+        if (std::string message; text && !checkHardwareConfigText(*text, &message))
+            return errorReply(command.id, message);
+(C++17 if-with-initializer: the message string lives only inside the if, the same shape as the parseEdits check just above it.)
+```
+
+**Checked.**
+
+Run here: check_core.sh /home/user/wt/lane-core3 lane-core3 both tests (both builds and 18 host tests PASS). Then a --simulate run on port 8173 with APERTAR_HARDWARE_CONFIG=/home/user/build/sim/core3/hw.conf:
+- set_controls text="" with the current base: "Config file cannot be empty."
+- text "  \n" with a stale base: "Config file cannot be empty."
+- a text with \u0000: "Config file contains invalid binary data."
+- 256 KiB + 1 bytes: "Config file is too large."
+- md5sum of the file was the same before and after these four.
+- A normal text= save still wrote (ok:true, written:true).
+- POST /api/config with an empty body still replied "Config file cannot be empty."
+Needs the camera: nothing. No hardware path changes.
+
+**Rule.** Every door that writes a whole file runs the same sanity checks, in the place where the original code runs them.
+

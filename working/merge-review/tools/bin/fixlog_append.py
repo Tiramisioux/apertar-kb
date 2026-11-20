@@ -48,6 +48,14 @@ def main():
         else:
             print('not on the branch, skipped:', fid, r['sha'])
     items.sort()
+    logged = open(LOG).read()
+    keep = []
+    for it in items:
+        if f'. {it[2]}\n' in logged:
+            print('already in the log, skipped:', it[3], it[2])
+        else:
+            keep.append(it)
+    items = keep
     out = []
     for i, full, subject, fid, r in items:
         rv = reviews.get(fid, {})

@@ -28,5 +28,5 @@ save_lane /home/user/wt/lane-ui1   /home/user/wt/ui-work   ui-touch-ui
 cd /home/user/apertar-kb && git add -A working/merge-review && if git diff --cached --quiet; then echo "  KB: nothing new"; else
 git commit -q -m "${1:-merge-review: save point}
 
-Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
 Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr" && git push -q origin claude/awesome-pasteur-qzsiow 2>&1 | tail -1; echo "  KB pushed: $(git log --oneline -1 | cut -c1-80)"; fi
