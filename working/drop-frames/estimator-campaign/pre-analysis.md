@@ -69,6 +69,30 @@ lossless at 25) and storage (SDR12 uncompressed at the top). Effects are mean(on
 | WebUI connected | +9 to +39 | ~0 | Small; the second back-end run reads higher. |
 | TDN x aids | -39 to -48 | -0.06 | The largest interaction; it partly offsets TDN. |
 
+## 2b. When each switch matters
+
+Read from the lever design's 48 takes, split by what limits the mode (P2). The anchors:
+- **back end**: 4K HDR16 uncompressed at 28, about 1 fps under its edge;
+- **encoder**: 4K HDR16 lossless at 25, above its capacity of 15;
+- **storage**: 4K SDR12 uncompressed at 60, above the drive.
+
+Plus the 12 validation takes and the first-block probes. "Clean" = 0 frames dropped in 60 s.
+
+| Switch | Matters when | Doesn't matter when | Evidence |
+| --- | --- | --- | --- |
+| **TDN** | **Any 4K sensor mode**, every format, any distance from the edge. With TDN on, 0 of 24 design takes were clean, against 16 of 24 with it off. 4K HDR16 at 25 dropped 173 frames (about 3 fps under its edge). 4K HDR16 at 23 and 4K HDR12 MLV at 23 dropped. Even H.264 1080p, which reads the 4K sensor, dropped at 60. | **2K**: every TDN-on take at 2K was clean (5 of 5). That covers SDR12 uncompressed at 60, lossy 5:1 at 60, ProRes 422 and Proxy at 60, and HDR16 lossless + Log at 23. | measured. Mechanism probable: the preview denoise runs in the ISP back end on the 4K input, and its time pushes the back end past the frame period; frames are then lost before the recorder, and Core's CPU *falls* (147 % vs 221 %) because less arrives. |
+| **Phase lock** | Only within about 1 fps of a **back-end edge** (4K HDR16 at 28 with TDN off): 7-24 gaps per minute on against 1-4 off, and the takes that dropped 6-67 frames had it on. | Encoder-limited (HDR16 lossless: 8 of 8 clean with TDN off, lock on or off). Storage-limited (the buffer fills at the same rate). 2K. | measured, small n (4 + 4 per anchor) |
+| **Audio recording (WAV)** | The same as the lock: near a back-end edge, +3 to +25 gaps per minute. One extra writer thread, about 10 % more Core CPU at the edge. | Encoder- or storage-limited, 2K. | measured, small n |
+| **WebUI connected** | Near a back-end edge: +6 to +15 gaps per minute. | Elsewhere. | measured, small n |
+| **Preview aids (peaking + zebra)** | Near a back-end edge it *helps*: fewer gaps with the aids on (0-9 against 8-19 gaps per minute). | Elsewhere. | measured; why unconfirmed (the aids may change the preview's path or rate) |
+| **Log** (a format setting, not a lever) | 4K HDR16: about -2 to -3 fps and capture gaps (uncompressed 28 -> 25-26; lossless + Log drops hundreds a minute). | 2K HDR16: Log at 30 is clean. | measured |
+| **Split (frames_per_folder 5000)** | Long cDNG takes: on any drive past t* = 1.9e6 / fps² seconds flat (50 min at 25 fps, 14 min at 48, 9 min at 60). On the T7 already at 2K 32 fps for 30 min. | MLV, ProRes and H.264 (one file); short takes. | measured (T7) + derived |
+
+**In one line:** in 4K, TDN off is the rule; it decides clean or not at any fps. The other switches only count within
+about 1 fps of a back-end edge (4K HDR16, 4K HDR12, 4K Log). There, lock, audio and WebUI each cost a few frames a
+minute and the aids help a little. When the drive or the encoder limits the mode, only the fps and the format count.
+At 2K, nothing measured here matters.
+
 ## 3. What caused the dropped frames
 
 | Cause | Where it shows | Mechanism | Label |
