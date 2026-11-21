@@ -2336,7 +2336,9 @@ def ledger_live(out):
 
 def foreign_folders(out):
     """Clip folders on the card the database did not create (plan section 7: WAITING, never deleted)."""
-    known = {c['clip'] for c in ledger_live(out)} | set(CS.get('preserve') or ())
+    # own_clips.txt counts too: a record_start Core refused after it had made the folder (EST 2026-11-21, the mic's audio
+    # format rejected, the retry recorded into the next folder) leaves a folder of ours the ledger never saw
+    known = {c['clip'] for c in ledger_live(out)} | set(CS.get('preserve') or ()) | set(OWN['clips'])
     return sorted(clip_dirs() - known)
 
 
