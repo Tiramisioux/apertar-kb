@@ -168,3 +168,11 @@ If the review container is gone by then, nothing is lost:
 | A finding signed by a reviewer and a skeptic can still be wrong | Open the code before acting (fix log C10: processed stills are developed from the raw frame, not from the ISP) |
 | Two gates at once can break a host test that uses a fixed temp folder | Each gate has its own `TMPDIR` now (`tools/bin/check_core.sh`) |
 | Save often | `tools/bin/save_all.sh` copies tools and lane patches here and pushes |
+
+## Paused 2026-11-21 (tokens), Dynamic resolution build
+
+- Integrated and pushed: W1 web lever lines (C77), U1 touch lever lines (U18). Core review branch at 57da4eb, UI at 0981e32.
+- Lane `lane/dr-core` (/home/user/wt/lane-dr-core), NOT integrated: bd99a8b CM6 fps ceiling, c74016d CM10 ladder in camera_settings.conf, 7588d82 D1 known-limits table, 0817904 D2 limit fields (notes 01-04 in /home/user/build/sim/notes/drcore), then a WIP commit for D3 (unfinished, ungated: finish or drop it first).
+- Next: resume a Sonnet worker on lane-dr-core for D3 and D7 (instructions file there), gate, cherry-pick onto work/improve, push, fixlog C78.. Then D4, D5, D6, D8, D9; W2, W3; U2. Put "Automatic turns it on above 32 fps" in the Split lines with D5.
+- cinemate-port was fast-forwarded to clip-split on GitHub (Core 05fb8f1, UI 371e1eb), as Patrik asked.
+- Setup pages and extra files: setup/ (zips sent). Waiting: Patrik copies his rig files from the Pi (apertar-rig-files.zip) to add unchanged.
