@@ -68,9 +68,11 @@ def load(run):
         if os.path.exists(p):
             for l in open(p):
                 try:
-                    out.append(json.loads(l))
+                    r = json.loads(l)
                 except ValueError:
-                    pass
+                    continue
+                if r.get('verdict') != 'stop':      # a take the night stopped before it ran is no result
+                    out.append(r)
         return out
     serial = ''
     for n in sorted(os.listdir(run)) if os.path.isdir(run) else []:

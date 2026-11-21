@@ -465,7 +465,7 @@ def quiet_reasons(need_free_gib=20.0):
             why.append('a storage pre-roll is running')
         if st.get('media_state') != 'mounted' or st.get('media_alive') is False:
             why.append('medium not mounted or not alive (%s)' % st.get('media_state'))
-        if st.get('ladder_enabled'):
+        if st.get('ladder_enabled') and not CS.get('ladder_owned'):      # P4 turns it on itself
             why.append('NEEDS A HUMAN: the Mode Ladder is on and the campaign cannot switch modes; turn it off (WebUI, Camera > Mode Ladder)')
         if web_state().get('media_trim_running'):
             why.append('a trim is running')
@@ -3676,8 +3676,9 @@ def est_append(out, name, rec):
     if rec.get('ckey') and os.path.exists(p):
         for l in open(p):
             try:
-                if json.loads(l).get('ckey') == rec['ckey']:
-                    return          # a resumed night returns the recorded take: recorded once
+                old = json.loads(l)
+                if old.get('ckey') == rec['ckey'] and old.get('verdict') != 'stop':
+                    return          # a resumed night returns the recorded take: recorded once (a stopped one runs again)
             except ValueError:
                 pass
     with open(p, 'a') as f:
@@ -3753,6 +3754,7 @@ def apply_ladder_take(c, fps):
     """A Mode Ladder take (P4): the ladder is on with c.ladder as its rungs; only the levers and the fps are set, the ladder
     picks the mode, and verify() then compares it with the rung the estimate expects (c's mode)."""
     apply_levers(c)
+    core('set_cdng_log', value='on' if c.log else 'off')     # Log is one switch for the camera; 'auto' applies it in HDR16
     core('set_preview_tdn', enabled=c.tdn)
     core('set_fps_phase_lock', enabled=c.lock)
     core('set_media_trim', enabled=c.trim)
@@ -3782,6 +3784,7 @@ def est_ladder(out):
     if not r.get('ok'):
         decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (text, r.get('error')))
         return
+    CS['ladder_owned'] = True       # the quiet gate lets the ladder be on during P4 (it ended the night on 2026-11-21)
     decide(out, 'EST P4: ladder %s' % text)
     steps = sorted(set(x for x in (25, th[0] - 1, th[0], th[0] + 1, 35, 40, 45, 50) if x >= 1))
     try:
@@ -3791,12 +3794,14 @@ def est_ladder(out):
             want = next((i for i, t in enumerate(th[:-1]) if t and f <= t), len(rungs) - 1)
             c = est_cfg(rungs[want][0])
             c.ladder = text
-            r = est_ctake(out, c, f, 60, 'P4-%s-rung%d' % (f, want + 1), stop_on_drop=True)
+            r = est_ctake(out, c, f, 60, 'P4r2-%s-rung%d' % (f, want + 1), stop_on_drop=True)
             rec = {'fps': f, 'expected_rung': want + 1, 'spec': rungs[want][0], 'verdict': r.get('verdict'),
                    'outcome': r.get('outcome'), 'mismatch': r.get('mismatch'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey')}
-            est_append(out, 'ladder', rec)
+            if r.get('verdict') != 'stop':
+                est_append(out, 'ladder', rec)
     finally:
         core('set_mode_ladder', enabled='false')
+        CS['ladder_owned'] = False
 
 
 def est_night(out):
@@ -3989,6 +3994,10 @@ def restore_formats(found):
     if 'profiles' not in found:
         return []
     bad = []
+    # the ladder first: while it is on Core refuses the lossy ratio and the compression (kLadderOwnsCompression; EST
+    # 2026-11-21: P4 left it on, the restore read back lossy_dng_ratio 5to1)
+    core('set_mode_ladder', enabled='false'); time.sleep(2)
+    CS['ladder_owned'] = False
     for fmt in sorted(CS.get('fmts_touched') or ()):
         if fmt == (found.get('recording_format') or 'cdng'):
             continue
@@ -4023,6 +4032,10 @@ def restore_night(out, found, nights, why):
     bad0 = restore_formats(found)
     ow, oh = (found.get('resolution') or '3840x2160').split('x')
     set_format(found.get('recording_format') or 'cdng')
+    if found.get('lossy_dng_ratio'):
+        # again after the switch back: cDNG and lossy DNG share one saved profile, whose ratio the switch brings back
+        # (EST 2026-11-21: 5to1 from the last lossy probe; set by hand it took at once)
+        core('set_lossy_dng_ratio', value=found['lossy_dng_ratio'])
     for cmd, kw in (('set_clear_hdr', {'enabled': bool(found.get('clear_hdr', True))}),
                     ('set_resolution', {'width': int(ow), 'height': int(oh)}),
                     ('set_raw_bit_depth', {'value': 12 if found.get('raw_bit_depth') == 16 else 16}),
