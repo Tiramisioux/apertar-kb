@@ -1,0 +1,164 @@
+From 98d7a1ca96481483fb44a4c1c23cc51776b0222e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:37:07 +0000
+Subject: [PATCH] ui: clip-name, buffer, log and pre-roll invokables return
+ bool
+
+Why:
+applyBufferMode, applyStoragePreroll, applyStoragePrerollAuto,
+applyClipNameTemplate and applyCdngLog were void. Original Apertar's
+command invokables return bool: false after setLastError, else the
+result of sendCoreCommand (UIC-9; applyCaptureMode and
+applyPhotoLongExposureEnabled in ApertarControlBridge.cpp at 1.6.0).
+Three of them also applied Core's answer a second time:
+applyClipNameTemplate called applyClipNameState on the reply, and
+applyBufferMode and applyCdngLog set m_bufferSetting and m_cdngLogOn
+themselves. Every reply already goes through applyCoreMessage and,
+since it has "ok", through applyCoreState, which applies
+buffer_setting, cdng_log and the clip-name keys that the replies of
+set_buffer_mode, set_cdng_log and set_clip_name_template carry.
+
+What:
+The five invokables return bool. applyBufferMode returns false after
+its "Invalid write buffer mode." error; the rest return
+sendCoreCommand(...). The second apply and the post-send assignments
+are gone; the screen follows Core's reply through applyCoreState.
+requestClipNamePreview is unchanged. No wire change; QML ignores the
+results.
+
+Tested:
+/home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1:
+PASS, 0 warnings (QML compiled ahead of time). Nothing can be run on a
+screen here. Needs the camera: Settings > Record, switch Write Buffer
+between Frames and RAM and Log On/Off; the tiles follow as before, and
+apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"buffer_setting":"[a-z]*"'
+shows the choice. Edit the clip-name pattern: "Next clip" follows.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarControlBridge.cpp | 53 ++++++++++++++----------------------
+ src/ApertarControlBridge.hpp | 10 +++----
+ 2 files changed, 25 insertions(+), 38 deletions(-)
+
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 1dd3cf9..3958c04 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -615,30 +615,27 @@ bool ApertarControlBridge::applyRawBitDepth(const QString &displayValue)
+     return true;
+ }
+ 
+-void ApertarControlBridge::applyStoragePreroll()
++bool ApertarControlBridge::applyStoragePreroll()
+ {
+     // A refusal (running, recording, ...) comes back from Core as an error and is shown through lastError.
+-    sendCoreCommand(QStringLiteral("storage_preroll"), {});
++    return sendCoreCommand(QStringLiteral("storage_preroll"), {});
+ }
+ 
+-void ApertarControlBridge::applyStoragePrerollAuto(bool on)
++bool ApertarControlBridge::applyStoragePrerollAuto(bool on)
+ {
+     // No optimistic update: the buffer event/state from Core brings storage_preroll_auto back.
+-    sendCoreCommand(QStringLiteral("set_storage_preroll"), {
++    return sendCoreCommand(QStringLiteral("set_storage_preroll"), {
+         { QStringLiteral("value"), on ? QStringLiteral("on") : QStringLiteral("off") }
+     });
+ }
+ 
+-void ApertarControlBridge::applyClipNameTemplate(const QString &value)
++bool ApertarControlBridge::applyClipNameTemplate(const QString &value)
+ {
+     // Core corrects the template (appends _{clip} if missing); its reply carries the stored template
+-    // and example, applied here. A refusal (recording) comes back as an error through lastError.
+-    QJsonObject reply;
+-    if (sendCoreCommand(QStringLiteral("set_clip_name_template"), {
+-            { QStringLiteral("value"), value }
+-        }, &reply)) {
+-        applyClipNameState(reply);
+-    }
++    // and example, which applyCoreState applies. A refusal (recording) comes back as an error through lastError.
++    return sendCoreCommand(QStringLiteral("set_clip_name_template"), {
++        { QStringLiteral("value"), value }
++    });
+ }
+ 
+ void ApertarControlBridge::requestClipNamePreview(const QString &value)
+@@ -683,21 +680,16 @@ void ApertarControlBridge::applyClipNameState(const QJsonObject &state)
+         emit clipNameChanged();
+ }
+ 
+-void ApertarControlBridge::applyBufferMode(const QString &value)
++bool ApertarControlBridge::applyBufferMode(const QString &value)
+ {
+     if (value != QStringLiteral("frames") && value != QStringLiteral("ram")) {
+         setLastError(QStringLiteral("Invalid write buffer mode."));
+-        return;
+-    }
+-    if (!sendCoreCommand(QStringLiteral("set_buffer_mode"), {
+-            { QStringLiteral("value"), value }
+-        })) {
+-        return;
+-    }
+-    if (m_bufferSetting != value) {
+-        m_bufferSetting = value;
+-        emit bufferSettingChanged();
++        return false;
+     }
++    // The reply carries buffer_setting, which applyCoreState applies.
++    return sendCoreCommand(QStringLiteral("set_buffer_mode"), {
++        { QStringLiteral("value"), value }
++    });
+ }
+ 
+ bool ApertarControlBridge::applyClearHdr(bool enabled)
+@@ -713,17 +705,12 @@ bool ApertarControlBridge::applyClearHdr(bool enabled)
+     return true;
+ }
+ 
+-void ApertarControlBridge::applyCdngLog(bool on)
++bool ApertarControlBridge::applyCdngLog(bool on)
+ {
+-    if (!sendCoreCommand(QStringLiteral("set_cdng_log"), {
+-            { QStringLiteral("value"), on ? QStringLiteral("auto") : QStringLiteral("off") }
+-        })) {
+-        return;
+-    }
+-    if (m_cdngLogOn != on) {
+-        m_cdngLogOn = on;
+-        emit cdngLogChanged();
+-    }
++    // The reply carries cdng_log, which applyCoreState applies.
++    return sendCoreCommand(QStringLiteral("set_cdng_log"), {
++        { QStringLiteral("value"), on ? QStringLiteral("auto") : QStringLiteral("off") }
++    });
+ }
+ 
+ bool ApertarControlBridge::applyH264Resolution(const QString &displayValue)
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 852f171..0d451eb 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -191,13 +191,13 @@ public:
+     Q_INVOKABLE bool applyCdngCompression(const QString &value);
+     Q_INVOKABLE bool applyTuningFile(const QString &path);
+     Q_INVOKABLE bool applyRawBitDepth(const QString &displayValue);
+-    Q_INVOKABLE void applyBufferMode(const QString &value);
+-    Q_INVOKABLE void applyStoragePreroll();
+-    Q_INVOKABLE void applyStoragePrerollAuto(bool on);
+-    Q_INVOKABLE void applyClipNameTemplate(const QString &value);
++    Q_INVOKABLE bool applyBufferMode(const QString &value);
++    Q_INVOKABLE bool applyStoragePreroll();
++    Q_INVOKABLE bool applyStoragePrerollAuto(bool on);
++    Q_INVOKABLE bool applyClipNameTemplate(const QString &value);
+     Q_INVOKABLE void requestClipNamePreview(const QString &value);
+     Q_INVOKABLE bool applyClearHdr(bool enabled);
+-    Q_INVOKABLE void applyCdngLog(bool on);
++    Q_INVOKABLE bool applyCdngLog(bool on);
+     Q_INVOKABLE bool applyH264Resolution(const QString &displayValue);
+     // target: "ui" (what the screens show), "files" (the clips and the audio) or "both"
+     Q_INVOKABLE bool applyTimecodeMode(const QString &displayValue, const QString &target);
+-- 
+2.43.0
+

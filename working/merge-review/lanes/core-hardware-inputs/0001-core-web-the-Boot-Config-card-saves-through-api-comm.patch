@@ -1,0 +1,300 @@
+From e91502a8d0b1d21ed547d35be117e5e201dadf60 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 17:22:41 +0000
+Subject: [PATCH] core, web: the Boot Config card saves through /api/command
+
+Why: the card saved through its own route, POST /api/boot-config, with its
+own lock, a revision header, status codes 400/403/409/500 and a rule that
+asked whether the caller was a browser. Original Apertar has one door for
+changes, handleCommand under commandMutex_, reached from the page by
+sendCommand (fan mode: set_fan_mode, App set_fan_mode block), and a
+read-only GET route for a file the browser shows (GET /api/config).
+
+What: set_boot_config is only the handleCommand block now and the page
+sends it with sendCommand like every other setter. The POST /api/boot-config
+route, BootConfigReply, bootConfigMutex() and its three lock_guards, the
+browser parameter and its old_page refusal are gone; bootConfigSet and
+bootConfigGet return the reply body. GET /api/boot-config stays as the read
+and takes no lock. The page reloads the card after any refused save, since
+sendCommand hands it the sentence only. The reply fields are unchanged, and
+the 400/409 codes stay in the body until the refusals are made one sentence.
+README names the door.
+
+Tested: check_core.sh both tests (builds, 21 host tests, no new warning).
+--simulate with APERTAR_BOOT_CONFIG on a copy of the test fixture: POST
+/api/boot-config -> Not found; set_boot_config over /api/command with
+dry_run, with a stale revision (refused) and with the right one (one line
+changes, config.txt.apertar.bak left); Chromium: change the cam0 sensor,
+Save Only writes the one line. smoke_core shape diff: every base field
+present with the same type. Needs the camera: Save from the card on the CM5,
+reboot, journalctl -u apertar-core | grep 'boot config'.
+
+Co-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ README.md                  |   2 +
+ src/ApertarCoreApp.cpp     | 112 +++++++++++--------------------------
+ src/web/WebControlPage.cpp |  15 ++---
+ 3 files changed, 41 insertions(+), 88 deletions(-)
+
+diff --git a/README.md b/README.md
+index 4a7cafe..af28006 100644
+--- a/README.md
++++ b/README.md
+@@ -212,6 +212,8 @@ Without it, Core falls back to `sudo -n install`, as the fan mode always has.
+ 
+ If the camera does not come back after a change, put the card in a reader and copy `config.txt.apertar.bak` over `config.txt` on the boot partition.
+ 
++The card saves with the `set_boot_config` command through `POST /api/command`, the same door as every other setting; `GET /api/boot-config` reads the file.
++
+ Socket commands: `get_boot_config`, and `set_boot_config` with `cam0_sensor`, `cam1_sensor`, `cam0_link_frequency`, `cam1_link_frequency`, `i2c`, `i2s`, `spi`, `audio`, `rp1`, `display`, plus `dry_run`, `revision` and `confirm_display`, and optionally `text` (the whole file as edited; the other fields go on top of it).
+ 
+ ## Building From Source
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 8d89247..b4a4c2c 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -3657,13 +3657,6 @@ std::filesystem::path bootConfigPath()
+     return kBootConfigPath;
+ }
+ 
+-// One writer at a time: the fan mode and the Boot config card both read, change and replace config.txt.
+-std::mutex &bootConfigMutex()
+-{
+-    static std::mutex mutex;
+-    return mutex;
+-}
+-
+ bool fsyncPath(const std::filesystem::path &path)
+ {
+     const int fd = ::open(path.c_str(), O_RDONLY | O_CLOEXEC);
+@@ -3773,7 +3766,6 @@ bool applyFanMode(const std::string &mode, std::string *errorMessage)
+         return false;
+     }
+ 
+-    std::lock_guard<std::mutex> lock(bootConfigMutex());
+     const std::string existing = readTextFileRaw(bootConfigPath());
+     if (existing.empty()) {
+         if (errorMessage)
+@@ -3905,49 +3897,42 @@ bool bootConfigRequestFrom(const ControlCommand &command, bootconf::Request *req
+     return true;
+ }
+ 
+-struct BootConfigReply {
+-    int status = 200;
+-    std::string body;
+-};
+-
+-BootConfigReply bootConfigGet(int id)
++// GET /api/boot-config: read only, no lock (the command that writes holds commandMutex_), as GET /api/config.
++std::string bootConfigGet(int id)
+ {
+     const bootconf::Facts facts = bootConfigFacts();
+-    std::lock_guard<std::mutex> lock(bootConfigMutex());
+-    return {200, okReply(id, "\"boot_config\":" + bootConfigJson(readTextFileRaw(bootConfigPath()), facts))};
++    return okReply(id, "\"boot_config\":" + bootConfigJson(readTextFileRaw(bootConfigPath()), facts));
+ }
+ 
+-// set_boot_config / POST /api/boot-config. dry_run=true answers what would change without writing (the card's review).
+-// A save carries the revision it was made against; a display change needs confirm_display=true (the DPI guard).
+-BootConfigReply bootConfigSet(const ControlCommand &command, const std::optional<std::string> &revision, bool browser)
++// set_boot_config. dry_run=true answers what would change without writing (the card's review). A save carries the
++// revision it was made against; a display change needs confirm_display=true (the DPI guard).
++std::string bootConfigSet(const ControlCommand &command)
+ {
++    const std::optional<std::string> revision = command.string("revision");
+     bootconf::Request request;
+     std::string error;
+     if (!bootConfigRequestFrom(command, &request, &error))
+-        return {400, errorReplyBody(command.id, error, "\"code\":\"invalid\"")};
++        return errorReplyBody(command.id, error, "\"code\":\"invalid\"");
+     const auto dryRunValue = boolFieldValue(command.string("dry_run").value_or("false"));
+     const auto confirmDisplayValue = boolFieldValue(command.string("confirm_display").value_or("false"));
+     if (!dryRunValue || !confirmDisplayValue)
+-        return {400, errorReplyBody(command.id, std::string(dryRunValue ? "confirm_display" : "dry_run") + " must be true or false.",
+-                                    "\"code\":\"invalid\"")};
++        return errorReplyBody(command.id, std::string(dryRunValue ? "confirm_display" : "dry_run") + " must be true or false.",
++                              "\"code\":\"invalid\"");
+     const bool dryRun = *dryRunValue;
+     const bool confirmDisplay = *confirmDisplayValue;
+ 
+     const bootconf::Facts facts = bootConfigFacts();
+-    std::lock_guard<std::mutex> lock(bootConfigMutex());
+     const std::filesystem::path path = bootConfigPath();
+     const std::string text = readTextFileRaw(path);
+     if (text.empty())
+-        return {500, errorReplyBody(command.id, "Could not read " + path.string() + ".", "\"code\":\"unreadable\"")};
++        return errorReplyBody(command.id, "Could not read " + path.string() + ".", "\"code\":\"unreadable\"");
+     const std::string current = bootconf::revisionOf(text);
+     if (!dryRun) {
+-        if (!revision && browser)
+-            return {409, errorReplyBody(command.id, "Apertar was updated: reload this page.", "\"code\":\"old_page\"")};
+         if (revision && *revision != current)
+-            return {409, errorReplyBody(command.id,
+-                                        "config.txt changed since the card loaded it (the fan mode, or an edit by hand). "
+-                                        "Reload the card and choose again.",
+-                                        "\"code\":\"stale\",\"revision\":" + bootconf::jsonString(current))};
++            return errorReplyBody(command.id,
++                                  "config.txt changed since the card loaded it (the fan mode, or an edit by hand). "
++                                  "Reload the card and choose again.",
++                                  "\"code\":\"stale\",\"revision\":" + bootconf::jsonString(current));
+     }
+ 
+     // text: the file as the operator edited it on the card. The card's choices go on top of that text, and the result
+@@ -3956,11 +3941,11 @@ BootConfigReply bootConfigSet(const ControlCommand &command, const std::optional
+     if (edited) {
+         const std::string problem = bootconf::textProblem(*edited);
+         if (!problem.empty())
+-            return {400, errorReplyBody(command.id, problem, "\"code\":\"invalid\"")};
++            return errorReplyBody(command.id, problem, "\"code\":\"invalid\"");
+     }
+     bootconf::ApplyResult result = bootconf::applyRequest(edited ? *edited : text, request, facts);
+     if (!result.ok)
+-        return {400, errorReplyBody(command.id, result.error, "\"code\":\"refused\"")};
++        return errorReplyBody(command.id, result.error, "\"code\":\"refused\"");
+     if (edited) {
+         result.before = bootconf::readState(bootconf::parseDocument(text, facts.board), facts.board);
+         result.changes = bootconf::lineChanges(text, result.text);
+@@ -3970,26 +3955,26 @@ BootConfigReply bootConfigSet(const ControlCommand &command, const std::optional
+         ",\"display_changed\":" + (result.displayChanged ? "true" : "false") +
+         ",\"text\":" + bootconf::jsonString(result.text) + ",\"state\":" + bootconf::stateJson(result.after, facts);
+     if (dryRun)
+-        return {200, okReply(command.id, "\"written\":false,\"dry_run\":true," + body + ",\"revision\":" +
+-                                             bootconf::jsonString(current) + ",\"drm\":" + drmConnectorsJson())};
++        return okReply(command.id, "\"written\":false,\"dry_run\":true," + body + ",\"revision\":" +
++                                       bootconf::jsonString(current) + ",\"drm\":" + drmConnectorsJson());
+     if (result.displayChanged && !confirmDisplay)
+-        return {409, errorReplyBody(command.id,
+-                                    "This changes the display overlays. A DPI panel that is the camera's only screen stays dark "
+-                                    "after the reboot without them, and with them GPIO 0-27 (I2C bus 1 included) belong to the panel. "
+-                                    "Send confirm_display=true to save anyway.",
+-                                    "\"code\":\"confirm_display\",\"drm\":" + drmConnectorsJson())};
++        return errorReplyBody(command.id,
++                              "This changes the display overlays. A DPI panel that is the camera's only screen stays dark "
++                              "after the reboot without them, and with them GPIO 0-27 (I2C bus 1 included) belong to the panel. "
++                              "Send confirm_display=true to save anyway.",
++                              "\"code\":\"confirm_display\",\"drm\":" + drmConnectorsJson());
+     if (result.changes.empty())
+-        return {200, okReply(command.id, "\"written\":false," + body + ",\"revision\":" + bootconf::jsonString(current))};
++        return okReply(command.id, "\"written\":false," + body + ",\"revision\":" + bootconf::jsonString(current));
+ 
+     std::string how;
+     bool denied = false;
+     if (!writeBootConfigText(result.text, &error, &how, &denied))
+-        return {denied ? 403 : 500, errorReplyBody(command.id, error, denied ? "\"code\":\"permission\"" : "\"code\":\"write_failed\"")};
++        return errorReplyBody(command.id, error, denied ? "\"code\":\"permission\"" : "\"code\":\"write_failed\"");
+     std::cerr << "ApertarCore boot config: wrote " << path.string() << " (" << result.changes.size()
+               << " line(s), via " << how << "); takes effect at the next reboot\n";
+-    return {200, okReply(command.id, "\"written\":true,\"via\":" + bootconf::jsonString(how) + "," + body +
+-                                         ",\"revision\":" + bootconf::jsonString(bootconf::revisionOf(readTextFileRaw(path))) +
+-                                         ",\"reboot_required\":true")};
++    return okReply(command.id, "\"written\":true,\"via\":" + bootconf::jsonString(how) + "," + body +
++                                   ",\"revision\":" + bootconf::jsonString(bootconf::revisionOf(readTextFileRaw(path))) +
++                                   ",\"reboot_required\":true");
+ }
+ 
+ std::string normalizedPowerError(const std::string &errorMessage)
+@@ -9770,42 +9755,11 @@ WebServer::Response ApertarCoreApp::handleWebRequest(const WebServer::Request &r
+         return response;
+     }
+ 
+-    // System pane, Boot config card: /boot/firmware/config.txt (bootConfigGet / bootConfigSet above).
++    // System pane, Boot config card: reads /boot/firmware/config.txt (bootConfigGet above); it saves with set_boot_config.
+     if (request.method == "GET" && request.path == "/api/boot-config") {
+         WebServer::Response response;
+         response.contentType = "application/json; charset=utf-8";
+-        const BootConfigReply reply = bootConfigGet(-1);
+-        response.status = reply.status;
+-        response.body = reply.body;
+-        return response;
+-    }
+-
+-    if (request.method == "POST" && request.path == "/api/boot-config") {
+-        WebServer::Response response;
+-        response.contentType = "application/json; charset=utf-8";
+-        // The body is the card's fields as one JSON object; the command parser wants a name, so it gets one.
+-        std::string payload = request.body;
+-        const size_t brace = payload.find('{');
+-        if (brace == std::string::npos) {
+-            response.status = 400;
+-            response.body = errorReply(-1, "Expected a JSON object.");
+-            return response;
+-        }
+-        const size_t next = payload.find_first_not_of(" \t\r\n", brace + 1);
+-        const bool empty = next != std::string::npos && payload[next] == '}';
+-        payload.insert(brace + 1, empty ? "\"cmd\":\"set_boot_config\"" : "\"cmd\":\"set_boot_config\",");
+-        const ParseResult parsed = parseControlCommand(payload);
+-        if (!parsed.ok) {
+-            response.status = 400;
+-            response.body = errorReply(-1, parsed.error);
+-            return response;
+-        }
+-        const auto revisionHeader = request.headers.find("x-apertar-revision");
+-        const std::optional<std::string> revision = revisionHeader != request.headers.end()
+-            ? std::optional<std::string>(revisionHeader->second) : parsed.command.string("revision");
+-        const BootConfigReply reply = bootConfigSet(parsed.command, revision, request.headers.count("origin") > 0);
+-        response.status = reply.status;
+-        response.body = reply.body;
++        response.body = bootConfigGet(-1);
+         return response;
+     }
+ 
+@@ -15987,10 +15941,10 @@ std::string ApertarCoreApp::handleCommandLocal(const ControlCommand &command)
+     }
+ 
+     if (command.name == "get_boot_config")
+-        return bootConfigGet(command.id).body;
++        return bootConfigGet(command.id);
+ 
+     if (command.name == "set_boot_config")
+-        return bootConfigSet(command, command.string("revision"), false).body;
++        return bootConfigSet(command);
+ 
+     if (command.name == "set_fan_mode") {
+         const auto value = command.string("value");
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index 90a7f51..bc6cf7f 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -22005,7 +22005,7 @@ std::string_view webControlPageHtml()
+       }
+     }
+ 
+-    // ---- Boot Config card (System pane): /boot/firmware/config.txt through /api/boot-config ----------------------
++    // ---- Boot Config card (System pane): /boot/firmware/config.txt, read by /api/boot-config, saved by set_boot_config --
+     // Core reads the file into a state (sensor per connector, link frequency, buses, RP1 clock, DPI display) and edits
+     // the lines already there; this card shows that state, asks Core what a change would do (dry_run) before saving,
+     // and after "Save & Reboot" waits for the camera to answer again. Port of Cinemate's settings-editor config.txt tab.
+@@ -22186,15 +22186,13 @@ std::string_view webControlPageHtml()
+       return Object.assign(body, extra || {});
+     }
+ 
++    // set_boot_config through /api/command, like every other setter. A refusal comes back as { ok: false, error }.
+     async function bootConfigPost(body, revision) {
+-      const headers = { "Content-Type": "application/json" };
++      const payload = Object.assign({ cmd: "set_boot_config" }, body);
+       if (revision)
+-        headers["X-Apertar-Revision"] = revision;
++        payload.revision = revision;
+       try {
+-        const response = await fetch("/api/boot-config", { method: "POST", headers, body: JSON.stringify(body), cache: "no-store" });
+-        const result = await response.json();
+-        result.httpStatus = response.status;
+-        return result;
++        return await sendCommand(payload);
+       } catch (error) {
+         return { ok: false, error: (error && error.message) || "Could not reach the camera." };
+       }
+@@ -23020,8 +23018,7 @@ std::string_view webControlPageHtml()
+       bootConfig.saving = false;
+       if (!result.ok) {
+         hideBootConfigPanels();
+-        if (result.code === "stale" || result.code === "old_page")
+-          await loadBootConfig(true, false, true);   // the card keeps its choices; Save asks again against the new file
++        await loadBootConfig(true, false, true);   // the card keeps its choices; Save asks again against the file as it is now
+         showBootConfigMessage(result.error || "Could not save config.txt.");
+         renderBootConfig();
+         return;
+-- 
+2.43.0
+

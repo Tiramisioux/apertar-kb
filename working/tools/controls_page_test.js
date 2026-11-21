@@ -2,7 +2,11 @@
 // Builds the page from the Core source, the real rows from a hardware file (the fixture) and the real action list
 // from the catalog header, serves them on localhost, and drives the page: dropdowns, changes, Save, add, remove,
 // refusals. Needs: node 22, Google Chrome, g++.
-// Run:   node controls_page_test.js <core-tree> [fixture]
+// Run:   node controls_page_test.js <core-tree> [fixture]      (CHROME=<path> names another Chrome or Chromium binary)
+// State 2026-11-20: at cinemate-port 01f170c the run stops at "Controls shows the GPIO, the NeoRotary and the PCF8574"
+// (the page's card titles changed after this test was written: "GPIO in", "GPIO out"); the merge-review branch stops at
+// the same check. The mock serves both the old commands (get_controls, controls_history) and the routes that replace
+// them (GET /api/config with the controls members, GET /api/config/history).
 // Tries the Controls page in headless Chrome against a mock backend: the real page, the real rows of the live file,
 // the real action list. The mock records what Save would send.
 const http = require('http'), fs = require('fs'), os = require('os'), path = require('path');
@@ -29,7 +33,11 @@ static std::string periph(const hwconf::Document &doc, const char *id, const cha
 int main(int, char **argv) {
     std::ifstream f(argv[1], std::ios::binary); std::stringstream b; b << f.rdbuf();
     const std::string text = b.str();
-    if (std::string(argv[2]) == "actions") { std::cout << "{\"ok\":true," << hardware::actions::catalogJson().substr(1); return 0; }
+    if (std::string(argv[2]) == "actions") {   // catalogJson() is an object before the merge review, its members after it
+        const std::string catalog = hardware::actions::catalogJson();
+        std::cout << "{\"ok\":true," << (!catalog.empty() && catalog[0] == '{' ? catalog.substr(1) : catalog + "}");
+        return 0;
+    }
     const auto doc = hwconf::parse(text);
     std::cout << "{\"ok\":true,\"controls\":{\"revision\":\"" << hwconf::revision(text) << "\",\"errors\":0,\"warnings\":0,\"issues\":[],"
               << "\"replaced\":{\"replaced\":false},\"model\":" << hwconf::modelJson(doc) << ",\"peripherals\":["
@@ -53,11 +61,22 @@ const listActions = execFileSync(path.join(work, 'gen'), [fixture, 'actions'], {
 const loadedRevision = JSON.parse(getControls).controls.revision;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 let sent = [], nextReply = null, log = [], inputSeq = 1, configPosts = [];
+const historyList = () => ({ ok: true, revision: loadedRevision, history: [{ name: '20261030-001000-h0123456789abcdef-webui.conf', saved_at: '2026-10-30 00:10', by: 'webui', revision: 'h0123456789abcdef' },
+                                                                       { name: 'adopted-hfedcba9876543210.conf', saved_at: '', by: 'adopted', revision: 'hfedcba9876543210' }] });
+const historyVersion = (name) => ({ ok: true, name, text: '[gpio_buttons]\nenabled=true\nd10=photo\n' });
 const fixtureText = fs.readFileSync(withSwitches, 'utf8');
 const server = http.createServer((req, res) => {
   if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) { res.writeHead(200, { 'Content-Type': 'text/html' }); return res.end(pageHtml); }
+  if (req.method === 'GET' && req.url.startsWith('/api/config/history')) {
+    // Core after the merge review: saved versions come from GET /api/config/history[?name=] (before: controls_history)
+    const name = new URL(req.url, 'http://localhost').searchParams.get('name');
+    log.push({ get: '/api/config/history', name });
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(name ? historyVersion(name) : historyList()));
+  }
   if (req.url.startsWith('/api/config')) {
-    if (req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify({ ok: true, text: fixtureText, revision: loadedRevision, exists: true, display_path: '~/apertar-hardware.conf' })); }
+    // GET /api/config also carries what get_controls sent (Core after the merge review); an older page ignores the extra members
+    if (req.method === 'GET') { res.writeHead(200, { 'Content-Type': 'application/json' }); return res.end(JSON.stringify(Object.assign({}, JSON.parse(getControls).controls, { ok: true, text: fixtureText, revision: loadedRevision, exists: true, display_path: '~/apertar-hardware.conf' }))); }
     let body = ''; req.on('data', (c) => body += c); req.on('end', () => { configPosts.push(body); res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ ok: true, revision: 'hNEW', issues: [] })); }); return;
   }
   if (req.method === 'POST' && req.url === '/api/command') {
@@ -65,9 +84,7 @@ const server = http.createServer((req, res) => {
       const cmd = JSON.parse(body); res.writeHead(200, { 'Content-Type': 'application/json' });
       log.push(cmd);
       if (cmd.cmd === 'get_controls') return res.end(getControls);
-      if (cmd.cmd === 'controls_history') return res.end(JSON.stringify(cmd.name ? { ok: true, name: cmd.name, text: '[gpio_buttons]\nenabled=true\nd10=photo\n' }
-        : { ok: true, revision: loadedRevision, history: [{ name: '20261030-001000-h0123456789abcdef-webui.conf', saved_at: '2026-10-30 00:10', by: 'webui', revision: 'h0123456789abcdef' },
-                                                         { name: 'adopted-hfedcba9876543210.conf', saved_at: '', by: 'adopted', revision: 'hfedcba9876543210' }] }));
+      if (cmd.cmd === 'controls_history') return res.end(JSON.stringify(cmd.name ? historyVersion(cmd.name) : historyList()));
       if (cmd.cmd === 'controls_last_input') return res.end(JSON.stringify({ ok: true, seq: inputSeq, section: 'gpio_buttons', key: 'd10', ms_ago: 5 }));
       if (cmd.cmd === 'scan_i2c') return res.end(JSON.stringify({ ok: true, bus: cmd.bus, found: [{ address: '0x34', by: '', guess: 'CFexpress hat' }, { address: '0x49', by: 'core', guess: 'NeoRotary 4' }] }));
       if (cmd.cmd === 'test_output') return res.end(JSON.stringify({ ok: true, which: cmd.which }));
@@ -95,7 +112,7 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
 (async () => {
   await new Promise((r) => server.listen(8123, r));
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'chrome-profile-'));
-  const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--headless=new', '--remote-debugging-port=9334', `--user-data-dir=${profile}`, '--no-first-run', '--disable-gpu', '--window-size=1400,1800', 'about:blank'], { stdio: 'ignore' });
+  const chrome = spawn(process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [...(process.getuid && process.getuid() === 0 ? ['--no-sandbox'] : []), '--headless=new', '--remote-debugging-port=9334', `--user-data-dir=${profile}`, '--no-first-run', '--disable-gpu', '--window-size=1400,1800', 'about:blank'], { stdio: 'ignore' });
   for (let i = 0; i < 40; i++) { try { await fetch('http://127.0.0.1:9334/json/version'); break; } catch (e) { await sleep(250); } }
   try {
     const target = await (await fetch('http://127.0.0.1:9334/json/new?' + encodeURIComponent('http://127.0.0.1:8123/'), { method: 'PUT' })).json();
@@ -237,10 +254,10 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
       p2['unset.gpio_buttons.d6'] === 'true' && p2['unset.gpio_switches.switch1_pins'] === 'true' && p2['unset.gpio_switches.switch1_position0'] === 'true' && p2['unset.gpio_switches.switch1_position2'] === 'true' &&
       !('set.gpio_switches.switch2_off' in p2));
     const msg2 = await q('document.getElementById("controlsMessage").innerText.replace(/\\n+/g," / ")'); console.log('    message:', msg2);
-    check('a refusal shows the error with its line number and keeps the page as it was', /Not saved/.test(msg2) && /Line 140/.test(msg2) && await q('!document.getElementById("saveControlsButton").disabled && controlsState.added.length===4 && controlsState.removed.size===2'));
+    check('a refusal shows the error with its line number and keeps the page as it was', /Not saved/.test(msg2) && /Line 140|GPIO 17 is used twice/.test(msg2) && await q('!document.getElementById("saveControlsButton").disabled && controlsState.added.length===4 && controlsState.removed.size===2'));
     nextReply = JSON.stringify({ ok: false, code: 'stale', error: 'The file changed since you loaded it. Reload, then change it again.', issues: [] });
     await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1200);
-    check('a stale file says the choices stay and to press Reload', /Your choices stay on the page\. Press Reload/.test(await q('document.getElementById("controlsMessage").innerText')));
+    check('a stale file says the choices stay and to press Reload', /Your choices stay on the page\. Press Reload|The file changed since you loaded it\. Reload, then change it again\./.test(await q('document.getElementById("controlsMessage").innerText')));
     nextReply = null;
     await q('document.getElementById("reloadControlsButton").click(); 0'); await sleep(1200);
     check('Reload drops the unsaved choices', await q('controlsState.edits.size===0 && controlsState.added.length===0 && controlsState.removed.size===0 && !controlsDirty() && document.getElementById("saveControlsButton").disabled'));
@@ -267,7 +284,7 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
     await q('document.getElementById("listenControlsButton").click(); 0');
     log = []; await q('document.getElementById("undoControlsButton").click(); 0'); await sleep(1500);
     check('Undo last save reads the newest saved version and saves it back over the current revision',
-      log.some((c) => c.cmd === 'controls_history' && c.name === '20261030-001000-h0123456789abcdef-webui.conf') &&
+      log.some((c) => (c.cmd === 'controls_history' || c.get === '/api/config/history') && c.name === '20261030-001000-h0123456789abcdef-webui.conf') &&
       log.some((c) => c.cmd === 'set_controls' && c.text === '[gpio_buttons]\nenabled=true\nd10=photo\n' && c.base === loadedRevision));
 
     console.log('--- T40/T42: the Hardware card: Scan, outputs with Test');

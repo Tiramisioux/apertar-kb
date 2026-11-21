@@ -45,6 +45,7 @@ SAFE_FIRST = {"curl", "grep", "cat", "ls", "git", "systemctl", "findmnt", "stat"
               "pinctrl", "python3", "rpicam-hello"}
 SAFE_GIT = {"diff", "status", "log", "show", "rev-parse", "branch"}
 SAFE_SYSTEMCTL = {"show", "status", "is-active", "cat"}
+# get_controls and controls_history are gone after the merge review: GET /api/config and /api/config/history serve them.
 SAFE_CORE_CMDS = {"ping", "help", "get_state", "get_media_test_state", "audio_capabilities",
                   "list_sensor_modes", "list_actions", "get_controls", "controls_history", "controls_last_input"}
 
@@ -189,8 +190,9 @@ def unsafe_reason(cmd):
             names = re.findall(r'"cmd"\s*:\s*"([a-z_]+)"', stage)
             if any(n not in SAFE_CORE_CMDS for n in names):
                 return f"Core command {names} changes state"
-            if re.search(r"/api/config", stage):
-                return "/api/config can write the hardware config"
+            # GET /api/config (and /history) only reads; a body or another method writes the hardware file
+            if re.search(r"/api/config", stage) and re.search(r"(^|\s)(-X|--request|-d|--data\S*|-F|--form\S*|-T|--upload-file)(\s|=|$)", stage):
+                return "/api/config with a body or another method writes the hardware config"
         peek = len(words) == 2 and words[1].endswith(".py") and "sock_peek" in words[1]
         if first == "python3" and not (peek or words[1:3] == ["-m", "json.tool"]):
             return "python3 is allowed only as `-m json.tool` or the tutorial's own sock_peek script"

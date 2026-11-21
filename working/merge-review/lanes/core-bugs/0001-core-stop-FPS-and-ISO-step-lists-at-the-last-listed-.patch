@@ -1,0 +1,159 @@
+From 19e7eb8dbc7d1d2f9dfdaa9b0318115b67b870aa Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:07:03 +0000
+Subject: [PATCH] core: stop FPS and ISO step lists at the last listed value
+ under the cap
+
+Why: selectableValueSteps added the mode's ceiling as an extra step
+whenever a listed value lay above it. On IMX477 4144x2176 the FPS dial
+went 24, 25, 30, 41.08 instead of 24, 25, 30, and buttons and encoders
+stepped onto the odd ceiling with no way to turn it off. Original
+Apertar (availablePcfFpsOptions, src/ApertarCoreApp.cpp:1150-1167 at
+upstream-1.6.0) keeps the presets at or under the maximum and adds the
+maximum only when no preset fits.
+
+What: selectableValueSteps keeps the values at or under the cap and
+pushes the cap only when that list is empty; the "above" flag is gone.
+This applies to the FPS list (availablePcfFpsOptions) and the ISO list
+(pcfIsoOptions). An operator who wants the ceiling as a step adds it to
+the list in UI.conf. Free stepping (fpsFree, isoFree) keeps its range:
+it runs from the first listed value up to the ceiling when a listed
+value lies above it, else up to the last listed value, so free FPS on
+IMX477 4144x2176 still reaches 41.08 and free ISO still reaches
+iso_max. selectableValueCeiling, with pcfFpsFreeCeiling and
+pcfIsoFreeCeiling, gives that top end to the knob and button free paths.
+
+Tested: check_core.sh lane-core1 both tests (PASS, no new warnings; the
+one warning, convertPlanarYuv420ToRgb unused, predates this item).
+Copied both functions into a host program, list 24..100: steps cap
+41.08 -> 24 25 30, cap 20 -> 20, cap 0 -> list unchanged; free ceiling
+cap 41.08 -> 41.08, cap 60 -> 60, cap 120 -> 100, cap 0 -> 100; ISO
+list to 6400 with iso_max 2500 -> 2500. --simulate: list_actions
+values.fps is 24 25 30 50 60. Needs the camera: IMX477 at 4144x2176,
+turn the FPS encoder to the top, it stops at 30; and
+echo '{"cmd":"list_actions"}' | socat - UNIX-CONNECT:/tmp/apertar-core.sock
+shows "fps":[24,25,30]; then with fpsFree=true in UI.conf the encoder
+top reads 41.08 in get_state.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp | 47 +++++++++++++++++++++++++++++++++---------
+ 1 file changed, 37 insertions(+), 10 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index dfa2542..0d94d8a 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -1269,25 +1269,34 @@ size_t nextPcfPresetIndex(size_t currentIndex, size_t count, PcfSettingStepMode
+     return currentIndex;
+ }
+ 
+-// T33 (request 24): a list works on any sensor. The values up to the mode's ceiling are
+-// selectable, and the ceiling itself is added when a value lies above it (cap 0 = none).
++// A list works on any sensor. The values up to the mode's ceiling are selectable; the ceiling
++// itself is the only step when no listed value fits (cap 0 = none).
+ std::vector<double> selectableValueSteps(const std::vector<double> &steps, double cap)
+ {
+     if (!(cap > 0.0))
+         return steps;
+     std::vector<double> selectable;
+-    bool above = false;
+     for (double value : steps) {
+         if (value <= cap + 0.0005)
+             selectable.push_back(value);
+-        else
+-            above = true;
+     }
+-    if ((above || selectable.empty()) && (selectable.empty() || std::abs(selectable.back() - cap) > 0.0005))
++    if (selectable.empty())
+         selectable.push_back(cap);
+     return selectable;
+ }
+ 
++// Free stepping (fpsFree, isoFree) is not held to the list: it runs up to the ceiling when a listed
++// value lies above it, else up to the last listed value.
++double selectableValueCeiling(const std::vector<double> &steps, double cap)
++{
++    const std::vector<double> selectable = selectableValueSteps(steps, cap);
++    for (double value : steps) {
++        if (cap > 0.0 && value > cap + 0.0005)
++            return cap;
++    }
++    return selectable.empty() ? cap : selectable.back();
++}
++
+ // Lamps on AC flicker at twice the mains frequency, so an exposure of k / (2 x mains) sees whole
+ // flicker cycles: angle = 360 x fps x k / (2 x mains), k = 1, 2, ... up to 360 degrees. 25 fps on
+ // 50 Hz: 90, 180, 270, 360. (Cinemate's two versions use 1 / mains or hz / (fps x k); both are off.)
+@@ -1415,6 +1424,14 @@ std::vector<double> availablePcfFpsOptions(const CaptureSettings &settings,
+     return selectableValueSteps(steps.empty() ? builtInFpsSteps(sensorName) : steps, maxFps);
+ }
+ 
++double pcfFpsFreeCeiling(const CaptureSettings &settings,
++                         const std::string &sensorName,
++                         const std::vector<double> &steps)
++{
++    const double maxFps = settings.fpsMax > 0.0 ? settings.fpsMax : maximumPcfFpsForSettings(settings, sensorName);
++    return selectableValueCeiling(steps.empty() ? builtInFpsSteps(sensorName) : steps, maxFps);
++}
++
+ bool sameResolution(const Resolution &left, const Resolution &right)
+ {
+     return left.width == right.width && left.height == right.height;
+@@ -1576,6 +1593,11 @@ std::vector<double> pcfIsoOptions(const std::vector<double> &steps, uint32_t iso
+     return selectableValueSteps(steps.empty() ? builtInIsoSteps() : steps, static_cast<double>(isoMax));
+ }
+ 
++double pcfIsoFreeCeiling(const std::vector<double> &steps, uint32_t isoMax)
++{
++    return selectableValueCeiling(steps.empty() ? builtInIsoSteps() : steps, static_cast<double>(isoMax));
++}
++
+ // The operator's angles (or the built-in ones), with the flicker-free angles for this FPS merged
+ // in when flickerMainsHz is not 0.
+ std::vector<double> pcfShutterAngleOptions(const std::vector<double> &steps, double fps, int flickerMainsHz)
+@@ -10163,7 +10185,8 @@ void ApertarCoreApp::handleHardwareAnalogInput(const GroveAnalogInput::AnalogEve
+     if (target == "iso") {
+         const std::vector<double> options = pcfIsoOptions(uiSettings.isoSteps, cameraSettings.isoMax);
+         const uint32_t iso = static_cast<uint32_t>(uiSettings.isoFree
+-            ? std::llround(analogMappedValue(event, options.front(), options.back(), uiSettings.isoFreeIncrement))
++            ? std::llround(analogMappedValue(event, options.front(),
++                  pcfIsoFreeCeiling(uiSettings.isoSteps, cameraSettings.isoMax), uiSettings.isoFreeIncrement))
+             : options[analogPresetIndex(event.normalized, options.size())]);
+         if (!cameraSettings.isoAuto && cameraSettings.iso == iso)
+             return;
+@@ -10174,7 +10197,8 @@ void ApertarCoreApp::handleHardwareAnalogInput(const GroveAnalogInput::AnalogEve
+     if (target == "fps") {
+         const std::vector<double> options = availablePcfFpsOptions(cameraSettings, camera_.sensorName(), uiSettings.fpsSteps);
+         const double fps = uiSettings.fpsFree
+-            ? analogMappedValue(event, options.front(), options.back(), uiSettings.fpsFreeIncrement)
++            ? analogMappedValue(event, options.front(),
++                  pcfFpsFreeCeiling(cameraSettings, camera_.sensorName(), uiSettings.fpsSteps), uiSettings.fpsFreeIncrement)
+             : options[analogPresetIndex(event.normalized, options.size())];
+         if (std::abs(cameraSettings.fps - fps) < 0.001)
+             return;
+@@ -10444,7 +10468,9 @@ void ApertarCoreApp::handleSingleHardwareInputAction(const std::string &action)
+     if (const auto mode = pcfSettingStepMode(action, "fps")) {
+         const std::vector<double> options = availablePcfFpsOptions(cameraSettings, camera_.sensorName(), uiSettings.fpsSteps);
+         if (uiSettings.fpsFree) {
+-            dispatch("set_fps", { { "value", compactNumber(freeStepValue(cameraSettings.fps, uiSettings.fpsFreeIncrement, options, *mode)) } });
++            const double high = pcfFpsFreeCeiling(cameraSettings, camera_.sensorName(), uiSettings.fpsSteps);
++            dispatch("set_fps", { { "value", compactNumber(freeStepValue(cameraSettings.fps, uiSettings.fpsFreeIncrement,
++                { options.front(), high }, *mode)) } });
+             return;
+         }
+         const size_t currentIndex = nearestPcfPresetIndex(options, cameraSettings.fps);
+@@ -10493,7 +10519,8 @@ void ApertarCoreApp::handleSingleHardwareInputAction(const std::string &action)
+                 dispatch("set_iso_auto");
+             else
+                 dispatch("set_iso", { { "value", std::to_string(static_cast<uint32_t>(std::llround(
+-                    freeStepValue(iso, uiSettings.isoFreeIncrement, options, *mode)))) } });
++                    freeStepValue(iso, uiSettings.isoFreeIncrement,
++                        { options.front(), pcfIsoFreeCeiling(uiSettings.isoSteps, cameraSettings.isoMax) }, *mode)))) } });
+             return;
+         }
+         const size_t offset = autoAllowed ? 1 : 0;
+-- 
+2.43.0
+
