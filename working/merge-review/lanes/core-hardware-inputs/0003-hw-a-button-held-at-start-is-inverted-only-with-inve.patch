@@ -1,0 +1,261 @@
+From 1bbb0bb780f9d45b067ca8a19253f512583917b2 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 04:53:45 +0000
+Subject: [PATCH] hw: a button held at start is inverted only with
+ invert_on_start
+
+Why: the port's GPIO and PCF8574 readers took every button that read
+pressed when its input started as wired the other way round (a 1-0-1,
+normally closed button) and swapped its press and release for the
+whole session. That is the owner's decision for his camera (like
+Cinemate's check_initial_state), but on a stock camera a button held
+or stuck at start then fires on release, and its next press does
+nothing. In Apertar 1.6.0 the first sample seeds the debounce state,
+so a button held at start fires nothing until it is released and
+pressed again (GpioInput.cpp:693-697, Pcf8574Input.cpp:500-504 at
+upstream-1.6.0); polarity comes from active_low only.
+
+What: a section key invert_on_start, read with the section's
+parseConfigBool, default false, in [gpio_buttons] (the buttons branch
+only, not the keys [gpio_encoders] shares) and in [pcf8574], shaped
+like upstream's [neorotary4] reset_on_start and [grove_analog]
+emit_on_start. False: the first sample seeds observed and stable state
+and a button held at start is not counted until it reads released, as
+NeoRotary pushes already are; one journal line names it and says to
+set invert_on_start=true for a normally closed button. True: the
+inversion and journal line as before. Switches and NeoRotary pushes are
+unchanged. The checker's key list knows the key; the default template
+has it as a commented line under both sections; README says it.
+
+Tested: check_core.sh both builds and the 18 host tests pass. A scratch
+program drove GpioInput (poll mode) and Pcf8574Input through an
+LD_PRELOAD fake of the chip and /dev/i2c-1: held at start, release,
+press, release. Key absent: nothing, nothing, record_toggle, nothing.
+invert_on_start=true: record_toggle on the first release and on the
+last, the same as the parent commit. --simulate: set_controls
+set.gpio_buttons.invert_on_start and set.pcf8574.invert_on_start are
+written, set.gpio_encoders.invert_on_start is refused. Needs the
+camera: [gpio_buttons] enabled=true d17=record_toggle, hold d17,
+sudo systemctl restart apertar-core, release: nothing records; press:
+it records. With invert_on_start=true and a normally closed button:
+journalctl -u apertar-core | grep 'taken as inverted' names it and one
+press records once. Same on a PCF8574 pin. On the owner's rig, any
+'taken as inverted' line in the journal today means he adds
+invert_on_start=true.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ README.md                           |  2 ++
+ src/ApertarCoreApp.cpp              |  4 ++++
+ src/hardware/GpioInput.cpp          | 23 ++++++++++++++++++-----
+ src/hardware/GpioInput.hpp          |  4 +++-
+ src/hardware/HardwareConfigText.hpp |  4 ++--
+ src/hardware/Pcf8574Input.cpp       | 18 +++++++++++++++---
+ src/hardware/Pcf8574Input.hpp       |  1 +
+ 7 files changed, 45 insertions(+), 11 deletions(-)
+
+diff --git a/README.md b/README.md
+index 9fb764a..92e3f13 100644
+--- a/README.md
++++ b/README.md
+@@ -174,6 +174,8 @@ P2=capture
+ 
+ These are mapping examples, not a complete hardware configuration. Use the correct section, pin numbering and wiring for your device. Grouped toggles flip independently; they do not force every option into the same state.
+ 
++A GPIO or PCF8574 button that is already pressed when Core starts does nothing until you release it. If your buttons are normally closed (they read pressed at rest), set `invert_on_start=true` in `[gpio_buttons]` or `[pcf8574]`: a button that reads pressed at start is then taken as wired the other way round, and the journal names it. Restart Core after a change.
++
+ The `run_script` action can run up to five configured scripts. Scripts run as the Core service user, without automatic administrator privileges. Only use scripts you trust. Anyone who can reach the WebUI can change the script paths in `[run_script]`, as in Apertar 1.6.0. With `APERTAR_SCRIPT_PATHS=ssh` in Core's environment (a systemd drop-in with `Environment=`) the WebUI refuses a save that sets a new path, so a path can only be set over ssh; Undo, History and restore may still put back a version the camera saved earlier, with the paths that version had.
+ 
+ ## Boot Config (config.txt)
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 39ff3e1..06fe008 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -5130,6 +5130,8 @@ sync_offset_ms=0
+ enabled=false
+ bus=1
+ address=0x20
++# A pin that reads pressed when Core starts is ignored until released; true takes it as a normally closed (1-0-1) button.
++# invert_on_start=false
+ 
+ [neorotary4]
+ # Optional Adafruit NeoRotary 4 / seesaw quad rotary encoder. Each knob has clockwise, counter-clockwise and press actions.
+@@ -5142,6 +5144,8 @@ address=0x49
+ # GPIO button actions use the same names as [pcf8574].
+ # Example: d17=recindicatorled reserves GPIO17 as the recording LED output.
+ enabled=false
++# A button that reads pressed when Core starts is ignored until released; true takes it as a normally closed (1-0-1) button.
++# invert_on_start=false
+ 
+ [gpio_encoders]
+ # Optional direct GPIO / Grove incremental rotary encoders. Press, cw and ccw actions use the names of [pcf8574].
+diff --git a/src/hardware/GpioInput.cpp b/src/hardware/GpioInput.cpp
+index 84accfd..bab76d4 100644
+--- a/src/hardware/GpioInput.cpp
++++ b/src/hardware/GpioInput.cpp
+@@ -352,6 +352,8 @@ GpioInput::Config GpioInput::loadConfig()
+             } else if (key == "debounce_ms") {
+                 if (const auto parsed = parseConfigInteger(value))
+                     config.debounceMs = std::clamp(*parsed, 0, 1000);
++            } else if (inButtonsSection && key == "invert_on_start") {
++                config.invertOnStart = parseConfigBool(value, config.invertOnStart);
+             } else if (inButtonsSection) {
+                 std::string base = key;
+                 std::string gesture;
+@@ -620,11 +622,19 @@ void GpioInput::run()
+         for (RuntimeButton &button : buttons) {
+             const bool level = (levels & (1ULL << button.lineIndex)) != 0;
+             if (!button.haveSample) {
+-                // Like Cinemate: a button that already reads pressed at start is wired the other way round (a 1-0-1,
+-                // normally closed button), so its levels are swapped from now on.
+-                button.inverted = level;
+-                if (level)
+-                    std::cerr << "GPIO input: GPIO " << button.gpio << " reads pressed at start; taken as inverted (a 1-0-1 button).\n";
++                // invert_on_start=true, like Cinemate: a button that already reads pressed at start is wired the other way
++                // round (a 1-0-1, normally closed button), so its levels are swapped from now on.
++                if (config_.invertOnStart) {
++                    button.inverted = level;
++                    if (level)
++                        std::cerr << "GPIO input: GPIO " << button.gpio << " reads pressed at start; taken as inverted (a 1-0-1 button).\n";
++                } else if (level) {
++                    std::cerr << "GPIO input: GPIO " << button.gpio << " reads pressed at start; ignored until released. "
++                              << "If it is a normally closed button, set invert_on_start=true in [gpio_buttons].\n";
++                }
++                button.heldAtStart = level != button.inverted;
++                button.observedPressed = button.heldAtStart;
++                button.stablePressed = button.heldAtStart;
+                 button.observedChangedAt = now;
+                 button.haveSample = true;
+             }
+@@ -638,6 +648,9 @@ void GpioInput::run()
+                 if (stableForMs >= config_.debounceMs && button.observedPressed != button.stablePressed)
+                     button.stablePressed = button.observedPressed;
+             }
++            button.heldAtStart = button.heldAtStart && button.stablePressed;
++            if (button.heldAtStart)
++                continue;
+             for (const auto event : button.gesture.update(button.stablePressed, nowMs)) {
+                 if (seenCallback_) {
+                     static const char *const suffixes[] = {"", "_single", "_double", "_triple", "_hold"};
+diff --git a/src/hardware/GpioInput.hpp b/src/hardware/GpioInput.hpp
+index ce02b94..d407b60 100644
+--- a/src/hardware/GpioInput.hpp
++++ b/src/hardware/GpioInput.hpp
+@@ -69,6 +69,7 @@ private:
+         bool enabled = false;
+         std::string chipPath = "auto";
+         bool activeLow = true;
++        bool invertOnStart = false;   // [gpio_buttons] only: a button pressed at start is taken as normally closed (1-0-1)
+         std::string pull = "up";
+         int pollMs = 12;
+         int debounceMs = 60;
+@@ -89,7 +90,8 @@ private:
+         bool observedPressed = false;
+         bool stablePressed = false;
+         bool haveSample = false;
+-        bool inverted = false;    // read pressed at start: wired the other way round (a 1-0-1 button)
++        bool inverted = false;    // read pressed at start with invert_on_start: wired the other way round (a 1-0-1 button)
++        bool heldAtStart = false; // read pressed at start without it: counted from its release
+         std::string seenKey;      // section|base for Listen; gestures add their suffix
+         std::string pressSuffix;  // "" for dN, "_press" for an encoder push
+         std::chrono::steady_clock::time_point observedChangedAt{};
+diff --git a/src/hardware/HardwareConfigText.hpp b/src/hardware/HardwareConfigText.hpp
+index 6a8271d..8eb7312 100644
+--- a/src/hardware/HardwareConfigText.hpp
++++ b/src/hardware/HardwareConfigText.hpp
+@@ -454,7 +454,7 @@ inline bool knownKey(std::string_view section, std::string_view key)
+         return std::find(keys.begin(), keys.end(), key) != keys.end();
+     };
+     if (section == "gpio_buttons")
+-        return in({"enabled", "chip", "active_low", "pull", "poll_ms", "debounce_ms", "hold_ms", "double_ms"}) ||
++        return in({"enabled", "chip", "active_low", "pull", "poll_ms", "debounce_ms", "invert_on_start", "hold_ms", "double_ms"}) ||
+             indexedKey(key, "d", 63, {"", "_single", "_double", "_triple", "_hold"}) ||
+             indexedKey(key, "remote", 15, {"", "_single", "_double", "_triple", "_hold"});   // remote only: no pin
+     if (section == "gpio_encoders")
+@@ -463,7 +463,7 @@ inline bool knownKey(std::string_view section, std::string_view key)
+     if (section == "gpio_switches")
+         return key == "enabled" || indexedKey(key, "switch", 15, {"_pins", "_on", "_off", "_position0", "_position1", "_position2"});
+     if (section == "pcf8574")
+-        return in({"enabled", "bus", "address", "poll_ms", "debounce_ms", "active_low", "hold_ms", "double_ms"}) ||
++        return in({"enabled", "bus", "address", "poll_ms", "debounce_ms", "active_low", "invert_on_start", "hold_ms", "double_ms"}) ||
+             indexedKey(key, "pin", 7, {"", "_single", "_double", "_triple", "_hold"});
+     if (section == "neorotary4")
+         return in({"enabled", "bus", "address", "poll_ms", "debounce_ms", "invert_direction", "reset_on_start",
+diff --git a/src/hardware/Pcf8574Input.cpp b/src/hardware/Pcf8574Input.cpp
+index 34ed1a3..5ed30b1 100644
+--- a/src/hardware/Pcf8574Input.cpp
++++ b/src/hardware/Pcf8574Input.cpp
+@@ -284,6 +284,8 @@ Pcf8574Input::Config Pcf8574Input::loadConfig()
+                     config.debounceMs = std::clamp(*parsed, 0, 1000);
+             } else if (key == "active_low") {
+                 config.activeLow = parseConfigBool(value, config.activeLow);
++            } else if (key == "invert_on_start") {
++                config.invertOnStart = parseConfigBool(value, config.invertOnStart);
+             } else {
+                 std::string base = key;
+                 int gesture = -1;
+@@ -395,6 +397,7 @@ void Pcf8574Input::run()
+     uint8_t observedPressedMask = 0;
+     uint8_t stablePressedMask = 0;
+     uint8_t invertedMask = 0;
++    uint8_t heldAtStartMask = 0;   // pins held when the device was opened: counted from their release
+     auto observedChangedAt = std::chrono::steady_clock::now();
+     bool haveSample = false;
+     std::array<hardware::ButtonGesture, 8> gestures{};
+@@ -422,13 +425,18 @@ void Pcf8574Input::run()
+ 
+         const uint8_t levelMask = config_.activeLow ? static_cast<uint8_t>(~raw) : raw;
+         if (!haveSample) {
+-            // Like the GPIO buttons (Cinemate): a mapped pin that reads pressed at start is wired the other way round
+-            // (a 1-0-1, normally closed button), so its levels are swapped from now on.
++            // invert_on_start=true, like the GPIO buttons (Cinemate): a mapped pin that reads pressed at start is wired
++            // the other way round (a 1-0-1, normally closed button), so its levels are swapped from now on.
+             invertedMask = 0;
+             for (int pin = 0; pin < 8; ++pin) {
+-                if ((levelMask & (1u << pin)) && pinMapped(config_.actions, config_.gestureActions, pin)) {
++                if (!(levelMask & (1u << pin)) || !pinMapped(config_.actions, config_.gestureActions, pin))
++                    continue;
++                if (config_.invertOnStart) {
+                     invertedMask |= static_cast<uint8_t>(1u << pin);
+                     std::cerr << "PCF8574 input: pin " << pin << " reads pressed at start; taken as inverted (a 1-0-1 button).\n";
++                } else {
++                    std::cerr << "PCF8574 input: pin " << pin << " reads pressed at start; ignored until released. "
++                              << "If it is a normally closed button, set invert_on_start=true in [pcf8574].\n";
+                 }
+             }
+         }
+@@ -437,6 +445,7 @@ void Pcf8574Input::run()
+         if (!haveSample) {
+             observedPressedMask = pressedMask;
+             stablePressedMask = pressedMask;
++            heldAtStartMask = config_.invertOnStart ? 0 : pressedMask;
+             observedChangedAt = now;
+             haveSample = true;
+         } else if (pressedMask != observedPressedMask) {
+@@ -451,7 +460,10 @@ void Pcf8574Input::run()
+ 
+         // Press at once; single, double and triple click and hold counted like the GPIO buttons (ButtonGesture).
+         const int64_t nowMs = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()).count();
++        heldAtStartMask &= stablePressedMask;
+         for (int pin = 0; pin < 8; ++pin) {
++            if (heldAtStartMask & (1u << pin))
++                continue;
+             const auto &more = config_.gestureActions[pin];
+             for (const auto event : gestures[pin].update((stablePressedMask & (1u << pin)) != 0, nowMs)) {
+                 if (seenCallback_) {
+diff --git a/src/hardware/Pcf8574Input.hpp b/src/hardware/Pcf8574Input.hpp
+index abdb846..ce4130b 100644
+--- a/src/hardware/Pcf8574Input.hpp
++++ b/src/hardware/Pcf8574Input.hpp
+@@ -35,6 +35,7 @@ private:
+         int pollMs = 40;
+         int debounceMs = 60;
+         bool activeLow = true;
++        bool invertOnStart = false;   // a mapped pin pressed at start is taken as normally closed (1-0-1)
+         std::array<std::string, 8> actions{};   // press (pinN)
+         // pinN_single, _double, _triple, _hold, in that order: counted like Cinemate (ButtonGesture)
+         std::array<std::array<std::string, 4>, 8> gestureActions{};
+-- 
+2.43.0
+
