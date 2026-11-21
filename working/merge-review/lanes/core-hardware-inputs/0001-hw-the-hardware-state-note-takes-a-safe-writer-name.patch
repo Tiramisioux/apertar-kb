@@ -1,0 +1,56 @@
+From 04b9233b204bfcb5bf0f6df17e403d73a90b1cd5 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 04:43:21 +0000
+Subject: [PATCH] hw: the hardware-state note takes a safe writer name
+
+Why: the store wrote the client's by= field raw into
+~/.config/apertar-core/hardware-state.conf, a key=value file read line
+by line. A by= with a newline added its own lines, for example a second
+written_revision=, and the last line wins when the store reads the note
+at the next start. The history file names already pass by= through
+safeName. Original Apertar never writes a raw client string into a
+key=value file: UI.conf values are normalised first (conventions
+CMD-6).
+
+What: writeStateLocked stores safeName(by), [a-z0-9_] only, as the
+history names do. The names Core's own clients send (webui,
+webui_undo, imu, api, core) are unchanged.
+
+Tested: check_core.sh both builds and the 18 host tests pass; the KB
+controls_store_test passes (52 of 52). --simulate with
+APERTAR_HARDWARE_CONFIG in a scratch folder: set_controls with
+by="x\nwritten_revision=h0" writes one written_by=x_written_revision_h0
+line and one written_revision= line. Pi: none, no hardware path
+changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/hardware/HardwareConfigStore.cpp | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/hardware/HardwareConfigStore.cpp b/src/hardware/HardwareConfigStore.cpp
+index 11b6b57..f7e9dba 100644
+--- a/src/hardware/HardwareConfigStore.cpp
++++ b/src/hardware/HardwareConfigStore.cpp
+@@ -61,7 +61,7 @@ std::string timestamp(const char *format, std::time_t when)
+     return out;
+ }
+ 
+-// The name part of a history entry: [a-z0-9_] only, so a caller cannot put a path in it.
++// The writer's name in a history entry and in the state note: [a-z0-9_] only, so a caller cannot put a path or a line in it.
+ std::string safeName(const std::string &by)
+ {
+     std::string out;
+@@ -432,7 +432,7 @@ void HardwareConfigStore::addHistoryLocked(const std::string &text, const std::s
+ void HardwareConfigStore::writeStateLocked(const std::string &by)
+ {
+     state_.writtenAt = timestamp("%Y-%m-%d %H:%M:%S", std::time(nullptr));
+-    state_.writtenBy = by;
++    state_.writtenBy = safeName(by);
+     settingsFile::atomicWrite(notes_ / "hardware-state.conf",
+                               "written_revision=" + state_.writtenRevision + "\n" +
+                               "written_at=" + state_.writtenAt + "\n" +
+-- 
+2.43.0
+

@@ -1,0 +1,182 @@
+From 6ea8dcd311b194e0d3d5fbf7e70cdb43a45a5c49 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 04:46:30 +0000
+Subject: [PATCH] core, web: hardware-file refusals are one sentence
+
+Why: set_controls, set_buffer_mode, set_frames_per_folder, set_clip_merge
+and set_storage_preroll refused through errorReplyBody, with a machine code,
+the revision, issue lists and a conflicts array beside the error. The page
+branched on the code and added its own "Press Reload" text. Original Apertar
+refuses every command with errorReply(id, sentence) and shows that sentence
+as written (ApertarCoreApp.cpp:108-128@upstream-1.6.0; CMD-9, CMD-28).
+
+What: the five commands refuse with errorReply(command.id, result.error).
+The store's conflict sentence ends "Reload, then change it again.", as the
+two stale sentences already do. The page shows Core's sentence on a refused
+Hardware, Controls or Undo save and on a refused Check, with no list. Check
+sends the loaded revision (no "h" fallback) and is disabled until the page
+has one. The store's merge path (textToEdits, conflicts, needs_review,
+confirm_merge, the merged member) and the script-path refusal are kept.
+A text Check already answers ok with its issues (whole-file saves are not
+refused on new errors), so the store needs no dry-run change.
+
+Tested: check_core.sh both builds and 18 host tests pass. --simulate with a
+hardware file: a key edit adding an error, a conflict, a stale base on all
+five commands and APERTAR_SCRIPT_PATHS=ssh each answer one sentence; a stale
+values-only text save still answers merged/needs_review. Chromium against
+--simulate: Check disabled before load, Check lists the error, stale and
+refused Controls/Hardware saves show Core's sentence and keep the edits.
+smoke + shape_subset: every 1.6.0 field present with the same type.
+Camera: nothing; no hardware path changes.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp               | 30 ++++++++--------------------
+ src/hardware/HardwareConfigStore.cpp |  2 +-
+ src/web/WebControlPage.cpp           | 21 +++++++++----------
+ 3 files changed, 18 insertions(+), 35 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 39ff3e1..c56b0c1 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -12799,13 +12799,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+         const hardware::StoreResult result = edits.empty()
+             ? hardware::configStore().replace(*base, *text, by, flags, hardwareConfigFacts())
+             : hardware::configStore().edit(*base, edits, by, flags, hardwareConfigFacts());
+-        if (!result.ok) {
+-            return errorReplyBody(command.id, result.error,
+-                "\"code\":\"" + escapeJson(result.code) + "\",\"revision\":\"" + escapeJson(result.revision) + "\""
+-                ",\"issues\":" + controlsIssuesJson(result.issues) +
+-                ",\"new_errors\":" + controlsIssuesJson(result.newErrors) +
+-                ",\"conflicts\":" + controlsConflictsJson(result.conflicts));
+-        }
++        if (!result.ok)
++            return errorReply(command.id, result.error);
+         if (result.written) {
+             controlsErrors_ = controlsErrorCount(result.issues);
+             controlsWarnings_ = result.issues.size() - controlsErrors_.load();
+@@ -12839,11 +12834,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+         flags.trusted = true;   // [storage] is text-mode only for set_controls; the value is checked above
+         const hardware::StoreResult result = store.edit(base.empty() ? store.currentRevision() : base,
+             { { hwconf::Edit::Op::Set, "storage", "buffer", *value } }, command.string("by").value_or("api"), flags, hardwareConfigFacts());
+-        if (!result.ok) {
+-            return errorReplyBody(command.id, result.error,
+-                "\"code\":\"" + escapeJson(result.code) + "\",\"revision\":\"" + escapeJson(result.revision) + "\""
+-                ",\"issues\":" + controlsIssuesJson(result.issues));
+-        }
++        if (!result.ok)
++            return errorReply(command.id, result.error);
+         if (result.written) {
+             controlsErrors_ = controlsErrorCount(result.issues);
+             controlsWarnings_ = result.issues.size() - controlsErrors_.load();
+@@ -12879,11 +12871,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+         flags.trusted = true;   // [storage] is text-mode only for set_controls; the value is checked above
+         const hardware::StoreResult result = store.edit(base.empty() ? store.currentRevision() : base,
+             { { hwconf::Edit::Op::Set, "storage", key, value } }, command.string("by").value_or("api"), flags, hardwareConfigFacts());
+-        if (!result.ok) {
+-            return errorReplyBody(command.id, result.error,
+-                "\"code\":\"" + escapeJson(result.code) + "\",\"revision\":\"" + escapeJson(result.revision) + "\""
+-                ",\"issues\":" + controlsIssuesJson(result.issues));
+-        }
++        if (!result.ok)
++            return errorReply(command.id, result.error);
+         if (result.written) {
+             controlsErrors_ = controlsErrorCount(result.issues);
+             controlsWarnings_ = result.issues.size() - controlsErrors_.load();
+@@ -12913,11 +12902,8 @@ std::string ApertarCoreApp::handleCommand(const ControlCommand &command)
+         flags.trusted = true;   // [media] is text-mode only for set_controls; the value is checked above
+         const hardware::StoreResult result = store.edit(base.empty() ? store.currentRevision() : base,
+             { { hwconf::Edit::Op::Set, "media", "preroll", text } }, command.string("by").value_or("api"), flags, hardwareConfigFacts());
+-        if (!result.ok) {
+-            return errorReplyBody(command.id, result.error,
+-                "\"code\":\"" + escapeJson(result.code) + "\",\"revision\":\"" + escapeJson(result.revision) + "\""
+-                ",\"issues\":" + controlsIssuesJson(result.issues));
+-        }
++        if (!result.ok)
++            return errorReply(command.id, result.error);
+         if (result.written) {
+             controlsErrors_ = controlsErrorCount(result.issues);
+             controlsWarnings_ = result.issues.size() - controlsErrors_.load();
+diff --git a/src/hardware/HardwareConfigStore.cpp b/src/hardware/HardwareConfigStore.cpp
+index 11b6b57..be177bd 100644
+--- a/src/hardware/HardwareConfigStore.cpp
++++ b/src/hardware/HardwareConfigStore.cpp
+@@ -323,7 +323,7 @@ StoreResult HardwareConfigStore::saveLocked(const std::string &base, const std::
+         result.conflicts = hwconf::conflicts(*baseText, current, merged);
+         if (!result.conflicts.empty()) {
+             result.code = "conflict";
+-            result.error = "The file changed in the same place since you loaded it.";
++            result.error = "The file changed in the same place since you loaded it. Reload, then change it again.";
+             return result;
+         }
+         next = hwconf::applyEdits(current, merged);
+diff --git a/src/web/WebControlPage.cpp b/src/web/WebControlPage.cpp
+index e32f372..88f319b 100644
+--- a/src/web/WebControlPage.cpp
++++ b/src/web/WebControlPage.cpp
+@@ -16618,10 +16618,13 @@ std::string_view webControlPageHtml()
+       const editor = document.getElementById("settingsConfigEditor");
+       const reloadButton = document.getElementById("reloadConfigButton");
+       const saveButton = document.getElementById("saveConfigButton");
++      const checkButton = document.getElementById("checkConfigButton");
+       if (reloadButton)
+         reloadButton.disabled = loading || saving;
+       if (saveButton)
+         saveButton.disabled = loading || saving || !state.configDirty;
++      if (checkButton)
++        checkButton.disabled = !state.configRevision;
+       if (editor)
+         editor.disabled = loading || saving;
+ 
+@@ -18305,10 +18308,7 @@ std::string_view webControlPageHtml()
+       try {
+         const result = await controlsCall(payload);
+         if (!result.ok) {
+-          const found = result.new_errors && result.new_errors.length > 0 ? result.new_errors : result.issues;
+-          const kept = result.code === "stale" || result.code === "conflict"
+-            ? " Your settings stay on the page. Press Reload to see the newer file." : "";
+-          showHardwareMessage((result.error || "Could not save the settings.") + kept, found, false);
++          showHardwareMessage(result.error || "Could not save the settings.", [], false);
+           showToast(result.error || "Could not save the settings.", true);
+           return;
+         }
+@@ -18678,7 +18678,7 @@ std::string_view webControlPageHtml()
+       }
+       const result = await controlsCall({ cmd: "set_controls", base: controlsState.revision, text: version.text, by: "webui_undo" });
+       if (!result.ok) {
+-        showControlsMessage(result.error || "Could not undo.", result.issues, false);
++        showControlsMessage(result.error || "Could not undo.", [], false);
+         return;
+       }
+       await loadControls(true);
+@@ -18755,10 +18755,7 @@ std::string_view webControlPageHtml()
+       try {
+         const result = await controlsCall(payload);
+         if (!result.ok) {
+-          const found = result.new_errors && result.new_errors.length > 0 ? result.new_errors : result.issues;
+-          const kept = result.code === "stale" || result.code === "conflict"
+-            ? " Your choices stay on the page. Press Reload to see the newer file." : "";
+-          showControlsMessage((result.error || "Could not save the controls.") + kept, found, false);
++          showControlsMessage(result.error || "Could not save the controls.", [], false);
+           showToast(result.error || "Could not save the controls.", true);
+           return;
+         }
+@@ -18890,10 +18887,10 @@ std::string_view webControlPageHtml()
+     // T43 Check: Core reads the text without saving it and says what it finds, with line numbers.
+     async function checkConfigFile() {
+       const editor = document.getElementById("settingsConfigEditor");
+-      const result = await controlsCall({ cmd: "set_controls", base: state.configRevision || "h", text: editor ? editor.value : "", dry_run: "true", by: "webui" });
++      const result = await controlsCall({ cmd: "set_controls", base: state.configRevision, text: editor ? editor.value : "", dry_run: "true", by: "webui" });
+       const found = Array.isArray(result.issues) ? result.issues : [];
+-      if (!result.ok && found.length === 0) {
+-        showConfigIssues(result.error || "Could not check the text.", result.new_errors || []);
++      if (!result.ok) {
++        showConfigIssues(result.error || "Could not check the text.", []);
+         return;
+       }
+       if (found.length === 0) {
+-- 
+2.43.0
+
