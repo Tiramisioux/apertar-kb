@@ -3720,3 +3720,403 @@ Apertar-Core `web, camera: resolution and Mode Ladder names follow Apertar 1.6.0
 **Checked.** Both Core builds and the host tests; the UI build; the WebUI loads in headless Chromium with no page errors; `ladderClassText` gives "Clear HDR 16-bit" and "12-bit 2.39:1"; `/api/state` `ladder_text` reads "3840×2160 · 12-bit · Uncompressed (ladder off)". On the camera: read the resolution pills and the Mode Ladder card.
 
 **Rule.** A new mode or feature gets the words the original screens already use for the same thing; a new word only for a new thing.
+
+---
+
+## C67. core: Stop on Dropped Frame ends a take at its first dropped frame
+
+Apertar-Core `affe7da`. Finding: drop 1. Reviewed by a second agent: not reviewed.
+
+**What was there.** New feature, no earlier code. 1.6.0 only latches drops: src/util/RecordingDropWarning.hpp markDropped() -> changed_(true) -> a recording_health event. Nothing stops the take.
+
+**Why it is a problem.** Owner rule DB-59: stop a test at the first drop. Shape follows conventions R2 (camera setting end to end: Types, load, save, three serialisers, setter, command, help) and the buffer safety stop (App::runBufferSafetyStop) for stopping from a worker thread.
+
+**How to spot it.** Any feature that must stop a take from a worker thread: grep dispatchHardwareInputCommand and the safetyStopHook. Rule of thumb: if the code path holds a writer or queue lock, it may only set a flag.
+
+**Options.**
+
+- Call stopRecording from the drop callback: deadlock risk, the callback runs on the writer thread under queue locks. Rejected.
+- Poll recordingHasDroppedFrames in runBufferEvents (250 ms): no new hook, but a late stop and logic in an event thread.
+- Lock-free hook in CameraController plus a flag on the existing safety-stop thread: instant, one thread, same record_stop path. Chosen.
+
+**Chosen, and why.** Third option. CameraController gets setDroppedFrameHook (a std::function, set once before any take); the App hook checks an atomic mirror of the setting (like mediaTrimSetting_) and sets droppedFrameStopPending_. runBufferSafetyStop handles it first and sends record_stop through dispatchHardwareInputCommand. Given up: no recording_error is set, because the stop is clean like the buffer stop and the WebUI would show 'Recording stopped: Recording stopped'. The log line and the existing recording_has_dropped_frames field tell it.
+
+**After.**
+
+```
+camera_.setDroppedFrameHook([this] { if (!stopOnDroppedFrameSetting_.load(std::memory_order_acquire)) return; droppedFrameStopPending_.store(true, std::memory_order_release); bufferSafetyStopCv_.notify_one(); });
+if (droppedFrameStopPending_.exchange(false) && camera_.isRecording()) { std::cerr << "ApertarCore recording: Recording stopped: a frame was dropped.\n"; ... record_stop ... }
+```
+
+**Checked.** Built lc and nolc, 21 host tests. Simulate: command refused without enabled and during a take, true shows in /api/state and help, camera_settings.conf has stop_on_dropped_frame=1, restart reads it back, smoke shape check passes. Simulate cannot drop frames. Pi: 4K Clear HDR 16-bit at 30 fps on the CM5 with the switch on; the take ends at the first drop; journalctl -u apertar-core | grep 'a frame was dropped'.
+
+**Rule.** A worker thread that wants a take stopped only sets a flag; the app thread runs record_stop on the command path.
+
+
+---
+
+## C68. web: Stop on Dropped Frame is an On/Off row in the Performance card
+
+Apertar-Core `38c8875`. Finding: drop 2. Reviewed by a second agent: not reviewed.
+
+**What was there.** New feature; no earlier code.
+
+**Why it is a problem.** Conventions R3 step 12 / R2 step 12: a switch is a section.select-block with a pill-grid, filled by buildOptionButtons(..., toggleOptions, formatToggleLabel(!!snapshot.x), ...) that sends the command.
+
+**How to spot it.** Copy the nearest row (settingsPreviewTdnOptions): one section in the HTML string, one buildOptionButtons call in renderSnapshot. No patch case is needed; the page re-reads state after a command.
+
+**Options.**
+
+- Row in the Performance card next to Merge split clips (chosen): next to other take options, no new card.
+- New 'Recording' card: new layer, more CSS and ids.
+- Row in Recording format card: that card is dual-sensor tied to resolution; the switch is per Core.
+
+**Chosen, and why.** First option. No data-dual-tie, like the media trim row. Given up: a patch case in applyCommandSnapshotPatch; preview_tdn does not have one either and the state refresh updates the pills.
+
+**After.**
+
+```
+buildOptionButtons("settingsStopOnDroppedFrameOptions", toggleOptions, formatToggleLabel(!!snapshot.stop_on_dropped_frame), async (value) => { try { await sendCommand({ cmd: "set_stop_on_dropped_frame", enabled: value === "On" ? "true" : "false" }); } catch (error) { showToast(error.message, true); } });
+```
+
+**Checked.** Playwright against --simulate: row present with Off active, click On, pill turns On, /api/state true, no page errors. Nothing needs the camera.
+
+**Rule.** A WebUI switch is one select-block plus one buildOptionButtons call, copied from its neighbour.
+
+
+---
+
+## U17. qml: Stop on Dropped Frame is a toggle row in the Media settings
+
+Apertar-UI `67d1a41`. Finding: drop 3. Reviewed by a second agent: not reviewed.
+
+**What was there.** New feature. Separate bug on the branch tip: qml/SettingsPage.qml (98937b8) copied the thermal error popup for the media error popup and kept 'id: thermalApplyErrorCloseArea' and 'onClicked: root.thermalApplyErrorOpen = false'.
+
+**Why it is a problem.** Row shape copies the Merge Split Clips row (SettingsPage.qml, TogglePill + executeApplyClipMerge). Bridge shape copies applyClearHdr and setClearHdrValue (conventions R4). QML needs unique ids in one component; a duplicate stops the whole page loading, and the OK button would also have closed the wrong popup.
+
+**How to spot it.** After copy-pasting a QML block, grep the ids: grep -o 'id: [A-Za-z0-9]*' file | sort | uniq -d. Run the UI once offscreen; the gate only compiles.
+
+**Options.**
+
+- Fix the id inside this commit (chosen): the row cannot be seen otherwise.
+- Separate fix commit: cleaner history but breaks one commit per item.
+- Leave it: Settings stays broken.
+
+**Chosen, and why.** First option; renamed to mediaSettingErrorCloseArea and closed mediaSettingErrorOpen. Lead may want to move it into its own commit or into 98937b8.
+
+**After.**
+
+```
+TogglePill { id: stopOnDroppedFrameToggle; checked: apertarControlBridge ? apertarControlBridge.stopOnDroppedFrame : false; enabled: !!apertarControlBridge && !apertarControlBridge.recording; onToggled: function(value) { root.executeApplyStopOnDroppedFrame(value) } }
+```
+
+**Checked.** check_ui.sh passes. Offscreen UI against --simulate Core: SettingsPage loads; the run then stops at ClipPlayerPage (retainWhileLoading needs Qt 6.5, host has 6.4), so the row was not seen. Pi: Settings, Media, flip the row, grep stop_on_dropped_frame ~/.config/apertar-core/camera_settings.conf; the pill is greyed during a take.
+
+**Rule.** Copy a block, then rename its ids and handlers; run the UI once, a compile does not catch duplicate ids.
+
+
+---
+
+## C69. core, web: the Boot Config card saves through /api/command
+
+Apertar-Core `4e8e08f`. Finding: boot 1. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:9783@cinemate-port: if (request.method == "POST" && request.path == "/api/boot-config") { ... payload.insert(brace + 1, "\"cmd\":\"set_boot_config\","); ... const BootConfigReply reply = bootConfigSet(parsed.command, revision, request.headers.count("origin") > 0); response.status = reply.status; ... }
+src/ApertarCoreApp.cpp:3661@cinemate-port: std::mutex &bootConfigMutex() { static std::mutex mutex; return mutex; }  (taken by bootConfigSet, bootConfigGet and applyFanMode)
+src/web/WebControlPage.cpp@cinemate-port: bootConfigPost(): fetch("/api/boot-config", { method: "POST", headers: { "X-Apertar-Revision": revision } }) and result.httpStatus / result.code
+
+**Why it is a problem.** Original Apertar has one door for a change: POST /api/command -> handleWebCommand -> handleCommand under commandMutex_ (App handleWebCommand@upstream-1.6.0; conventions CMD rules), with okReply/errorReply and one sentence. The fan mode writes config.txt the same way (set_fan_mode in handleCommand). A file the browser only reads gets a GET route (GET /api/config). The port added a second write door with its own lock, its own header and an 'is it a browser' rule, so the same command behaved differently on the socket and on the web.
+
+**How to spot it.** grep -n 'request.path == "/api/' src/ApertarCoreApp.cpp and ask for each POST route: is this a setting? A setting belongs in handleCommand. Also grep -n 'static std::mutex' for a second lock around data the command lock already covers. A reply struct with an int status is a smell: original replies are strings with HTTP 200.
+
+**Options.**
+
+- Delete the POST route, keep the command, send from the page with sendCommand (chosen; about -90 / +40 lines).
+- Keep the route but make it call handleCommand (keeps two doors; the header and codes would still need a home).
+- Leave it and document it (no change; the next developer meets a second door).
+
+**Chosen, and why.** The first option, as the plan says. commandMutex_ already covers the fan mode and set_boot_config, so bootConfigMutex() had nothing left to guard; the read takes no lock, as GET /api/config. Given up: the HTTP status codes 400/403/409/500 on a refusal (the page never needed them) and the revision header. bootConfigPost keeps its { ok, error } contract on top of sendCommand so reviewBootConfig and saveBootConfig change very little. The 400/409 'code' members stay in the reply body until the refusals are made one sentence (item boot 9-refusals).
+
+**After.**
+
+```
+std::string bootConfigGet(int id) { const bootconf::Facts facts = bootConfigFacts(); return okReply(id, "\"boot_config\":" + bootConfigJson(readTextFileRaw(bootConfigPath()), facts)); }
+std::string bootConfigSet(const ControlCommand &command) { const std::optional<std::string> revision = command.string("revision"); ... }
+handleCommand: if (command.name == "set_boot_config") return bootConfigSet(command);
+WCP: async function bootConfigPost(body, revision) { const payload = Object.assign({ cmd: "set_boot_config" }, body); if (revision) payload.revision = revision; try { return await sendCommand(payload); } catch (error) { return { ok: false, error: ... }; } }
+```
+
+**Checked.** Ran here: the gate (both builds, 21 host tests); --simulate with APERTAR_BOOT_CONFIG on a copy of the test fixture: POST /api/boot-config -> 404 Not found, set_boot_config over /api/command with dry_run, with a stale revision (refused with the sentence) and with the right revision (one line changes, .apertar.bak left); Chromium: change the cam0 sensor, review, Save Only: the page posts set_boot_config to /api/command and reads GET /api/boot-config after; smoke_core shape diff clean. Needs the Pi: Save from the card on the CM5, reboot, journalctl -u apertar-core | grep 'boot config'.
+
+**Rule.** A setting has one door: a command in handleCommand under commandMutex_; a route is for reading a file or serving a page.
+
+
+---
+
+## C70. core, web: config.txt text editing is a switch, off by default
+
+Apertar-Core `158a28f`. Finding: boot 3+4 (variant). Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp bootConfigSet@cinemate-port: const std::optional<std::string> edited = command.string("text"); if (edited) { textProblem(*edited) ... } bootconf::applyRequest(edited ? *edited : text, request, facts);
+The text went to writeBootConfigText and from there to the root helper, whatever the caller. WCP: the Edit file button was always shown.
+
+**Why it is a problem.** A text door lets any client that can reach the WebUI put any bytes into config.txt as root (kernel=, cmdline=, os_prefix=; save 1 writes a file, save 2 copies it to .apertar.bak and points cmdline= at it). Original Apertar's browser-written files are never a boot file (GET/POST /api/config writes the hardware file as pi), and the fan mode writes one generated block. The owner's own rule for what the browser may write is the ssh-only switch (APERTAR_SCRIPT_PATHS=ssh, HardwareConfigStore.cpp:346@lane-core3, fix log C29). Rule 1 of the campaign: a stock camera has no such door until the operator turns it on.
+
+**How to spot it.** Ask of every field a command accepts: can a LAN client make Core write bytes it did not generate? grep -n 'command.string("text")\|body.text' for whole-file fields. Then ask who may set the switch: only a process environment (ssh) is out of the LAN client's reach.
+
+**Options.**
+
+- Delete Edit file and text (the plan; -170 lines, but the owner keeps the feature, DA-104).
+- A switch read from Core's environment, off by default (chosen; +12 lines).
+- A deny list of dangerous keys (never complete: cmdline= can be reached in two saves).
+- A hardware-file key (the browser can write that file, so the switch would be in the attacker's reach).
+
+**Chosen, and why.** The environment switch, as the owner's recorded rule for the ssh-only script paths. bootConfigTextEnabled() compares the variable to 'on' each call, like the script-path check. The refusal is written with errorReply (the target shape) and sits before the file is read. The page learns the state from text_editable in GET /api/boot-config and hides the button with the existing .hidden class. Given up: nothing for the owner (set the variable and the card is as it was); a stock camera loses Edit file, which 1.6.0 never had.
+
+**After.**
+
+```
+bool bootConfigTextEnabled() { const char *value = std::getenv("APERTAR_BOOT_CONFIG_TEXT"); return value && std::string(value) == "on"; }
+bootConfigSet: if (command.string("text") && !bootConfigTextEnabled()) return errorReply(command.id, "config.txt is edited as text over ssh, not here.");
+bootConfigJson: ",\"text_editable\":" + (bootConfigTextEnabled() ? "true" : "false")
+WCP renderBootConfig: document.getElementById("editBootConfigButton").classList.toggle("hidden", !(payload && payload.text_editable));
+```
+
+**Checked.** Ran here: the gate; --simulate on a fixture copy. Switch unset: GET shows text_editable:false, set_boot_config text with and without dry_run gives the sentence and the file is unchanged, Chromium shows no Edit file and a sensor change still reviews and saves. Switch on (APERTAR_BOOT_CONFIG_TEXT=on): text_editable:true, a text dry_run is answered, Edit file is shown. The host test cannot see this switch (it lives in App, the engine is pure); the engine's text checks are unchanged. Needs the Pi: nothing new; to see Edit file there put Environment=APERTAR_BOOT_CONFIG_TEXT=on in a systemd drop-in and restart Core.
+
+**Rule.** A door that lets the browser hand Core bytes to install as root is opened by the operator in Core's environment, never by a field in the request.
+
+
+---
+
+## C71. core, web: a display change on the Boot Config card asks with window.confirm
+
+Apertar-Core `5bd566d`. Finding: boot 5 (variant). Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp reviewBootConfig@cinemate-port: gate = document.createElement("input"); gate.type = "checkbox"; row.appendChild(document.createTextNode(" Change the display anyway")); ... const syncGate = () => { const blocked = changes.length === 0 || (gate && !gate.checked); ... };
+src/ApertarCoreApp.cpp@cinemate-port: drmConnectorsJson() read /sys/class/drm; its result went into the GET, the dry run and the confirm_display refusal as "drm":[...].
+
+**Why it is a problem.** Original Apertar confirms a system action in the page: if (!window.confirm("Restart the Apertar system now?")) return; then sendCommand({ cmd: "restart_system" }) (WCP:11325@upstream-1.6.0). The port built a second confirmation vocabulary (a checkbox, a connector summary, a drm list in every reply). The DRM list is not proof of a panel (a DPI overlay shows 'connected' with no panel), so it added bytes and code without deciding anything.
+
+**How to spot it.** grep -n 'createElement("input")' near a Save button: a checkbox that gates a save is a confirm in disguise. Ask: does upstream confirm this kind of action with window.confirm? Then ask whether the owner recorded a rule that Core itself must refuse (DA-81): if yes, the page asks and Core still checks.
+
+**Options.**
+
+- Plan: page window.confirm, Core drops confirm_display (a script can then change the display; breaks the owner's DA-81).
+- Page window.confirm, Core keeps the confirm_display refusal (chosen; about -45 / +6 lines).
+- Keep the checkbox (no change; the port's own confirmation vocabulary stays).
+
+**Chosen, and why.** The second option, as the audit says: the page matches upstream's way of asking, and Core's guard stays, so 'Do not change the display on a rig where you cannot reach the camera' still holds for the socket and for curl. The refusal sentence is untouched (the refusals-as-one-sentence commit rewords it later). Given up: the connector summary line; the diff notes about the DPI panel stay in the review box.
+
+**After.**
+
+```
+async function saveBootConfig(reboot) { ...
+  const displayChanged = !!(review && review.display_changed);
+  if (displayChanged && !window.confirm("Change the display overlays and save? A DPI panel that is the camera's only screen stays dark without them.")) return;
+  ... bootConfigPost(bootConfigRequestBody({ confirm_display: displayChanged }), bootConfig.payload.revision);
+review box: saveReboot.disabled = changes.length === 0; saveOnly.disabled = changes.length === 0;
+Core: if (result.displayChanged && !confirmDisplay) return errorReplyBody(... "Send confirm_display=true to save anyway.", "\"code\":\"confirm_display\"");
+```
+
+**Checked.** Ran here: the gate; --simulate on a fixture copy: set_boot_config display=waveshare4 without confirm_display refused with the sentence, file unchanged; dry run display_changed:true with no drm member; Chromium with page.on('dialog'): Display -> Waveshare, Save Only: exactly one confirm with the plan's text; dismiss -> no save request, file unchanged; accept -> save with confirm_display:true, the three overlay lines uncommented. Needs the Pi: nothing; no display is switched in the test (his DPI overlays are commented out, so the guard cannot fire on his CM5).
+
+**Rule.** Ask in the page the way upstream asks (window.confirm); keep a guard in Core when the owner decided a script must not skip it.
+
+
+---
+
+## C72. core: config.txt is read by GET /api/boot-config only
+
+Apertar-Core `71cbcc9`. Finding: boot 7. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp@cinemate-port: if (command.name == "get_boot_config") return bootConfigGet(command.id).body;
+The commands reply listed ..."set_fan_mode","get_boot_config","set_boot_config"... and README said 'Socket commands: get_boot_config, and set_boot_config with ...'.
+
+**Why it is a problem.** Original Apertar has get_state and get_media_test_state as its only get_ commands (handleCommand@upstream-1.6.0), and a file the browser shows is read by a GET route with no command twin (GET /api/config, App:7168@upstream-1.6.0). A second way to read the same thing doubles the surface the next developer must keep in step, and nothing used it.
+
+**How to spot it.** grep -n 'command.name == "get_' src/ApertarCoreApp.cpp and compare with upstream's two. For each one ask: who calls it? A grep over src, qml and the UI repo that finds only the README is a dead door.
+
+**Options.**
+
+- Delete the command (chosen; -4 lines).
+- Keep it and document it (no change; one more get_ command than upstream, with a nested reply).
+- Make it return the same text as GET but as a flat reply (more code for a reader nobody has).
+
+**Chosen, and why.** Delete it. The KB handoff once checked the card with printf '{"cmd":"get_boot_config"}' | socat; that check becomes curl -s localhost:8000/api/boot-config. bootConfigGet lost its id parameter, since only the route calls it now. Given up: a socket-only reader of config.txt (none existed in practice).
+
+**After.**
+
+```
+std::string bootConfigGet() { const bootconf::Facts facts = bootConfigFacts(); return okReply(-1, "\"boot_config\":" + bootConfigJson(readTextFileRaw(bootConfigPath()), facts)); }
+GET /api/boot-config: response.body = bootConfigGet();
+handleCommand has only: if (command.name == "set_boot_config") return bootConfigSet(command);
+```
+
+**Checked.** Ran here: the gate; --simulate: get_boot_config over /api/command and over the socket answers 'Unknown command: get_boot_config'; GET /api/boot-config unchanged; smoke_core shape diff: every base field present with the same type. Needs the Pi: nothing.
+
+**Rule.** A file the browser shows has one read (a GET route); a get_ command is for state every client needs.
+
+
+---
+
+## C73. core: the Boot Config card knows the board by its SoC string
+
+Apertar-Core `5c51183`. Finding: boot 11. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/hardware/BootConfigText.hpp:85-97@cinemate-port:
+  std::replace(compatible.begin(), compatible.end(), '\0', ',');
+  const std::string c = lower(compatible);
+  if (contains(c, "bcm2712")) board.family = "pi5";
+  else if (contains(c, "bcm2711")) board.family = "pi4"; ...
+  board.detected = !board.family.empty();
+  if (!board.detected) board.family = "pi5";
+linkOptionsFor: if (board.family != "pi4" || !sensor.pi4MaxHz || option.hz <= sensor.pi4MaxHz)
+bootConfigFacts read only /proc/device-tree/compatible.
+
+**Why it is a problem.** recordingCapabilitiesFromCompatible splits the NUL-separated compatible list and compares each SoC string whole; the reader tries /sys/firmware/devicetree/base/compatible then /proc/device-tree/compatible (include/apertar/core/RecordingCapabilities.hpp:18-50@upstream-1.6.0, conventions PLT-3). Substring search matches text inside a longer name, and 'unknown means Pi 5' lets the card edit [pi5] lines on a board whose firmware ignores them, and hand Pi 5 link rates to a Pi 3.
+
+**How to spot it.** grep -n 'contains(.*bcm\|std::replace(.*\\0' for substring searches on NUL-separated device-tree data. Ask of every 'if nothing matches, assume X' line: what runs on the boards that do not match? An unknown input should be refused or read-only, not mapped to the main board.
+
+**Options.**
+
+- Whole-entry match, unknown = read-only, cap on every non-Pi 5 board, dev fallback only with APERTAR_BOOT_CONFIG (chosen; about +30 / -15 lines).
+- Keep substring search but unknown = read-only (still matches text inside other strings).
+- Share the SoC walk with RecordingCapabilities.hpp (a new dependency of a pure header on an I/O-flavoured one; a bigger change).
+
+**Chosen, and why.** The first option, as the plan says. The walk is the same loop as upstream's, so a reader of one understands the other; sharing code was not worth a new include in a pure engine header. boardFromDeviceTree takes a string_view. Only a dev host (no device tree, APERTAR_BOOT_CONFIG naming a copy) is read as a Pi 5, so a real Pi 1 or Zero stays read-only. Given up: the page note 'No Raspberry Pi device tree here' (it described the old fallback); the card on a dev host now says nothing about it. On the owner's CM5 nothing changes: bcm2712 -> pi5, no cap.
+
+**After.**
+
+```
+while (!compatible.empty()) { const auto end = compatible.find('\0'); const auto soc = compatible.substr(0, end);
+  if (soc == "brcm,bcm2712") board.family = "pi5"; else if (soc == "brcm,bcm2711") board.family = "pi4"; else if (soc == "brcm,bcm2837" || soc == "brcm,bcm2710") board.family = "pi3"; ... }
+readState: if (!board.detected) state.problem = "This board is not one the Boot Config card knows. Edit config.txt by hand.";
+linkOptionsFor: if (board.family == "pi5" || !sensor.slowBoardMaxHz || option.hz <= sensor.slowBoardMaxHz)
+bootConfigFacts: if (compatible.empty() && bootConfigPath() != std::filesystem::path(kBootConfigPath)) compatible = std::string("brcm,bcm2712\0", 13);
+```
+
+**Checked.** Ran here: the gate; boot_config_test new cases (empty, Zero 2 W = pi3, bcm2835 unknown, 'vendor,not-brcm,bcm2712-x' unknown, unknown board read-only with [pi5] lines not applying and a request refused, IMX477 list 8 on Pi 5 / 1 on Pi 4 and Zero 2 W); --simulate: with APERTAR_BOOT_CONFIG the copy is a detected Pi 5 and editable; without it (no /boot/firmware/config.txt here) board.family is empty, detected false, the card read-only. Needs the Pi: on a Pi 4 with an IMX477 the list ends at 500 MHz; on the CM5 curl -s localhost:8000/api/boot-config must show board.family pi5, detected true; a Zero 2 W (pi3) if one is at hand: the card edits [all]/[pi3] lines (board-support T5).
+
+**Rule.** Match device-tree strings whole, entry by entry; a board you do not know is refused, not mapped to the main board.
+
+
+---
+
+## C74. core: the Boot Config card leaves a sensor from include camera-selection.txt alone
+
+Apertar-Core `5bbd67d`. Finding: boot 12. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/hardware/BootConfigText.hpp lineFrom@cinemate-port:
+  const size_t eq = s.find('=', pos);
+  if (eq == std::string::npos || eq >= end) return line;   // a line without '=' has no key
+So 'include camera-selection.txt' was invisible: the card showed no sensor, and a pick wrote a dtoverlay line next to what the include loads.
+
+**Why it is a problem.** The stock image loads its sensor with 'include camera-selection.txt'; its own comment says to remove that line before uncommenting a dtoverlay. Original Apertar reads the camera-selection file first and calls it authoritative (UI src/DeviceInfoBridge.cpp:213-215@upstream-1.6.0). A second dtoverlay beside the include loads two sensors on one port, which is the kind of edit the read-back exists to prevent.
+
+**How to spot it.** Run the engine on the stock image's config.txt and ask: which lines of the real file does the parser give no key? A line type the parser drops (include, initramfs, [gpio..] filters) is a line it cannot respect. Grep the shipped file for lines without '='.
+
+**Options.**
+
+- Read the include, keep the sensor rows read-only with one sentence (chosen; about +30 lines).
+- Follow the include and read camera-selection.txt in the engine (a file read in a pure header; decision 5's larger option, for the owner).
+- Refuse to edit anything while an include is active (also blocks buses and display for no reason).
+
+**Chosen, and why.** The first option, as the plan says. lineFrom gives 'include' a key and takes the file name as its value; State::cameraProblem holds the sentence for the first active include in a section that applies. applyRequest refuses a sensor or link that differs from what the file says, so a page that sends the unchanged values still saves buses. Given up: switching sensors from the card on a file that has an include; the operator removes the include line first, as the image's comment says.
+
+**After.**
+
+```
+lineFrom: if (s.compare(pos, 7, "include") == 0 && pos + 7 < end && blank(s[pos + 7])) { key = "include"; vb = pos + 7; } else { ...the '=' case... }
+readState: else if (line.key == "include" && state.cameraProblem.empty()) state.cameraProblem = "config.txt includes " + line.value + ": the sensor comes from that file.";
+applyRequest: if (!result.before.cameraProblem.empty() && key != current.sensor) return fail(result.before.cameraProblem);   (and the same for a changed link frequency)
+stateJson: "camera_problem":"..."; WCP: select.disabled = ... || !!bootState.camera_problem;
+```
+
+**Checked.** Ran here: the gate; boot_config_test new cases (lineFrom, state, no-op request, bus change, sensor change refused on cam0 and cam1, commented include ignored, include under [pi4] counts on a Pi 4 only, JSON); --simulate on a fixture copy with an include line and the IMX585 line commented: Chromium shows both sensor selects disabled with the sentence, the I2S switch still enables Save; set_boot_config cam0_sensor=imx477 refused with the sentence. Needs the Pi: on a fresh Apertar 1.6.0 image: grep -n '^include' /boot/firmware/config.txt; cat /boot/firmware/camera-selection.txt (settles the premise: which section holds the include). Then cp /boot/firmware/config.txt /tmp/before.txt, pick IMX585 in the card, Save: refused with the include sentence; cmp /tmp/before.txt /boot/firmware/config.txt prints nothing. The owner's CM5 has the include removed, so its card is unchanged.
+
+**Rule.** A parser that drops a line type cannot respect it: read every line kind the stock file ships, and make the card read-only where another file decides.
+
+
+---
+
+## C75. core: the Boot Config test covers re-enabling a commented IMX283 line
+
+Apertar-Core `0292490`. Finding: boot 13. Reviewed by a second agent: not reviewed.
+
+**What was there.** Plan: sensors() gains {"imx283", ...}. Code at the tip: src/hardware/BootConfigText.hpp sensors() already has {"imx283", "imx283", "OneInchEye (IMX283)", false, 720000000, 0, {360 MHz, 720 MHz}}; tools/boot_config_test.cpp checks it is offered. No test covered a commented imx283,always-on line.
+
+**Why it is a problem.** DB-79: on the owner's rig keep always-on on the imx283 line. The engine reuses a commented sensor line of the same overlay in the board section (BootConfigText.hpp applyRequest, reuse loop), so always-on survives. The audit's caveat holds and is shown by a probe: the commented line must sit in the same section as the other sensor lines; one under [all] is not reused and a new plain line is added.
+
+**How to spot it.** When a plan says a thing is missing, grep the name first (grep -n imx283 src/hardware/BootConfigText.hpp tools/boot_config_test.cpp). When an owner decision is about a byte-level result, look for a test that pins those bytes.
+
+**Options.**
+
+- Skip the commit as already done (leaves DB-79 untested).
+- Add one test check, no code change (chosen; +12 lines).
+- Make the engine reuse a commented line from any section (changes how firmware sections are respected; not asked for).
+
+**Chosen, and why.** The test-only commit, because the audit asked for exactly that host test. Given up: nothing. If the owner's commented imx283 line is not in the same section as his imx585 line, the card writes a plain dtoverlay=imx283 line and always-on is lost; that is for him to check on the CM5.
+
+**After.**
+
+```
+same_section.replace(..., cam0Line + "#dtoverlay=imx283,always-on\n");
+Request q = same(s); q.sensors["cam1"] = "imx283";
+check(r.ok && r.changes.size() == 1 && lineOf(r.text, 43) == "dtoverlay=imx283,always-on", ...);
+```
+
+**Checked.** Ran here: the gate (21 host tests); a probe: commented line in [pi5] reused with always-on kept; in [all] not reused, plain dtoverlay=imx283 added in [pi5]. Needs the Pi: with the imx283 driver installed, pick IMX283 on cam1, reboot, camera starts; grep -n imx283 /boot/firmware/config.txt shows the line in the same section as imx585.
+
+**Rule.** Check a plan's 'missing' claim against the code before building it; pin an owner's byte-level decision with a test.
+
+
+---
+
+## C76. core: Boot Config refusals are one sentence
+
+Apertar-Core `fa1dc5c`. Finding: boot 9-refusals. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp bootConfigSet@cinemate-port: return {409, errorReplyBody(command.id, "config.txt changed since the card loaded it ...", "\"code\":\"stale\",\"revision\":" + bootconf::jsonString(current))};
+Others: "code":"invalid", "unreadable", "refused", "confirm_display", "permission", "write_failed".
+errorReplyBody(int id, message, body) in the anonymous namespace.
+
+**Why it is a problem.** Original Apertar has two reply builders only, okReply and errorReply (App:108-128@upstream-1.6.0), and every surface shows the refusal sentence as written (CMD-9, CMD-28, WEB-14). A second error vocabulary (code) makes each client learn it; here the page had stopped using it once the card sent set_boot_config through sendCommand, which hands over the sentence only.
+
+**How to spot it.** grep -n 'errorReplyBody\|"code\\"' src/ApertarCoreApp.cpp. A helper with one theme's callers is a smell; after the last caller goes, delete it or the build warns about an unused function.
+
+**Options.**
+
+- Convert every refusal and delete errorReplyBody (chosen; about -25 lines).
+- Keep the codes for scripts (a second vocabulary nobody reads).
+- Leave errorReplyBody for the next user (unused-function warning).
+
+**Chosen, and why.** The first option. The status codes went with the route in item boot 1, the display guard and its sentence stay as the owner decided, and the stale sentence already tells the operator to reload. Given up: the revision in the stale reply (the page re-reads it with GET /api/boot-config) and the machine codes.
+
+**After.**
+
+```
+if (!bootConfigRequestFrom(command, &request, &error)) return errorReply(command.id, error);
+if (revision && *revision != current) return errorReply(command.id, "config.txt changed since the card loaded it ... Reload the card and choose again.");
+if (result.displayChanged && !confirmDisplay) return errorReply(command.id, "This changes the display overlays. ... Send confirm_display=true to save anyway.");
+if (!writeBootConfigText(result.text, &error, &how, &denied)) return errorReply(command.id, error);
+```
+
+**Checked.** Ran here: the gate; --simulate: stale revision, display change without confirm_display, dry_run=yes and an unknown sensor each answer {"ok":false,"error":"..."} only; Chromium: a sensor change reviews and saves; smoke_core shape diff clean; grep -rn errorReplyBody src is empty. Needs the Pi: change a sensor link on the CM5, Save, reboot, check /boot/firmware/config.txt and vcgencmd get_config str.
+
+**Rule.** One error vocabulary: errorReply with one sentence; when a helper loses its last caller, delete it in the same commit.
+
