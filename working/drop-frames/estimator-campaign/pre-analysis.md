@@ -93,6 +93,51 @@ about 1 fps of a back-end edge (4K HDR16, 4K HDR12, 4K Log). There, lock, audio 
 minute and the aids help a little. When the drive or the encoder limits the mode, only the fps and the format count.
 At 2K, nothing measured here matters.
 
+## 2c. Will a 30-min take work? (projection)
+
+Nothing in 4K has been recorded for 30 min yet. The NVMe's longest takes are 15 min, and the S6 flat controls never
+ran. This is a projection from four measured facts:
+1. Core's RAM buffer reaches its 90 % safety stop at about **1.06 GB** (1181 MiB x 0.9).
+2. A warm NVMe (72-78 °C, from about 10 min in) **pauses writes for about 2 s**. The buffer jumped to 700-900 MB within
+   2-3 s at 450 MB/s.
+3. Between pauses the warm drive takes at least **~470 MB/s** (1-min rates in the 15-min takes).
+4. The split caps the exFAT folder cost at 1.6 ms per file, so the folder no longer grows the load.
+
+So on NVMe a mode survives 30 min if (a) one pause fits in the buffer, which takes **pause tolerance = 1060 MB / data
+rate > ~2.5 s** (about 420 MB/s or less), and (b) the buffer drains before the next pause, which takes
+**470 MB/s - data rate** to be clearly above zero.
+
+On the T7 the drive's steady ~100-105 MB/s is the limit (measured, 30-min takes passed at 2K). Its pauses were not
+measured the same way.
+
+| Mode | fps | Data rate | NVMe pause tolerance | NVMe 30 min | T7 30 min |
+| --- | --- | --- | --- | --- | --- |
+| 4K HDR16 uncompressed | 25 | 415 MB/s | 2.6 s, drain margin ~55 MB/s | **unlikely**: 25 already failed at 12.6 min (measured) | no (6 fps max) |
+| 4K HDR16 uncompressed | 22-23 | 365-380 MB/s | 2.8-2.9 s, margin ~90-105 | **probable** (projected; untested) | no |
+| 4K HDR16 + Log | 24 | ~400 MB/s | 2.7 s | uncertain: Log's capture gaps start at 28 | no |
+| 4K HDR16 lossless | 14 | ~140 MB/s | 7.6 s | **probable** (encoder-limited; CPU ~190 %) | probable at ≤ 10 |
+| 4K HDR12 uncompressed | ≤ 24 | ≤ 300 MB/s | 3.5 s | **uncertain**: the back end drops frames at any fps tried (25-30); 22-23 untested | no |
+| 4K SDR12 uncompressed | 37 | 460 MB/s | 2.3 s, margin ~10 MB/s | **unlikely**: passed 15 min with two pauses (58 and 299 MB); the backlog grows as the drive heats | no |
+| 4K SDR12 uncompressed | 33 | 410 MB/s | 2.6 s, margin ~60 | **probable** (projected) | no |
+| 4K SDR12 lossless | 40 | ~230 MB/s | 4.6 s | **probable**; CPU heat over 30 min unmeasured (~200 % Core CPU) | at ≤ 18 probable |
+| 4K SDR12 lossy 3:1 / 5:1 | 37 / 41 | ~130 / ~85 MB/s | 8 / 12 s | **probable** | 3:1 at ≤ 28, 5:1 at ≤ 41: probable (85 MB/s under 100) |
+| 2880x2160 crop SDR12 lossless | 56 | ~210 MB/s | 5 s | probable | ≤ 24 |
+| 4K SDR12 MLV | 25 | ~310 MB/s | 3.4 s | probable (one file, no folder cost) | no |
+| 4K ProRes HQ / 422 / LT / Proxy | 27 / 40 / 43 / 45 | ~80 / ~85 / ~60 / ~30 MB/s | > 10 s | **probable**; the limit is CPU (220-340 %), not the drive; CPU heat over 30 min unmeasured | HQ at ≤ 27 marginal (~80-90 MB/s), 422 / LT / Proxy probable |
+| H.264 2560x1440 / 1080p | 45 / 60 | < 10 MB/s | - | probable (CPU) | probable |
+| 2K HDR16 uncompressed | 30 | 125 MB/s | 8.5 s | **probable** | no (18 fps meter); lossless 27: **passed 30 min** (measured) |
+| 2K SDR12 uncompressed | 60 | 187 MB/s | 5.7 s | **probable** with the split (flat: t* = 9 min at 60 fps) | 32: **passed 30 min, 4 of 4, split** (measured) |
+| 2K SDR12 lossless | 60 | ~95 MB/s | > 10 s | probable | 48: **passed 30 min** (measured) |
+
+Two open risks for every 30-min projection:
+- **CPU and Pi heat.** The 4K encoder modes run Core at 200-340 % CPU, and the Pi reached 55-65 °C in 60 s. Whether it
+  throttles over 30 min is unmeasured.
+- **The drive's pauses past 15 min.** They grew from 58 to 299 MB between 11 and 14 min; nothing says where they go
+  after that.
+
+P6 gives 15-min data. 30 min needs its own takes: one per row marked "probable" at its fps, plus the two "unlikely"
+rows one step down. That is about 8 takes, ~4.5 h.
+
 ## 3. What caused the dropped frames
 
 | Cause | Where it shows | Mechanism | Label |
