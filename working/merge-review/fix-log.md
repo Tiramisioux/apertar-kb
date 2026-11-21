@@ -3636,3 +3636,87 @@ ioStep(fd_ < 0 ? static_cast<int>(std::max<int64_t>(1, nextTickMs_ - nowMs())) :
 
 **Rule.** An idle thread waits for its next deadline, not for a fixed short step.
 
+
+---
+
+## U14. ui: remaining time counts cam0 after cam1 goes; rate sum is in the bridge
+
+Apertar-UI `9a66b24`. Finding: CLIP-U-5. Reviewed by a second agent: not reviewed.
+
+**What was there.** src/main.cpp@clip-split: auto syncMediaRates = [&]() { recordCameras = bridge.recordCameras(); cam1InTake = cam1Present && (cam1|both); cam0InTake = recordCameras != cam1 && != none; ... 25 more lines parsing cam1Settings, resolution(), rawBitDepth() ... mediaBridge.setCameraRates(...) }; five QObject::connect(..., syncMediaRates). ApertarControlBridge::clearCam1State cleared every cam1 field except m_recordCameras.
+
+**Why it is a problem.** Core sends record_cameras only while a cam1 exists, so a stale 'cam1' or 'none' stays after an unplug and cam0InTake stays false: REMAINING is 0 on one sensor. Apertar 1.6.0 main() only wires with connect and setters (UIC-1, main.cpp:374-396@upstream-1.6.0) and derived numbers live in the bridge that owns the inputs (UIC-4, UIC-11).
+
+**How to spot it.** grep -n 'auto .* = \[&\]' src/main.cpp: any lambda longer than a few lines in main() is logic in the wrong place. Ask of every 'clear...State' function: does it reset every field the apply... function sets?
+
+**Options.**
+
+- Reset record_cameras and move the computation into the bridge, one signal (chosen, S)
+- Only reset record_cameras and leave the lambda (fixes the bug, leaves logic in main.cpp)
+- New cam1SizeScale Q_PROPERTY plus a setter on MediaStatusBridge (more API for four numbers that travel together)
+
+**Chosen, and why.** The first. A Qt signal can carry several arguments, so one signal cameraRatesChanged(bool,bool,double,double) matches the existing setter signature and main() needs one connect. The sums are unchanged; the cam1 resolution parse stays as it was (CLIP-U-2 may share it later).
+
+**After.**
+
+```
+connect(&apertarControlBridge, &ApertarControlBridge::cameraRatesChanged, &mediaBridge, &MediaStatusBridge::setCameraRates);
+// bridge: updateCameraRates() runs after record_cameras, cam1 state, resolution and raw bit depth change
+clearCam1State(): m_recordCameras.clear(); emit recordCamerasChanged() if it had a value; updateCameraRates();
+```
+
+**Checked.** Gate passes, 0 warnings. Nothing can run a second sensor here. Needs the Pi with two sensors: set record cam1, unplug cam1 (journalctl -u apertar-ui | grep 'cam1: gone'), REMAINING must still count from cam0.
+
+**Rule.** A clear function resets everything its apply function sets; main() wires, the bridge computes.
+
+
+---
+
+## U15. qml: Split Long Takes and Merge Split Clips follow the Settings page style
+
+Apertar-UI `98937b8`. Finding: CLIP-U-3. Reviewed by a second agent: not reviewed.
+
+**What was there.** qml/SettingsPage.qml:5396-5523@lane/ui-tc before: Text { text: "Merge Split Clips"; color: "white"; font.pixelSize: 14 } ; Row { ActionTile { label: "On"; tone: enabled ? "accent" : "default"; onClicked: apertarControlBridge.applyClipMerge(true) } ActionTile { label: "Off" ... } } ; Text { color: "#9aa5b1"; font.pixelSize: 12 } ; Repeater { model: ... ? 2 : 0 ; clipRow: index === 0 } ; label "Split Long Takes (set by APERTAR_CDNG_FRAMES_PER_FOLDER)"; void applyFramesPerFolder / applyClipMerge
+
+**Why it is a problem.** Text sizes did not scale with the layout flags (QML-13), no Inter font or NativeRendering (QML-17), off-palette greys (QML-16), on/off as two tiles where the page uses TogglePill (SettingsPage.qml:5157@upstream-style rows), failures never shown because the invokables were void (UIC-9, QML-8), nothing locked during a take (QML-25).
+
+**How to spot it.** grep -n 'pixelSize: [0-9]*$' qml/*.qml: a bare number with no ternary is a missed layout flag. grep -n 'font.family' near every Text. Ask of each Q_INVOKABLE void apply...: where does the user see a failure?
+
+**Options.**
+
+- Rebuild the rows with the card's own tokens, bool invokables and a copy of an existing error popup (chosen, M)
+- Reuse the mount-error popup with a variable title (smaller, but misnames that popup and touches its code)
+- Show lastError as a Text in the card (no popup, differs from every other failure on the page)
+
+**Chosen, and why.** The first. Every failure on this page opens its own popup, so a Media Setting Failed popup copies the thermal one. Core allows both commands during a take (frames_per_folder applies to the next take) but the page locks format-like controls then (QML-25), so both rows are locked as asked. Given up: 75 more lines in an already big file, because the page has no generic error popup.
+
+**After.**
+
+```
+TogglePill { id: clipMergeToggle; checked: apertarControlBridge.clipMergeEnabled; enabled: !recording && !clipMergeEnvOff; onToggled: function(value) { root.executeApplyClipMerge(value) } }
+function executeApplyClipMerge(enabled) { if (!apertarControlBridge.applyClipMerge(enabled)) { mediaSettingErrorText = lastError...; mediaSettingErrorOpen = true } }
+```
+
+**Checked.** Gate passes, 0 warnings (QML compiled ahead of time). Nothing visible here. Needs the owner on HDMI with a mouse: Settings, System, Media; both rows match Mount Drive; during a take both dim and ignore input; with Core stopped, a toggle shows the popup. Also check the 720x720 layout.
+
+**Rule.** A new settings row copies the card's tokens and shows its failure the way the page does; a void apply function hides errors.
+
+
+
+---
+
+## C66 and U16. Mode names follow Apertar 1.6.0, "Clear HDR" written in full
+
+Apertar-Core `web, camera: resolution and Mode Ladder names follow Apertar 1.6.0`, Apertar-UI `qml: the Log note says "outside Clear HDR" instead of "in SDR"`. Asked for by Patrik (2026-11-21): resolution buttons and the Mode Ladder info in the original Apertar naming, and "Clear HDR" exactly so. Made by the lead.
+
+**What was there.** The port named modes in its own words: a WebUI pill "4K UHD", the IMX585 family "Full HD binned", and in the Mode Ladder and Core's `ladder_text` the codes "ClearHDR16" and "SDR12", plus "SDR" in many labels ("4K SDR", "2K SDR binned").
+
+**Why it is a problem.** Apertar 1.6.0 names a mode by its size and its bit depth: "4K", "Full HD", "12-bit" (`imx585BaseResolutionOptions`, `rawBitDepthOptions` in `WebControlPage.cpp@upstream-1.6.0`). "SDR" appears nowhere in 1.6.0's screens. Two vocabularies for the same mode make an operator wonder whether they are two things.
+
+**How to spot it.** Grep the visible strings, not the code: `grep -o '"[^"]*\bSDR\b[^"]*"'` and `grep -o 'ClearHDR'` in the page and the QML, then compare the labels with 1.6.0's option lists.
+
+**Chosen, and why.** The plain mode has no class word at all, as in 1.6.0; only "Clear HDR" and "N×N binned" are named. Where a line joined the class name with " · ", it now skips the empty one, so no line shows a dangling dot. The touch UI already used 1.6.0's labels ("Full HD", "2K", "4K", "4K Clear HDR"); only its Log note said "in SDR".
+
+**Checked.** Both Core builds and the host tests; the UI build; the WebUI loads in headless Chromium with no page errors; `ladderClassText` gives "Clear HDR 16-bit" and "12-bit 2.39:1"; `/api/state` `ladder_text` reads "3840×2160 · 12-bit · Uncompressed (ladder off)". On the camera: read the resolution pills and the Mode Ladder card.
+
+**Rule.** A new mode or feature gets the words the original screens already use for the same thing; a new word only for a new thing.
