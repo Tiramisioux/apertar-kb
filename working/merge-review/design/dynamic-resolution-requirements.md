@@ -19,6 +19,6 @@ Collected from Patrik's messages of 2026-11-21, in order; a later line wins over
 9. Dynamic resolution may also control **TDN**, as an optional on/off switch.
 10. Every lever's switch gets a brief info line: how it affects performance and when it is best used.
 11. The clip-folder split becomes **off / on / automatic**; automatic engages it only when the chosen fps and compression
-    need it.
+    need it. **Default: on.**
 12. Use the latest findings in the KB: `working/drop-frames/estimator-campaign/pre-analysis.md`,
     `working/drop-frames/nvme-campaign/findings.md` (P6 warm takes: pauses from 108-190 GB), the T7 SSD campaign.
