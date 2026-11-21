@@ -3067,3 +3067,328 @@ if (root.clearHdrActive || losslessFallback)
 
 **Rule.** Check a ternary fallback against the branch that runs on the device, not only the literal in it.
 
+
+---
+
+## C55. core: the controls and media events carry the state keys
+
+Apertar-Core `07ed294`. Finding: touch-ui commit 6. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12352@cinemate-port
+"\"errors\":" + ... + ",\"warnings\":" ...  (controls event)
+src/ApertarCoreApp.cpp:10827@cinemate-port mediaEventJson:
+out << "{\"event\":\"media\",\"state\":\"" << snapshot.stateName() ...
+    << ",\"mounted\":" << (snapshot.mounted() ? ...)
+
+**Why it is a problem.** 1.6.0 events that carry state are written with the same key names as get_state (standby, still_exposure, timelapse_progress, media_write_state), and the UI passes them whole to applyCoreState (ui-upstream src/ApertarControlBridge.cpp applyCoreMessage; conventions UIC-4). A media event with a top-level state key would hit applyCoreState's standby branch and set standby from the card state. The port needed its own branches and a setter that took key names.
+
+**How to spot it.** grep -n 'publishEvent("{\\"event' src/ApertarCoreApp.cpp and compare each member name with the get_state body. Ask: could the UI reuse one reader for the event and the reply? A member that means the same thing under a second name is the smell.
+
+**Options.**
+
+- Rename the event members to the state keys (4 lines, chosen)
+- Keep the names and let the UI map them in two branches (what the port did; two spellings forever)
+- Drop the events and rely on the 30 s poll (card pull shows late)
+
+**Chosen, and why.** The first option. The UI then needs no key-name setter. Given up: any outside script that reads the old event keys; the KB search found none (longtakes.py reads media_state from get_state).
+
+**After.**
+
+```
+out << "{\"event\":\"media\",\"media_state\":\"" << snapshot.stateName() << "\""
+    << ",\"media_alive\":" << (snapshot.mounted() ? "true" : "false")
+...
+"\",\"controls_errors\":" + std::to_string(controlsErrors_.load()) + ",\"controls_warnings\":" + ...
+```
+
+**Checked.** Ran here: check_core.sh lane-tc both tests (PASS), --simulate with scratch HOME and APERTAR_HARDWARE_CONFIG: set_controls over the socket produced {"event":"controls","applied":"h4a4b...","groups":"","controls_errors":0,"controls_warnings":0}; smoke_core + shape_subset: every base field present with the same type. Not provoked here: the media event (needs a card change). On the Pi: keep socat - UNIX-CONNECT:/tmp/apertar-core.sock open, pull the card, look for {"event":"media","media_state":...}. Also: grep -rn '"mounted"' ~/ on the rig for scripts that read the old key.
+
+**Rule.** An event that carries state uses the state's key names, so one reader serves the event and the reply.
+
+
+---
+
+## C56. core: set_timecode_mode records in UI.conf whether the file timecode is set apart
+
+Apertar-Core `ba1aa75`. Finding: touch-ui commit 9. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:13295-13316@cinemate-port
+if (target != "files") {
+    (void)updateSharedUiGeneralSettings({ { "timecodeMode", mode == RecRun ? "Rec Run" : "Free Run" } });
+}
+// target=ui / files split the two timecodes; nothing recorded that the split was chosen
+
+**Why it is a problem.** 1.6.0 has one timecode and Core writes the mode into UI.conf beside the camera setting (ui-upstream ApertarControlBridge.cpp:1466-1471 copies it; conventions C1-I18: UI.conf and camera mode equal). The port's split breaks that on purpose, so the operator's choice has to be stored where the UI can read it. Otherwise a stock camera and a deliberately split one look the same.
+
+**How to spot it.** Ask: when a client can send an optional argument that changes meaning (target=), where is the result of that choice stored? grep for the argument name in the writers; an argument that changes behaviour but leaves no trace is the smell.
+
+**Options.**
+
+- One UI.conf bool written by the one command that sets the meaning (chosen, about +12)
+- Add a state field and a new command (new surface, 1.6.0 clients unaffected but more to keep)
+- Infer the split by comparing UI.conf and camera mode (guesses wrong when they are equal by chance)
+
+**Chosen, and why.** The first option. The writer sits beside timecodeMode (CMD-26: one writer for the meaning). The false write happens only over a true, so a stock UI.conf stays without the key. Presets carry the key with the existing bool forms (addBoolFromMap writer, addBoolUpdate reader). Given up: a state field; no reader needs it yet (the WebUI commit adds ui.file_timecode_separate).
+
+**After.**
+
+```
+std::vector<std::pair<std::string, std::string>> updates = { { "timecodeMode", ... } };
+if (target == "ui")
+    updates.emplace_back("fileTimecodeSeparate", "true");
+else if (readSharedUiSettings().fileTimecodeSeparate)
+    updates.emplace_back("fileTimecodeSeparate", "false");
+(void)updateSharedUiGeneralSettings(updates);   // target=files: its own call with the one pair
+```
+
+**Checked.** Ran here: check_core.sh lane-tc both tests (PASS). --simulate, fresh HOME and APERTAR_HARDWARE_CONFIG: no target on a fresh HOME left no fileTimecodeSeparate line; target=files wrote true; target=ui true; no target afterwards false. apply_preset with fileTimecodeSeparate=true wrote the key; /api/presets/save wrote "fileTimecodeSeparate":true into the preset file. smoke_core + shape_subset: every base field present with the same type. Needs the camera: apertar-cmd '{"cmd":"set_timecode_mode","value":"rec_run","target":"ui","id":1}' then grep fileTimecodeSeparate ~/.config/CinePi/UI.conf shows true.
+
+**Rule.** An optional argument that changes meaning leaves its trace in the setting file, written by the one command that sets that meaning.
+
+
+---
+
+## C57. core: a split timecode on an existing camera is taken over at start
+
+Apertar-Core `038fc4a`. Finding: touch-ui commit 10. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:8077-8091@cinemate-port
+// after camera_.start: only the still-mode and bracketing reconcile against UI.conf
+// nothing for the timecode: two different modes were simply left as they were
+
+**Why it is a problem.** The port's earlier UI let the operator split the timecodes without leaving any mark. Once fileTimecodeSeparate exists (previous commit), an already split camera has no key and would be seen as a stock camera, and the touch UI would copy one mode over the other. Original Apertar already reconciles UI.conf against camera settings at this point for still mode (core-upstream ApertarCoreApp.cpp:6845-6857).
+
+**How to spot it.** When a new settings flag is added, ask: what do cameras that were already in that state have? A flag with a safe default and no migration is the smell.
+
+**Options.**
+
+- Reconcile at start, one write, one log line (chosen, about +6)
+- Let the UI infer the split at every get_state (race with the copy, runs every second)
+- Do nothing and ask owners to set it by hand (stock-safe, but the port's own users lose their setting silently)
+
+**Chosen, and why.** The first option, in the same place and shape as the still-mode reconcile. It writes true only, never false, and only when the modes differ. Given up: a UI.conf with no timecodeMode line reads as Free Run, so a camera on Rec Run with no line gets the key; 1.6.0 never leaves that state.
+
+**After.**
+
+```
+if (!secondaryRole() && !stillSettings.fileTimecodeSeparate &&
+    stillSettings.timecodeMode != (camera_.settings().timecodeMode == TimecodeMode::RecRun ? "Rec Run" : "Free Run")) {
+    (void)updateSharedUiGeneralSettings({ { "fileTimecodeSeparate", "true" } });
+    std::cerr << "ApertarCore timecode: UI and file timecode differ, kept apart (fileTimecodeSeparate=true)\n";
+}
+```
+
+**Checked.** Ran here: check_core.sh lane-tc both tests (PASS). --simulate, one fresh HOME per case with APERTAR_HARDWARE_CONFIG: UI.conf timecodeMode=Rec Run and Core Free Run: key and log line appear; equal modes (Free Run/Free Run): no key, no line; UI.conf without timecodeMode: no key; key already true: unchanged. Needs the camera (owner's rig): journalctl -u apertar-core -b | grep 'ApertarCore timecode'; his modes are equal so no line is expected.
+
+**Rule.** A new flag that changes meaning needs a start-up step for the cameras that were already in the new state.
+
+
+---
+
+## C58. web: the timecode Mode sends no target; Files sets the file timecode apart
+
+Apertar-Core `5c98f4d`. Finding: webui timecode. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp:16094-16099, :11183-11188@cinemate-port (line numbers earlier tip)
+for (const [id, target, current] of [["settingsTimecodeOptions", "ui", uiTimecodeLabel(snapshot)], ["settingsFileTimecodeOptions", "files", ...]])
+    sendCommand(timecodeCommand(value, target));   // target always sent: "UI timecode" / "File timecode"
+
+**Why it is a problem.** 1.6.0 has one timecode control that sends set_timecode_mode with no target (core-upstream WebControlPage.cpp:10021-10023, :7042-7043). With fileTimecodeSeparate recorded by Core, a WebUI that always sends target would split a stock camera on its first timecode change. 1.6.0 also publishes a ui object with timecode_mode (core-upstream ApertarCoreApp.cpp:7966), the precedent for ui.file_timecode_separate.
+
+**How to spot it.** For every client of an optional command argument, ask: what does the stock path send? grep -n 'timecodeCommand\|set_timecode_mode' in the page and the touch UI; both clients must treat 'no target' as the default.
+
+**Options.**
+
+- WebUI gets the touch card's shape: Mode (no target), Files (Same as Mode / fixed), state ui.file_timecode_separate (chosen, about +2 Core, +25 page)
+- Core ignores target from the WebUI (hides the problem, breaks the owner's UI-only tap)
+- Leave the WebUI as is (a stock camera's first WebUI change splits it)
+
+**Chosen, and why.** The first option. Mode sends target=ui only while the split is on, so Mode never undoes the operator's choice; Same as Mode sends the Mode value with no target so Core writes false. Labels are the ones the page already uses (the label commit stays held for Patrik); the option 'Same as Mode' is new. The Favorites card got the same two blocks. Given up: nothing in behaviour.
+
+**After.**
+
+```
+function timecodeCommand(value, target) { const command = { cmd: "set_timecode_mode", value: ... }; if (target) command.target = target; return command; }
+function timecodeModeCommand(value) { return timecodeCommand(value, fileTimecodeSeparate(state.snapshot) ? "ui" : ""); }
+function timecodeFilesCommand(value) { return value === "Same as Mode" ? timecodeCommand(uiTimecodeLabel(state.snapshot)) : timecodeCommand(value, "files"); }
+// Core ui block: << ",\"file_timecode_separate\":" << (uiSettings.fileTimecodeSeparate ? "true" : "false")
+```
+
+**Checked.** Ran here: check_core.sh lane-tc both tests (PASS, 0 warnings). --simulate, fresh HOME and APERTAR_HARDWARE_CONFIG, page driven with Playwright (Settings > Record): Mode Clip sent no target (state: separate false, both rec_run); Files Time of Day sent target=files (separate true, files free_run, screens rec_run); Mode then sent target=ui; Files Same as Mode sent no target (separate false, both equal); rows followed the state; no page error. Favorites card (favorites_order=timecode) shows Mode/Files and sent target=files. smoke_core + shape_subset: every base field present with the same type (ui.file_timecode_separate is a new field). Needs a browser on the camera for the look: http://<camera>:8000/, Settings > Record > Timecode.
+
+**Rule.** Every client of an optional argument sends nothing for the stock case; the setting that changes the meaning is a separate, visible control.
+
+
+---
+
+## U10. ui: controls and media events go through applyCoreState
+
+Apertar-UI `8385490`. Finding: touch-ui commit 7. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarControlBridge.cpp:1328-1340@cinemate-port
+if (event == "controls") { setControlsStatus(message, "errors", "warnings"); return; }
+if (event == "media") { setCoreMediaState(message.value("state").toString(), message.value("mounted").toBool(true)); return; }
+void setControlsStatus(obj, errorsKey, warningsKey) // one setter, two spellings
+
+**Why it is a problem.** 1.6.0 sends every event made of state keys to applyCoreState in one if-list (standby, still_exposure, timelapse_progress, media_write_state) and keeps only audio_level apart because it is frequent (ui-upstream ApertarControlBridge.cpp applyCoreMessage; conventions UIC-4). Two key spellings need a setter that takes key names; that is a layer 1.6.0 does not have.
+
+**How to spot it.** In applyCoreMessage look for an event branch that does its own parsing: if the keys could be the state keys, the event belongs in the list. Question: does a helper take key names as arguments?
+
+**Options.**
+
+- Add controls and media to the 1.6.0 event list, read the keys inline (chosen, about -22/+8)
+- Keep the branches and rename only the keys (setter stays)
+- Send the events through get_state polling only (card pull late by up to 30 s)
+
+**Chosen, and why.** The first option, after Core commit 6 renames the keys. setCoreMediaState stays because it emits the signal MediaStatusBridge listens to. The buffer event keeps its own branch (frequent, as audio_level). Given up: any use of the old key names; no fallback for an older Core (Core and UI ship together).
+
+**After.**
+
+```
+if (event == "standby" || event == "still_exposure" ||
+    event == "timelapse_progress" || event == "media_write_state" ||
+    event == "controls" || event == "media") {
+    applyCoreState(message); return; }
+// applyCoreState: if (state.contains("controls_errors")) { compare, assign, emit controlsStatusChanged(); }
+```
+
+**Checked.** Ran here: check_ui.sh lane-ui-tc lane-ui-tc: PASS, 0 warnings. One conflict while cherry-picking (neighbouring applyCam1State from the dual-sensor work), resolved by keeping it. Checked that no key of either event other than media_state/media_alive/controls_* is read by applyCoreState. Needs the camera: pull the card, NO MEDIA within a second; save a bad pin in Controls, the warning chip appears; 4K take with ISO Auto, ISO in use still moves. Watch: printf '%s\n' '{"cmd":"get_state","id":1}' | socat - UNIX-CONNECT:/tmp/apertar-core.sock
+
+**Rule.** An event made of state keys goes whole to applyCoreState; only a frequent event gets its own branch.
+
+
+---
+
+## U11. ui: touch presets carry the camera settings Core's presets carry
+
+Apertar-UI `041ec9d`. Finding: touch-ui commit 8. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarControlBridge.cpp:1254-1286@cinemate-port cameraPresetSettings()
+result.insert("cameraFps", m_fps);
+result.insert("cameraIso", m_iso);
+result.insert("cameraExposureCompensation", ...);   // only the 1.6.0 key set
+// no cameraFpsSpeedRamp*, cameraClipNameTemplate, cameraFpsPhaseLock,
+// cameraTimecodeMode, cameraConformFps, cameraClearHdr, cameraHdr*, cameraCdngLog
+
+**Why it is a problem.** Core's buildCurrentPresetPayload (App.cpp 8188-8190@lane-tc) writes these keys and apply_preset reads them. In original Apertar both writers carry the same camera* set and one reader takes it, and a value kept only for presets is a plain member (ui-upstream m_lossyDngRatio). A touch preset that drops keys loses those settings when loaded.
+
+**How to spot it.** Diff the key list of cameraPresetSettings() against buildCurrentPresetPayload (grep -n 'addString("camera\|addBool("camera\|addNumberString("camera'). Any key in one list and not the other is a lost setting.
+
+**Options.**
+
+- Add plain members read in applyCoreState and write Core's keys in Core's order and value words (chosen, about +40)
+- Make the touch UI ask Core to build the preset payload (new command, new layer)
+- Leave the new keys out (presets silently lose them)
+
+**Chosen, and why.** The first option. Plain members, not Q_PROPERTY, because no QML reads them. conform_fps is kept because the owner asked for it (DA-92, request 21); the lane's first version had dropped it. Loading needs no change: applyCameraPreset forwards every camera* key. Given up: nothing; the key set is bigger.
+
+**After.**
+
+```
+result.insert("cameraFpsPhaseLock", m_fpsPhaseLock);
+result.insert("cameraTimecodeMode", parseTimecodeModeValue(m_fileTimecodeMode));
+result.insert("cameraConformFps", m_conformFps);
+result.insert("cameraClearHdr", m_clearHdr);
+// applyCoreState:
+if (state.contains("conform_fps")) m_conformFps = state.value("conform_fps").toDouble(m_conformFps);
+// header: double m_conformFps = 25.0;
+```
+
+**Checked.** Ran here: check_ui.sh lane-ui-tc lane-ui-tc, PASS 0 warnings. Core --simulate with a fresh HOME and APERTAR_HARDWARE_CONFIG: apply_preset with exactly the keys the writer now writes, at non-default values, then /api/state: all 14 values matched (conform 24, ramp true/exposure/real/return, phase lock, rec_run, Clear HDR, 3000/10/7/2, cdng_log auto). Cherry-pick was clean on the dual-sensor tree. Needs the camera (HDMI look): save a touch preset with Clear HDR 16-bit and Log On, change both, load it; apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"cdng_log":"[a-z]*"' shows auto.
+
+**Rule.** Both preset writers carry the same keys under the same names; a value that only presets need is a plain member.
+
+
+---
+
+## U12. ui: the timecode tap and Mode set both timecodes again unless the file timecode is set apart
+
+Apertar-UI `69e37b5`. Finding: touch-ui commit 12. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarControlBridge.cpp:750-771@cinemate-port
+bool applyTimecodeMode(const QString &displayValue, const QString &target) // ui|files|both
+    sendCoreCommand("set_timecode_mode", {{"value", normalized}, {"target", target}});
+    if (target != "files") { m_settings.setValue("timecodeMode", displayValue); ... }
+qml/CameraPage.qml:1837 applyTimecodeMode(nextMode, "ui")   // screen only
+applyCoreState: no copy of Core's mode into UI.conf
+
+**Why it is a problem.** 1.6.0 has one applyTimecodeMode(displayValue), the tap changes both timecodes, and applyCoreState copies Core's mode into UI.conf so camera and screens stay equal (ui-upstream ACB:622-636, :1466-1471, CPg:1709-1715; CMD-26). The port's tap changed the screens only, so on a stock camera the clips kept the old timecode.
+
+**How to spot it.** grep -n 'applyTimecodeMode' src qml and compare the signature and the callers with ui-upstream. An invokable that gained a mode argument the 1.6.0 caller never sent is the smell.
+
+**Options.**
+
+- 1.6.0 body for the stock path; the split is an operator setting read from UI.conf (chosen, about -20/+26)
+- Keep the port's target argument and default to ui (a stock camera changes behaviour: not mergeable)
+- Drop the split altogether (loses Patrik's DA-76 decision)
+
+**Chosen, and why.** The first option. Core records the split (previous Core commits); the UI reads it. The copy of Core's mode into UI.conf runs only while the key is false, after m_settings.sync() because Core writes the file. The preset forward closes a race: without it a split touch preset loaded on an unsplit camera would see the reply's copy run before SettingsBridge applies the key. Given up: one m_settings.sync() per get_state reply (QSettings re-reads only a changed file; not measured on a Pi 4).
+
+**After.**
+
+```
+bool applyTimecodeMode(const QString &displayValue) { ... sendCoreCommand("set_timecode_mode", {{"value", normalized}}) ... }
+bool applyFileTimecodeMode(const QString &displayValue) // adds {"target","files"}
+// applyCoreState: m_settings.sync(); if (!m_settings.value("fileTimecodeSeparate", false).toBool()) { setValue("timecodeMode", ...); sync(); }
+// applyCameraPreset: ... || it.key() == "timecodeMode" || it.key() == "fileTimecodeSeparate" ||
+```
+
+**Checked.** Ran here: check_ui.sh lane-ui-tc lane-ui-tc, PASS 0 warnings; cherry-pick applied cleanly. Core --simulate (fresh HOME): apply_preset with fileTimecodeSeparate=true writes the UI.conf key. Nothing on a screen. Needs the camera (HDMI look on the owner's rig), with the Core commits deployed: stock camera, tap the timecode, apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"timecode_mode":"[a-z_]*"' shows the new mode; a Rec Run DNG take starts at 00:00:00:00. With the key true: tap changes the screen only. Also: top -H -p $(pidof ApertarUI) during ISO Auto for the sync cost. Must land in the same push as Core commits 9 and 10.
+
+**Rule.** A stock camera takes the 1.6.0 path; a port feature is a setting the operator turns on, read from the settings file.
+
+
+---
+
+## U13. qml: the timecode card has Mode and Files, Files starts at Same as Mode
+
+Apertar-UI `ed9e539`. Finding: touch-ui commit 13. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+qml/SettingsPage.qml:3998-4028@cinemate-port
+label: "UI timecode" ... label: "File timecode"
+value: apertarControlBridge.fileTimecodeMode   // second row always shows a fixed file value
+options: root.timecodeChoices
+
+**Why it is a problem.** 1.6.0 has one row, Mode, that sets both timecodes (ui-upstream SettingsPage.qml:3766-3780). A second row that always shows a fixed file value makes a stock camera look split. The split is Patrik's decision (DA-76), so it is shown only after the operator picks a fixed Files value.
+
+**How to spot it.** Ask of any new settings row: what does it show on a camera where the feature was never turned on? A row that shows a concrete value for an unused feature is the smell.
+
+**Options.**
+
+- Files row whose first option is Same as Mode, value read from UI.conf fileTimecodeSeparate (chosen, about -8/+14)
+- Hide the second row until a toggle is on (one more control)
+- Keep the always-visible File timecode row
+
+**Chosen, and why.** The first option. SettingsBridge already watches UI.conf (previous commits), so the row follows the key, also after a WebUI split. Labels Time of Day / Clip stay until the held label commit. Given up: nothing in behaviour.
+
+**After.**
+
+```
+label: "Files"
+value: settingsState.fileTimecodeSeparate && apertarControlBridge ? apertarControlBridge.fileTimecodeMode : "Same as Mode"
+options: ["Same as Mode"].concat(root.timecodeChoices)
+onValueSelected: v === "Same as Mode"
+    ? apertarControlBridge.applyTimecodeMode(settingsState.timecodeMode)
+    : apertarControlBridge.applyFileTimecodeMode(v)
+```
+
+**Checked.** Ran here: check_ui.sh lane-ui-tc lane-ui-tc, PASS 0 warnings (QML is compiled ahead of time, so unknown properties would fail). Clean cherry-pick. Nothing on a screen. Needs the camera (HDMI look on the owner's rig, hdmi_external_only=false temporarily): Settings > Timecode, Files = Free Run then Same as Mode; grep fileTimecodeSeparate ~/.config/CinePi/UI.conf goes true then false; a WebUI target=files change shows in the row.
+
+**Rule.** A port feature's control shows the stock value until the operator moves it.
+
