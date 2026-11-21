@@ -1199,7 +1199,7 @@ src/hardware/HardwareConfigText.hpp:537-550@cinemate-port, the Set branch of hwc
 
 ## C21. hw: a write to a missing hardware file starts from the /boot copy
 
-Apertar-Core `0c85297`. Finding: HW-18. Reviewed by a second agent: not reviewed.
+Apertar-Core `0c85297`. Finding: HW-18. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1291,7 +1291,7 @@ controlsState.revision = String(payload.revision || "");
 
 ## C23. core, web: saved hardware-file versions come from GET /api/config/history
 
-Apertar-Core `3660aab`. Finding: command-plane commit 2. Reviewed by a second agent: not reviewed.
+Apertar-Core `3660aab`. Finding: command-plane commit 2. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1471,7 +1471,7 @@ Check-tool change for the lead to apply: in the copy /home/user/build/sim/hdr/co
 
 ## C26. core, web: controls_last_input, scan_i2c and list_actions take the command lock like every command
 
-Apertar-Core `4b5ad25`. Finding: command-plane commit 5. Reviewed by a second agent: not reviewed.
+Apertar-Core `4b5ad25`. Finding: command-plane commit 5. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1704,7 +1704,7 @@ Needs the camera: nothing. No hardware path changes.
 
 ## C31. core, web: hardware-file refusals are one sentence
 
-Apertar-Core `926a62b`. Finding: command-plane commit 6. Reviewed by a second agent: not reviewed.
+Apertar-Core `926a62b`. Finding: command-plane commit 6. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1749,7 +1749,7 @@ src/web/WebControlPage.cpp:18662@cinemate-port:
 
 ## C32. core, web: a config text save names its revision only to be refused when stale
 
-Apertar-Core `46d28cd`. Finding: command-plane commit 7. Reviewed by a second agent: not reviewed.
+Apertar-Core `46d28cd`. Finding: command-plane commit 7. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1797,7 +1797,7 @@ WebControlPage.cpp: const kept = payload.code === "stale" || payload.code === "c
 
 ## C33. core, web: playback routes refuse through errorReply
 
-Apertar-Core `d092b04`. Finding: command-plane commit 8. Reviewed by a second agent: not reviewed.
+Apertar-Core `d092b04`. Finding: command-plane commit 8. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1845,7 +1845,7 @@ WebControlPage.cpp: pbvApplyHold(clip.hold || state.pb.snapshotHold || "recordin
 
 ## C34. core: Boot Config and set_controls switches read true or false, 1 or 0
 
-Apertar-Core `111ccf7`. Finding: command-plane commit 10. Reviewed by a second agent: not reviewed.
+Apertar-Core `111ccf7`. Finding: command-plane commit 10. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1891,7 +1891,7 @@ std::optional<bool> boolFieldValue(const std::string &value)
 
 ## C35. camera: the new camera switches are written 0 and 1 in camera_settings.conf
 
-Apertar-Core `ee141f9`. Finding: command-plane commit 15. Reviewed by a second agent: not reviewed.
+Apertar-Core `ee141f9`. Finding: command-plane commit 15. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1933,7 +1933,7 @@ src/camera/CameraController.cpp:963,974-979@cinemate-port (writeCaptureSettings)
 
 ## C36. core: set_value_steps echoes the lists flat
 
-Apertar-Core `86a33a1`. Finding: command-plane commit 16. Reviewed by a second agent: not reviewed.
+Apertar-Core `86a33a1`. Finding: command-plane commit 16. Reviewed by the lead (no second worker this round).
 
 **What was there.**
 
@@ -1965,4 +1965,615 @@ src/ApertarCoreApp.cpp:14178@cinemate-port:
 **Checked.** Here: the gate (above). --simulate (/home/user/build/sim/cp2/c16a): curl -X POST /api/command -d '{"cmd":"set_value_steps","name":"iso","free":"true"}' -> {"ok":true,"iso_steps":[...],"shutter_angle_steps":[...],...} flat; /api/state ui.iso_free true. Chromium (/home/user/build/sim/cp2/c16-page.js): sendValueSteps({name:'iso', free:'false'}) -> state.snapshot.ui.iso_free false, no error toast, no page errors. smoke-6.txt vs smoke-upstream.txt: every base field present with the same type. Camera: nothing.
 
 **Rule.** A command reply is flat; before changing its shape, grep every client of the command (WebUI, touch UI, KB tools) and name what each reads.
+
+
+---
+
+## C37. core: --check-dual exits 0 only with a sensor on cam0 and on cam1
+
+Apertar-Core `62460c6`. Finding: dual 1. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/main.cpp:113-126@clip-split (merged into lane/dual 7444157): the secondary decides only for itself, after systemd has started it.
+    if (!options.simulateCamera && !options.camera.empty() && options.camera != "cam0") {
+        const auto node = apertar::cameraport::resolve({}, options.camera);
+        if (!apertar::cameraport::secondaryHasSensor({}, options.camera,
+                node.valid && apertar::cameraport::configNamesPort({}, node.port), 20000, 500, &why)) {
+            std::cerr << why << "\n";
+            return 0;
+        }
+    }
+
+**Why it is a problem.** The check looked at cam1's port only. With cam0's sensor unplugged the primary takes cam1's sensor, the secondary's check still passes, it waits for the primary and starts a CameraManager, which writes HBLANK on the sensor the primary is running (design 3.4), before it exits on EBUSY. And systemd only learns there was nothing to do after the process ran. Original Apertar adds a launch option as a hand-written if (arg == "--x") in main with a usage line and a README row (CMD-23, src/main.cpp:52-82@upstream-1.6.0).
+
+**How to spot it.** Ask of every second-instance feature: what does the instance do on a rig that has no second device, and who decides that, the instance after it started or the init system before? grep -n 'return 0' src/main.cpp for exits that hide 'nothing to do' inside a started service.
+
+**Options.**
+
+- A shell script with ls /sys/class/video4linux in ExecCondition: no build, but a second copy of the of_node scan in bash that drifts from CameraPort.hpp.
+- A Core option that reuses CameraPort.hpp (chosen): about 40 lines in the header, 15 in main, one host test.
+- ConditionPathExists= on a sysfs path: zero code, but subdev numbers are not stable and it cannot wait for a late probe.
+
+**Chosen, and why.** The Core option: one scan for the session's camera pick, the subdev lookup, the relay and the unit. It checks both ports, so the cam0-unplugged case is skipped too. Given up: nothing for a stock camera; the option is a no-op unless run.
+
+**After.**
+
+```
+    if (checkDual) {
+        std::string why;
+        const bool dual = apertar::cameraport::dualSensorsPresent({}, options.camera, 20000, 500, &why);
+        std::cerr << why << "\n";
+        return dual ? 0 : 1;
+    }
+```
+
+**Checked.** Gate PASS. tools/camera_port_test.cpp (new; CameraPort.hpp:8 named it but it was missing): two sensors, cam0 only, cam1 only, none, no config.txt line (no wait), a late cam1 within the bound, a lens driver, no device tree, by port and by I2C node. Host binary: exit 1 in 5 ms. Pi: /home/pi/ApertarCore-build/apertar-core --camera cam1 --check-dual; echo $? with two sensors (0), cam1 unplugged (1, after 20 s when config.txt names cam1), cam0 unplugged (1).
+
+**Rule.** A service that may have nothing to do is told so by its unit before it starts (ExecCondition), with the same code the program uses, not by an exit 0 after it started.
+
+
+---
+
+## C38. core: a second Core does not start without its own hardware file
+
+Apertar-Core `5dc6b6b`. Finding: dual 2. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/hardware/GpioInput.cpp:64-72@lane/dual 7444157 (the same list in 11 more readers, CameraController.cpp:3048 and :3094 among them):
+    if (const char *envPath = std::getenv("APERTAR_HARDWARE_CONFIG"); envPath && *envPath)
+        candidates.emplace_back(envPath);
+    candidates.push_back(defaultHardwareConfigPath());   // /home/pi/apertar-hardware.conf
+    candidates.emplace_back("/boot/firmware/apertar-hardware.conf");
+
+**Why it is a problem.** A missing cam1 file made the secondary read the primary's wiring file: buffer=ram gave it a second RAM queue on a 4 GB Pi (design 2, RAM row), and [camera] keys meant for cam0. The fallback list is original Apertar's (HW-9, src/hardware/GpioInput.cpp:60@upstream-1.6.0) and right for one Core; a second Core is new ground. The role gate (App:8517-8566 at the tip) already skips the inputs, tally and trigger on a secondary.
+
+**How to spot it.** For a second instance of a program, list every file it falls back to when its own is missing: grep -rn 'getenv("APERTAR_' src and look for a hard-coded /home/pi path after each.
+
+**Options.**
+
+- Drop /home/pi from all 12 candidate lists in secondary mode: 12 edits in accepted duplicated code (rule 6 of the conventions), easy to miss one.
+- Build the cam1 template into Core and write it on demand (PLT-8): a second copy of config/apertar-hardware-cam1.conf to keep in sync, and a write into /home/pi.
+- Refuse to start without the file, in main, before any reader runs (chosen): 13 lines, one place, and the install step copies the file.
+
+**Chosen, and why.** Refuse in main: the readers never run, so no list needs to change, and a missing install step shows as a failed unit with a clear line instead of a camera running on the wrong settings. Exit 2 is main's existing code for a launch error; the unit (dual 3) sets RestartPreventExitStatus=2 so it does not loop. Given up: a secondary that works with no file at all.
+
+**After.**
+
+```
+    if (apertar::cameraport::isSecondary(options.camera)) {
+        const char *hardwareConfig = std::getenv("APERTAR_HARDWARE_CONFIG");
+        std::error_code error;
+        if (!hardwareConfig || !*hardwareConfig || !std::filesystem::is_regular_file(hardwareConfig, error)) {
+            std::cerr << "ApertarCore camera " << options.camera << ": no hardware file of its own (" ...
+            return 2;
+        }
+    }
+```
+
+**Checked.** Gate PASS. Simulate under /home/user/build/sim/dual/hw-*: missing file and unset variable both exit 2 with the line; with the cam1 template present it starts and its controls line names the file; a primary without the variable starts as before. Pi: move /home/pi/apertar-hardware-cam1.conf away, sudo systemctl start apertar-core-cam1, journalctl -u apertar-core-cam1 -b shows the line, systemctl show apertar-core-cam1 -p NRestarts reads 0.
+
+**Rule.** A second instance of a program never falls back to the first instance's files; a missing file of its own is a launch error.
+
+
+---
+
+## C39. scripts: the cam1 unit starts with the primary, only with two sensors
+
+Apertar-Core `76c3506`. Finding: dual 3. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+config/apertar-core-cam1.service@lane/dual 7444157 (from clip-split bd6dd64):
+    ExecStart=/home/pi/start-apertar-core-ds.sh
+    Restart=on-failure
+    RestartSec=5
+    Environment=APERTAR_CORE_BIN=/home/pi/ApertarCore-ds-build/apertar-core
+    [Install]
+    WantedBy=apertar-core.service
+(enabled with sudo systemctl enable --runtime apertar-core-cam1, HANDOFF.md SHARED-PI ADAPTATIONS)
+
+**Why it is a problem.** The ds paths were the shared-Pi test setup, not a shipping unit: a fresh install has no ds files, so the unit fails at exec and Restart=on-failure retries every 5 s; a --runtime enable is gone at reboot. Original Apertar ships system files flat for the image or a hand install (PLT-6, Core/CMakeLists.txt:190-196@upstream-1.6.0) and the primary runs /home/pi/start-apertar-core.sh (architecture/build.md:94).
+
+**How to spot it.** grep -n 'ExecStart\|Environment=.*BIN\|-ds' config/*.service: a unit that names a test binary or script, or a README that says enable --runtime, is still a bench setup.
+
+**Options.**
+
+- ExecCondition through the start script (forward "$@"): one binary path, but an old installed script would start a full primary-role Core as the condition.
+- ExecCondition on the binary itself (chosen): the binary path is written twice (unit and script default), but an old binary only answers 'unknown option' (exit 2, skipped).
+- ConditionPathExists on sysfs paths: no code, but subdev numbers move and a late probe is missed.
+
+**Chosen, and why.** The binary in ExecCondition, the start script in ExecStart: a stale binary or script cannot turn the condition into a running camera. RestartPreventExitStatus=2 turns dual 2's launch error into one visible failure. Given up: the binary path is named in two places (unit and start-script default), noted in the unit's comment.
+
+**After.**
+
+```
+    [Unit]
+    Description=Apertar Core for the second sensor (cam1)
+    After=apertar-core.service
+    [Service]
+    ExecCondition=/home/pi/ApertarCore-build/apertar-core --camera cam1 --check-dual
+    ExecStart=/home/pi/start-apertar-core.sh
+    RestartPreventExitStatus=2
+    [Install]
+    WantedBy=apertar-core.service
+```
+
+**Checked.** Gate PASS. systemd-analyze verify (systemd 255): only 'Command /home/pi/ApertarCore-build/apertar-core is not executable' and the same for /home/pi/start-apertar-core.sh (missing on this host); with both replaced by /bin/true it prints nothing. Start script with APERTAR_CAMERA=cam1 APERTAR_WEB_PORT=8001: '--socket ... --media /media/RAW --camera cam1 --web-port 8001'; without: today's line. Pi: the README install block once; reboot with two sensors: systemctl status apertar-core apertar-core-cam1 both active, the cam1 journal shows 'dual check: a sensor on cam0 and on cam1'; reboot with cam1's sensor unplugged: systemctl status apertar-core-cam1 shows 'ExecCondition ... status=1' / condition failed, systemctl show apertar-core-cam1 -p NRestarts is 0; reboot with cam0's unplugged: the primary takes cam1's sensor, cam1's unit skipped the same way.
+
+**Rule.** A shipped unit names only the paths a normal install has, and an enable that must survive a reboot is a plain enable, not --runtime.
+
+
+---
+
+## C40. ipc: cam1 counts as configured only with a sensor on cam0 and on cam1
+
+Apertar-Core `f09db0b`. Finding: dual 4. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/ipc/ControlClient.cpp:333-334, 371@lane/dual 7444157 and src/ipc/Cam1State.hpp:27:
+    const bool namesCam1 = options_.configNames && options_.configNames("cam1");
+    const bool namesBoth = namesCam1 && options_.configNames("cam0");
+    ...
+    inputs.configNamesBoth = namesBoth;
+    ...
+    return in.switchOn && (in.configNamesBoth || in.socketAccepted || in.socketIsOurs);
+
+**Why it is a problem.** config.txt says what the firmware should load, not what answered: with a sensor unplugged the line stays, and the relay published a cam1 that can never link. Every consumer (WebUI dualActive, the touch UI's cam1Present, ApertarControlBridge.cpp:1484, record_cameras, time left) keys on that object, so the camera looked dual with one sensor. Original Apertar has no second camera; its rule for optional hardware is that absence leaves the camera as it was (conventions principle 8, CMD-24).
+
+**How to spot it.** Find every 'is it configured' test and ask what it reads: a file the operator edits (config.txt), or the device that answered (sysfs, a socket). grep -n 'configNames\|configured(' src/ipc.
+
+**Options.**
+
+- Keep configured, make each UI treat not_found and offline-with-one-sensor as single: touches the WebUI, the HDMI QML and Core's take paths separately.
+- Configured reads sysfs, the same test as the unit's ExecCondition (chosen): five lines in Core, the UIs follow.
+- Drop the not_found word entirely: a protocol change for nothing; it stays for a sensor lost after a link.
+
+**Chosen, and why.** One test, dualSensorsPresent, answers both 'does cam1's Core run' (the unit) and 'is cam1 configured' (the relay), so they cannot disagree. Given up: the 'CAM1 NOT FOUND' state for a configured-but-unplugged sensor before any link; it now reads as one camera (the WebUI card keeps a note, dual 5).
+
+**After.**
+
+```
+    options.dualSensors = [] { return cameraport::dualSensorsPresent({}, "cam1", 0, 0, nullptr); };
+    ...
+    const bool dualSensors = options_.dualSensors && options_.dualSensors();
+    inputs.dualSensors = dualSensors;
+    ...
+    return in.switchOn && (in.dualSensors || in.socketAccepted || in.socketIsOurs);
+```
+
+**Checked.** Gate PASS (warning count per file as the baseline: RecordingClock.hpp and TakeSlots.hpp, pre-existing). Simulate: switch on, config naming both, no sensors: no cam1 in /api/state; a simulated secondary on /tmp/apertar-core-cam1.sock links and cam1 appears 'ready'. Smoke shapes vs 1.6.0: every base field present with the same type. Pi: switch on, cam1 sensor unplugged, curl -s localhost:8000/api/state | grep -c '"cam1"' is 0; with both sensors cam1 reads ready; journal has no 'cam1 linked' with one sensor.
+
+**Rule.** Decide that a device is there from what answered (sysfs, a socket), not from the config line that asked for it.
+
+
+---
+
+## C41. web: the page shows two cameras only while Core reports cam1
+
+Apertar-Core `9fd6435`. Finding: dual 5. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/web/WebControlPage.cpp:15018-15026@lane/dual 7444157:
+    function dualActive(snapshot) {
+      if (!snapshot) return false;
+      if (dualCam1(snapshot)) return true;
+      if (!(snapshot.ui && snapshot.ui.dual_sensor_enabled === true)) return false;
+      const ports = dualSensorPorts();
+      return !ports || (ports.cam0 !== "none" && ports.cam1 !== "none");
+    }
+
+**Why it is a problem.** The page decided 'two cameras' from config.txt when Core said nothing, so it could disagree with Core and show a second pane for a sensor that is not there. Core is the one owner of camera state; the WebUI renders what /api/state says (WEB rules; one store, one owner, CMD-12).
+
+**How to spot it.** A UI test with a fallback for 'the server did not say': grep the page for checks that read config files or settings next to a state field, and ask whether the field's absence already means something.
+
+**Options.**
+
+- Keep the fallback and add sensor presence to the page: a new state field, more API.
+- Follow Core's cam1 object only (chosen): one line; at most one second of single layout right after the switch goes on, until the relay's next tick.
+- Leave it: dual layouts with one sensor, the bug the owner reported.
+
+**Chosen, and why.** Follow Core: the page and Core ship in one binary, so the pre-object fallback has no Core left to cover. Given up: the dual layout in the second between switching on and Core's first tick.
+
+**After.**
+
+```
+    function dualActive(snapshot) {
+      return !!dualCam1(snapshot);
+    }
+    ...
+      const oneAnswered = !cam1 && switchedOn && configured;
+        : oneAnswered ? "Boot Config names two sensors, but only one answered: one camera."
+```
+
+**Checked.** Gate PASS; node --check on the served script. Playwright (chromium, --simulate, /home/user/build/sim/dual/web-*): switch on + config naming both + no cam1: dual-wide false, cam1Badge hidden, the new note after loadBootConfig, 0 page errors; with a simulated cam1 Core linked on /tmp/apertar-core-cam1.sock: dual-wide true, badge shown. Pi: switch on, cam1's sensor unplugged, open :8000: one picture, no CAM1 badge, the card's note.
+
+**Rule.** When the server owns a state, the page draws from the server's field, not from its own reading of the config that should produce it.
+
+
+---
+
+## C42. hw: the hardware-state note takes a safe writer name
+
+Apertar-Core `7b24c82`. Finding: hardware-inputs commit 15. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/hardware/HardwareConfigStore.cpp:406-414@cinemate-port
+void HardwareConfigStore::writeStateLocked(const std::string &by)
+{
+    state_.writtenAt = timestamp("%Y-%m-%d %H:%M:%S", std::time(nullptr));
+    state_.writtenBy = by;
+    settingsFile::atomicWrite(notes_ / "hardware-state.conf",
+                              "written_revision=" + state_.writtenRevision + "\n" + ...
+                              "written_by=" + state_.writtenBy + "\n");
+
+**Why it is a problem.** by comes straight from the command field (set_controls, set_buffer_mode and the other storage switches: command.string("by").value_or("api")). The note is a key=value file read line by line in the store's constructor, where a later line wins. by="x\nwritten_revision=h0" therefore planted a second written_revision line, and after the next start the store would treat a file it did not write as its own (settledLocked skips the being-written check for that revision). The history names in the same file already used safeName. Original Apertar never writes a raw client string into a key=value file: a UI.conf value is normalised first and refused if it differs (CMD-6, App:9802-9813@upstream-1.6.0).
+
+**How to spot it.** For every file Core writes as key=value lines, grep where each value comes from: grep -n 'atomicWrite' src/hardware/*.cpp, then follow each value back to command.string(...). A client string concatenated between "key=" and "\n" without a filter is the smell. Also: one helper used for one sink (history names) but not its sibling sink (the note).
+
+**Options.**
+
+- Pass by through the existing safeName: one line, same filter as the history names (chosen)
+- Refuse a by= with control characters in App: a new error sentence and a new refusal for a field that is only a label
+- Escape newlines and read them back in the constructor: a new escaping format for a three-line note
+
+**Chosen, and why.** safeName, because the same value already goes through it for the history file name, so the note and the history now say the same writer name. Given up: a by= with capitals or punctuation is shown lowercased with underscores in written_by (GET /api/config); no in-tree client sends such a name (webui, webui_undo, imu, api, core). The safeName comment now says why the note uses it.
+
+**After.**
+
+```
+// The writer's name in a history entry and in the state note: [a-z0-9_] only, so a caller cannot put a path or a line in it.
+std::string safeName(const std::string &by)
+...
+    state_.writtenBy = safeName(by);
+```
+
+**Checked.** Gate (check_core.sh /home/user/wt/lane-core3 lane-core3 both tests): PASS, PASS, PASS (18). The KB test working/tools/controls_store_test.cpp built against the tree and run with APERTAR_SCRIPT_PATHS=ssh: 52 of 52, including written_by=webui. --simulate on port 8181 with APERTAR_HARDWARE_CONFIG, XDG_CONFIG_HOME and HOME in /home/user/build/sim/hw2/c15: set_controls set.gpio_buttons.enabled=false with by="x\nwritten_revision=h0" wrote the file; hardware-state.conf holds one written_revision= line and written_by=x_written_revision_h0. Pi: nothing, no hardware path changes.
+
+**Rule.** Every client string that goes into a line-based file goes through a filter first; use the one the same value already gets elsewhere.
+
+
+---
+
+## C43. hw: the store does not wait 100 ms under its lock
+
+Apertar-Core `a583fa0`. Finding: hardware-inputs commit 16. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/hardware/HardwareConfigStore.cpp:198-209@cinemate-port
+    const int64_t age = now - stamp_.mtimeNs;
+    if (age >= 0 && age < 1000000000)
+        return false;
+    const Stamp first = statFile();
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    return first == statFile();
+
+**Why it is a problem.** settledLocked runs inside saveLocked under mutex_ (the std::lock_guard at the top of saveLocked). A sleep there makes the IMU, the storage switches and both pages queue for 100 ms on every save of a file Core did not write last. It adds little: a saving editor leaves the mtime under 1 s old, which the age check refuses; nano and vim, and the owner's longtakes.py (os.replace, longtakes.py:626-662), write in one go. Only a writer that pauses over a second between two writes gets past both. Original Apertar has no such check on its whole-file save (saveHardwareConfigFile, App:5323-5386@upstream-1.6.0), and its rule is no lock held across slow work it can avoid (CMD-19: std::lock_guard in the smallest scope).
+
+**How to spot it.** grep -n 'sleep_for' and check whether a lock_guard is alive in the same scope; ask who else waits on that mutex. A sleep that makes a 'probably stable' guess under a lock is the smell.
+
+**Options.**
+
+- Delete the second stat and the sleep, keep the age check (chosen, -7/+3)
+- Drop the mutex around the sleep and retake it: a second check-then-act window and a harder lock order to read
+- Keep it: 100 ms per outside-edited save, IMU calibration writes queue behind it
+
+**Chosen, and why.** Delete, as the plan and the audit say. The age check is what catches longtakes.py's os.replace write, so it stays. Given up: a hand writer that writes, waits more than 1 s and writes again into the same file can be edited between its two writes; the file lock (QtIniLock) and the stale-base check remain. <thread> had no other user and went with the sleep.
+
+**After.**
+
+```
+// A file Core did not write must not be edited while an editor may still be saving it (nano rewrites in place):
+// one changed in the last second is left alone. Never sleep here: every writer waits on mutex_.
+bool HardwareConfigStore::settledLocked() const
+{
+    if (!stamp_.exists || revision_ == state_.writtenRevision)
+        return true;
+    ...
+    return !(age >= 0 && age < 1000000000);
+}
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). KB controls_store_test.cpp built against the tree (APERTAR_SCRIPT_PATHS=ssh): 52 of 52, including section 6 'a fresh hand edit is not merged into' and 'settled'. --simulate on port 8182, files in /home/user/build/sim/hw2/c16: the file replaced with Python os.replace (as longtakes.py does), then a set_controls key edit at once -> code being_written; 1.5 s later the same edit -> written, the outside line kept, curl time 12 ms. Pi: nothing.
+
+**Rule.** Never sleep while holding a lock other writers need; refuse and let the caller retry.
+
+
+---
+
+## C44. hw: a button held at start is inverted only with invert_on_start
+
+Apertar-Core `e60218a`. Finding: hardware-inputs commit 10 (variant). Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/hardware/GpioInput.cpp:620-631@cinemate-port
+            if (!button.haveSample) {
+                // Like Cinemate: a button that already reads pressed at start is wired the other way round ...
+                button.inverted = level;
+                if (level)
+                    std::cerr << "GPIO input: GPIO " << button.gpio << " reads pressed at start; taken as inverted (a 1-0-1 button).\n";
+            ...
+            const bool pressed = level != button.inverted;
+(src/hardware/Pcf8574Input.cpp:424-435@cinemate-port: the same with invertedMask)
+
+**Why it is a problem.** A stock camera with a button held, or stuck, when Core starts got that button inverted for the session: it fired on release and a real press did nothing until a restart. Apertar 1.6.0 seeds observed and stable state from the first sample (GpioInput.cpp:693-697, Pcf8574Input.cpp:500-504@upstream-1.6.0), so a held button fires nothing, its release fires nothing, the next press fires; polarity is the operator's active_low (GpioInput.cpp:433-434@upstream-1.6.0, HW-12). The inversion itself is not an accident: Patrik decided it for his 1-0-1 buttons (DA-34 'like Cinemate (gpio_input.py check_initial_state)', DA-39 PCF pins too), so the campaign rule makes it a setting at the 1.6.0 value (C29 is the same move for script paths).
+
+**How to spot it.** For each rule an input applies at start, ask what a stock camera does after the update with a button held at boot. grep -n 'haveSample' src/hardware/*Input.cpp and compare each first-sample block with upstream's: a first sample that changes how later samples are read (inverted, a mask) instead of only seeding state is the smell.
+
+**Options.**
+
+- Delete the inversion (the plan's commit 10): 1.6.0 behaviour, but reverses DA-34 and DA-39
+- Per-pin dN_active_low / pinN_active_low (plan commit 12): new ground, ~40 lines, and not what Patrik asked for (he wants the Cinemate auto rule)
+- Keep the inversion behind a section key invert_on_start, default false, like upstream's reset_on_start and emit_on_start (chosen, ~+40 lines with comments, README and template)
+- An environment switch as in C29: wrong place, this is wiring (HW-10, the hardware file holds wiring) and nothing to protect from the browser
+
+**Chosen, and why.** The section key, as the lead's item text and the audit say. A bool key read with the section's own parseConfigBool in a flat key == chain is the upstream shape (HW-11, R11 step 6; NeoRotary4Input.cpp:419 and GroveAnalogInput.cpp:309@upstream-1.6.0). False adds the NeoRotary rule to the two other inputs: a heldAtStart flag (GPIO, per RuntimeButton) or mask (PCF8574) is set from the first sample and cleared once the debounced state reads released; while set, the button is not fed to ButtonGesture. True runs the old code and line; a scratch run showed it behaves exactly as the parent commit. Given up: true still inverts GPIO encoder pushes too (they are RuntimeButtons, as before); the key is read only in the buttons branch, never in [gpio_encoders]. The 'ignored until released' journal line prints at each reopen, like the inversion line did. No Controls card row: text-only, as poll_ms and chip (DA-40).
+
+**After.**
+
+```
+                if (config_.invertOnStart) {
+                    button.inverted = level;  ... "taken as inverted (a 1-0-1 button)."
+                } else if (level) {
+                    std::cerr << ... "ignored until released. If it is a normally closed button, set invert_on_start=true in [gpio_buttons].\n";
+                }
+                button.heldAtStart = level != button.inverted;
+                button.observedPressed = button.stablePressed = ...heldAtStart;
+            ...
+            button.heldAtStart = button.heldAtStart && button.stablePressed;
+            if (button.heldAtStart)
+                continue;
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). A scratch program (not committed, PLT-12) linked GpioInput.cpp and Pcf8574Input.cpp with an LD_PRELOAD shim that fakes /dev/fakegpio (GPIO v2 chardev, no edge events, so poll mode) and /dev/i2c-1, levels read from a file: held at start 1 s, released 1 s, pressed 1 s, released 1 s, d17/pin0=record_toggle. Key absent: one 'ignored until released' line; only the second press fires record_toggle. invert_on_start=true: 'taken as inverted', record_toggle on each release; the parent commit's sources give the same output with no key. --simulate port 8183: set_controls set.gpio_buttons.invert_on_start=true and set.pcf8574.invert_on_start=true are written; set.gpio_encoders.invert_on_start is refused ('not a key of [gpio_encoders]'); GET /api/config with no file shows both commented lines. KB controls_test.cpp (run with the tree argument): 120 of 121, the same single failure as before this commit (GPIO settings row, chip). Needs the camera: [gpio_buttons] enabled=true d17=record_toggle, hold d17, sudo systemctl restart apertar-core, release after 'GPIO input enabled': nothing records, the journal has the 'ignored until released' line; press: recording starts. Add invert_on_start=true with a normally closed button: journalctl -u apertar-core | grep 'taken as inverted' names it; one press records once. Same with a PCF8574 pin. On the owner's rig before deploying: journalctl -u apertar-core | grep 'taken as inverted'; any line means he adds invert_on_start=true to that section.
+
+**Rule.** A start-time guess that changes how a button reads is a feature: off by default, named by a section key, and logged when it would have applied.
+
+
+---
+
+## C45. hw: the press that wakes the camera from Standby does nothing else
+
+Apertar-Core `74f6bca`. Finding: hardware-inputs commit 11. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:10304-10325@cinemate-port (handleHardwareInputAction, void)
+    if (camera_.state() == CameraState::Standby) {
+        if (!buttonPress)
+            return;
+        ControlCommand wake;
+        wake.name = "wake";
+        dispatchHardwareInputCommand(std::move(wake));
+        return;
+    }
+src/hardware/GpioInput.cpp:565-570@cinemate-port: void emitAction(...) { ... actionCallback_(action); }
+
+**Why it is a problem.** The input classes count gestures (Single, Double, Triple, Hold) in ButtonGesture from the press on. App woke the camera on that press, but emitAction was void, so the input could not know and kept counting: d17_hold=standby slept the camera again 3 s after waking it, d17_double=photo took a photo. HW-5: 'In Standby a press only wakes and is consumed'. Upstream's shape for exactly this: the power button's callback returns bool and on true calls gesture.consume() (StandbyPowerButtonInput.hpp:8, StandbyPowerButtonInput.cpp:66-71, PowerButtonGesture.hpp:31-32@upstream-1.6.0); upstream GPIO buttons fire on press only, so a wake press had no follow-up (GpioInput.cpp:703-708@upstream-1.6.0).
+
+**How to spot it.** Where a callback decides something the caller must act on (here: 'this press was used up'), a void callback is the smell. Grep the gesture or debounce state an input keeps (grep -n 'gesture' src/hardware/*Input.cpp) and ask: when App ignores or swallows an event, does the input learn of it?
+
+**Options.**
+
+- Bool callback + ButtonGesture::consume(), as upstream's power button (chosen, about +32/-12 over 9 files)
+- App remembers 'woke at time T' and ignores actions for N ms: a timer guess, and a Hold 3 s later passes it
+- Inputs read camera state themselves: breaks HW-6 (no app knowledge in src/hardware)
+
+**Chosen, and why.** The upstream power-button shape. std::function<bool(const std::string &)> (a callable that returns bool) is the new PressCallback; rotation and Listen callbacks keep ActionCallback (void). The rotation fallback ActionCallback(actionCallback_) wraps the bool callback in a void one, since the ?: operator needs both sides of one type. consume() zeroes the click count and, while the button is down, marks it as a long press whose Hold already fired. Given up: the second press of a double click after a wake is a new press and fires its Press action (as in 1.6.0); switches still wake the camera and ignore the answer (owner question 7).
+
+**After.**
+
+```
+    void consume()
+    {
+        clicks_ = 0;
+        if (down_) { longPress_ = true; holdFired_ = true; }
+    }
+...
+                case hardware::ButtonGesture::Event::Press: woke = emitAction(button.action); break;
+                ...
+                if (woke)
+                    button.gesture.consume();   // A wake press does nothing else.
+(App) dispatchHardwareInputCommand(std::move(wake));
+        return true;
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). Scratch ButtonGesture program (not committed, PLT-12): press, consume, release at 200 ms -> Single 0; press, consume, held 3.1 s -> Hold 0, nextWakeMs -1; next press -> Press 1; without consume -> Single 1. Scratch driver with an LD_PRELOAD fake of /dev/fakegpio and /dev/i2c-1, callback 'asleep until the first press': parent commit: hold 3.5 s -> wake, standby; double click -> wake, record_toggle, photo (GPIO and PCF8574). This commit: hold -> wake only; double click -> wake, record_toggle. --simulate port 8184: enter_standby, test_input gpio_buttons d17 -> ok reply as before, state ready (woke only); again -> recording. smoke_core.sh + shape_subset.py against smoke-upstream.txt: every base field present with the same type. NeoRotary reviewed by reading (same lines). Needs the camera: d17=record_toggle, d17_hold=standby, d17_double=photo; enter Standby, hold d17 3 s: journalctl -u apertar-core -f shows one wake, no enter_standby; enter Standby, double-click d17: wakes, no new photo (a take from the second press is expected, stop it). Same on a NeoRotary push and a PCF8574 pin.
+
+**Rule.** When an input's event is used up by the app, the callback says so and the input forgets the press.
+
+
+---
+
+## C46. core: the default hardware file template leaves the write-buffer and Clear HDR keys as comments
+
+Apertar-Core `2b8518d`. Finding: hardware-inputs commit 6. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:5054-5057, 5078-5079@cinemate-port (defaultHardwareConfigTemplate)
+[storage]
+buffer=frames
+buffer_ram_fraction=0.6
+buffer_ram_floor_mb=512
+buffer_ram_max_fraction=0.5
+[camera]
+clear_hdr_iso_max_12bit=720
+clear_hdr_iso_max_16bit=1585
+
+**Why it is a problem.** A live key in a template is a setting written into every camera that gets the template as its file. These six are port keys: a stock 1.6.0 camera has no such setting, and a key written into its file stays there even if a later Core changes its default. Upstream templates hold upstream sections and keys only and ship accessories disabled (HW-7, HW-20; App:4291-4404@upstream-1.6.0). The port's own [media] lines in the same template already show the right form: a commented default.
+
+**How to spot it.** Diff the template's live keys against upstream's template: every key that is not in App:4291-4404@upstream-1.6.0 or the 1.6.0 touch UI writer is a port setting. Ask for each: does the reader default to the same value? If yes, the line only pins it.
+
+**Options.**
+
+- Comment the six lines with their values (chosen, -6/+6)
+- Delete them: the operator loses the hint that the keys exist
+- Keep them live: a first-file write pins port settings on stock cameras
+
+**Chosen, and why.** Comments: nothing changes for any camera (CameraController.cpp:2945-2946 max12=720 max16=1585; BufferBudget.hpp:33-35 fraction 0.6, floor 512 MB, max fraction 0.5; buffer unset means frames), the operator still sees the keys, and the owner's longtakes.py edit_storage_keys replaces a commented copy of a key (longtakes.py:647 matches ^[#;]?\s*key=), so his campaign tool works on the new template. Given up: nothing; storage-settings and camera-modes may still move or delete the keys (they need only keep them commented).
+
+**After.**
+
+```
+# buffer=frames
+# buffer_ram_fraction=0.6
+# buffer_ram_floor_mb=512
+# buffer_ram_max_fraction=0.5
+...
+# clear_hdr_iso_max_12bit=720
+# clear_hdr_iso_max_16bit=1585
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). --simulate with no hardware file (/home/user/build/sim/hw2/state-run.sh, port 8186), run with the binary before and after this commit: GET /api/config text has no live buffer= or clear_hdr_iso_max line and holds the six commented lines; the 24 storage/buffer/Clear HDR fields of /api/state are equal in both runs. KB controls_test.cpp section 13 (template): no errors, parses back byte for byte (overall 120 of 121, the same pre-existing GPIO-row failure). Pi: nothing.
+
+**Rule.** A template's live keys become settings on every camera that gets it: a key the original does not have stays a comment.
+
+
+---
+
+## C47. core: the default hardware file template holds the 1.6.0 touch UI's input and network sections
+
+Apertar-Core `1ec624c`. Finding: hardware-inputs commit 7. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/ApertarCoreApp.cpp defaultHardwareConfigTemplate@cinemate-port (no [network]):
+[pcf8574]
+enabled=false
+bus=1
+address=0x20
+...
+[gpio]
+enabled=false
+[gpio_encoders]
+enabled=false
+
+**Why it is a problem.** In 1.6.0 Core only showed its template; the touch UI wrote the real first file at start when it was missing (UI src/DisplayConfigBridge.cpp:41-326, call :587@upstream-1.6.0), with [network], input tuning, NeoRotary and Grove mappings, [gpio_buttons] chip=auto. The port deleted that writer (UI c9d841f), so the lead decided Core writes the first file (owner question 3, DA-3). For a stock camera to get what 1.6.0 gave it, Core's template must hold those sections and values. HW-7: three hand-kept templates; the shown one now carries the UI writer's content.
+
+**How to spot it.** Extract both templates as text and compare key=value per section (a 30-line Python script: the UI's QTextStream << lines unescaped, Core's R"CONFIG( string). Every key the old writer wrote and the new one does not is a fresh-camera difference to explain.
+
+**Options.**
+
+- Copy the 1.6.0 file's sections and values, with the plan's three exceptions (chosen, +58/-3)
+- Copy the file literally, d5/d6 and the [gpio_encoders] shared keys live: 1.6.0's text, but its poll_ms=3/debounce_ms=40 override the buttons' lines (later line wins, GpioInput.cpp:342-355) and the Controls page edits lines that then have no effect; GPIO 5/6 claimed by both examples
+- Restore the UI writer (owner option 3b): about +590 UI lines and the moved-file hazard c9d841f removed
+
+**Chosen, and why.** The plan's text. The examples are commented, not dropped, so the operator still sees the 1.6.0 mappings. Given up, and the lead should know: a fresh camera whose operator enables [gpio_buttons] gets debounce 60 ms and poll 12 ms, where the 1.6.0 file's [gpio_encoders] lines made it 40 ms and 3 ms, and d5/d6 are not mapped until uncommented. With the sections off (as shipped) nothing differs. A scratch run showed the checker would report 0 issues on the literal variant too, so the choice rests on the reader's later-line rule, not on the checker. Core's own comments were kept where both templates explain the same thing; three 1.6.0 comment lines were added (Grove digital BCM numbers, Grove encoder wiring, Grove ADC address).
+
+**After.**
+
+```
+[network]
+hotspot_delay_seconds=60
+...
+[gpio_buttons]
+enabled=false
+# chip=auto is the Pi's 40-pin header; another chip by path, for example /dev/gpiochip13.
+chip=auto
+active_low=true
+pull=up
+poll_ms=12
+debounce_ms=60
+[gpio_encoders]
+# chip, active_low, pull, poll_ms and debounce_ms are shared with [gpio_buttons]: set them there.
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). Scratch program over the template text taken from the source: hwconf::validate 0 issues with empty facts, 0 with buses 0 1 4 10 13 14 known; hwconf::join(parse(t)) == t. Key-by-key comparison against the 1.6.0 UI writer: remaining differences are pin0..7=none, the commented GPIO examples and shared encoder keys, the IMU sections (next commit) and [display] (touch-ui). --simulate port 8186 with no file: GET /api/config text has every section, errors 0, warnings 0; the model's GPIO chip row is value auto. KB controls_test.cpp section 13: all checks ok (with facts buses 0 1 10 13 14 only the expected 'bus 4 does not exist' warning). Pi: none until the file is written (item 8).
+
+**Rule.** When one writer replaces another, compare their output key by key and write down every difference you keep.
+
+
+---
+
+## C48. core: the default hardware file template holds the IMU sections
+
+Apertar-Core `7ae9677`. Finding: hardware-inputs commit 8. Reviewed by the lead (no second worker this round).
+
+**What was there.**
+
+src/ApertarCoreApp.cpp defaultHardwareConfigTemplate@cinemate-port
+[imu]
+enabled=false
+driver=mpu6050
+sync_mode=free_run
+sync_offset_ms=0
+(no [mpu6050], [bmi160], [bmi270], [icm42688p])
+
+**Why it is a problem.** A fresh 1.6.0 camera's file came from the touch UI and had the IMU on, with every device section (UI src/DisplayConfigBridge.cpp:199-298@upstream-1.6.0). Upstream Core's own template had [imu] enabled=false (HW-20 notes the IMU default differs per template), but Core only showed it. Now Core's template is what gets written, so it must hold what the camera got. Owner question 4 was answered by the lead from DA-7/DA-8: on, as 1.6.0's file.
+
+**How to spot it.** Same key-by-key comparison as the previous commit; a section the old writer had and the new one lacks shows as 'section missing'.
+
+**Options.**
+
+- IMU on, the 1.6.0 file's text (chosen, +98/-1)
+- IMU off as upstream Core's template and HW-20: differs from what a 1.6.0 camera got
+
+**Chosen, and why.** On, text cut from the 1.6.0 writer's output by a script, so no value was retyped. Effect with no IMU fitted, as in 1.6.0: each WebUI state build tries a read on bus 1 at 0x68 and shows 'Waiting for MPU-6050'; a .gcsv is written only when Record Gyro Data is on. Given up: nothing new; with no file the IMU reader already defaults to enabled, bus 1, 0x68 (seen in --simulate before and after).
+
+**After.**
+
+```
+[imu]
+# Current options: driver=mpu6050, bmi160, bmi270, icm42688p.
+# Free-running IMUs use sync_offset_ms to bake in a measured Gyroflow sync correction.
+enabled=true
+...
+[mpu6050]
+enabled=true
+bus=1
+address=0x68
+sample_rate_hz=500
+...
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). Scratch hwconf::validate over the template: 0 issues (empty facts; buses 0 1 4 10 13 14); parses back byte for byte. Key-by-key comparison with the 1.6.0 UI writer: only the commented GPIO examples, the shared encoder keys, pin0..7=none and [display] differ. --simulate port 8186 with no file: GET /api/config errors 0, warnings 0; /api/state imu.enabled true, bus 1, address 104 (the same with no file before this commit; the written file is checked in the next commit). Pi: none until the file is written.
+
+**Rule.** Copy a template from the old writer's output by a script, not by hand.
+
+
+---
+
+## C49. core: Core writes the default hardware file when no copy exists
+
+Apertar-Core `5622a68`. Finding: hardware-inputs commit 9. Reviewed by the lead (no second worker this round).
+
+**What was there.** Nobody wrote a first file in the port: UI commit c9d841f deleted ensureDefaultHardwareConfigFile (UI src/DisplayConfigBridge.cpp:41-326, call :587@upstream-1.6.0) and the copy in Ina219Bridge.cpp:69-342. Core only showed its template (src/ApertarCoreApp.cpp buildHardwareConfigFileJson@cinemate-port: text = defaultHardwareConfigTemplate() when no file and no /boot copy).
+
+**Why it is a problem.** A fresh port camera had no hardware file: every reader ran on compiled defaults, the touch UI logged 'INA219 config: using defaults in /home/pi/apertar-hardware.conf' (UI src/Ina219Bridge.cpp:263-267), and the Config page said 'Not saved yet'. A stock 1.6.0 camera had the UI's file after its first start. Decision DA-3: Core owns ~/apertar-hardware.conf; the lead's answer to owner question 3: Core writes the first file. Upstream precedent for Core writing its own file at start, in --simulate too: camera_settings.conf (CameraController.cpp:7640-7646@upstream-1.6.0). HW-9: write only the editable path.
+
+**How to spot it.** When a writer is deleted, ask what a fresh install now starts with: run Core with an empty HOME and APERTAR_HARDWARE_CONFIG in a scratch folder and look for the file. For any new start-up write, list the cases where it must not write (file moved away on purpose, /boot copy, unwritable folder, second instance) and run each.
+
+**Options.**
+
+- Core writes through the store at start, gated on no file at any candidate path and no record of one (chosen, +24/-1 and a README line)
+- Restore the UI writers (owner option 3b): ~590 UI lines back and the moved-file hazard c9d841f removed
+- Write whenever the editable path is missing: replaces a file the operator moved away and hides a /boot copy from the readers
+
+**Chosen, and why.** The gated write in App start(), before the first refreshBufferRequest and before any reader. The 'no record' test reads the store's notes (hardware-last-written.conf, hardware-history/adopted-*.conf) through HardwareConfigStore::defaultNotesDirectory(), so XDG_CONFIG_HOME picks the notes of this instance (DA-84). A path is any of hardwareConfigCandidatePaths(), so a /boot copy counts, and a second instance whose own file is missing still falls back to the primary's file as the dual-sensor design expects (it is not given the template). replace() with the absent revision writes via the store (lock, .tmp + rename, history, last-written, state note by=core). adopted = !wroteDefault && store.adopt(), so the pinned 'before Controls' version stays a file the operator had. Given up: when the folder cannot be written the log line carries the store's lock sentence ('Another program is writing the file; try again.'), which names the wrong cause; the start goes on. Also: with the file written, the template's live NeoRotary and Grove mappings show as Controls rows (smoke model rows 0 -> 4), as the plan's risk note says.
+
+**After.**
+
+```
+    bool wroteDefault = false;
+    {
+        ...
+        bool known = std::filesystem::exists(notes / "hardware-last-written.conf", error);
+        for (const auto &path : hardwareConfigCandidatePaths())
+            known = known || std::filesystem::is_regular_file(path, error);
+        ... adopted-*.conf ...
+        if (!known) {
+            const hardware::StoreResult result =
+                store.replace(std::string(hwconf::kAbsentRevision), defaultHardwareConfigTemplate(), "core");
+```
+
+**Checked.** Gate: PASS, PASS, PASS (18). --simulate on port 8188 with /home/user/build/sim/hw2/c9-run.sh, APERTAR_HARDWARE_CONFIG, XDG_CONFIG_HOME and HOME in a fresh folder per case. A, nothing anywhere: 'ApertarCore controls: wrote the default ~/hw.conf'; the file equals the template, mode 644; hardware-last-written.conf equals it; no hardware-history (no adopted-*.conf); state note written_by=core; GET /api/config exists:true, 0 errors, 0 warnings, replaced false; /api/state imu enabled, bus 1, address 104. B, file moved away, same notes, restart: no write; 'the file was replaced. The file is missing or empty. The version last saved at 09:57 can be restored'. C, only hardware-history/adopted-h....conf: no write. D, existing file: byte-identical, adopted as before. E, the file's folder cannot be created (its parent is a regular file): one 'could not write the default' line, Core starts and answers. F, only /boot/firmware/apertar-hardware.conf (unshare -m, tmpfs on /boot): no write. /home/pi stayed empty throughout. smoke_core.sh + shape_subset.py: every base field present with the same type. Needs the camera: back up (mv ~/apertar-hardware.conf ~/hw.keep; mv ~/.config/apertar-core ~/core.keep), sudo systemctl stop apertar-ui; sudo systemctl restart apertar-core; sleep 5; ls -l ~/apertar-hardware.conf ~/.config/apertar-core/hardware-last-written.conf; journalctl -u apertar-core -b | grep 'wrote the default'; sudo systemctl start apertar-ui; journalctl -u apertar-ui -b | grep 'INA219 config' should show 'INA219 config: /home/pi/apertar-hardware.conf (enabled=true, bus=4, address=0x40)'. Put both back and restart both units.
+
+**Rule.** A start-up write that creates an operator file runs only when no copy exists anywhere and no record says one existed.
 
