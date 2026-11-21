@@ -188,7 +188,8 @@ the **encoder** (lossless, lossy, ProRes and H.264 move the load from the drive 
 
 **Which wall a mode reaches first.** The storage walls are drive MB/s / frame size. The CPU walls are measured. The
 lowest one is the mode's limit. It moves: the drive's wall drops as it warms and fills (blue -> red), the CPU walls
-move with the levers, and the T7's wall (green) sits low for every 4K mode except lossy 5:1.
+move with the levers, and the T7's wall (green) sits low for every 4K mode except lossy 5:1. On the right, per mode: the limit, and how long a take records
+clean at the recipe's fps on each storage (from 2c-0, 2c and 5a; measured where it says so).
 
 ![Where each mode hits a wall](figures/fig4-walls.png)
 

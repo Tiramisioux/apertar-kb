@@ -209,6 +209,27 @@ WALLS = [('4K HDR16 unc', '4kHDR16:cdng:unc', 29, 'back end'),
          ('2K SDR12 unc', '2kSDR12:cdng:unc', 99, '')]
 
 
+# how long a take records clean (from the recipes, pre-analysis 5a): NVMe | T7
+REC_TIME = {
+    '4K HDR16 unc': 'NVMe 27: ~10-12 min (measured); 24: 15 min+ (derived)  |  T7: 6 fps',
+    '4K HDR16 unc + Log': 'NVMe 24-25: 5 min measured, 30 min uncertain  |  T7: ~8 fps',
+    '4K HDR16 lossless': 'NVMe 14: 30 min probable  |  T7 9: 30 min probable',
+    '4K HDR12 unc': 'NVMe 25-30: dropped within 2-93 s (measured)  |  T7: ~8 fps',
+    '4K SDR12 unc': 'NVMe 37: 15 min passed, 38: 13 min (measured)  |  T7: ~8 fps',
+    '4K SDR12 lossless': 'NVMe 40: 30 min probable  |  T7 18: 30 min probable',
+    '4K SDR12 lossy 3:1': 'NVMe 37: 30 min probable  |  T7 28: 30 min probable',
+    '4K SDR12 lossy 5:1': 'NVMe 41: 30 min probable  |  T7 41: 30 min probable',
+    '4K SDR12 MLV': 'NVMe 25: 30 min uncertain  |  T7: ~8 fps',
+    '4K SDR10 unc': 'NVMe 43-45: ~10 min (derived)  |  T7: ~10 fps',
+    '2880 crop SDR12 unc': 'NVMe 50: ~10 min (derived)  |  T7: ~11 fps',
+    '4K ProRes HQ': 'NVMe and T7 25: 30 min probable',
+    '4K ProRes 422': 'NVMe and T7 40: 30 min probable',
+    'H.264 2560x1440': 'NVMe and T7 45: 30 min probable',
+    '2K HDR16 unc': 'NVMe 30: 30 min probable  |  T7 lossless 27: 30 min passed',
+    '2K SDR12 unc': 'NVMe 60: 30 min probable  |  T7 32 (split): 30 min passed',
+}
+
+
 def fig_walls(probes, out):
     by = {}
     for p in probes:
@@ -221,7 +242,7 @@ def fig_walls(probes, out):
         bpf = st.median(b for b, _ in by[spec]) / 1e6
         top = st.median(t for _, t in by[spec])
         rows.append((lab, bpf, top, wall, what))
-    fig, ax = plt.subplots(figsize=(13, 0.48 * len(rows) + 1.8))
+    fig, ax = plt.subplots(figsize=(17, 0.6 * len(rows) + 1.8))
     for i, (lab, bpf, top, wall, what) in enumerate(reversed(rows)):
         cands = {'sensor': top, 'NVMe warm': NVME_WARM / bpf, 'CPU: ' + (what or 'n/a'): wall}
         lim_n = min(cands, key=cands.get)
@@ -229,7 +250,8 @@ def fig_walls(probes, out):
         lo = min(T7 / bpf, lim)
         ax.plot([0, min(lim, 62)], [i, i], color='#ddd', lw=6, solid_capstyle='butt', zorder=1)
         ax.plot([lim], [i], 'o', color='black', ms=9, zorder=5)
-        ax.text(64, i, '%.0f fps: %s' % (lim, lim_n.replace('CPU: ', '')), va='center', fontsize=8.4, weight='bold')
+        ax.text(64, i + 0.06, '%.0f fps: %s' % (lim, lim_n.replace('CPU: ', '')), va='bottom', fontsize=8.4, weight='bold')
+        ax.text(64, i - 0.06, 'records: ' + REC_TIME.get(lab, '-'), va='top', fontsize=7.6, color='#333')
         ax.plot([min(T7 / bpf, 62)], [i], 's', color='#17a589', ms=7, zorder=4)
         ax.plot([min(NVME_COLD / bpf, 62)], [i], '|', color='#2471a3', ms=14, mew=2, zorder=3)
         ax.plot([min(NVME_WARM / bpf, 62)], [i], 'D', color='#2471a3', ms=7, zorder=4)
@@ -242,12 +264,12 @@ def fig_walls(probes, out):
             ax.text(min(T7 / bpf, 62), i + 0.33, 'T7 %.0f' % (T7 / bpf), ha='center', fontsize=7, color='#17a589')
     ax.axvline(62.5, color='#999', lw=0.8)
     ax.text(62.3, len(rows) - 0.45, 'beyond 62: off scale', fontsize=7, color='#777', ha='right')
-    ax.set_xlim(0, 82)
+    ax.set_xlim(0, 118)
     ax.set_xticks(range(0, 61, 10))
     ax.set_ylim(-0.8, len(rows) - 0.2)
     ax.set_yticks([])
     ax.set_xlabel('frames per second')
-    ax.set_title('Where each mode hits a wall: storage walls = drive MB/s / frame size; CPU walls measured', fontsize=12)
+    ax.set_title('Where each mode hits a wall, and how long it records: storage walls = drive MB/s / frame size; CPU walls measured', fontsize=12)
     from matplotlib.lines import Line2D
     h = [Line2D([], [], marker='*', color='#7f8c8d', ls='', ms=10, label='sensor top'),
          Line2D([], [], marker='|', color='#2471a3', ls='', ms=12, mew=2, label='NVMe cold (%d MB/s)' % NVME_COLD),
