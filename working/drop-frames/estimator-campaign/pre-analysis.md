@@ -69,6 +69,45 @@ lossless at 25) and storage (SDR12 uncompressed at the top). Effects are mean(on
 | WebUI connected | +9 to +39 | ~0 | Small; the second back-end run reads higher. |
 | TDN x aids | -39 to -48 | -0.06 | The largest interaction; it partly offsets TDN. |
 
+## 2a. The lever matrix (mode group x lever x storage)
+
+Each cell: **NVMe | T7 SSD**.
+
+| Mark | Meaning |
+| --- | --- |
+| ⛔ decisive | turns clean takes into dropped ones at any fps tried |
+| ▲ costs | a few frames a minute, only within ~1 fps of the edge |
+| ✚ helps | slightly fewer lost frames |
+| ○ none | no measurable effect |
+| — | the mode does not run there |
+
+NVMe cells are measured (lever design and validation); T7 cells are derived (no lever tests on the SSD) unless marked.
+
+| Mode group (what limits it) | Modes | TDN | Phase lock | Audio (WAV) | WebUI | Aids (peaking + zebra) | Log | Split 5000 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **4K, back end** (ISP / CPU near its edge) | HDR16 uncompressed 25-28, HDR12 all formats, HDR16 + Log | ⛔ \| ⛔ | ▲ \| ○ | ▲ \| ○ | ▲ \| ○ | ✚ \| ○ | ⛔ −2 to −3 fps \| ○ | ○ in 15 min; ⛔ past ~30-50 min \| — |
+| **4K, encoder** (compression CPU) | HDR16 / SDR12 / SDR10 lossless, lossy 3:1 and 5:1, crop lossless, ProRes all, H.264 1440 | ⛔ \| ⛔ | ○ \| ○ | ○ \| ○ | ○ \| ○ | ○ \| ○ | ⛔ in HDR16 lossless (hundreds/min) \| ○ | ○ (cDNG/lossy, short) \| ⛔ for long takes |
+| **4K, drive** (write rate) | SDR12 / SDR10 uncompressed, crop uncompressed, MLV | ⛔ \| ⛔ | ○ \| ○ | ○ \| ○ | ○ \| ○ | ○ \| ○ | n/a (SDR) | ○ in 15 min \| — (4K uncompressed doesn't fit the T7) |
+| **2K, sensor top** (NVMe) / **drive** (T7) | every 2K mode | ○ (5 of 5 clean at 60 with TDN on) \| ○ probable | ○ \| ○ | ○ \| ○ | ○ \| ○ | ○ \| ○ | ○ (HDR16 Log at 30 clean) \| ○ | ○ \| **⛔ measured**: flat 30 min failed 2 of 3, split passed 4 of 4 |
+| **One-file formats** | MLV, ProRes, H.264 | as their group above | | | | | n/a | n/a (no folder) |
+
+**Reading the matrix:**
+- **TDN is the only lever that decides clean or not, and only when the sensor runs 4K.** On the T7 4K runs at 6-18 fps,
+  below anything tested with TDN on (23 fps lowest). The ⛔ there is probable: TDN's cost is in the back end, whatever
+  the drive.
+- **Phase lock, audio and WebUI only count at a back-end edge**, which only the NVMe reaches in 4K. On the T7 the drive
+  limits first, so the back end is never near its edge (derived).
+- **Aids:** slightly fewer gaps with them on at the back-end edge (measured, why unconfirmed); no effect elsewhere.
+- **Split:** the T7 needs it already at 2K for 30 min (measured). On the NVMe it stays on for every cDNG take, and it
+  becomes decisive past the flat-folder time t* = 1.9e6 / fps² s.
+
+**Best setup by storage:**
+
+| Storage | Always | At the edge | Leave as you like |
+| --- | --- | --- | --- |
+| NVMe (MP600 Mini) | TDN off in 4K; split 5000 for cDNG / lossy | 4K HDR16 / HDR12 / Log: lock off, record audio only if needed, no WebUI client; aids on | everything at 2K; aids, audio, WebUI in encoder- or drive-limited modes |
+| T7 SSD (USB) | split 5000; TDN off in 4K | — (the drive limits before the back end) | every lever at 2K |
+
 ## 2b. When each switch matters
 
 Read from the lever design's 48 takes, split by what limits the mode (P2). The anchors:
