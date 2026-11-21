@@ -1,0 +1,30 @@
+{
+ "id": "D1",
+ "status": "done",
+ "sha": "7588d82",
+ "subject": "camera: known-limits table",
+ "summary": "New header src/camera/SustainedFps.hpp holds the fps limits for 30-minute takes (18 cells for the NVMe card and the USB SSD on a Pi 5 or CM5, two pixel-rate rows) with label, wall, short-take number and source, plus the pure rules: step rounding, nearest-larger lookup, lever shifts (TDN, phase lock, aids, split) and the flat-folder formula. tools/sustained_fps_test.cpp pins every number. Nothing calls it yet; D2 does.",
+ "reason": "",
+ "gate": [
+  "PASS build lc (0 warnings; log /home/user/build/lane-dr-core-lc.build.log)",
+  "PASS build nolc (0 warnings; log /home/user/build/lane-dr-core-nolc.build.log)",
+  "PASS host tests (22)"
+ ],
+ "log_was": "Nothing in Core knew what the recording path holds for a long take: grep -rli sustained src found no file. The only ceilings were the sensor's (probe, table, FpsCeiling.hpp) and the lossless cap. The numbers lived in the owner's test notes (estimator-campaign pre-analysis and findings).",
+ "log_why": "A screen or a rule that needs a limit has nothing to ask, so each would copy numbers from a note and drift from it. Original Apertar keeps pure logic in one small header named after the concept, std only, host-tested (CAM-4, StillBracketing.hpp:8-19@upstream-1.6.0); this tree does the same for FpsCeiling.hpp and ModeLadder.hpp.",
+ "log_spot": "Ask where a number that a user will see comes from. If the answer is a KB page or a comment, it needs a row in a table with a label and a source, and a test that pins it.",
+ "log_options": [
+  "One header with a constexpr table and pure functions, test pins the rows (chosen)",
+  "Numbers inside CameraController.cpp next to the sanitiser: no new file, but not host-testable without libcamera",
+  "A data file Core reads at start: the operator could edit limits, but a typo changes what the camera records and the original developer has no such file"
+ ],
+ "log_chosen": "Option 1, the new file the plan names. Data and rules sit together so an update to the analysis edits rows only. The header stays std only: no MediaProfile and no libcamera types, the caller maps its own enums onto Kind, Board and Mode. Choices made while writing it: (1) a Cell carries width and height, not only the long side, so the nearest-larger rule can compare pixels and 2880x2160 has its own cell; (2) the USB SSD pixel rate (149 Mpx/s) is mine, derived from the same 4K 18 fps and 2880x2160 24 fps cells as the NVMe one, the page gives only the NVMe 330; (3) fpsShort is 27 for NVMe 4K Clear HDR 16-bit only: the page also lists 37 and 38 fps for 4K SDR 12-bit, but those takes were uncompressed and the cell is lossless, so I left that cell's short number at 0 rather than print a number for the wrong format; (4) the lever info lines are not in this header: W1 already put them in the WebUI as static text, so a second copy would drift. Given up: the info strings as one source (see kb_changes).",
+ "log_after": "inline constexpr Cell kCells[] = {\n  { Kind::Nvme, Board::Pi5, 3840, 2160, true, 16, false, \"none\", 20, 27, Label::Unconfirmed, Group::BackEnd, \"...\" }, ...\ninline Limit limitFor(const Context &context, const Mode &mode);   // own cell, nearest larger, pixel rate, none\ninline Cap capFor(const Context &context, const Mode &mode, double sensorCeiling);   // levers, then stepDown\ninline double stepDown(double fps);   // 25, 30, 33, 50, 60, 70, 80 ...",
+ "log_checked": "Run here: check_core.sh both builds and 22 host tests pass; sustained_fps_test pins the 18 cells and caps, the steps, the lookup order, the levers and the flat-folder formula (32 fps for 30 minutes). Nothing calls the header, so there is nothing to run on the camera. The numbers themselves need the three hot 30-minute takes of 4K Clear HDR 16-bit (24, 22, 20 fps) before the 20 is more than a placeholder.",
+ "log_rule": "A number the camera shows to the operator lives in one table with its label and source, in a pure header, and a host test pins it so a change is deliberate.",
+ "kb_changes": [
+  "design/auto-ladder.md: Lever info lines section says Core holds the strings in SustainedFps.hpp; W1 put them in the page as static text, so the strings are not in the header. Decide in W2 whether Core sends them (info_tdn ... info_webui in get_mode_ladder) or the page keeps them.",
+  "design/auto-ladder.md Table A: the short-take numbers 37 and 38 fps (4K SDR 12-bit) are for uncompressed takes; the cell is lossless, so its fpsShort is 0.",
+  "KB pages that restate numbers (estimator-campaign/pre-analysis.md section 1, drop-frames/README.md) can link to src/camera/SustainedFps.hpp."
+ ]
+}

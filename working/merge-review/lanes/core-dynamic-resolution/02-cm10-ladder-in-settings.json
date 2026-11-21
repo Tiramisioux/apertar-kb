@@ -1,0 +1,31 @@
+{
+ "id": "CM10",
+ "status": "done",
+ "sha": "c74016d",
+ "subject": "camera: camera_settings.conf holds the mode ladder",
+ "summary": "The mode ladder is now four keys (mode_ladder_enabled, _ramp_ready, _resolutions, _aspects) in camera_settings.conf, written by the debounced persister and carried across record formats like tuning_file. modeLadder_ stays the parsed form and the block on manual mode changes still reads it. An old mode_ladder.conf is read once while none of the keys exists, taken over, and never written or deleted.",
+ "reason": "",
+ "gate": [
+  "PASS build lc (1 warnings; log /home/user/build/lane-dr-core-lc.build.log)",
+  "PASS build nolc (4 warnings; log /home/user/build/lane-dr-core-nolc.build.log)",
+  "PASS host tests (21)"
+ ],
+ "log_was": "src/camera/CameraController.cpp:404-430@cinemate-port: modeLadderPath() copied persistedSettingsPath() with another file name; saveModeLadderLocked() called settingsFile::atomicWrite(modeLadderPath(), ladder::fileText(modeLadder_)) under mutex_; saveModeLadderAspectsLocked() read the file back and replaced one line (withAspectsLine) so a filter click never erased a resolutions line it could not read; the constructor read the file with ifstream. fileText's header line carried 'T34'.",
+ "log_why": "Original Apertar keeps camera-wide settings in camera_settings.conf: one field in CaptureSettings, one loader key, one writer line, copied across format profiles, written only by Core's debounced persister (tuning_file, CameraController.cpp:7939-7955 and :742-889@upstream-1.6.0; conventions CAM-25, CAM-29, CAM-40). A second file has its own writer, its own failure path and its own read-back check. The take-over of an old value follows the UI's presets folder and DefaultTuningSelection.hpp:74@upstream-1.6.0: the loader reads the retired form while the new place is empty.",
+ "log_spot": "grep -n 'atomicWrite\\|Path()' src/camera/CameraController.cpp and ask: is there a second settings file beside camera_settings.conf? A function that copies persistedSettingsPath() with another name is the smell.",
+ "log_options": [
+  "Keep mode_ladder.conf and only tidy it: no change for the owner, but a second persistence path stays for the original developer to learn",
+  "Three keys as the plan says, without the aspect filter: loses the filter, which the port added after the plan",
+  "Four keys in CaptureSettings, loaded and written in every block like tuning_file: one shape, the filter rides along (chosen)",
+  "Write the ladder keys only in the active block: shorter file, but a profile block then misses the keys the format carry expects"
+ ],
+ "log_chosen": "Four keys in every block, the tuning_file shape. The plan named three keys; the aspect filter (mode_ladder.conf had an aspects= line by the time of this commit) needs a fourth, so I added mode_ladder_aspects and said so in the commit. modeLadder_ stays the parsed form so ladderActiveForLocked, which holds the DB-45 block, is untouched; it is set only in the constructor, setModeLadder and the start() rung step. A preset keeps the camera's ladder (applyCapturePreset copies the four fields from settings_), because App keeps old settings snapshots for timelapse and preset rollbacks and a stale snapshot would otherwise bring an old ladder back. Given up: a ladder edit is now debounced about 25 ms by the persister instead of written synchronously; the 'Could not write mode_ladder.conf' warning is gone (the WebUI still looks for it in showLadderWriteWarning, which never fires now; W3 deletes it). The resolutions text is kept as the file had it when it cannot be parsed, so an unreadable line is never erased by a later save.",
+ "log_after": "output << prefix << \"mode_ladder_enabled=\" << s.modeLadderEnabled << '\\n';   // + _ramp_ready, _resolutions, _aspects\n...\nelse if (key == \"mode_ladder_resolutions\")\n    settings.modeLadderResolutions = value;\n...\nmodeLadder_ = ladder::fromText(settings_.modeLadderEnabled, settings_.modeLadderRampReady,\n                               settings_.modeLadderResolutions, settings_.modeLadderAspects);\n// loader: if (!modeLadderKeys) takeOverModeLadderFile(current, formats, still);",
+ "log_checked": "Run here: check_core.sh both builds and 21 host tests pass; the only warnings in CameraController.cpp are the three old nolc ones. In --simulate with fresh HOME folders under /home/user/build/sim/drcore/: an old mode_ladder.conf is taken over at the first start (also when camera_settings.conf did not exist); the first persist writes the four keys with the same resolutions text; a restart without the old file shows the same ladder; set_mode_ladder with resolutions, enabled and aspects persists across a restart; a record format switch cdng, h264, cdng keeps it; set_mode_ladder enabled=false works after enter_standby; set_resolution is still refused while the ladder is on; smoke shapes match 1.6.0. Needs the camera: get_mode_ladder before and after the update on the owner's rig, diffed, and one blocked set_resolution with the ladder on.",
+ "log_rule": "A camera-wide setting is one more key in camera_settings.conf, carried across the format profiles; an old file is read once while the new place is empty and then left alone.",
+ "kb_changes": [
+  "fix-list / design camera-modes commit 10 text: four keys, not three (mode_ladder_aspects was added with the aspect filter).",
+  "architecture docs that name mode_ladder.conf as Core's own file (grep mode_ladder.conf in the KB): it is read only as a take-over source now.",
+  "Dynamic resolution D3 must read the four mode_ladder_* keys as retired keys (the owner's file may already have them)."
+ ]
+}

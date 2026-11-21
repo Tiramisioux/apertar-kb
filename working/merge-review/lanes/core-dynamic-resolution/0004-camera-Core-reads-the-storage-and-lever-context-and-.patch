@@ -1,0 +1,526 @@
+From 0817904444ec6953f8ac274dbe804a9adf187d90 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 22:22:05 +0000
+Subject: [PATCH 4/5] camera: Core reads the storage and lever context and
+ publishes the known limit
+
+Why: The known-limits table (SustainedFps.hpp) has no input yet: the camera
+does not know which storage the take goes to, how full it is, or which
+aids and audio are on, and no screen can show what the table says. Core
+already keeps these facts in different places (the media profile and the
+media snapshot in the application, UI.conf, the camera's own settings).
+Original Apertar publishes camera-derived values as flat scalar fields
+that the camera fills when the state is read and when it sends a settings
+event: a runtime field of CaptureSettings with a "Runtime" comment, set in
+settings() and emitSettingsEventLocked (exposureCompensationAvailable,
+Types.hpp:132 and CameraController.cpp:8570 and :8779@upstream-1.6.0;
+conventions CAM-18).
+
+What: ApertarCoreApp::refreshLadderContext builds a sustained::Context
+(storage type from the media class, filesystem, fill, aids from UI.conf,
+audio, clip split) and hands it to CameraController::setLadderContext,
+which stores it and sends a settings event when a fact changes or the
+card crosses 94 percent. It runs on a media change, when the card crosses
+94 percent in the media watcher's poll, after a UI switch, after a preset
+and after set_frames_per_folder. The camera adds TDN, phase lock, Log and
+the board (a Pi 5 or CM5 is the measured one; a simulated camera stands
+for it) and fills five new state fields in settings() and in each settings
+event: limit_fps (what the running mode holds for a 30-minute take, a
+step, 0 = none known), limit_short_fps, limit_basis (measured, derived,
+probable, unconfirmed or sensor), limit_by (back end, encoder, drive,
+sensor or TDN) and limit_why (one sentence). H.264, ProRes and stills have
+no limits. whyText in the header builds the sentence and is pinned by the
+host test. probedModeLocked is the probe lookup that fillRungExtrasLocked
+had inline, moved out so the limit can read a mode's binning too. Nothing
+changes behaviour: fps_max, the ladder and every old field are as before.
+
+Tested: check_core.sh both builds and the host tests pass (the sentence
+cases are new in sustained_fps_test). In --simulate: get_state and the
+settings event carry the five fields, limit_why reads like the page's
+examples, set_preview_tdn false changes limit_fps, and the smoke shapes
+still match 1.6.0's. Needs the camera, on the owner's rig with the NVMe
+card: get_state at 4K Clear HDR 16-bit shows limit_fps 20 and limit_basis
+unconfirmed. Pull the card and mount the T7: the fields change and the
+camera does not (fps, mode and fps_max stay).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ include/apertar/core/Types.hpp  |  5 ++
+ src/ApertarCoreApp.cpp          | 52 ++++++++++++++++++
+ src/ApertarCoreApp.hpp          |  3 ++
+ src/camera/CameraController.cpp | 93 +++++++++++++++++++++++++++++----
+ src/camera/CameraController.hpp |  8 +++
+ src/camera/SustainedFps.hpp     | 51 ++++++++++++++++++
+ tools/sustained_fps_test.cpp    | 45 ++++++++++++++++
+ 7 files changed, 248 insertions(+), 9 deletions(-)
+
+diff --git a/include/apertar/core/Types.hpp b/include/apertar/core/Types.hpp
+index 1366168..78a31c6 100644
+--- a/include/apertar/core/Types.hpp
++++ b/include/apertar/core/Types.hpp
+@@ -189,6 +189,11 @@ struct CaptureSettings {
+     bool ladderOverride = false;   // Runtime: an explicit Clear HDR choice holds the mode; the ladder waits for the next fps/mode change.
+     uint32_t ladderCount = 0;      // Runtime (T34): resolutions in the ladder.
+     std::vector<double> ladderTops; // Runtime (T34): each resolution's top FPS, in order (for the FPS pill labels).
++    double limitFps = 0.0;         // Runtime: the known limit of the current mode for 30-minute takes at the storage and levers in use, a step; 0 = none known.
++    double limitShortFps = 0.0;    // Runtime: what that mode holds for takes up to about 8 minutes; 0 = none known.
++    std::string limitBasis;        // Runtime: measured, derived, probable, unconfirmed, or sensor (no measurement).
++    std::string limitBy;           // Runtime: the wall that sets it: back end, encoder, drive, sensor or TDN.
++    std::string limitWhy;          // Runtime: one sentence for the limit line under the FPS picker.
+     std::string ladderText;        // Runtime (T34): the running line, e.g. "Resolution 1 · 3840×2160 · ClearHDR16 · ≤25 · Uncompressed".
+     RecordingFormat recordingFormat = RecordingFormat::Cdng;
+     CdngCompression cdngCompression = CdngCompression::Uncompressed;
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 04286c8..531ac0a 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -328,6 +328,11 @@ std::string settingsBody(const CaptureSettings &settings)
+         << ",\"ladder_count\":" << settings.ladderCount
+         << ",\"ladder_text\":\"" << escapeJson(settings.ladderText) << "\""
+         << ",\"ladder_tops\":" << jsonNumberArray(settings.ladderTops)
++        << ",\"limit_fps\":" << settings.limitFps
++        << ",\"limit_short_fps\":" << settings.limitShortFps
++        << ",\"limit_basis\":\"" << escapeJson(settings.limitBasis) << "\""
++        << ",\"limit_by\":\"" << escapeJson(settings.limitBy) << "\""
++        << ",\"limit_why\":\"" << escapeJson(settings.limitWhy) << "\""
+         << ",\"iso_auto_after_clear_hdr\":" << (settings.isoAutoAfterClearHdr ? "true" : "false")
+         << ",\"shutter_us\":" << settings.shutterUs
+         << ",\"shutter_auto\":" << (settings.shutterAuto ? "true" : "false")
+@@ -10148,6 +10153,11 @@ std::string ApertarCoreApp::buildWebStateJson() const
+         << ",\"ladder_count\":" << settings.ladderCount
+         << ",\"ladder_text\":\"" << escapeJson(settings.ladderText) << "\""
+         << ",\"ladder_tops\":" << jsonNumberArray(settings.ladderTops)
++        << ",\"limit_fps\":" << jsonNumber(settings.limitFps, 3)
++        << ",\"limit_short_fps\":" << jsonNumber(settings.limitShortFps, 3)
++        << ",\"limit_basis\":\"" << escapeJson(settings.limitBasis) << "\""
++        << ",\"limit_by\":\"" << escapeJson(settings.limitBy) << "\""
++        << ",\"limit_why\":\"" << escapeJson(settings.limitWhy) << "\""
+         << ",\"iso_auto_after_clear_hdr\":" << (settings.isoAutoAfterClearHdr ? "true" : "false")
+         << ",\"shutter_us\":" << settings.shutterUs
+         << ",\"shutter_auto\":" << (settings.shutterAuto ? "true" : "false")
+@@ -11606,6 +11616,9 @@ void ApertarCoreApp::runMediaWatcher()
+             mediaSnapshot_ = current;
+             mediaSnapshotValid_ = true;
+         }
++        if ((current.mounted() && current.totalBytes > 0 &&
++             1.0 - double(current.freeBytes) / double(current.totalBytes) > 0.94) != ladderFillHigh_.load(std::memory_order_relaxed))
++            refreshLadderContext();
+         // The clip-name example (clip_name_example) is computed from this listing, here on the watcher's own
+         // thread, so a hung medium never blocks the camera lock. Not during a take; nothing on a dead mount.
+         if (!camera_.isRecording()) {
+@@ -11663,6 +11676,7 @@ void ApertarCoreApp::runMediaWatcher()
+                 previousProfile = mediaProfile_;
+                 mediaProfile_ = profile;
+             }
++            refreshLadderContext();
+             if (current.mounted()) {
+                 applyMediaTuning(profile, true);
+                 trimMedia("mount");   // once per mount; the worker waits for an idle medium
+@@ -12139,6 +12153,41 @@ MediaProfile ApertarCoreApp::mediaProfile() const
+     return mediaProfile_;
+ }
+ 
++// The camera reads TDN, phase lock and Log itself; the rest of what the known limits depend on lives here: the
++// storage, the filesystem, how full the card is, the aids, the audio and the clip split. Pushed at a media change,
++// when the card crosses 94 percent, after a switch or a preset and after set_frames_per_folder.
++void ApertarCoreApp::refreshLadderContext()
++{
++    const MediaProfile profile = mediaProfile();
++    uint64_t total = 0, free = 0;
++    {
++        std::lock_guard<std::mutex> lock(mediaStateMutex_);
++        total = mediaSnapshot_.totalBytes;
++        free = mediaSnapshot_.freeBytes;
++    }
++    const SharedUiSettingsSnapshot ui = readSharedUiSettings();
++    sustained::Context context;
++    switch (profile.mediaClass) {
++    case MediaClass::PiNvme:
++        context.storage = sustained::Kind::Nvme;
++        break;
++    case MediaClass::UsbUas:
++        context.storage = sustained::Kind::UsbSsd;
++        break;
++    default:   // no column for this storage: the USB SSD's stands in
++        context.storage = sustained::Kind::UsbSsd;
++        context.storageMeasured = false;
++        break;
++    }
++    context.fatLike = profile.filesystem == MediaFilesystem::Exfat || profile.filesystem == MediaFilesystem::Vfat;
++    context.fillFraction = total > 0 ? 1.0 - double(free) / double(total) : 0.0;
++    context.aidsOn = ui.focusPeakingEnabled || ui.zebraEnabled;
++    context.audioOn = ui.recordAudioEnabled;
++    context.splitOn = bufferbudget::framesPerFolderRequest().load(std::memory_order_acquire) > 0;
++    ladderFillHigh_.store(context.fillFraction > 0.94, std::memory_order_relaxed);
++    camera_.setLadderContext(context);
++}
++
+ // Kernel-side knobs (block queue, vm.dirty_*) need root; Core hands them to
+ // /usr/local/libexec/apertar-media-tune through sudo -n, for the recording
+ // target only, and asks it to restore when that medium goes away. Without the
+@@ -14087,6 +14136,7 @@ std::string ApertarCoreApp::handleCommandLocal(const ControlCommand &command)
+             wakeControlsWorker();
+         }
+         refreshBufferRequest();
++        refreshLadderContext();
+         if (!fpf && bufferbudget::clipMergeRequest().load())
+             clipMerge("switch");
+         return okReply(command.id, "\"revision\":\"" + escapeJson(result.revision) + "\",\"written\":" +
+@@ -14593,6 +14643,7 @@ std::string ApertarCoreApp::handleCommandLocal(const ControlCommand &command)
+         if (!updateSharedUiGeneralSettings({ { settingKey, value ? "true" : "false" } }))
+             return errorReply(command.id, "Could not update shared UI settings.");
+ 
++        refreshLadderContext();
+         return okReply(command.id, settingsBody(camera_.settings()));
+     };
+ 
+@@ -15913,6 +15964,7 @@ std::string ApertarCoreApp::handleCommandLocal(const ControlCommand &command)
+             }))
+             return errorReply(command.id, camera_.lastError());
+ 
++        refreshLadderContext();
+         return okReply(command.id,
+                        "\"applied_preset\":\"" + escapeJson(trimAscii(presetLabel)) + "\""
+                        + std::string(",\"state\":{") + settingsBody(camera_.settings()) + "}");
+diff --git a/src/ApertarCoreApp.hpp b/src/ApertarCoreApp.hpp
+index 57fccd4..9f33eba 100644
+--- a/src/ApertarCoreApp.hpp
++++ b/src/ApertarCoreApp.hpp
+@@ -168,6 +168,8 @@ private:
+     void runStoragePrerollOnce(storagepreroll::Trigger trigger, unsigned seconds);
+     void stopStoragePreroll();
+     MediaSnapshot mediaSnapshot() const;
++    // Hands the camera the storage and the switches its known limits depend on (SustainedFps.hpp).
++    void refreshLadderContext();
+     std::string mediaGateError() const;
+     bool mediaGateBypassed() const;
+     std::string playbackHoldReason(bool withYield = true) const;   // "" or recording, writing, media_test, standby, media
+@@ -341,6 +343,7 @@ private:
+     MediaSnapshot mediaSnapshot_;
+     bool mediaSnapshotValid_ = false;
+     MediaProfile mediaProfile_;
++    std::atomic<bool> ladderFillHigh_{false};   // the card was above 94 percent full at the last refreshLadderContext
+ 
+     // The "buffer" event thread (runBufferEvents): own thread, no controller lock; stopped in stopMediaWatcher.
+     std::thread bufferEventThread_;
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index e6b4758..c8b6a21 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -187,6 +187,11 @@ std::string settingsEvent(const CaptureSettings &settings)
+         << ",\"ladder_count\":" << settings.ladderCount
+         << ",\"ladder_text\":\"" << escapeJson(settings.ladderText) << "\""
+         << ",\"ladder_tops\":" << ladderTopsJson(settings.ladderTops)
++        << ",\"limit_fps\":" << settings.limitFps
++        << ",\"limit_short_fps\":" << settings.limitShortFps
++        << ",\"limit_basis\":\"" << escapeJson(settings.limitBasis) << "\""
++        << ",\"limit_by\":\"" << escapeJson(settings.limitBy) << "\""
++        << ",\"limit_why\":\"" << escapeJson(settings.limitWhy) << "\""
+         << ",\"iso_auto_after_clear_hdr\":" << (settings.isoAutoAfterClearHdr ? "true" : "false")
+         << ",\"shutter_us\":" << settings.shutterUs
+         << ",\"shutter_auto\":" << (settings.shutterAuto ? "true" : "false")
+@@ -11863,6 +11868,53 @@ void CameraController::fillLadderFieldsLocked(CaptureSettings &out) const
+     }
+ }
+ 
++// The derived limit fields (never persisted): what the table says the running mode holds for a 30-minute take at
++// the storage and switches in use. Information only; nothing here changes a setting.
++void CameraController::fillLimitFieldsLocked(CaptureSettings &out) const
++{
++    out.limitFps = 0.0;
++    out.limitShortFps = 0.0;
++    out.limitBasis = "sensor";
++    out.limitBy = "sensor";
++    out.limitWhy.clear();
++    if (out.photoModeEnabled || isProcessedVideoFormat(out.recordingFormat)) {
++        out.limitWhy = "Limits are not measured for H.264, ProRes and stills.";
++        return;
++    }
++    const SensorFamily family = (!simulateCamera_ && session_) ? session_->sensorFamily() : SensorFamily::Unknown;
++    sustained::Context context = ladderContext_;
++    // BCM2712 (Pi 5, CM5) is the one board measured; a simulated camera stands for it.
++    context.board = simulateCamera_ || recordingCapabilities().rawCompression ? sustained::Board::Pi5 : sustained::Board::Other;
++    context.tdn = out.previewTdn;
++    context.lock = out.fpsPhaseLock;
++    context.log = out.cdngLog != CdngLog::Off;
++    context.splitOn = bufferbudget::framesPerFolderRequest().load(std::memory_order_acquire) > 0;
++    sustained::Mode mode;
++    mode.width = out.resolution.width;
++    mode.height = out.resolution.height;
++    mode.hdr = out.clearHdr;
++    mode.bits = out.rawBitDepth;
++    ladder::Rung rung;
++    rung.width = mode.width;
++    rung.height = mode.height;
++    rung.bits = mode.bits;
++    rung.clearHdr = mode.hdr;
++    SensorMode probed;
++    if (probedModeLocked(rung, &probed))
++        mode.binned = probed.binning > 1;
++    else if (const auto *row = apertar::imx585::find(apertar::imx585::classFor(mode.bits, mode.hdr), mode.width, mode.height))
++        mode.binned = row->binned;
++    const double ceiling = maximumFpsForSettings(out, family);
++    const sustained::Cap cap = sustained::capFor(context, mode, ceiling);
++    if (cap.row.found) {
++        out.limitFps = cap.fps;
++        out.limitShortFps = cap.row.fpsShort;
++        out.limitBasis = sustained::labelName(cap.row.label);
++    }
++    out.limitBy = cap.by;
++    out.limitWhy = sustained::whyText(context, mode, cap, ceiling);
++}
++
+ // The editor's extras for one mode: the sensor window the probe reports, the binning, and the FPS
+ // ceiling in each compression (0 where the compression cannot run the mode).
+ void CameraController::fillRungExtrasLocked(ladder::RungState &state, const ladder::Rung &rung) const
+@@ -11876,6 +11928,21 @@ void CameraController::fillRungExtrasLocked(ladder::RungState &state, const ladd
+         const ladder::RungState probe = (lossy && rung.clearHdr) ? ladder::RungState{} : ladderStatesLocked(single, settings_).front();
+         state.ceilingBy[i] = probe.usable ? probe.modeCeiling : 0.0;
+     }
++    SensorMode mode;
++    if (!probedModeLocked(rung, &mode))
++        return;
++    state.rawWidth = mode.size.width;
++    state.rawHeight = mode.size.height;
++    unsigned windowW = 0, windowH = 0;
++    if (std::sscanf(mode.crop.c_str(), "(%*d, %*d)/%ux%u", &windowW, &windowH) == 2) {
++        state.windowWidth = windowW;
++        state.windowHeight = windowH;
++    }
++    state.binning = mode.binning;
++}
++
++bool CameraController::probedModeLocked(const ladder::Rung &rung, SensorMode *found) const
++{
+     const SensorFamily family = (!simulateCamera_ && session_) ? session_->sensorFamily() : SensorFamily::Unknown;
+     // The probe lists what the sensor delivers; a rung is the active picture (the IMX585 16-bit frame has
+     // optical-black rows on top and bottom).
+@@ -11891,16 +11958,10 @@ void CameraController::fillRungExtrasLocked(ladder::RungState &state, const ladd
+         if (modeSize.width != wire.width || modeSize.height != wire.height ||
+             mode.clearHdr != rung.clearHdr || mode.bitDepth != rung.bits)
+             continue;
+-        state.rawWidth = mode.size.width;
+-        state.rawHeight = mode.size.height;
+-        unsigned windowW = 0, windowH = 0;
+-        if (std::sscanf(mode.crop.c_str(), "(%*d, %*d)/%ux%u", &windowW, &windowH) == 2) {
+-            state.windowWidth = windowW;
+-            state.windowHeight = windowH;
+-        }
+-        state.binning = mode.binning;
+-        break;
++        *found = mode;
++        return true;
+     }
++    return false;
+ }
+ 
+ std::string CameraController::modeLadderJsonLocked(const ladder::Ladder &draft, const std::vector<std::string> &errors,
+@@ -11961,6 +12022,18 @@ std::string CameraController::modeLadderJson() const
+     return modeLadderJsonLocked(modeLadder_, errors, warnings);
+ }
+ 
++void CameraController::setLadderContext(const sustained::Context &context)
++{
++    std::lock_guard<std::mutex> lock(mutex_);
++    // A fuller card alone is not news: an event goes out when a fact changes or the card crosses 94 percent.
++    sustained::Context before = ladderContext_, after = context;
++    const bool crossed = sustained::cardNearlyFull(before) != sustained::cardNearlyFull(after);
++    before.fillFraction = after.fillFraction = 0.0;
++    ladderContext_ = context;
++    if (crossed || !(before == after))
++        emitSettingsEventLocked();
++}
++
+ bool CameraController::setModeLadder(const std::optional<std::string> &rungs, std::optional<bool> enabled,
+                                      std::optional<bool> rampReady, const std::optional<std::string> &aspects,
+                                      bool dryRun, std::string *json, std::string *error)
+@@ -13648,6 +13721,7 @@ CaptureSettings CameraController::settings() const
+     result.isoMax = maximumIsoForSettings(result, family);
+     result.fpsMax = maximumFpsForSettings(result, family);
+     fillCameraIdentity(result);
++    fillLimitFieldsLocked(result);
+     fillLadderFieldsLocked(result);
+     fillClipNameExampleLocked(result);
+     return result;
+@@ -13939,6 +14013,7 @@ void CameraController::emitSettingsEventLocked()
+     settings_.isoMax = maximumIsoForSettings(settings_, family);
+     settings_.fpsMax = maximumFpsForSettings(settings_, family);
+     fillCameraIdentity(settings_);
++    fillLimitFieldsLocked(settings_);
+     fillLadderFieldsLocked(settings_);
+     fillClipNameExampleLocked(settings_);
+     settings_.cdngLogApplied = cdngLogApplicableLocked();
+diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
+index 810a007..d63ac64 100644
+--- a/src/camera/CameraController.hpp
++++ b/src/camera/CameraController.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include "camera/FramePhaseLock.hpp"
+ #include "camera/ModeLadder.hpp"
++#include "camera/SustainedFps.hpp"
+ #include <apertar/core/Types.hpp>
+ #include "util/ClipName.hpp"
+ #include "util/RecordingDropWarning.hpp"
+@@ -163,6 +164,9 @@ public:
+                        std::optional<bool> rampReady, const std::optional<std::string> &aspects, bool dryRun,
+                        std::string *json, std::string *error);
+     std::string modeLadderJson() const;
++    // The storage and the switches the known limits depend on, pushed by the application when they change
++    // (the camera itself reads TDN, phase lock, Log and the split). An event goes out when they change.
++    void setLadderContext(const sustained::Context &context);
+     // A preset that names a mode (namesMode) must be the one the ladder would pick for its FPS;
+     // one that names none follows the ladder. False with *error otherwise.
+     bool applyLadderToPreset(CaptureSettings &settings, bool namesMode, std::string *error) const;
+@@ -249,6 +253,9 @@ private:
+     bool ladderActiveForLocked(const CaptureSettings &base) const;
+     bool ladderRewriteLocked(CaptureSettings &next) const;
+     void fillLadderFieldsLocked(CaptureSettings &out) const;
++    void fillLimitFieldsLocked(CaptureSettings &out) const;
++    // The probe's entry for a mode in Core's identity (the active picture); false in simulation or before the probe.
++    bool probedModeLocked(const ladder::Rung &rung, SensorMode *mode) const;
+     void fillClipNameExampleLocked(CaptureSettings &out) const;
+     std::string clipNameSensorLocked() const;
+     void fillRungExtrasLocked(ladder::RungState &state, const ladder::Rung &rung) const;
+@@ -313,6 +320,7 @@ private:
+     uint32_t rampNominalShutterUs_ = 0;
+     double rampTakeBaseFps_ = 0.0;
+     bool rampTakeChanged_ = false;
++    sustained::Context ladderContext_;   // the application's half of the known limits' inputs
+     ladder::Ladder modeLadder_;   // T34, parsed from the settings_.modeLadder* text; set only where those are written
+     bool ladderOverride_ = false; // an explicit set_clear_hdr over an active ladder; ends on fps/resolution/format/bit depth/ramp/ladder change; not persisted (mutex_)
+     TakeInfo takeInfo_;
+diff --git a/src/camera/SustainedFps.hpp b/src/camera/SustainedFps.hpp
+index 8e50caa..ff2a38e 100644
+--- a/src/camera/SustainedFps.hpp
++++ b/src/camera/SustainedFps.hpp
+@@ -6,6 +6,7 @@
+ 
+ #include <algorithm>
+ #include <cmath>
++#include <string>
+ 
+ namespace apertar::sustained {
+ 
+@@ -117,6 +118,8 @@ struct Context {
+     bool splitOn = true;            // the clip folder is split into parts
+     bool fatLike = false;           // exFAT or FAT: a flat folder slows file creation
+     double fillFraction = 0.0;      // how full the medium is, 0 to 1
++
++    bool operator==(const Context &) const = default;
+ };
+ 
+ inline const char *labelName(Label label)
+@@ -279,4 +282,52 @@ inline bool cardNearlyFull(const Context &context)
+     return context.storage == Kind::Nvme && context.fillFraction > 0.94;
+ }
+ 
++// The words the screens use for a mode and a drive: "4K Clear HDR 16-bit", "2K SDR 12-bit", "2880x2160 SDR 12-bit".
++inline std::string modeName(const Mode &mode)
++{
++    const std::string size = mode.width == 3840 && mode.height == 2160 ? "4K"
++        : mode.width == 1920 && mode.height == 1080 ? "2K"
++        : std::to_string(mode.width) + "x" + std::to_string(mode.height);
++    return size + (mode.hdr ? " Clear HDR " : " SDR ") + std::to_string(mode.bits) + "-bit";
++}
++
++inline const char *storageName(Kind storage) { return storage == Kind::Nvme ? "NVMe card" : "USB SSD"; }
++
++// The one sentence under the fps picker for the running mode (limit_why): what it holds, then what the levers
++// and the storage change. fps is shown whole: the steps and the table's numbers are whole.
++inline std::string whyText(const Context &context, const Mode &mode, const Cap &cap, double sensorCeiling)
++{
++    const auto whole = [](double fps) { return std::to_string(static_cast<long>(std::floor(fps + 1e-9))); };
++    const std::string name = modeName(mode) + (cap.row.cell && cap.row.cell->log ? " + Log" : "");
++    if (context.board != Board::Pi5)
++        return "Limits are not measured on this Raspberry Pi.";
++    std::string text;
++    if (cap.by == std::string("TDN")) {
++        text = "Preview temporal denoise is on: " + name + " drops frames at every rate tried (from 23 fps). "
++               "Turn it off to use it.";
++    } else if (!cap.row.found) {
++        text = "No measurement for " + name + ": the sensor's own limit of " + whole(sensorCeiling) + " fps applies.";
++    } else {
++        text = name + " holds " + whole(cap.fps) + " fps for 30-minute takes on this " + storageName(context.storage) +
++               " (" + labelName(cap.row.label) + ").";
++        if (cap.row.fpsShort > cap.limit)
++            text += " " + whole(cap.row.fpsShort) + " fps holds up to 8 minutes (measured).";
++        if (context.lock && cap.row.group == Group::BackEnd) {
++            Context free = context;
++            free.lock = false;
++            const Cap without = capFor(free, mode, sensorCeiling);
++            if (without.fps > cap.fps)
++                text += " Phase lock is on: " + name + " holds " + whole(cap.fps) + " fps instead of " +
++                        whole(without.fps) + ".";
++        }
++        if (!context.splitOn && context.fatLike && cap.lever == std::string("split"))
++            text += " Split long takes is off: takes over 30 minutes slow down above 32 fps. Turn it on.";
++    }
++    if (!context.storageMeasured)
++        text += " Storage type not measured: limits are the USB SSD's. Run the speed test.";
++    if (cardNearlyFull(context))
++        text += " The card is over 94 percent full: it stalled near 96 percent in 4K Clear HDR 16-bit takes.";
++    return text;
++}
++
+ } // namespace apertar::sustained
+diff --git a/tools/sustained_fps_test.cpp b/tools/sustained_fps_test.cpp
+index 0b3ef43..3334a0f 100644
+--- a/tools/sustained_fps_test.cpp
++++ b/tools/sustained_fps_test.cpp
+@@ -210,6 +210,51 @@ int main()
+         check(same(capFor(c, k2kSdr12, 60.0).fps, 60.0), "split on: no flat-folder limit");
+     }
+ 
++    // ---- the sentence for the limit line ----
++    {
++        const auto why = [](const Context &c, const Mode &m, double ceiling) { return whyText(c, m, capFor(c, m, ceiling), ceiling); };
++        check(why(nvme(), k4kHdr16, 30.0) == "4K Clear HDR 16-bit holds 20 fps for 30-minute takes on this NVMe card (unconfirmed). "
++                                             "27 fps holds up to 8 minutes (measured).",
++              "why: 4K Clear HDR 16-bit on the NVMe holds 20 fps, and 27 for 8 minutes");
++        check(why(t7(), k2kSdr12, 60.0) == "2K SDR 12-bit holds 33 fps for 30-minute takes on this USB SSD (measured).",
++              "why: 2K SDR 12-bit on the USB SSD holds 33 fps, measured, no short-take sentence");
++        Context lock = nvme();
++        lock.log = lock.lock = true;
++        check(why(lock, k4kHdr16, 30.0) == "4K Clear HDR 16-bit + Log holds 23 fps for 30-minute takes on this NVMe card (derived). "
++                                           "Phase lock is on: 4K Clear HDR 16-bit + Log holds 23 fps instead of 24.",
++              "why: phase lock names the loss");
++        Context tdn = nvme();
++        tdn.tdn = true;
++        check(why(tdn, k4kSdr12, 60.0) == "Preview temporal denoise is on: 4K SDR 12-bit drops frames at every rate tried (from 23 fps). "
++                                          "Turn it off to use it.",
++              "why: TDN on an unbinned mode");
++        Context flat = nvme();
++        flat.splitOn = false;
++        flat.fatLike = true;
++        check(why(flat, k2kSdr12, 60.0) == "2K SDR 12-bit holds 30 fps for 30-minute takes on this NVMe card (probable). "
++                                           "Split long takes is off: takes over 30 minutes slow down above 32 fps. Turn it on.",
++              "why: split off on exFAT");
++        Context unknown = nvme();
++        unknown.storage = Kind::UsbSsd;
++        unknown.storageMeasured = false;
++        check(why(unknown, k4kSdr12, 60.0) == "4K SDR 12-bit holds 18 fps for 30-minute takes on this USB SSD (unconfirmed). "
++                                              "Storage type not measured: limits are the USB SSD's. Run the speed test.",
++              "why: storage not measured");
++        check(why(nvme(), Mode{ 4096, 2304, true, 16, false }, 25.0) ==
++                  "No measurement for 4096x2304 Clear HDR 16-bit: the sensor's own limit of 25 fps applies.",
++              "why: a mode with no row names the sensor's limit");
++        Context board = nvme();
++        board.board = Board::Other;
++        check(why(board, k4kHdr16, 30.0) == "Limits are not measured on this Raspberry Pi.", "why: another board");
++        Context full = nvme();
++        full.fillFraction = 0.96;
++        check(why(full, k2kHdr16, 30.0) == "2K Clear HDR 16-bit holds 30 fps for 30-minute takes on this NVMe card (probable). "
++                                           "The card is over 94 percent full: it stalled near 96 percent in 4K Clear HDR 16-bit takes.",
++              "why: a nearly full NVMe card");
++        check(modeName(Mode{ 2880, 2160, false, 12, false }) == "2880x2160 SDR 12-bit" && Context{} == Context{},
++              "modeName: sizes other than 4K and 2K are written out; a Context compares by value");
++    }
++
+     // ---- the card ----
+     {
+         Context c = nvme();
+-- 
+2.43.0
+
