@@ -2577,3 +2577,493 @@ Apertar-Core `5622a68`. Finding: hardware-inputs commit 9. Reviewed by the lead 
 
 **Rule.** A start-up write that creates an operator file runs only when no copy exists anywhere and no record says one existed.
 
+
+---
+
+## C50. camera: the IMX585 tables also list the original driver's 1.85:1 sizes
+
+Apertar-Core `b485059`. Finding: camera-modes commit 1. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/Imx585Modes.hpp:3@cinemate-port says "The IMX585 modes the cinemate-port driver advertises". The tables held only 3840x2072 / 1920x1036, and imx585_modes_test.cpp asserted CHECK(!im::anyClassHas(3840, 2076)); // the retired 1.6.0 size. The probe, CameraController.cpp:7152-7158@cinemate-port:
+    const auto model = camera->properties().get(libcamera::properties::Model);
+    std::string modelName = model ? std::string(*model) : std::string();
+    std::transform(modelName.begin(), modelName.end(), modelName.begin(), ...tolower...);
+    const bool tableProbe = modelName.find("imx585") != std::string::npos;
+For an IMX585 the probe configures only table rows. A size the driver advertises but the table lacks is never tried and never logged.
+
+**Why it is a problem.** The original Apertar driver (imx585.c:586-591, :817, :1007@e5b74d3) has 1.85:1 at 3840x2076 and binned 1920x1038. Because the probe tries only table rows, a stock camera never lists those modes, so one Core cannot serve both drivers. Upstream 1.6.0 lists those sizes itself (isImx585LowResolutionAlias and the crop predicates, CameraController.cpp:360-396@upstream-1.6.0). R6: the driver must offer the mode, and Core lists the size. CAM-11: sensors are told apart by SensorFamily from detectSensorFamily(camera->id()) (CameraController.cpp:5375@upstream-1.6.0), not by a second string match in the same file. CAM-23: a fallback or a dropped driver mode at start gets a log line. CAM-4: the pure tables stay header-only with a host test.
+
+**How to spot it.** grep -n 'properties::Model' src/camera/CameraController.cpp: any use other than picking the default tuning is a second way to identify the sensor. To check that Core and the driver agree, compare the 'height =' values in git show origin/apertar:imx585.c and in the cinemate-port imx585.c against the rows in src/camera/Imx585Modes.hpp. Ask: does a driver mode that Core does not know leave a line in the journal?
+
+**Options.**
+
+- Add the two original sizes to the tables (S12, S10, and H12 for the future driver) and let the probe sort them out: about 5 extra configures at start (cost: probe time), no other code change
+- Probe every size the driver advertises (formats.sizes()) instead of table rows: more general, but it loses the table's binning and its H16 optical-black rule (cost: bigger rework of a deliberate design, caa0153)
+- Generate the tables from imx585.c with a host tool: catches drift automatically (cost: new tooling, no upstream precedent)
+
+**Chosen, and why.** Option 1, as the page asks. I added the rows at the end of each table with a short trailing comment, so I did not have to re-flow the existing rows and the diff stays small. One side effect: on the original driver the 2076/1038 modes come last in the probe order. CC-3-F11 and Driver-imx585-F8 came along: tableProbe now uses detectSensorFamily, and there is one journal line per advertised size that no row of the class covers. I gave up a nearest() tie test (2072 vs 2076), because it would pin down an order nobody relies on. I left the old header line 3 for commit 13, as the page assigns, but the new paragraph under it states that the tables hold both drivers' sizes.
+
+**After.**
+
+```
+    { 1024, 408, true }, { 1024, 400, true },
+    { 3840, 2076, false }, { 1920, 1038, true },     // 1.85:1 of the original Apertar driver
+};
+...
+const bool tableProbe = detectSensorFamily(camera->id()) == SensorFamily::Imx585;
+...
+for (const auto &advertised : formats.sizes(pixelFormat)) {
+    bool covered = false;
+    for (const auto &row : apertar::imx585::all(cls))
+        covered = covered || apertar::imx585::transportFor(cls, row) == apertar::imx585::Size{ advertised.width, advertised.height };
+```
+
+**Checked.** Run here: /home/user/build/bin/check_core.sh /home/user/wt/lane-core4 lane-core4 both tests. Both builds pass; CameraController.cpp recompiled in the lc build with 0 warnings, and the 3 nolc warnings are older and outside my lines. imx585_modes_test prints ok. I did not start --simulate, because the probe runs only with libcamera and a camera, and no socket command or state field changed. Needs the camera: journalctl -u apertar-core -b | grep -E 'sensor mode:|sensor probe:'. With the cinemate-port driver (cd548ef) you should see the same 'sensor mode:' lines as before, with no 2076/1038 among them, and 'sensor probe: N modes in M ms' a few configures slower. You should also see one line, 'ApertarCore sensor probe: <12-bit format> 1920x1080 clear_hdr is a driver mode with no IMX585 table row', for the binned row Core holds back in H12. With the original driver (e5b74d3, installed with its setup.sh, then reboot) you should see 'sensor mode:' lines for 3840x2076 and 1920x1038 in 12-bit and 10-bit (sdr), and no 'no IMX585 table row' lines; its 16-bit 3840x2200 is covered by the H16 4K row. Binned 1038 rows may still be refused later, at configure time, by the readout check; commit 4 fixes that.
+
+**Rule.** When Core keeps a copy of a driver's mode table, make it hold the union of the drivers it must run with, and let the run-time probe decide. Never assume the table matches the installed driver.
+
+
+---
+
+## C51. camera: a 1.85:1 size follows the height the driver has
+
+Apertar-Core `aef5217`. Finding: camera-modes commit 2. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/CameraController.cpp:446@cinemate-port (lane tip f1c14d4):
+Resolution migratedImx585CropResolution(Resolution resolution)
+{
+    if (resolutionMatches(resolution, 3840, 2076))
+        return Resolution{ 3840, 2072 };
+    if (resolutionMatches(resolution, 1920, 1038))
+        return Resolution{ 1920, 1036 };
+    return resolution;
+}
+It was called in clampCaptureSettings (every load and persist), in setResolution, in applyCapturePreset, and through migrateImx585LadderRungs in the constructor and in setModeLadder.
+
+**Why it is a problem.** The rewrite fits only one driver. The original Apertar imx585 driver (e5b74d3) has 3840x2076 / 1920x1038, so on a stock camera Core asked for sizes the driver does not have. It also changed every saved file the moment the file was loaded. Original Apertar maps a client's size to the sensor's own size in the per-sensor normaliser, when the size is used, and never rewrites the saved value on load (isImx585LowResolutionAlias CC:360-364 and normalizedResolutionForSensor CC:2372-2421@upstream-1.6.0). 1.6.0's validator accepts 2076/1038 for every sensor (CC:366-396@upstream-1.6.0).
+
+**How to spot it.** grep -n 'migrat\|Resolution{ 3840, 20' src/camera/*.cpp. Look for a helper applied in clampCaptureSettings or in a loader that changes a stored size for every sensor. Ask: "would the other driver or the other sensor still get the value it saved?"
+
+**Options.**
+
+- Keep the rewrite and flip the direction for the original driver: still rewrites files on load, and still has one hard-coded answer
+- Map at use from what the startup probe found (pure function in Imx585Modes.hpp, called from the IMX585 normaliser step): one small host-tested function and a lookup of the probed sizes on every sanitise
+- Advertise both heights and accept either without mapping: the port driver then refuses 2076 at configure, so saved sizes break
+
+**Chosen, and why.** Option 2, as the design page says. driverCropSize(cls, requested, probed) returns the height of the pair whose transport size is in the probe's list for that class. With nothing probed, it returns the request if the class has it, otherwise the partner (so H16 3840x2076 becomes 2072). The CC helper probedImx585Sizes reads the probed list under probedSensorModesMutex. That mutex is already taken under mutex_ by probedMaximumFps, so the lock order does not change. Given up: a saved file is not corrected until the next save writes the effective value, the same as every other sanitised field. Two points where the code differed from the plan: (1) applyCapturePreset keeps its presetResolution variable, now set to requested.resolution, to keep the diff small. (2) The rung step in start() runs after the session/simulate if-else, so in --simulate it also runs, does nothing because no probe ran, and leaves the rungs as they are.
+
+**After.**
+
+```
+inline Size driverCropSize(Class cls, Size requested, const std::vector<Size> &probed)
+    ... partner = the other height of the pair, else return requested;
+    for (const Size candidate : { requested, partner }) {
+        const auto transport = transportFor(cls, candidate.width, candidate.height, 0);
+        for (const Size &size : probed) if (transport && *transport == size) return candidate;
+    }
+    if (find(cls, requested...) || !find(cls, partner...)) return requested;
+    return partner;
+// CC: const Resolution wanted = driverCropResolution(cls, imx585AliasResolution(requested));
+```
+
+**Checked.** Run here: /home/user/build/bin/check_core.sh /home/user/wt/lane-core4 lane-core4 both tests gave PASS on both builds and 18 host tests. imx585_modes_test has new driverCropSize cases: port set gives 2072/1036, original set gives 2076/1038, empty list gives the request, H16 2076 gives 2072, H12 1920x1036/1038 come back as sent, and non-1.85:1 sizes come back unchanged. The 3 nolc warnings are in CameraController.cpp lines this commit does not touch (unused mediumGone, basePathOverride, allocatePhotoBasePath). In --simulate (sensor Unknown): set_resolution 3840x2076 gives get_state 3840x2076, and camera_settings.conf keeps resolution_height=2076 after a restart. 3840x2072 and 1920x1038 round-trip. Headless Chromium: the page loads with no script errors, and imx585NormalizedResolution keeps 3840x2076 and 1920x1038. Needs the Pi, port driver (cd548ef): start with resolution_height=2076 in camera_settings.conf, then `journalctl -u apertar-core -b | grep 'camera configured'` should show 3840x2072. A ladder with a 3840x2076 rung should show the rung as 3840x2072 and valid in `get_mode_ladder`, both before and after a restart. Needs the Pi, original driver (e5b74d3, after commit 4 so binned/explicit modes pass the readout check): `set_resolution 3840x2076`, then the `camera configured:` line should show raw 3840x2076. The journal `sensor mode:` lines list the 2076/1038 rows that driverCropSize then picks.
+
+**Rule.** Map a size the sensor names differently when it is used (in the per-sensor normaliser), from what the driver really has. Never rewrite the saved value on load.
+
+
+---
+
+## C52. web: a 1.85:1 pill sends the size it shows
+
+Apertar-Core `b3f4044`. Finding: camera-modes commit 3. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp:9389,9405@cinemate-port (lane tip ef17857): two labels went to one size:
+      if (label === "1920x1036" || label === "1920x1038")
+        return { cmd: "set_resolution", width: 1920, height: 1036 };
+      if (label === "3840x2072" || label === "3840x2076")
+        return { cmd: "set_resolution", width: 3840, height: 2072 };
+WCP:8916-8918, the fallback strings s12/s10/h12, listed only the port driver's "3840x2072" and "1920x1036b".
+
+**Why it is a problem.** The page rewrote a 1.85:1 size to the cinemate-port driver's height. On the original imx585 driver (3840x2076 / 1920x1038, imx585.c:591,817@e5b74d3), a 1.85:1 pill therefore asked for a size that driver does not have. Original Apertar sends each pill's own label (resolutionCommandPayload, src/web/WebControlPage.cpp:5467-5468, 5483-5484@upstream-1.6.0). Any mapping to the sensor's own size happens in Core's per-sensor normaliser, at use (normalizedResolutionForSensor, CameraController.cpp:2372-2421@upstream-1.6.0). After commit 2, Core does that mapping with driverCropSize, so the duplicate mapping in the page was wrong on the stock driver and not needed on the port driver.
+
+**How to spot it.** grep -n 'label === "[0-9]*x[0-9]*" ||' src/web/WebControlPage.cpp: a branch that matches two labels but returns one size is a mapping hidden in the page. Ask: does Core already normalise this size? If it does, the page should send the label as it is.
+
+**Options.**
+
+- Each label returns its own size, and the fallback lists take the original sizes (the plan, 1.6.0 shape): -5/+9 lines. On the port driver, no 1.85:1 pill is lit until the probed ladder pool arrives (one round trip). A click in that window still lands on 2072, because Core maps it.
+- Drop the 1.85:1 branches and let the generic WxH regex at the end of resolutionCommandPayload handle them: fewer lines, but the function stops matching 1.6.0 line for line.
+- Keep the page mapping and make it probe-aware: a second copy of Core's driverCropSize in JS, which is the duplication commit 2 removed.
+
+**Chosen, and why.** Option 1, as the design page says. Each label gets its own if-branch in the 1.6.0 style. I kept the 2072 and 1036 branches, so the port driver's own labels still send their own sizes. Only the 3840 row of the h12 fallback changed; the h16 string is untouched. Given up: before the pool arrives, the port driver's fallback list shows 2076 while Core reports 2072, so no 1.85:1 pill is lit for one round trip. That trade-off is already in the design's Risks. The JS fps fallback table (WCP:7459-7462) still names 2072/1036, but it returns 60 for any size anyway, and it is not part of this item.
+
+**After.**
+
+```
+      if (label === "1920x1036")
+        return { cmd: "set_resolution", width: 1920, height: 1036 };
+      if (label === "1920x1038")
+        return { cmd: "set_resolution", width: 1920, height: 1038 };
+      ...
+      if (label === "3840x2072")
+        return { cmd: "set_resolution", width: 3840, height: 2072 };
+      if (label === "3840x2076")
+        return { cmd: "set_resolution", width: 3840, height: 2076 };
+```
+
+**Checked.** Run here: the gate (both builds, 0 warnings, 18 host tests). Also apertar-core --simulate on port 8147 with headless Chromium (Playwright), driving the page's own functions. resolutionCommandPayload gives height 1038 / 1036 / 2076 / 2072 for the four labels. Sending the 1920x1038 and 3840x2076 payloads, get_state then reads 1920x1038 and 3840x2076 (the sim sensor is Unknown, so Core keeps them). With a fake IMX585 snapshot and no ladder pool, imx585ResolutionForBaseAndRatio returns these 1.85:1 sizes: Full HD binned 1920x1038 and 4K 3840x2076 in SDR 12 and 10, 3840x2076 in Clear HDR 12, 3840x2072 in Clear HDR 16. There were no page errors. The real IMX585 pill path does not run in --simulate (imx585Selected), so the click itself needs the camera. Port driver: click 1.85:1 under Full HD binned and under 4K. Then curl -s -X POST http://<pi>:8000/api/command -d '{"cmd":"get_state"}' should read 1920x1036 and 3840x2072, and journalctl -u apertar-core -b | grep 'camera configured' should show raw 1920x1036 / 3840x2072. Original driver (installed with setup.sh at e5b74d3, after commit 4 of the plan): the same clicks give 1920x1038 and 3840x2076 in get_state and on the 'camera configured' line.
+
+**Rule.** A client sends the size it shows; only Core maps a size to what the sensor or driver has, once, at use.
+
+
+---
+
+## C53. camera: the IMX585 readout check accepts the original driver and checks the auto config like the IMX477
+
+Apertar-Core `579ede9`. Finding: camera-modes commit 4. Reviewed by a second agent: accept.
+
+**What was there.** src/camera/CameraController.cpp:8500@cinemate-port: the colour IMX585 exact-mode block ran on `if (sensorFamily_ == SensorFamily::Imx585 && !monochromeSensor_)` with no check for explicit or auto. Its crop check was `if (adjusted.empty() && imx585Row && cropMaximum)`, which compared the crop with active size x binning. The original driver's binned crop of 1920x1080 at 0,0 failed that comparison.
+
+**Why it is a problem.** The original driver (imx585.c:803-808 and :2379-2381@e5b74d3) reports a binned mode's crop as the output size. libcamera sets ScalerCropMaximum from analogCrop on every configure (pipeline_base.cpp:568), so binned modes are refused. This is confirmed in code, not run on a Pi. 1.6.0 checks auto configs with the IMX477/577 size rule (CameraController.cpp:6166-6168@upstream-1.6.0), and its IMX585 auto fallback (5993-5996@upstream-1.6.0) had no readout check (6162-6164 lists only IMX477/577/294).
+
+**How to spot it.** grep -n 'ScalerCropMaximum' src/camera/CameraController.cpp, and for each hit ask: does it hold for a driver whose binned crop is in output pixels? Also check whether an exact-mode block tests useExplicitSensorConfig.
+
+**Options.**
+
+- Skip the crop comparison when crop == raw size (local, one condition; chosen)
+- Teach the block per-driver crop semantics via the probe (needs commit 5+ data, bigger)
+- Drop the crop check entirely (loses the port driver's adjusted-mode detection)
+
+**Chosen, and why.** The exact-mode block now runs only for an explicit sensorConfig. It skips the crop comparison when the reported crop equals the raw size. A colour IMX585 on the auto path gets the IMX477/577 size rule, which does nothing until commit 5 widens allowAutoSensorConfigFallback. We gave up exact crop checking for drivers that report crop == output.
+
+**After.**
+
+```
++                     sensorFamily_ == SensorFamily::Imx294 ||
++                     (sensorFamily_ == SensorFamily::Imx585 && !monochromeSensor_ && !useExplicitSensorConfig))) {
++                if (sensorFamily_ == SensorFamily::Imx585 && !monochromeSensor_ && useExplicitSensorConfig) {
++                    // A driver that reports its crop as the output size gives no window to compare.
++                    if (adjusted.empty() && imx585Row && cropMaximum && cropMaximum->size() != rawSize) {
+```
+
+**Checked.** Run here: check_core.sh both builds and 18 host tests. Still needs the Pi. Original driver (e5b74d3): before this commit, the output of journalctl -u apertar-core -b | grep -E 'camera configured|adjusted by the driver' shows 'adjusted by the driver (scaler crop maximum (0, 0)/1920x1080)'; after it, 1920x1080 configures. Port driver (cd548ef): the 'camera configured:' lines for 1920x1080, 3840x2160 and 3840x2072 are unchanged. The auto rule is checked in commit 5: on the port driver a 3840x2076 auto request is refused with 'adjusted to too-small stream 3840x2072'.
+
+**Rule.** A readout check must not assume what a driver reports as its crop window. When the driver reports crop == output there is no window to compare, so fall back to the size rule.
+
+
+---
+
+## C54. camera: colour IMX585 3840-wide crops fall back to the automatic sensor configuration again
+
+Apertar-Core `3eef877`. Finding: camera-modes commit 5. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/CameraController.cpp:8309@cinemate-port (lane-core4 tip 2e0d545). The automatic fallback was allowed only for mono, IMX294 and IMX577:
+        const bool allowAutoSensorConfigFallback = monochromeSensor_ || sensorFamily_ == SensorFamily::Imx294 ||
+                                                   sensorFamily_ == SensorFamily::Imx577;
+In the loop below, `if (!useExplicitSensorConfig && !allowAutoSensorConfigFallback) continue;` skips the auto try. For a colour IMX585, an explicit failure was therefore final.
+
+**Why it is a problem.** The original driver (e5b74d3) and the port driver (cd548ef) offer different 3840-wide crops. Take a crop that the installed driver has no explicit mode for, for example a saved 3840x2076 on the port driver with APERTAR_SENSOR_PROBE=0. That crop got no configuration at all. 1.6.0 tries explicit first, then falls back to auto for the IMX585 3840 raw12 crops and crops in software (CameraController.cpp:5993-5996@upstream-1.6.0, loop :6012-6017). Its invalidReadout rule (:6162-6183) decides what an auto config may hand back. The conventions page calls this "the driver may lack an explicit mode" precedent.
+
+**How to spot it.** grep -n allowAutoSensorConfigFallback src/camera/CameraController.cpp in both trees and compare the sensor clauses. Ask: if this sensor's explicit sensorConfig is refused, does any configuration remain? Check that every sensor allowed into auto has a matching invalidReadout or size-rule branch.
+
+**Options.**
+
+- Add upstream's clause using the existing isImx585LegacyCropResolution plus width == 3840: three lines, no new size list (chosen)
+- Restore upstream's own isImx585Raw12CropResolution list: a second list of the same sizes that drifts from the tables
+- Allow auto for every IMX585 size: binned 1920 crops and Clear HDR rows would get auto configs that 1.6.0 never allowed, which is a behaviour change with no precedent
+
+**Chosen, and why.** Option 1, as the design page says. The port's helper already lists the 3840 crops, including 2072 for the port driver, and the width test keeps the 1920 entries out. What was given up: a byte-for-byte copy of 1.6.0's list. 3840x2072 can now fall back to auto too, which 1.6.0 could not do because it did not know that size. Commit 4's size rule guards that path.
+
+**After.**
+
+```
+        const bool allowAutoSensorConfigFallback = monochromeSensor_ || sensorFamily_ == SensorFamily::Imx294 ||
+                                                   sensorFamily_ == SensorFamily::Imx577 ||
+                                                   (sensorFamily_ == SensorFamily::Imx585 &&
+                                                    sanitized.resolution.width == 3840 &&
+                                                    isImx585LegacyCropResolution(sanitized.resolution));
+```
+
+**Checked.** Run here: check_core.sh /home/user/wt/lane-core4 lane-core4 both tests. Both builds and 18 host tests pass. The 3 warnings in the build without libcamera are on lines this commit did not touch: 1248, 7777 and 7930. No host test reaches the configure loop, which is inside #if APERTARCORE_HAS_LIBCAMERA. Still needs the camera, checked with journalctl -u apertar-core -b | grep -E 'camera configured|adjusted to too-small|rejected by'. Port driver cd548ef, with APERTAR_SENSOR_PROBE=0 in the unit environment: set_resolution 3840x1744 still configures explicitly. Then hand-edit resolution_height=2076: the journal shows the explicit try rejected, then either an auto configure with raw 3840x2160 or 'adjusted to too-small stream 3840x2072'. It must never show a configured raw 3840x2072. Original driver e5b74d3: set_resolution 3840x1744 configures.
+
+**Rule.** If the driver may lack an explicit mode, let the configure loop fall back to auto for that size, and check what auto hands back with a size rule. Do not leave the size without any configuration.
+
+
+---
+
+## U4. ui: clip-name, buffer, log and pre-roll invokables return bool
+
+Apertar-UI `62b239c`. Finding: touch-ui commit 1. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarControlBridge.cpp:632-727@cinemate-port (the lane tip before the fix, ac1fc28):
+void ApertarControlBridge::applyBufferMode(const QString &value)
+{
+    ...
+    if (!sendCoreCommand(QStringLiteral("set_buffer_mode"), {...})) return;
+    if (m_bufferSetting != value) { m_bufferSetting = value; emit bufferSettingChanged(); }
+}
+applyClipNameTemplate had the same shape: `QJsonObject reply; if (sendCoreCommand(..., &reply)) applyClipNameState(reply);`. applyCdngLog set m_cdngLogOn after the send. applyStoragePreroll and applyStoragePrerollAuto threw away the result of sendCoreCommand.
+
+**Why it is a problem.** In original Apertar, command invokables return bool: false after setLastError, otherwise the result of sendCoreCommand (UIC-9). Examples are applyCaptureMode and applyPhotoLongExposureEnabled at ui-upstream src/ApertarControlBridge.cpp:731-741@upstream-1.6.0. A void invokable hides failure from QML. The extra assignments did the same work twice. sendCoreCommand passes every reply line to applyCoreMessage, and any line with "ok" goes on to applyCoreState (ACB:1411-1412). applyCoreState then runs applyBufferState, applyCdngLogState and applyClipNameState (ACB:1732-1734). Core's replies carry the needed keys (core-work src/ApertarCoreApp.cpp): set_buffer_mode adds bufferSettingMembers() with buffer_setting (:12868), set_cdng_log returns settingsBody with cdng_log (:13101, key at :356), and set_clip_name_template returns settingsBody with clip_name_template and example (:13269-13271, key at :373). So the second write either repeated what Core had already said or covered it with the value the UI had asked for.
+
+**How to spot it.** grep -n 'Q_INVOKABLE void' src/*.hpp: only notifyUserActivity and refresh should be void. In an invokable body, an `if (m_x != value) { m_x = value; emit ... }` right after sendCoreCommand is a smell: check whether the reply already carries that key.
+
+**Options.**
+
+- Thin bool invokables that leave the state to the reply through applyCoreState. Small, and the same as 1.6.0. Cost: the screen updates only from Core's answer, which is what 1.6.0 does.
+- Return bool but keep the post-send assignments. Smaller diff, but the state is still written twice, from two sources.
+- Change QML to act on the results now. Out of scope: commits 2-4 replace those tiles.
+
+**Chosen, and why.** Option 1, as the plan says. Core's reply is the only source of the state, and the bridge only reports whether the command succeeded. Given up: the optimistic local update. Nothing is lost, because the reply is handled inside the same sendCoreCommand call, before it returns.
+
+**After.**
+
+```
+bool ApertarControlBridge::applyBufferMode(const QString &value)
+{
+    if (value != QStringLiteral("frames") && value != QStringLiteral("ram")) {
+        setLastError(QStringLiteral("Invalid write buffer mode."));
+        return false;
+    }
+    // The reply carries buffer_setting, which applyCoreState applies.
+    return sendCoreCommand(QStringLiteral("set_buffer_mode"), { { QStringLiteral("value"), value } });
+```
+
+**Checked.** Run here: /home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1 printed PASS with 0 warnings (Qt UI build, QML compiled ahead of time). Nothing could be run on a screen here. Needs the camera: in Settings > Record, switch Write Buffer between Frames and RAM, and Log between On and Off; the tiles follow as before. Then run apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"buffer_setting":"[a-z]*"' and check it shows the choice. Edit the clip-name pattern and check that "Next clip" follows.
+
+**Rule.** A bridge command invokable returns bool and does not write state that Core's reply already carries. applyCoreState applies that reply.
+
+
+---
+
+## U5. qml: Log is a dropdown next to Compression, sent as Core's off or auto
+
+Apertar-UI `9500ebc`. Finding: touch-ui commit 2. Reviewed by a second agent: accept.
+
+**What was there.**
+
+qml/SettingsPage.qml:3463-3495@cinemate-port (lane tip 98d7a1c): Log was a Column below Write Buffer, holding a "Log" header Text, an ActionTile and the status Text.
+    ActionTile {
+        label: apertarControlBridge.cdngLogOn ? "On" : "Off"
+        tone: apertarControlBridge.cdngLogOn ? "accent" : "default"
+        onClicked: apertarControlBridge.applyCdngLog(!apertarControlBridge.cdngLogOn)
+    }
+In src/ApertarControlBridge.cpp:708 the bridge took `bool on` and turned it into the wire word itself: `on ? "auto" : "off"`.
+
+**Why it is a problem.** This was a choice of values drawn as a button. ActionTile is a verb with a fixed tone, and no upstream QML file sets `tone:` conditionally (QML-23, QML-26). Upstream draws a choice as an InlineDropdownField with {value,label} options. The example is Compression, in the same grid: qml/SettingsPage.qml:3244-3261@upstream-1.6.0. Upstream sends an enum as Core's own word and lets Core refuse unknown values (applyCdngCompression value=, ApertarControlBridge.cpp:516-535@upstream-1.6.0; UIC-12 keeps booleans for true/false switches only). Log is an enum in Core (CdngLog Off/Auto), so the bool was a UI-side translation of an enum.
+
+**How to spot it.** Run `grep -n 'tone: .*?' qml/*.qml`. A conditional tone means a button is being used as a selector. Also look for a bridge invokable that takes `bool` and sends `? "word" : "word"`: that is an enum disguised as a bool. When adding a field to formatFieldsGrid, also update activeFieldCount.
+
+**Options.**
+
+- Dropdown in formatFieldsGrid next to Compression, bridge takes the QString word: matches upstream Compression exactly; one extra term in activeFieldCount
+- Dropdown kept in its own Column below Write Buffer: smaller diff, but leaves Log away from the other cDNG format fields and keeps a lone header
+- TogglePill row with the bool kept: fits a switch, but Core's value is an enum (off/auto) and the design settled it as an enum (command-plane.md:293)
+
+**Chosen, and why.** Option 1. This is the item as written: the field sits next to Compression and is shaped like it. The grid's activeFieldCount has to count the new field, because the grid sets its height by hand from that count. A Qt Grid gives no implicit height here: `height: activeRowCount * resolutionField.height`. One thing gives way. The status text now sits under the whole grid, not under a "Log" header. Its strings are unchanged.
+
+**After.**
+
+```
+    InlineDropdownField {
+        visible: root.cdngRecordFormat && !!apertarControlBridge && apertarControlBridge.cdngLogAvailable
+        label: "Log"
+        value: apertarControlBridge && apertarControlBridge.cdngLogOn ? "auto" : "off"
+        displayValue: value === "auto" ? "On" : "Off"
+        options: [{ value: "off", label: "Off" }, { value: "auto", label: "On" }]
+        onValueSelected: function(v) { apertarControlBridge.applyCdngLog(v) }
+    }
+bool applyCdngLog(const QString &value) { return sendCoreCommand("set_cdng_log", {{"value", value}}); }
+```
+
+**Checked.** Run here: /home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1 printed PASS with 0 warnings. That builds the UI with QML compiled ahead of time. No other callers of applyCdngLog exist (grep over qml/ and src/). Nothing was seen on a screen. Still needs the camera: set cDNG + Clear HDR, open Settings > Record and pick Log On. Then `printf '%s\n' '{"cmd":"get_state","id":1}' | socat - UNIX-CONNECT:/tmp/apertar-core.sock | grep -o '"cdng_log":"[a-z]*"'` should show auto, and the field should show On. Check that the format grid has no gap or overlap with Crop shown and with Crop hidden, and that the status text reads right under the grid.
+
+**Rule.** A choice between values is an InlineDropdownField that sends Core's own word; an ActionTile is a verb with a fixed tone.
+
+
+---
+
+## U6. qml: Write Buffer is a dropdown
+
+Apertar-UI `4d8bb42`. Finding: touch-ui commit 3. Reviewed by a second agent: accept.
+
+**What was there.**
+
+qml/SettingsPage.qml:3456-3480@cinemate-port (lane-ui1 tip 3b2c98b): the choice was a header Text plus a Row of two ActionTiles whose tone was set from the current value:
+    ActionTile {
+        label: "Frames"
+        tone: apertarControlBridge.bufferSetting === "frames" ? "accent" : "default"
+        actionEnabled: !apertarControlBridge.recording
+        onClicked: apertarControlBridge.applyBufferMode("frames")
+    }
+    ActionTile { label: "RAM"; tone: ... === "ram" ? "accent" : "default"; ... }
+
+**Why it is a problem.** An ActionTile in Apertar is a verb button with a fixed tone (SettingsPage.qml:3640, :5416@upstream-1.6.0). No upstream QML file sets tone: from a condition (QML-26). A pick between values is an InlineDropdownField with {value,label} options, for example Compression (SettingsPage.qml:3244-3261@upstream-1.6.0, QML-23). Tiles used as fake radio buttons are a second widget idiom that the original developer would have to learn and keep up.
+
+**How to spot it.** grep -n 'tone: .*?' qml/*.qml finds tiles whose colour depends on state. Two or more ActionTiles in a Row that call the same apply* with different literal values are the same smell.
+
+**Options.**
+
+- Replace the header and the tile Row with a full-width InlineDropdownField inside the existing Column: smallest change, keeps the visible: condition and the status line (chosen)
+- Move the field into the format grid next to Compression/Log, as commit 2 did for Log: needs another activeFieldCount term and moves the status text; more churn for no gain
+- Keep the tiles but give them a fixed tone: still two buttons for one value, not the upstream idiom
+
+**Chosen, and why.** Option 1. The field is placed where the tiles were, full width, like the full-width "Color Profile" field just below it. The Column still hides the whole block until Core has sent buffer_setting. Given up: lining it up with the two-column grid above. That would need a change to the grid's row count, which this item does not ask for.
+
+**After.**
+
+```
+InlineDropdownField {
+    width: parent.width
+    label: "Write Buffer"
+    value: apertarControlBridge ? apertarControlBridge.bufferSetting : "frames"
+    displayValue: value === "ram" ? "RAM" : "Frames"
+    options: [ { value: "frames", label: "Frames" }, { value: "ram", label: "RAM" } ]
+    fieldEnabled: apertarControlBridge && !apertarControlBridge.recording
+    onValueSelected: function(v) { apertarControlBridge.applyBufferMode(v) }
+}
+```
+
+**Checked.** Here: /home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1 printed PASS with 0 warnings. That run builds the UI and compiles the QML ahead of time, which catches unknown properties but not behaviour. Nothing was run on a screen. On the camera: select cDNG or MLV, go to Settings > Record, pick Write Buffer RAM, then start and stop a take. After that, `grep '^buffer=' ~/apertar-hardware.conf` should show ram. Core writes [storage] buffer= (core-work App:12856); storage-settings may rename that file. Also check that the field shows RAM, that the status line follows, and that the field is greyed during a take.
+
+**Rule.** A choice between values is an InlineDropdownField with {value,label} options. An ActionTile is a verb and keeps a fixed tone.
+
+
+---
+
+## U7. ui: only the ISO and WB auto keys reset the get_state poll
+
+Apertar-UI `8a1ec6e`. Finding: touch-ui commit 5. Reviewed by a second agent: accept.
+
+**What was there.**
+
+src/ApertarControlBridge.cpp:1597-1609@cinemate-port (applyCoreState, added in f1edf96). This block runs for every state applyCoreState receives:
+        if (isoInUse != m_isoInUse || ... || m_ladderActive != previousLadderActive) {
+            ...
+            emit cameraSetValuesChanged();
+        }
+        updateRefreshTimer();
+    }
+The iso_auto and wb_auto branches only assigned the value, as one-line ifs.
+
+**Why it is a problem.** updateRefreshTimer() calls m_retryTimer.setInterval(). In Qt 6, setInterval on a running QTimer restarts the countdown. Every event routed into applyCoreState therefore pushed the next get_state poll back. A 1 s timelapse sends one timelapse_progress event per shot (core CC:12378). That is fast enough that the 1000 ms ISO/WB-auto poll never fires, and ISO and WB in use stop updating. Original 1.6.0 has no call in applyCoreState. It sets the interval on socket state changes and after poll and command replies (ui-upstream src/ApertarControlBridge.cpp:125-145, :1041-1104, :1585). UIC-4 says state keys are applied inline in applyCoreState. A side effect tied to all state, not to one key, does not fit that rule.
+
+**How to spot it.** grep -n 'updateRefreshTimer\|setInterval\|\.start(' inside applyCoreState, applyCoreMessage or any per-event handler. Ask: does this run for every event? If yes, does it restart a running timer? QTimer::setInterval and QTimer::start both restart the countdown.
+
+**Options.**
+
+- Delete the call entirely, exactly as 1.6.0: smallest diff, but an ISO/WB Auto switch made by the WebUI or a button (a settings event, no reply here) would leave the poll at 30 s until the next command reply
+- Call it inside the iso_auto and wb_auto branches (the plan): +2 lines of logic; the interval follows Auto switches from any client; a get_state reply or the rare settings event that carries the keys restarts the timer, which is harmless right after a poll
+- Call it only when m_isoAuto or m_whiteBalanceAuto actually changes: strictest, about 6 more lines with a compare and a local, more than the item asked for
+
+**Chosen, and why.** I chose the plan's form: the call goes inside the two branches, with braces added. It keeps the port's real gain over 1.6.0: an Auto switch made by another client still speeds the poll up. It also removes the restart on unrelated events. I did not add a compare-on-change. Which events carry iso_auto and wb_auto (checked in core-work): get_state and command replies, which already call updateRefreshTimer() on their own path, and the settings event, which has one caller (CC:12879) and is rare. A restart from those does no harm. What I gave up: a settings event still restarts the timer even when the Auto flags did not change.
+
+**After.**
+
+```
+    if (state.contains(QStringLiteral("iso_auto"))) {
+        m_isoAuto = state.value(QStringLiteral("iso_auto")).toBool(m_isoAuto);
+        updateRefreshTimer();
+    }
+...
+    if (state.contains(QStringLiteral("wb_auto"))) {
+        m_whiteBalanceAuto = state.value(QStringLiteral("wb_auto")).toBool(m_whiteBalanceAuto);
+        updateRefreshTimer();
+    }
+```
+
+**Checked.** Here: /home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1 returned PASS with 0 warnings. That is the Qt build with the QML compiled ahead of time. Nothing can be run on a screen here. Still needs the camera: (1) Set ISO Auto and start a 1 s timelapse in Still Mode. Change the light. The green ISO in use should follow within 2 s. (2) Switch ISO Auto on from the WebUI. The touch ISO in use should start to move within about 1 s, not after 30 s. Optional: apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"iso_auto":[a-z]*' to confirm the mode.
+
+**Rule.** Restart or retune a QTimer only where its inputs change. Never do it in a function that runs for every message.
+
+
+---
+
+## U8. ui: SettingsBridge reads fileTimecodeSeparate
+
+Apertar-UI `dba1995`. Finding: touch-ui commit 11. Reviewed by a second agent: accept.
+
+**What was there.**
+
+The port had no way to tell whether the file timecode was set apart. src/SettingsBridge.hpp:59@lane-ui1 (before 30961b6) only has the screens' mode:
+    Q_PROPERTY(QString timecodeMode READ timecodeMode WRITE setTimecodeMode NOTIFY timecodeModeChanged)
+The port always treats the file timecode as separate. The tap and the Settings first row change only the screens' timecode (design page, "How it works in the port today", Timecode).
+
+**Why it is a problem.** Commit 12 brings back 1.6.0's tap, which sets both timecodes, unless the operator has set the file timecode apart. For that the UI must be able to read the UI.conf key fileTimecodeSeparate that Core will write. In original Apertar, every UI.conf toggle reaches QML through one SettingsBridge Q_PROPERTY, built like zebraEnabled (conventions R3 steps 1-2; ui-upstream src/SettingsBridge.cpp setZebraEnabled and pollExternalSettings). Core writes UI.conf, and the bridge's file watcher re-reads it.
+
+**How to spot it.** Run grep -n 'zebraEnabled' src/SettingsBridge.cpp src/SettingsBridge.hpp. Each place it shows up (constructor, poll, setter, serialize, apply, header) should have a twin for the new key. Also watch for QSettings reads of UI.conf outside SettingsBridge.
+
+**Options.**
+
+- Copy the zebraEnabled pattern into SettingsBridge (property, member, constructor read, setter, poll re-read, preset save/apply): about 27 lines, the original pattern
+- Read the key ad hoc with QSettings inside ApertarControlBridge or QML: fewer lines, but a second way to read UI.conf, and QML could not bind to it or be notified of changes
+- Have Core add a field to get_state: wire change, and it breaks the rule that UI.conf values live only under "ui":{}
+
+**Chosen, and why.** Option 1, as the design page and R3 say. The setter also writes UI.conf, so touch presets can carry the key, as every UI.conf toggle does. What was given up: nothing in behaviour. The cost is a property that no QML reads until commit 12.
+
+**After.**
+
+```
+bool SettingsBridge::fileTimecodeSeparate() const { return m_fileTimecodeSeparate; }
+void SettingsBridge::setFileTimecodeSeparate(bool value)
+{
+    if (m_fileTimecodeSeparate == value) return;
+    m_fileTimecodeSeparate = value;
+    if (!m_externalSettingsSyncing) m_settings.setValue("fileTimecodeSeparate", value);
+    m_settings.sync(); updateSettingsFileState(); emit fileTimecodeSeparateChanged();
+}
+```
+
+**Checked.**
+
+Run here: /home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1 gave PASS with 0 warnings (UI build, QML compiled ahead of time). Nothing could be run on a screen. Still needs the camera, after Core commit 9 is deployed:
+1. Run apertar-cmd '{"cmd":"set_timecode_mode","value":"rec_run","target":"ui","id":1}'.
+2. Run grep fileTimecodeSeparate ~/.config/CinePi/UI.conf. It should show true.
+3. Save a touch preset. Its JSON should hold "fileTimecodeSeparate": true.
+The screen check (that the tap follows the key) belongs to commit 12.
+
+**Rule.** A new UI.conf key reaches QML through one SettingsBridge Q_PROPERTY built like zebraEnabled, in the same six places. Never read it ad hoc.
+
+
+---
+
+## U9. qml: without fps_max and iso_max the touch caps are fork main's again
+
+Apertar-UI `0cbd664`. Finding: touch-ui commit 15. Reviewed by a second agent: accept.
+
+**What was there.** qml/CameraPage.qml:526@cinemate-port: const maximum = root.controlBridge ? root.controlBridge.isoMax : (root.losslessIsoLimitedMode ? 1600 : 0); with a bridge and iso_max 0 lossless offered the whole list with Auto. qml/CameraPage.qml:~820: the IMX585 4K modes were capped at 25 fps in Clear HDR 16-bit. fpsCeiling: the IMX585 lossless cap was an empty block.
+
+**Why it is a problem.** These fallbacks run only when Core sends no fps_max or iso_max, and there they differed from the merge target. Apertar 1.6.0 and fork main cap lossless at ISO 800 with no Auto, the IMX585 4K modes at 30 fps and IMX585 lossless at 30 fps (ui-upstream qml/CameraPage.qml:511-513, :815-816).
+
+**How to spot it.** grep -n "controlBridge ? .* : (" qml/*.qml and ask which branch runs when the bridge is present but the field is 0.
+
+**Options.**
+
+- Restore fork main's fallbacks exactly (small diff, matches the merge target)
+- Drop the fallbacks altogether because Core always sends the fields (larger change, outside this item)
+
+**Chosen, and why.** Restore fork main's fallbacks: isoOptions uses Core's isoMax only when it is above 0, otherwise lossless stops at 800 with no Auto; the IMX585 4K modes go back to 30 fps; IMX585 lossless gets its 30 fps cap back. This round only corrects the Why sentence about the 1600 fallback.
+
+**After.**
+
+```
+const coreMaximum = root.controlBridge ? root.controlBridge.isoMax : 0
+const losslessFallback = !(coreMaximum > 0) && root.losslessIsoLimitedMode
+const maximum = coreMaximum > 0 ? coreMaximum : (losslessFallback ? 800 : 0)
+if (root.clearHdrActive || losslessFallback)
+    return entries
+```
+
+**Checked.** Ran here: /home/user/build/bin/check_ui.sh /home/user/wt/lane-ui1 lane-ui1, PASS with 0 warnings. Nothing can be seen on a screen here. On the camera, the current Core always sends fps_max and sends iso_max in lossless and Clear HDR modes, so these lines run only against a Core that sends neither field.
+
+**Rule.** Check a ternary fallback against the branch that runs on the device, not only the literal in it.
+
