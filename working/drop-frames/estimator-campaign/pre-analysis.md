@@ -241,6 +241,39 @@ also begin at low flows is unconfirmed: a cool drive may never pause.
 
 ![What each lever does](figures/fig7-levers.png)
 
+## 2c-2. Which modes hold 25 fps for 30 min?
+
+Flow at 25 fps = 25 x the frame size (2c-1). It has to stay under the drive's sustained rate with room for the warm
+pauses, and under the mode's CPU wall with ~1 fps to spare. Nothing in 4K has run 30 min yet: "probable" is derived
+from 2c and 2c-0.
+
+| Mode at 25 fps | Flow | NVMe 30 min | T7 30 min | Why |
+| --- | --- | --- | --- | --- |
+| 4K HDR16 uncompressed | 415 MB/s | **no**: 25 failed at 12.6 min (measured) | no | the drive pauses after ~312 GB |
+| 4K HDR16 uncompressed + Log | 312 MB/s | uncertain: 5 min clean (measured); 25 sits 1 fps under the back-end wall (26) | no | back end at the edge; ~560 GB in 30 min |
+| 4K HDR16 MLV | ~415 MB/s | no (as uncompressed) | no | the same flow |
+| 4K HDR16 lossless | ~295 MB/s | **no**: the encoder tops out at ~15 | no | encoder |
+| 4K HDR12 uncompressed / lossless / MLV | 310 MB/s | **no**: the back end dropped at 25 (measured) | no | back end |
+| 4K SDR12 uncompressed | 310 MB/s | **probable**: 13 fps under its 15-min proven 37; a 2-s pause drains in ~4 s | no | ~560 GB in 30 min: past 265 GB, but with 155 MB/s to spare |
+| 4K SDR12 lossless | ~125 MB/s | **probable** | no (T7 tops ~18) | the drive stays ~60-65 °C |
+| 4K SDR12 lossy 3:1 | ~85 MB/s | **probable** | **probable** | under the T7's ~105 MB/s |
+| 4K SDR12 lossy 5:1 | ~50 MB/s | **probable** | **probable** | |
+| 4K SDR12 MLV | 310 MB/s | uncertain: 25 is the MLV writer's limit (25.7-26) | no | the writer, not the drive |
+| 4K SDR10 uncompressed | ~260 MB/s | **probable** | no | |
+| 4K SDR10 lossless / lossy | ~105 / < 90 MB/s | **probable** | lossless marginal; lossy **probable** | |
+| 2880x2160 crop SDR12 lossless | ~95 MB/s | **probable** | probable at 24, marginal at 25 | |
+| 4K ProRes HQ | ~112 MB/s | **probable** (encoder ~28.7, 3 fps spare) | no (T7 ~22) | 4.5 MB/frame |
+| 4K ProRes 422 / LT / Proxy | 45 / 22 / 5 MB/s | **probable** | **probable** | encoder far above 25 |
+| H.264 2560x1440 / 1080p | < 1 MB/s | **probable** | **probable** | |
+| 2K HDR16 uncompressed | 105 MB/s | **probable** | no (18 fps measured) | at the T7's own rate |
+| 2K HDR16 lossless | ~55 MB/s | **probable** | **passed** at 27 (measured, older build) | |
+| 2K SDR12 every format | ≤ 78 MB/s | **probable** | **passed**: uncompressed 32 and lossless 48 (measured, older build) | |
+
+**In short:** for 4K HDR at 25 fps for 30 min, nothing is known to work on either drive. 4K HDR16 uncompressed fails at
+~12 min; Log, HDR12 and MLV sit at their CPU limits. For a 30-min 4K take at 25:
+- **NVMe:** SDR12 uncompressed, lossless or lossy; SDR10; ProRes HQ / 422.
+- **T7:** only SDR12 / SDR10 lossy, ProRes 422 / LT / Proxy, or H.264.
+
 ## 2c. Will a 30-min take work? (projection)
 
 Nothing in 4K has been recorded for 30 min yet. The NVMe's longest takes are 15 min, and the S6 flat controls never
