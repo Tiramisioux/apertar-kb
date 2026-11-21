@@ -3392,3 +3392,12 @@ onValueSelected: v === "Same as Mode"
 
 **Rule.** A port feature's control shows the stock value until the operator moves it.
 
+
+
+---
+
+## C59. core: get_state sends the clip merge keys once
+
+Apertar-Core `0889122`. Finding: CLIP-C-1 (`raw/rev-clip-core.md`). Made by hand. Short entry: same kind as C4.
+
+The clip-split commit 6e340c8 added a second `<< clipMergeStateJson()` to the `get_state` chain, after the settings body, so every `clip_merge_*` key came twice. The second line is gone. How to spot it and the rule: see C4 (read each value once at the top of the handler, write each key once; grep the raw reply, because a JSON parser hides duplicate keys).
