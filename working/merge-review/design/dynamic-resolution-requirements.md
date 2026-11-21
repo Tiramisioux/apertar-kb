@@ -3,7 +3,8 @@
 Collected from Patrik's messages of 2026-11-21, in order; a later line wins over an earlier one.
 
 1. The user-defined Mode Ladder goes. It becomes **"Dynamic resolution"**: automatic, **on by default**. The ladder pane
-   stays, greyed out (no editing): it shows the current limits and why.
+   stays and shows the current limits and why: **active (not greyed) while Dynamic resolution is on, greyed out while it
+   is off** (correction of 2026-11-21: an earlier message said greyed out).
 2. Purpose: it automatically gives the user the known limits, and applies them.
 3. Order when the user raises the fps past a threshold: **first the resolution is lowered; after that the bit depth is
    lowered; after that the mode goes from HDR to SDR** (Clear HDR to normal on the IMX585). Bit depth and HDR/SDR are
