@@ -4,6 +4,8 @@ The non-code files of Apertar Core (review branch `claude/awesome-pasteur-qzsiow
 
 A stock camera needs none of them. Each group turns on one feature. Install only the groups you want.
 
+The only hardware config file in the repos is `config/apertar-hardware-cam1.conf`, for the second sensor. The main `/home/pi/apertar-hardware.conf` is not a file in any repo: Core writes it on the camera. Each camera keeps its own.
+
 Copy the folder to the Pi, then run the commands from inside it:
 
 ```bash
