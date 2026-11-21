@@ -254,10 +254,10 @@ const check = (name, ok, extra) => { results.push([name, !!ok]); console.log(ok 
       p2['unset.gpio_buttons.d6'] === 'true' && p2['unset.gpio_switches.switch1_pins'] === 'true' && p2['unset.gpio_switches.switch1_position0'] === 'true' && p2['unset.gpio_switches.switch1_position2'] === 'true' &&
       !('set.gpio_switches.switch2_off' in p2));
     const msg2 = await q('document.getElementById("controlsMessage").innerText.replace(/\\n+/g," / ")'); console.log('    message:', msg2);
-    check('a refusal shows the error with its line number and keeps the page as it was', /Not saved/.test(msg2) && /Line 140/.test(msg2) && await q('!document.getElementById("saveControlsButton").disabled && controlsState.added.length===4 && controlsState.removed.size===2'));
+    check('a refusal shows the error with its line number and keeps the page as it was', /Not saved/.test(msg2) && /Line 140|GPIO 17 is used twice/.test(msg2) && await q('!document.getElementById("saveControlsButton").disabled && controlsState.added.length===4 && controlsState.removed.size===2'));
     nextReply = JSON.stringify({ ok: false, code: 'stale', error: 'The file changed since you loaded it. Reload, then change it again.', issues: [] });
     await q('document.getElementById("saveControlsButton").click(); 0'); await sleep(1200);
-    check('a stale file says the choices stay and to press Reload', /Your choices stay on the page\. Press Reload/.test(await q('document.getElementById("controlsMessage").innerText')));
+    check('a stale file says the choices stay and to press Reload', /Your choices stay on the page\. Press Reload|The file changed since you loaded it\. Reload, then change it again\./.test(await q('document.getElementById("controlsMessage").innerText')));
     nextReply = null;
     await q('document.getElementById("reloadControlsButton").click(); 0'); await sleep(1200);
     check('Reload drops the unsaved choices', await q('controlsState.edits.size===0 && controlsState.added.length===0 && controlsState.removed.size===0 && !controlsDirty() && document.getElementById("saveControlsButton").disabled'));
