@@ -222,7 +222,7 @@ REC_TIME = {
     '4K SDR12 MLV': 'NVMe 25: 30 min uncertain  |  T7: ~8 fps',
     '4K SDR10 unc': 'NVMe 43-45: ~10 min (derived)  |  T7: ~10 fps',
     '2880 crop SDR12 unc': 'NVMe 50: ~10 min (derived)  |  T7: ~11 fps',
-    '4K ProRes HQ': 'NVMe and T7 25: 30 min probable',
+    '4K ProRes HQ': 'NVMe 25: 30 min probable  |  T7 22: 30 min probable',
     '4K ProRes 422': 'NVMe and T7 40: 30 min probable',
     'H.264 2560x1440': 'NVMe and T7 45: 30 min probable',
     '2K HDR16 unc': 'NVMe 30: 30 min probable  |  T7 lossless 27: 30 min passed',
@@ -230,11 +230,25 @@ REC_TIME = {
 }
 
 
+FRAME_MB = {'4kP:prores:hq': 4.47, '4kP:prores:422': 1.78, '4kP:h264:2560x1440': 0.02}   # measured, samples 2026-11-21
+
+
+def rec_status(txt):
+    """'passed' (a 30-min take passed), 'probable' (30 min probable), or None."""
+    if '30 min passed' in txt:
+        return 'passed'
+    if '30 min probable' in txt:
+        return 'probable'
+    return None
+
+
 def fig_walls(probes, out):
     by = {}
     for p in probes:
         if p.get('bpf') and p.get('spec'):
             by.setdefault(p['spec'], []).append((p['bpf'], p.get('top') or 60))
+    for spec, mb in FRAME_MB.items():         # no bpf in the probe records: measured write rate / delivered fps
+        by.setdefault(spec, [(mb * 1e6, 60)])
     rows = []
     for lab, spec, wall, what in WALLS:
         if spec not in by:
@@ -242,7 +256,7 @@ def fig_walls(probes, out):
         bpf = st.median(b for b, _ in by[spec]) / 1e6
         top = st.median(t for _, t in by[spec])
         rows.append((lab, bpf, top, wall, what))
-    fig, ax = plt.subplots(figsize=(17, 0.6 * len(rows) + 1.8))
+    fig, ax = plt.subplots(figsize=(17, 0.75 * len(rows) + 1.8))
     for i, (lab, bpf, top, wall, what) in enumerate(reversed(rows)):
         cands = {'sensor': top, 'NVMe warm': NVME_WARM / bpf, 'CPU: ' + (what or 'n/a'): wall}
         lim_n = min(cands, key=cands.get)
@@ -250,8 +264,19 @@ def fig_walls(probes, out):
         lo = min(T7 / bpf, lim)
         ax.plot([0, min(lim, 62)], [i, i], color='#ddd', lw=6, solid_capstyle='butt', zorder=1)
         ax.plot([lim], [i], 'o', color='black', ms=9, zorder=5)
-        ax.text(64, i + 0.06, '%.0f fps: %s' % (lim, lim_n.replace('CPU: ', '')), va='bottom', fontsize=8.4, weight='bold')
-        ax.text(64, i - 0.06, 'records: ' + REC_TIME.get(lab, '-'), va='top', fontsize=7.6, color='#333')
+        ax.text(64, i + 0.16, '%.0f fps: %s' % (lim, lim_n.replace('CPU: ', '')), va='bottom', fontsize=8.4, weight='bold')
+        parts = REC_TIME.get(lab, '-').split('  |  ')
+        if len(parts) == 1:
+            parts = [parts[0].replace('NVMe and T7', 'NVMe'), parts[0].replace('NVMe and T7', 'T7')]
+        ok_any = False
+        for k, txt in enumerate(parts):
+            ok = rec_status(txt)
+            ok_any = ok_any or bool(ok)
+            ax.text(64, i + 0.08 - 0.3 * k, txt, va='top', fontsize=7.8,
+                    color={'passed': '#0b6e3c', 'probable': '#17a589'}.get(ok, '#666'),
+                    weight='bold' if ok else 'normal')
+        if ok_any:
+            ax.axhspan(i - 0.46, i + 0.46, color='#17a589', alpha=0.08, zorder=0)
         ax.plot([min(T7 / bpf, 62)], [i], 's', color='#17a589', ms=7, zorder=4)
         ax.plot([min(NVME_COLD / bpf, 62)], [i], '|', color='#2471a3', ms=14, mew=2, zorder=3)
         ax.plot([min(NVME_WARM / bpf, 62)], [i], 'D', color='#2471a3', ms=7, zorder=4)
@@ -259,7 +284,7 @@ def fig_walls(probes, out):
         if wall < 90:
             ax.plot([min(wall, 62)], [i], '^', color='#e67e22', ms=8, zorder=4)
         ax.plot([min(top, 62)], [i], '*', color='#7f8c8d', ms=10, zorder=4)
-        ax.text(-1, i, '%s  (%.1f MB/frame)' % (lab, bpf), ha='right', va='center', fontsize=8.8)
+        ax.text(-1, i, '%s  (%s MB/frame)' % (lab, '%.1f' % bpf if bpf >= 0.1 else '< 0.1'), ha='right', va='center', fontsize=8.8)
         if lo < lim:
             ax.text(min(T7 / bpf, 62), i + 0.33, 'T7 %.0f' % (T7 / bpf), ha='center', fontsize=7, color='#17a589')
     ax.axvline(62.5, color='#999', lw=0.8)
@@ -277,8 +302,9 @@ def fig_walls(probes, out):
          Line2D([], [], marker='v', color='#c0392b', ls='', label='NVMe after 10 min (~%d MB/s, pauses)' % NVME_PAUSING),
          Line2D([], [], marker='s', color='#17a589', ls='', label='T7 SSD (%d MB/s)' % T7),
          Line2D([], [], marker='^', color='#e67e22', ls='', label='CPU wall: back end / encoder (measured)'),
-         Line2D([], [], marker='o', color='black', ls='', label='the limit on NVMe (lowest wall)')]
-    ax.legend(handles=h, fontsize=8, loc='upper center', bbox_to_anchor=(0.4, -0.07), ncol=4, framealpha=0.95)
+         Line2D([], [], marker='o', color='black', ls='', label='the limit on NVMe (lowest wall)'),
+         plt.Rectangle((0, 0), 1, 1, fc='#17a589', alpha=0.25, label='30 min probable (green) or passed (dark green, measured)')]
+    ax.legend(handles=h, fontsize=8, loc='upper center', bbox_to_anchor=(0.45, -0.06), ncol=4, framealpha=0.95)
     ax.grid(axis='x', alpha=0.3)
     fig.subplots_adjust(left=0.27)
     fig.savefig(out + '/fig4-walls.png', dpi=150, bbox_inches='tight', facecolor='white')
@@ -315,7 +341,7 @@ def fig_survival(takes, out):
 # flows at the recommended fps (MB/s; measured on the NVMe unless marked derived)
 FLOWS = [('4K SDR12 unc 37', 459, ''), ('4K HDR16 unc 27', 447, ''), ('4K HDR16 unc 25', 414, ''),
          ('4K HDR16 unc + Log 25', 307, ''), ('4K SDR12 lossless 40', 230, ' (derived)'),
-         ('2K SDR12 unc 60', 187, ''), ('4K SDR12 lossy 3:1 37', 130, ' (derived)'), ('4K ProRes HQ 27', 80, ' (derived)')]
+         ('2K SDR12 unc 60', 187, ''), ('4K SDR12 lossy 3:1 37', 130, ' (derived)'), ('4K ProRes HQ 27', 122, '')]
 BUF_MB, PAUSE_S = 1060, 2.0
 
 

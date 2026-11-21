@@ -41,7 +41,7 @@ Sustained = what a long take holds. The table rounds down for the ~2 fps a warm 
 | 4K SDR10 lossy 3:1 / 5:1 | 41 / 44 | - | encoder | buffer full | 39 / 43 | ~35 / ~43 | SDR12 lossy plus ~2 fps; untested long. |
 | 4K SDR10 MLV | 10.8-11.1 at 116-120 MB/s | - | MLV writer | buffer full | **unconfirmed** (11 looks wrong: SDR12 MLV does 26) | - | Don't trust the 11: the probe hit the safety stop within seconds; re-measure first. |
 | 2880x2160 crop SDR12 uncompressed / lossless | 53 / 59 | - | storage / encoder | buffer full | 51 / 56 (derived) | ~11 / ~24 | The near-4K route to 48-50 fps; untested long. |
-| 4K ProRes HQ (standard colour) | 28.2-29.3 delivered | - | encoder (CPU ~340 %) | ProRes queue full + capture gaps | **27** | 27 (derived: ~88 MB/s at 30, under the T7's 105) | The encoder sets 27 on any storage; 25 is the safe setting. |
+| 4K ProRes HQ (standard colour) | 28.2-29.3 delivered | - | encoder (CPU ~340 %) | ProRes queue full + capture gaps | **27** | **~22** (derived from the measured 4.5 MB/frame: 130 MB/s at 28.6 fps, over the T7's 105) | The encoder sets 27 on NVMe (25 is the safe setting); on the T7 the drive sets ~22. |
 | 4K ProRes HQ ARRI LogC4 | 42.4-43.8 delivered | P3 at 46: dropped | encoder | capture gaps, ProRes queue | ~40 (unconfirmed why it beats standard HQ) | same | Suspicious: 14 fps above standard HQ; check before relying on it. |
 | 4K ProRes 422 / LT / Proxy | 41.5 / 43.8-44.9 / 47.2-47.5 | - | encoder (CPU 220-300 %) | capture gaps | 40 / 43 / 45 | same | Encoder limit; 422 is the high-fps 4K ProRes choice. |
 | H.264 2560x1440 | 47.1-47.5 delivered | - | encoder (CPU ~210 %) | capture gaps (~750/min at 60) | 45 | same | The encoder tops out at 45; the Pi 5 has no 4K H.264. |
@@ -202,7 +202,8 @@ clean at the recipe's fps on each storage (from 2c-0, 2c and 5a; measured where 
 | 2880x2160 crop SDR12 uncompressed | 9.3 | ~465 at 50 |
 | 4K SDR12 lossless / lossy 3:1 / lossy 5:1 | 5.0 / 3.4 / 2.0 | ~200 / ~130 / ~85 at 40 / 37 / 41 |
 | 2K HDR16 / SDR12 uncompressed | 4.2 / 3.1 | 125 at 30 / 187 at 60 |
-| 4K ProRes HQ, H.264 | ~3 / < 0.2 | ~80 / < 10 |
+| 4K ProRes HQ / 422 / LT / Proxy (measured write rate / delivered fps) | 4.5 / 1.8 / 0.9 / 0.2 | 130 at 28.6 / 74 at 41 / 40 at 44 / 10 at 47 |
+| H.264 | < 0.1 | under 1 MB/s on the device counter |
 
 **How much a mode warms the drive.** The warming follows the flow:
 
@@ -272,7 +273,7 @@ measured the same way.
 | 4K SDR12 lossy 3:1 / 5:1 | 37 / 41 | ~130 / ~85 MB/s | 8 / 12 s | **probable** | 3:1 at ≤ 28, 5:1 at ≤ 41: probable (85 MB/s under 100) |
 | 2880x2160 crop SDR12 lossless | 56 | ~210 MB/s | 5 s | probable | ≤ 24 |
 | 4K SDR12 MLV | 25 | ~310 MB/s | 3.4 s | uncertain-to-probable: ~560 GB in 30 min; one file, no folder cost | no |
-| 4K ProRes HQ / 422 / LT / Proxy | 27 / 40 / 43 / 45 | ~80 / ~85 / ~60 / ~30 MB/s | > 10 s | **probable**; the limit is CPU (220-340 %), not the drive; CPU heat over 30 min unmeasured | HQ at ≤ 27 marginal (~80-90 MB/s), 422 / LT / Proxy probable |
+| 4K ProRes HQ / 422 / LT / Proxy | 25-27 / 40 / 43 / 45 | ~115-122 / ~72 / ~39 / ~10 MB/s (measured 4.5 / 1.8 / 0.9 / 0.2 MB/frame) | > 8 s | **probable**; the limit is CPU (220-340 %), not the drive; CPU heat over 30 min unmeasured | HQ only at ≤ 22 (the T7's ~105 MB/s); 422 / LT / Proxy probable |
 | H.264 2560x1440 / 1080p | 45 / 60 | < 10 MB/s | - | probable (CPU) | probable |
 | 2K HDR16 uncompressed | 30 | 125 MB/s | 8.5 s | **probable** | no (18 fps meter); lossless 27: **passed 30 min** (measured) |
 | 2K SDR12 uncompressed | 60 | 187 MB/s | 5.7 s | **probable** with the split (flat: t* = 9 min at 60 fps) | 32: **passed 30 min, 4 of 4, split** (measured) |
@@ -368,7 +369,7 @@ don't need it.
 | 4K, best image, long takes | HDR16 uncompressed at 24-25 for takes under ~10 min; for longer takes wait for P6 | not possible (6 fps) |
 | 4K HDR, longer takes | SDR12 uncompressed at 37 (15 min proven) as the SDR fallback; HDR16 lossless only to 14 | - |
 | 4K high frame rate | SDR12 lossless 40 / lossy 5:1 41 / crop 2880x2160 lossless 56 | lossy 5:1 ~41 (derived) |
-| 4K delivery codecs | ProRes HQ 27, ProRes 422 40, ProRes LT 43, Proxy 45; H.264 1440 45 | same (encoder-limited) |
+| 4K delivery codecs | ProRes HQ 27, ProRes 422 40, ProRes LT 43, Proxy 45; H.264 1440 45 | ProRes HQ ~22 (the drive); 422 / LT / Proxy / H.264 the same as NVMe |
 | 2K | everything at the mode's top (HDR 30, SDR 60) | SDR12 lossless 48, uncompressed 32 (split), HDR16 lossless 27 |
 
 ## 5a. Recipes per mode, and what to expect
@@ -405,7 +406,8 @@ started at 40 °C and at 60 °C alike. Plan for the 265-375 GB point instead: ab
 | | T7 | lossless **≤ 24** | | derived |
 | **4K MLV (SDR12)** | NVMe | **25** | the MLV writer caps it; ~310 MB/s, one file per take; 30 min uncertain-to-probable | probable |
 | | T7 | - | not practical | - |
-| **4K ProRes** | both | HQ **25** (27 at the limit), 422 **40**, LT **43**, Proxy **45** | the encoder is the limit (CPU 220-340 %), not the drive; on the T7, HQ at 27 is ~80-90 MB/s, so stay at 25 | derived; Pi heat over 30 min unmeasured |
+| **4K ProRes** | NVMe | HQ **25** (27 at the limit), 422 **40**, LT **43**, Proxy **45** | the encoder is the limit (CPU 220-340 %), not the drive; 30 min probable | derived; Pi heat over 30 min unmeasured |
+| | T7 | HQ **22**; 422 **40**, LT **43**, Proxy **45** | HQ writes 4.5 MB/frame (measured), so the T7's ~105 MB/s sets ~22; the others fit; 30 min probable | derived |
 | **H.264** | both | 2560x1440 **45**, 1080p **60** | 1080p 60 only with TDN off | measured (60-s) |
 | **2K HDR16** | NVMe | any format at **30** (the sensor's top) | flow ≤ 125 MB/s; the drive stays ≤ 64 °C | measured |
 | | T7 | lossless **27** | **passed 30 min** | measured |
