@@ -1,0 +1,14 @@
+1795274736.897512 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795274736.907200 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795274736.907446 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795274736.908440 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 995 MiB (MemAvailable 2513 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 15.8 MiB = 62 frames) source=conf
+1795274736.953455 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_16253620_C0012_cam0 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000
+1795274737.055200 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=18752940628
+1795274741.560581 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=86953 nominal_us=43480 total_estimate=1
+1795274741.560581 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=98 count=97 skipped=1 dt_us=86953 since_first_us=4260845 total=1
+1795274741.957347 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=1 requeue_failures=0
+1795274741.957347 apertar start-apertar-core.sh[849]: ApertarCore phase-lock stats: max_abs_err_us=146 duration_pushes=409
+1795274741.976169 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=107 written=107 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=1 fault= peak_queue=2/12 queue_bytes_peak=33177600 queue_budget=1044289945
+1795274741.991389 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=1
+1795274741.991619 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=18752940628 audio_boot_us=18752860930 trim_samples=3826 pad_samples=0 output_samples=225391 sample_rate=48000
+1795274741.993582 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 0 ms

@@ -1,0 +1,20 @@
+1795263836.019175 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795263836.020381 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 948 MiB (MemAvailable 2433 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 15.8 MiB = 59 frames) source=conf
+1795263836.071376 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_13235600_C0054_cam0 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000 worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+1795263836.161800 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=7852048240
+1795263837.792879 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=79991 nominal_us=40000 total_estimate=1
+1795263837.792879 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=35 count=34 skipped=1 dt_us=79991 since_first_us=1399996 total=1
+1795263838.158571 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=44 count=43 skipped=1 dt_us=79997 since_first_us=1759993 total=2
+1795263838.476441 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=51 count=50 skipped=1 dt_us=80006 since_first_us=2039997 total=3
+1795263838.651883 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=56 count=55 skipped=1 dt_us=79997 since_first_us=2239989 total=4
+1795263838.757592 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=59 count=58 skipped=1 dt_us=79980 since_first_us=2359990 total=5
+1795263844.478677 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=80004 nominal_us=40000 total_estimate=30
+1795263844.478677 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=202 count=201 skipped=1 dt_us=80004 since_first_us=8079976 total=30
+1795263849.094344 apertar start-apertar-core.sh[849]: ApertarCore buffer: safety stop at 90 % (854/948 MiB)
+1795263849.094344 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=51 requeue_failures=0
+1795263849.094344 apertar start-apertar-core.sh[849]: ApertarCore phase-lock stats: max_abs_err_us=85 duration_pushes=42
+1795263852.126576 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=266 written=266 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=51 fault= peak_queue=54/24 queue_bytes_peak=895795200 queue_budget=994086092
+1795263852.126576 apertar start-apertar-core.sh[849]: ApertarCore lossless timing: jobs=266 avg_wall_ms=295.89 avg_thread_cpu_ms=173.61 avg_wait_or_preempt_ms=122.28 max_wall_ms=513.07 estimated_capacity_fps=16.90
+1795263852.126576 apertar start-apertar-core.sh[849]: ApertarCore lossless phases: jobs=266 avg_encode_ms=246.04 avg_payload_write_ms=38.57 avg_container_ms=1.58 avg_payload_mib=11.29 tile_writes_per_frame=17.00
+1795263852.126576 apertar start-apertar-core.sh[849]: ApertarCore recorder stop time: 3.032s format=cdng discarded_on_stop=0
+1795263852.155651 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 28 ms

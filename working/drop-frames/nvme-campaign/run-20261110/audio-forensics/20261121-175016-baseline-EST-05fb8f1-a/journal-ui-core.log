@@ -1,0 +1,252 @@
+Nov 21 17:45:45.192075 apertar start-apertar-core.sh[849]: [6:32:41.144878985] [242493]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:45:45.204037 apertar start-apertar-core.sh[849]: [6:32:41.156860694] [242494]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:45:45.204710 apertar start-apertar-core.sh[849]: [6:32:41.157540580] [242494]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:45:45.206507 apertar start-apertar-core.sh[849]: [6:32:41.159329776] [242494]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:45:45.208875 apertar start-apertar-core.sh[849]: [6:32:41.161690340] [242494]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:45:45.209157 apertar start-apertar-core.sh[849]: [6:32:41.161989357] [242494]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:45:45.209843 apertar start-apertar-core.sh[849]: [6:32:41.162673336] [242494]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:45:45.209843 apertar start-apertar-core.sh[849]: [6:32:41.162685188] [242494]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:45:45.209910 apertar start-apertar-core.sh[849]: [6:32:41.162714928] [242494]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:45:45.210477 apertar start-apertar-core.sh[849]: [6:32:41.163311963] [242494]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:45:45.211436 apertar start-apertar-core.sh[849]: [6:32:41.164268200] [242494]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:45:45.213908 apertar start-apertar-core.sh[849]: [6:32:41.166739708] [242494]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:45:45.214496 apertar start-apertar-core.sh[849]: [6:32:41.167328835] [242494]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:45:45.214496 apertar start-apertar-core.sh[849]: [6:32:41.167339279] [242494]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:45:45.216877 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:45:45.219459 apertar start-apertar-core.sh[849]: ApertarCore trying IMX585 mode 3840x2160 10-bit format=SRGGB10_CSI2P raw-stream=off sensorConfig=explicit
+Nov 21 17:45:45.219511 apertar start-apertar-core.sh[849]: [6:32:41.172346869] [242493]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 1920x1080-YUV420/Rec709
+Nov 21 17:45:45.219663 apertar start-apertar-core.sh[849]: [6:32:41.172495535] [242494]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB10_1X10/RAW - Selected CFE format: 3840x2160-PC1R/RAW
+Nov 21 17:45:45.219901 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 raw_stream=off h264=1920x1080-YUV420
+Nov 21 17:45:45.225623 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 21 17:45:46.222551 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=242494 nice=-5
+Nov 21 17:45:52.258526 apertar start-apertar-core.sh[849]: [6:32:48.211324969] [242557]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:45:52.276498 apertar start-apertar-core.sh[849]: [6:32:48.229305246] [242558]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:45:52.277550 apertar start-apertar-core.sh[849]: [6:32:48.230373575] [242558]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:45:52.280041 apertar start-apertar-core.sh[849]: [6:32:48.232861713] [242558]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:45:52.283438 apertar start-apertar-core.sh[849]: [6:32:48.236245884] [242558]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:45:52.283813 apertar start-apertar-core.sh[849]: [6:32:48.236641993] [242558]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:45:52.284730 apertar start-apertar-core.sh[849]: [6:32:48.237556100] [242558]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:45:52.284730 apertar start-apertar-core.sh[849]: [6:32:48.237571471] [242558]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:45:52.284810 apertar start-apertar-core.sh[849]: [6:32:48.237610656] [242558]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:45:52.285603 apertar start-apertar-core.sh[849]: [6:32:48.238434819] [242558]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:45:52.286830 apertar start-apertar-core.sh[849]: [6:32:48.239659443] [242558]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:45:52.290095 apertar start-apertar-core.sh[849]: [6:32:48.242917726] [242558]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:45:52.290889 apertar start-apertar-core.sh[849]: [6:32:48.243715945] [242558]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:45:52.290889 apertar start-apertar-core.sh[849]: [6:32:48.243730352] [242558]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:45:52.293970 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:45:52.294735 apertar start-apertar-core.sh[849]: [6:32:48.247554670] [242557]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 1920x1080-RGGB_PISP_COMP1/RAW
+Nov 21 17:45:52.294987 apertar start-apertar-core.sh[849]: [6:32:48.247810724] [242558]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 1920x1080-SRGGB12_1X12/RAW - Selected CFE format: 1920x1080-PC1R/RAW
+Nov 21 17:45:52.296113 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=2(driver) raw=1920x1080 preview=1280x720 stream=1920x1080 format=RGGB_PISP_COMP1 stride=1920 storage_bits=12 packing=pisp_comp1 transport_bits=16
+Nov 21 17:45:52.299262 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=2073600
+Nov 21 17:45:52.302527 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 21 17:45:53.314987 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=242558 nice=-5
+Nov 21 17:46:03.385550 apertar start-apertar-core.sh[849]: [6:32:59.338351585] [242635]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:46:03.403800 apertar start-apertar-core.sh[849]: [6:32:59.356609733] [242636]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:03.404761 apertar start-apertar-core.sh[849]: [6:32:59.357585025] [242636]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:03.407240 apertar start-apertar-core.sh[849]: [6:32:59.360057904] [242636]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:46:03.410640 apertar start-apertar-core.sh[849]: [6:32:59.363437556] [242636]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:46:03.411062 apertar start-apertar-core.sh[849]: [6:32:59.363882851] [242636]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:03.412079 apertar start-apertar-core.sh[849]: [6:32:59.364899699] [242636]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:03.412079 apertar start-apertar-core.sh[849]: [6:32:59.364920143] [242636]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:46:03.412208 apertar start-apertar-core.sh[849]: [6:32:59.364963013] [242636]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:03.413002 apertar start-apertar-core.sh[849]: [6:32:59.365829510] [242636]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:03.414399 apertar start-apertar-core.sh[849]: [6:32:59.367226411] [242636]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:46:03.417923 apertar start-apertar-core.sh[849]: [6:32:59.370748915] [242636]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:03.418754 apertar start-apertar-core.sh[849]: [6:32:59.371582282] [242636]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:03.418754 apertar start-apertar-core.sh[849]: [6:32:59.371596097] [242636]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:46:03.434056 apertar start-apertar-core.sh[849]: ApertarCore ProRes colour: DaVinci Wide Gamut / DaVinci Intermediate (ISP curve approximation)
+Nov 21 17:46:03.434056 apertar start-apertar-core.sh[849]: [6:32:59.386839294] [242635]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:46:03.451613 apertar start-apertar-core.sh[849]: [6:32:59.404423147] [242641]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:03.452576 apertar start-apertar-core.sh[849]: [6:32:59.405399884] [242641]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:03.454978 apertar start-apertar-core.sh[849]: [6:32:59.407802411] [242641]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-prores/davinci_intermediate.json
+Nov 21 17:46:03.458935 apertar start-apertar-core.sh[849]: [6:32:59.411738006] [242641]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:46:03.459334 apertar start-apertar-core.sh[849]: [6:32:59.412160912] [242641]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:03.460402 apertar start-apertar-core.sh[849]: [6:32:59.413224907] [242641]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:03.460402 apertar start-apertar-core.sh[849]: [6:32:59.413243944] [242641]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:46:03.460483 apertar start-apertar-core.sh[849]: [6:32:59.413285518] [242641]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:03.461308 apertar start-apertar-core.sh[849]: [6:32:59.414138070] [242641]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:03.462687 apertar start-apertar-core.sh[849]: [6:32:59.415517527] [242641]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-prores/davinci_intermediate.json
+Nov 21 17:46:03.466601 apertar start-apertar-core.sh[849]: [6:32:59.419424863] [242641]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:03.467639 apertar start-apertar-core.sh[849]: [6:32:59.420464581] [242641]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:03.467639 apertar start-apertar-core.sh[849]: [6:32:59.420479970] [242641]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:46:03.471228 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-prores/davinci_intermediate.json
+Nov 21 17:46:03.472159 apertar start-apertar-core.sh[849]: ApertarCore trying IMX585 mode 3840x2160 10-bit format=SRGGB10_CSI2P raw-stream=off sensorConfig=explicit
+Nov 21 17:46:03.472331 apertar start-apertar-core.sh[849]: [6:32:59.425158747] [242635]  INFO Camera camera.cpp:1216 configuring streams: (0) 3840x2160-BGR161616/Rec709/Rec709/None/Full (1) 1280x720-YUV420/Rec709
+Nov 21 17:46:03.472645 apertar start-apertar-core.sh[849]: [6:32:59.425467357] [242641]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB10_1X10/RAW - Selected CFE format: 3840x2160-PC1R/RAW
+Nov 21 17:46:03.476812 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 raw_stream=off prores=3840x2160-BGR161616
+Nov 21 17:46:03.625100 apertar start-apertar-core.sh[849]: ApertarCore ProRes buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=12 frame_bytes=49766400
+Nov 21 17:46:03.631366 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 21 17:46:04.732232 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=242641 nice=-5
+Nov 21 17:46:11.922199 apertar start-apertar-core.sh[849]: [6:33:07.875002977] [242711]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:46:11.934358 apertar start-apertar-core.sh[849]: [6:33:07.887175076] [242712]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:11.935010 apertar start-apertar-core.sh[849]: [6:33:07.887841185] [242712]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:11.936721 apertar start-apertar-core.sh[849]: [6:33:07.889550659] [242712]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:11.939722 apertar start-apertar-core.sh[849]: [6:33:07.892540295] [242712]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:46:11.939973 apertar start-apertar-core.sh[849]: [6:33:07.892806461] [242712]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:11.940579 apertar start-apertar-core.sh[849]: [6:33:07.893411532] [242712]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:11.940579 apertar start-apertar-core.sh[849]: [6:33:07.893422143] [242712]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:46:11.941945 apertar start-apertar-core.sh[849]: [6:33:07.893459106] [242712]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:11.941945 apertar start-apertar-core.sh[849]: [6:33:07.894080215] [242712]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:11.942183 apertar start-apertar-core.sh[849]: [6:33:07.895015841] [242712]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:11.945224 apertar start-apertar-core.sh[849]: [6:33:07.898056550] [242712]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:11.945776 apertar start-apertar-core.sh[849]: [6:33:07.898608752] [242712]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:11.945776 apertar start-apertar-core.sh[849]: [6:33:07.898617900] [242712]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:46:11.950709 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585_clearHDR.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:11.953990 apertar start-apertar-core.sh[849]: [6:33:07.906821441] [242711]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2200-SRGGB16/RAW
+Nov 21 17:46:11.954115 apertar start-apertar-core.sh[849]: [6:33:07.906949181] [242712]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 21 17:46:11.954147 apertar start-apertar-core.sh[849]: [6:33:07.906964107] [242712]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 21 17:46:11.956939 apertar start-apertar-core.sh[849]: [6:33:07.909762558] [242712]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 21 17:46:11.956939 apertar start-apertar-core.sh[849]: [6:33:07.909780169] [242712]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 21 17:46:11.958223 apertar start-apertar-core.sh[849]: [6:33:07.911050072] [242712]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 21 17:46:11.958251 apertar start-apertar-core.sh[849]: [6:33:07.911083516] [242712]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2200-SRGGB16_1X16/RAW - Selected CFE format: 3840x2200-RG16/RAW
+Nov 21 17:46:11.958542 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2200 format=SRGGB16 stride=7680 storage_bits=16 packing=unpacked container_bytes=2
+Nov 21 17:46:11.987195 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=16896000
+Nov 21 17:46:11.990691 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 20)/3840x2120
+Nov 21 17:46:13.069596 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=242712 nice=-5
+Nov 21 17:46:23.101313 apertar start-apertar-core.sh[849]: [6:33:19.054124224] [242797]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:46:23.113690 apertar start-apertar-core.sh[849]: [6:33:19.066500860] [242798]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:23.114393 apertar start-apertar-core.sh[849]: [6:33:19.067227246] [242798]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:23.116143 apertar start-apertar-core.sh[849]: [6:33:19.068972424] [242798]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:23.119151 apertar start-apertar-core.sh[849]: [6:33:19.071971042] [242798]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:46:23.119399 apertar start-apertar-core.sh[849]: [6:33:19.072232985] [242798]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:23.120021 apertar start-apertar-core.sh[849]: [6:33:19.072852983] [242798]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:23.120021 apertar start-apertar-core.sh[849]: [6:33:19.072863353] [242798]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:46:23.120074 apertar start-apertar-core.sh[849]: [6:33:19.072892538] [242798]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:23.120641 apertar start-apertar-core.sh[849]: [6:33:19.073476480] [242798]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:23.121611 apertar start-apertar-core.sh[849]: [6:33:19.074445180] [242798]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:23.124835 apertar start-apertar-core.sh[849]: [6:33:19.077651463] [242798]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:23.125427 apertar start-apertar-core.sh[849]: [6:33:19.078254683] [242798]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:23.125427 apertar start-apertar-core.sh[849]: [6:33:19.078268072] [242798]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:46:23.130521 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585_clearHDR.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:23.131090 apertar start-apertar-core.sh[849]: [6:33:19.083923883] [242797]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 21 17:46:23.131708 apertar start-apertar-core.sh[849]: [6:33:19.084096382] [242798]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 21 17:46:23.131708 apertar start-apertar-core.sh[849]: [6:33:19.084108141] [242798]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 21 17:46:23.133970 apertar start-apertar-core.sh[849]: [6:33:19.086802186] [242798]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 21 17:46:23.133970 apertar start-apertar-core.sh[849]: [6:33:19.086812390] [242798]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 21 17:46:23.135277 apertar start-apertar-core.sh[849]: [6:33:19.088104699] [242798]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 21 17:46:23.135308 apertar start-apertar-core.sh[849]: [6:33:19.088135570] [242798]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB12_1X12/RAW - Selected CFE format: 3840x2160-RG16/RAW
+Nov 21 17:46:23.135566 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2160 format=SRGGB16 stride=7680 storage_bits=12 packing=unpacked transport_bits=16 container_bytes=2
+Nov 21 17:46:23.168105 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=16588800
+Nov 21 17:46:23.171537 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 21 17:46:24.266562 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=242798 nice=-5
+Nov 21 17:46:27.251088 apertar start-apertar-core.sh[849]: [6:33:23.203897134] [242828]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:46:27.263567 apertar start-apertar-core.sh[849]: [6:33:23.216379566] [242829]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:27.264303 apertar start-apertar-core.sh[849]: [6:33:23.217134915] [242829]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:27.266071 apertar start-apertar-core.sh[849]: [6:33:23.218900630] [242829]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:27.269176 apertar start-apertar-core.sh[849]: [6:33:23.221991803] [242829]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:46:27.269444 apertar start-apertar-core.sh[849]: [6:33:23.222275635] [242829]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:27.270095 apertar start-apertar-core.sh[849]: [6:33:23.222923929] [242829]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:27.270095 apertar start-apertar-core.sh[849]: [6:33:23.222937040] [242829]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:46:27.270153 apertar start-apertar-core.sh[849]: [6:33:23.222967391] [242829]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:46:27.270721 apertar start-apertar-core.sh[849]: [6:33:23.223554908] [242829]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:46:27.271839 apertar start-apertar-core.sh[849]: [6:33:23.224544774] [242829]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:27.274881 apertar start-apertar-core.sh[849]: [6:33:23.227703669] [242829]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:46:27.275506 apertar start-apertar-core.sh[849]: [6:33:23.228336648] [242829]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:46:27.275506 apertar start-apertar-core.sh[849]: [6:33:23.228348944] [242829]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:46:27.280540 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585_clearHDR.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:46:27.281154 apertar start-apertar-core.sh[849]: [6:33:23.233987310] [242828]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2200-SRGGB16/RAW
+Nov 21 17:46:27.281287 apertar start-apertar-core.sh[849]: [6:33:23.234119440] [242829]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 21 17:46:27.281316 apertar start-apertar-core.sh[849]: [6:33:23.234135625] [242829]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 21 17:46:27.284062 apertar start-apertar-core.sh[849]: [6:33:23.236893688] [242829]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 21 17:46:27.284062 apertar start-apertar-core.sh[849]: [6:33:23.236904243] [242829]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 21 17:46:27.285356 apertar start-apertar-core.sh[849]: [6:33:23.238183979] [242829]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 21 17:46:27.285382 apertar start-apertar-core.sh[849]: [6:33:23.238214738] [242829]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2200-SRGGB16_1X16/RAW - Selected CFE format: 3840x2200-RG16/RAW
+Nov 21 17:46:27.285649 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2200 format=SRGGB16 stride=7680 storage_bits=16 packing=unpacked container_bytes=2
+Nov 21 17:46:27.320765 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=16896000
+Nov 21 17:46:27.325254 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 20)/3840x2120
+Nov 21 17:46:28.436018 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=242829 nice=-5
+Nov 21 17:47:19.438004 apertar start-apertar-core.sh[849]: ApertarCore controls: applied: restarted CFexpress hat in 0 ms
+Nov 21 17:47:19.774894 apertar start-apertar-core.sh[849]: ApertarCore media: cfexpress hat now on bus=1 address=0x34
+Nov 21 17:47:39.118144 apertar start-apertar-core.sh[849]: ApertarCore mode ladder: 4K SDR 12-bit at 28 fps
+Nov 21 17:47:39.137819 apertar start-apertar-core.sh[849]: [6:34:35.090611455] [243919]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:47:39.151198 apertar start-apertar-core.sh[849]: [6:34:35.103826611] [243921]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:47:39.151732 apertar start-apertar-core.sh[849]: [6:34:35.104561163] [243921]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:47:39.153462 apertar start-apertar-core.sh[849]: [6:34:35.106285805] [243921]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:47:39.155990 apertar start-apertar-core.sh[849]: [6:34:35.108789426] [243921]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:47:39.156269 apertar start-apertar-core.sh[849]: [6:34:35.109100277] [243921]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:47:39.156959 apertar start-apertar-core.sh[849]: [6:34:35.109787830] [243921]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:47:39.156959 apertar start-apertar-core.sh[849]: [6:34:35.109801718] [243921]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:47:39.157042 apertar start-apertar-core.sh[849]: [6:34:35.109839718] [243921]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:47:39.157629 apertar start-apertar-core.sh[849]: [6:34:35.110461642] [243921]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:47:39.158579 apertar start-apertar-core.sh[849]: [6:34:35.111414305] [243921]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:47:39.161079 apertar start-apertar-core.sh[849]: [6:34:35.113910296] [243921]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:47:39.161674 apertar start-apertar-core.sh[849]: [6:34:35.114506238] [243921]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:47:39.161674 apertar start-apertar-core.sh[849]: [6:34:35.114516090] [243921]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:47:39.164236 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_notdn.json
+Nov 21 17:47:39.166982 apertar start-apertar-core.sh[849]: [6:34:35.119811386] [243919]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 21 17:47:39.167135 apertar start-apertar-core.sh[849]: [6:34:35.119965237] [243921]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB12_1X12/RAW - Selected CFE format: 3840x2160-PC1R/RAW
+Nov 21 17:47:39.167738 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2160 format=RGGB_PISP_COMP1 stride=3840 storage_bits=12 packing=pisp_comp1 transport_bits=16
+Nov 21 17:47:39.183811 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=8294400
+Nov 21 17:47:39.187152 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 21 17:47:40.223893 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=243921 nice=-5
+Nov 21 17:47:53.618296 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+Nov 21 17:47:53.628572 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+Nov 21 17:47:53.628645 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+Nov 21 17:47:53.628822 apertar start-apertar-core.sh[849]: ApertarCore CineMate Log: pisp_comp1 raw stream cannot be mapped on the copy worker, recording linear
+Nov 21 17:47:53.629398 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 1090 MiB (MemAvailable 2670 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 7.9 MiB = 137 frames) source=conf
+Nov 21 17:47:53.639408 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_17475316_C0014_cam0 format=cdng compression=lossless_jpeg media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000 worker_nice=0 workers=5 queue=24 tile_rows=128 encoder=quad_single_pass build=release
+Nov 21 17:47:53.687443 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=23689616962
+Nov 21 17:47:54.200245 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=13 written=13 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=0 fault= peak_queue=2/24 queue_bytes_peak=16588800 queue_budget=1143203430
+Nov 21 17:47:54.200448 apertar start-apertar-core.sh[849]: ApertarCore lossless timing: jobs=13 avg_wall_ms=78.24 avg_thread_cpu_ms=71.79 avg_wait_or_preempt_ms=6.45 max_wall_ms=88.17 estimated_capacity_fps=63.90
+Nov 21 17:47:54.200448 apertar start-apertar-core.sh[849]: ApertarCore lossless phases: jobs=13 avg_encode_ms=67.40 avg_payload_write_ms=7.95 avg_container_ms=0.41 avg_payload_mib=6.85 tile_writes_per_frame=17.00
+Nov 21 17:47:54.218566 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=1
+Nov 21 17:47:54.218717 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=23689616962 audio_boot_us=23689582346 trim_samples=1662 pad_samples=0 output_samples=22286 sample_rate=48000
+Nov 21 17:47:54.221049 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 2 ms
+Nov 21 17:48:02.654101 apertar start-apertar-core.sh[849]: [6:34:58.606903043] [244199]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:48:02.672071 apertar start-apertar-core.sh[849]: [6:34:58.624875573] [244200]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:48:02.673002 apertar start-apertar-core.sh[849]: [6:34:58.625829069] [244200]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:48:02.675435 apertar start-apertar-core.sh[849]: [6:34:58.628255227] [244200]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:48:02.679723 apertar start-apertar-core.sh[849]: [6:34:58.632528342] [244200]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:48:02.680086 apertar start-apertar-core.sh[849]: [6:34:58.632915248] [244200]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:48:02.680981 apertar start-apertar-core.sh[849]: [6:34:58.633807560] [244200]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:48:02.680981 apertar start-apertar-core.sh[849]: [6:34:58.633823226] [244200]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:48:02.681050 apertar start-apertar-core.sh[849]: [6:34:58.633863504] [244200]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:48:02.681868 apertar start-apertar-core.sh[849]: [6:34:58.634698723] [244200]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:48:02.683262 apertar start-apertar-core.sh[849]: [6:34:58.636091626] [244200]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:48:02.687647 apertar start-apertar-core.sh[849]: [6:34:58.640472407] [244200]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:48:02.688470 apertar start-apertar-core.sh[849]: [6:34:58.641292552] [244200]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:48:02.688470 apertar start-apertar-core.sh[849]: [6:34:58.641310070] [244200]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:48:02.696040 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585_clearHDR.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:48:02.700852 apertar start-apertar-core.sh[849]: [6:34:58.653669582] [244199]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2160-RGGB_PISP_COMP1/RAW
+Nov 21 17:48:02.701193 apertar start-apertar-core.sh[849]: [6:34:58.654016526] [244200]  INFO RPI ccmp_unwrap.cpp:132 CcmpUnwrap: rebuilt LUT (CCMP inverse, 16-bit linear, natural scale) — T1=500 T2=11500 slope_L=1/64 slope_H=1/16 blc_u12=200; LUT[200]=3200 (BLC anchor; ideal 3200) LUT[500]=3496 LUT[2048]=33164 LUT[4095]=65520
+Nov 21 17:48:02.701193 apertar start-apertar-core.sh[849]: [6:34:58.654032970] [244200]  INFO RPI pisp.cpp:1654 ClearHDR 12-bit CCMP stats linearisation enabled for imx585
+Nov 21 17:48:02.705104 apertar start-apertar-core.sh[849]: [6:34:58.657924753] [244200]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 21 17:48:02.705104 apertar start-apertar-core.sh[849]: [6:34:58.657941604] [244200]  INFO RPI pisp.cpp:1663 ClearHDR-12b CCMP stats linearisation enabled for imx585
+Nov 21 17:48:02.707031 apertar start-apertar-core.sh[849]: [6:34:58.659847542] [244200]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 21 17:48:02.707072 apertar start-apertar-core.sh[849]: [6:34:58.659894616] [244200]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2160-SRGGB12_1X12/RAW - Selected CFE format: 3840x2160-RG16/RAW
+Nov 21 17:48:02.711283 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2160 format=SRGGB16 stride=7680 storage_bits=12 packing=unpacked transport_bits=16 container_bytes=2
+Nov 21 17:48:02.744282 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=16588800
+Nov 21 17:48:02.748112 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 0)/3840x2160
+Nov 21 17:48:03.845492 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=244200 nice=-5
+Nov 21 17:48:14.861457 apertar start-apertar-core.sh[849]: [6:35:10.814260054] [244288]  INFO Camera camera_manager.cpp:340 libcamera v0.7.1+qbcfork.20260522-7-7e9fef0b
+Nov 21 17:48:14.876499 apertar start-apertar-core.sh[849]: [6:35:10.829311576] [244289]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:48:14.878034 apertar start-apertar-core.sh[849]: [6:35:10.830128407] [244289]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:48:14.879471 apertar start-apertar-core.sh[849]: [6:35:10.832292769] [244289]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:48:14.883114 apertar start-apertar-core.sh[849]: [6:35:10.835927294] [244289]  INFO RPiController controller.cpp:139 RP1_PLL_SYS request=333333333 Hz, snapped to pll_sys_core/3 = 333333333 Hz; PiSP pixel-rate cap = 646.667 Mpix/s (2px/clk − 20 overhead)
+Nov 21 17:48:14.883421 apertar start-apertar-core.sh[849]: [6:35:10.836252589] [244289]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:48:14.884150 apertar start-apertar-core.sh[849]: [6:35:10.836980401] [244289]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a' for pipeline handler rpi/pisp
+Nov 21 17:48:14.884150 apertar start-apertar-core.sh[849]: [6:35:10.836992661] [244289]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a to CFE device /dev/media3 and ISP device /dev/media0 using PiSP variant BCM2712_D0
+Nov 21 17:48:14.884237 apertar start-apertar-core.sh[849]: [6:35:10.837028327] [244289]  INFO RPI pisp.cpp:739 libpisp version v1.3.0 9ba67e6680f0 04-05-2026 (11:10:04)
+Nov 21 17:48:14.884912 apertar start-apertar-core.sh[849]: [6:35:10.837743454] [244289]  INFO RPI pipeline_base.cpp:1169 Using configuration file '/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml'
+Nov 21 17:48:14.886073 apertar start-apertar-core.sh[849]: [6:35:10.838905246] [244289]  INFO IPAProxy ipa_proxy.cpp:184 Using tuning file /home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:48:14.889951 apertar start-apertar-core.sh[849]: [6:35:10.842768511] [244289]  WARN RPiAlsc alsc.cpp:171 no luminance table - assume unity everywhere
+Nov 21 17:48:14.890644 apertar start-apertar-core.sh[849]: [6:35:10.843473712] [244289]  INFO Camera camera_manager.cpp:223 Adding camera '/base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a' for pipeline handler rpi/pisp
+Nov 21 17:48:14.890644 apertar start-apertar-core.sh[849]: [6:35:10.843485564] [244289]  INFO RPI pisp.cpp:1287 Registered camera /base/axi/pcie@1000120000/rp1/i2c@70000/imx283@1a to CFE device /dev/media4 and ISP device /dev/media2 using PiSP variant BCM2712_D0
+Nov 21 17:48:14.896751 apertar start-apertar-core.sh[849]: ApertarCore tuning file: /home/pi/Tuning-Files/defaults-pisp/imx585_clearHDR.json (sensor default, pisp) preview_tdn=off active=/home/pi/.cache/apertar-core/tuning/imx585_clearHDR_notdn.json
+Nov 21 17:48:14.897443 apertar start-apertar-core.sh[849]: [6:35:10.850272448] [244288]  INFO Camera camera.cpp:1216 configuring streams: (0) 1280x720-YUV420/Rec709 (1) 3840x2200-SRGGB16/RAW
+Nov 21 17:48:14.897588 apertar start-apertar-core.sh[849]: [6:35:10.850420095] [244289]  WARN RPI pisp.cpp:1563 The sensor is configured for a 16-bit output, statistics  will not be correct. You must use manual camera settings.
+Nov 21 17:48:14.897619 apertar start-apertar-core.sh[849]: [6:35:10.850437558] [244289]  INFO RPI pisp.cpp:1632 High-bit-depth SW stats producer enabled for imx585 — CFE HW stats unreliable at this bit depth.
+Nov 21 17:48:14.900905 apertar start-apertar-core.sh[849]: [6:35:10.853736102] [244289]  INFO RPI raw_stats.cpp:68 RawStats: loaded 15×15 'centre-weighted' metering grid for imx585
+Nov 21 17:48:14.900905 apertar start-apertar-core.sh[849]: [6:35:10.853745936] [244289]  INFO RPI pisp.cpp:1663 ClearHDR (WDR) — unpacked CFE enabled for imx585
+Nov 21 17:48:14.902483 apertar start-apertar-core.sh[849]: [6:35:10.855307375] [244289]  INFO RPI pisp.cpp:2657 BLC: tuning=3200 V4L2(cid=0x980900, def=50, now=50) → live pixel BLC=3200 (scale=64)
+Nov 21 17:48:14.902531 apertar start-apertar-core.sh[849]: [6:35:10.855341856] [244289]  INFO RPI pisp.cpp:1727 Sensor: /base/axi/pcie@1000120000/rp1/i2c@88000/imx585@1a - Selected sensor format: 3840x2200-SRGGB16_1X16/RAW - Selected CFE format: 3840x2200-RG16/RAW
+Nov 21 17:48:14.902810 apertar start-apertar-core.sh[849]: ApertarCore camera configured: sensor=IMX585 binning=1(driver) raw=3840x2160 preview=1280x720 stream=3840x2200 format=SRGGB16 stride=7680 storage_bits=16 packing=unpacked container_bytes=2
+Nov 21 17:48:14.937502 apertar start-apertar-core.sh[849]: ApertarCore RAW buffers: CPU-cached heap=/dev/dma_heap/vidbuf_cached count=8 frame_bytes=16896000
+Nov 21 17:48:14.941324 apertar start-apertar-core.sh[849]: ApertarCore preview crop: native_max=(0, 0)/3840x2160 applied=(0, 20)/3840x2120
+Nov 21 17:48:16.037583 apertar start-apertar-core.sh[849]: ApertarCore capture scheduling: thread=244289 nice=-5
+Nov 21 17:48:21.568881 apertar start-apertar-core.sh[849]: ApertarCore controls: applied: restarted CFexpress hat in 0 ms
+Nov 21 17:48:21.574360 apertar start-apertar-core.sh[849]: ApertarCore clip merge: scan (switch) pending=1
+Nov 21 17:48:21.574447 apertar start-apertar-core.sh[849]: ApertarCore clip merge: start cDNG_26-11-21_17475316_C0014_cam0 files=13 parts=1
+Nov 21 17:48:21.582483 apertar start-apertar-core.sh[849]: ApertarCore clip merge: done cDNG_26-11-21_17475316_C0014_cam0 files=13 seconds=0.0 per_file_ms=0.02
+Nov 21 17:48:22.329709 apertar start-apertar-core.sh[849]: ApertarCore media: cfexpress hat now on bus=1 address=0x34
+Nov 21 17:50:16.781833 apertar start-apertar-core.sh[849]: ApertarCore controls: applied: restarted CFexpress hat in 1 ms

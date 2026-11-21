@@ -1,10 +1,10 @@
-NIGHT OVER (fault: fault:   | unconfirmed: no counter or context pointed to a cause): safe to read; report report-EST.md
+NIGHT OVER (stopped_by_signal: stopped by SIGTERM while waiting at the gate): safe to read; report report-EST-05fb8f1-a.md
 RESTORE OK
-liveness: heartbeat 52 s old; runner pid 241182; night EST started 09:02
+liveness: heartbeat 32 s old; runner pid 7664; night EST-05fb8f1-a started 18:39
 take: -
-progress: 58 takes this night (137 in the campaign), 330 GB this night, 4975 GB in all of a 16000 GB budget
-card: A936B442006AC2 ; free 219 GB; smart temp 44 C, written 69445527 units, critical_warning 0
-voids 0, audio faults 0 this night; STOP: fault: fault:   | unconfirmed: no counter or context pointed to a cause
+progress: 194 takes this night (334 in the campaign), 3066 GB this night, 8053 GB in all of a 16000 GB budget
+card: A936B442006AC2 ; free 445 GB; smart temp 59 C, written 77083680 units, critical_warning 0
+voids 0, audio faults 0 this night; STOP: stopped_by_signal: stopped by SIGTERM while waiting at the gate
 
 ## Arms
 
@@ -23,28 +23,28 @@ voids 0, audio faults 0 this night; STOP: fault: fault:   | unconfirmed: no coun
 
 | take | stage | fps | tier | outcome | s | dropped | first drop | gap | boundary | merge s | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| _aids1_fps60_20261111-093849 | EST | 60.0 | 60 | buffer_full | 12.0 | 0 |  | 0 | 0 |  | drop |
-| _aids1_fps60_20261111-093936 | EST | 60.0 | 60 | ab_clean | 60.0 | 0 |  | 0 | 0 |  | drop |
-| _aids1_fps30_20261111-094115 | EST | 30.0 | 60 | buffer_full | 8.5 | 4 | 2.7 | 0 | 0 |  | drop |
-| _aids1_fps60_20261111-094220 | EST | 60.0 | 60 | ab_dropped | 60.1 | 946 | 0.7 | 0 |  |  | drop |
-| _aids1_fps30_20261111-094358 | EST | 30.0 | 60 | buffer_full | 9.0 | 8 | 3.7 | 0 |  |  | drop |
-| _aids1_fps30_20261111-094501 | EST | 30.0 | 60 | ab_dropped | 60.1 | 428 | 1.7 | 0 | 0 |  | drop |
-| _aids1_fps60_20261111-094655 | EST | 60.0 | 60 | ab_clean | 60.0 | 0 |  | 0 |  |  | drop |
-| _aids1_fps60_20261111-094833 | EST | 60.0 | 60 | setup_mismatch |  |  |  |  |  |  | skip |
-| _aids1_fps60_20261111-094859 | EST | 60.0 | 60 | ab_clean | 60.0 | 0 |  | 0 |  |  | drop |
-| _aids1_fps60_20261111-095041 | EST | 60.0 | 60 | fault | 8.0 | 0 |  | 0 |  |  | stop |
+| _aids1_fps60_20261121-180944 | EST-05fb8f1-a | 60.0 | 60 | ab_clean | 60.0 | 0 |  | 0 |  |  | drop |
+| _aids1_fps28_20261121-181130 | EST-05fb8f1-a | 28.0 | 60 | ab_clean | 60.1 | 0 |  | 0 | 0 |  | drop |
+| _aids1_fps30_20261121-181326 | EST-05fb8f1-a | 30.0 | 60 | ab_clean | 60.0 | 0 |  | 0 | 0 |  | drop |
+| _aids1_fps28_20261121-181522 | EST-05fb8f1-a | 28.0 | 60 | ab_dropped | 60.1 | 120 | 3.7 | 0 | 0 |  | drop |
+| _aids1_fps25_20261121-181658 | EST-05fb8f1-a | 25.0 | 60 | ab_dropped | 60.0 | 87 | 4.8 | 0 | 0 |  | drop |
+| _aids1_fps27_20261121-184149 | EST-05fb8f1-a | 27.0 | 900 | drop | 432.3 | 1 | 431.9 | 0 | 0 | 28.8 | drop |
+| _aids1_fps26_20261121-185325 | EST-05fb8f1-a | 26.0 | 900 | drop | 788.5 | 1 | 788.0 | 0 | 0 | 93.6 | drop |
+| _aids1_fps39_20261121-191034 | EST-05fb8f1-a | 39.0 | 900 | buffer_full | 750.2 | 0 |  | 0 | 0 | 195.0 | drop |
+| _aids1_fps38_20261121-192917 | EST-05fb8f1-a | 38.0 | 900 | buffer_full | 268.7 | 0 |  | 0 | 0 | 23.1 | drop |
+| _aids1_fps40_20261121-193452 | EST-05fb8f1-a | 40.0 | 900 | stopped_by_signal |  |  |  |  |  |  | stop |
 
 ## Decisions (tail)
 
-    2026-11-11 09:39:35 [EST] EST P1-cap-t0l0w1a1a1-r1 4kSDR10_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (12.0 s, dropped 0, first drop , gap 0, boundary 0)
-    2026-11-11 09:41:15 [EST] EST P1-cap-t0l0w1a1a1-r1 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
-    2026-11-11 09:42:06 [EST] EST P1-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (8.5 s, dropped 4, first drop 2.7, gap 0, boundary 0)
-    2026-11-11 09:43:40 [EST] EST P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 946, first drop 0.7, gap 0, boundary )
-    2026-11-11 09:44:42 [EST] EST P1-cap-t0l0w1a1a1-r1 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 30 fps, 60 s: buffer_full (9.0 s, dropped 8, first drop 3.7, gap 0, boundary )
-    2026-11-11 09:46:36 [EST] EST P1-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 428, first drop 1.7, gap 0, boundary 0)
-    2026-11-11 09:48:15 [EST] EST P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
-    2026-11-11 09:48:51 [EST] EST P1-cap-t0l0w1a1a1-r1 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
-    2026-11-11 09:50:19 [EST] EST P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
-    2026-11-11 09:51:24 [EST] EST P1-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: fault (8.0 s, dropped 0, first drop , gap 0, boundary )
-    2026-11-11 09:51:24 [EST] EST outputs: /home/pi/longtakes/nvme-20261110/est/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est/estimate.md, /home/pi/longtakes/nvme-20261110/est/selftest.md
-    2026-11-11 09:52:18 [EST] RESTORE OK
+    2026-11-21 19:09:21 [EST-05fb8f1-a] deleted cDNG_26-11-21_18172201_C0024_cam0: 1407 frames in 0.4 s (cold, budget 0 s)
+    2026-11-21 19:09:32 [EST-05fb8f1-a] deleted cDNG_26-11-21_18421310_C0001_cam0: 11669 frames in 10.7 s (warm, budget 0 s)
+    2026-11-21 19:27:03 [EST-05fb8f1-a] merge of cDNG_26-11-21_19110216_C0001_cam0: 29045 frames, 6 parts, 195 s (6.71 ms per frame), first ETA error -28.1 %, intact; merge off again: True
+    2026-11-21 19:27:03 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: buffer_full (750.2 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-21 19:27:03 [EST-05fb8f1-a] EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
+    2026-11-21 19:28:13 [EST-05fb8f1-a] deleted cDNG_26-11-21_18534821_C0002_cam0: 20498 frames in 70.1 s (warm, budget 0 s)
+    2026-11-21 19:34:51 [EST-05fb8f1-a] merge of cDNG_26-11-21_19294104_C0002_cam0: 10046 frames, 3 parts, 23 s (2.30 ms per frame), first ETA error -43.1 %, intact; merge off again: True
+    2026-11-21 19:34:51 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 38 fps, 900 s: buffer_full (268.7 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-21 19:34:51 [EST-05fb8f1-a] EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
+    2026-11-21 22:43:21 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 40 fps, 900 s: stopped_by_signal (None s, dropped None, first drop None, gap None, boundary None)
+    2026-11-21 22:43:21 [EST-05fb8f1-a] EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+    2026-11-21 22:43:48 [EST-05fb8f1-a] RESTORE OK

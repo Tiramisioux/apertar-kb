@@ -465,7 +465,7 @@ def quiet_reasons(need_free_gib=20.0):
             why.append('a storage pre-roll is running')
         if st.get('media_state') != 'mounted' or st.get('media_alive') is False:
             why.append('medium not mounted or not alive (%s)' % st.get('media_state'))
-        if st.get('ladder_enabled'):
+        if st.get('ladder_enabled') and not CS.get('ladder_owned'):      # P4 turns it on itself
             why.append('NEEDS A HUMAN: the Mode Ladder is on and the campaign cannot switch modes; turn it off (WebUI, Camera > Mode Ladder)')
         if web_state().get('media_trim_running'):
             why.append('a trim is running')
@@ -1674,6 +1674,14 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         SAID[('fits', c.key, fps)] = True
         log(out, '%s: a %d s take at %s fps could write %.0f GB, more than the %.0f GiB drive holds: it will end at drive-full' % (
             c.id, max_seconds or 1800, fps, proj, total_gib))
+    try:                    # 2026-11-21: ctake's fill gate sized a lossless take smaller than this projection, and the
+        sv = os.statvfs(MEDIA)  # quiet gate below then waited 3 h for space only a delete could give: delete first
+        if need and sv.f_bavail * sv.f_frsize < need * 2**30:
+            w = fill_gate(out, need * 2**30)
+            if w:
+                log(out, 'gate: fill gate before the quiet gate: %s' % w)
+    except OSError:
+        pass
     code = wait_for_quiet(out, need_free_gib=need)
     if code:
         row['outcome'] = {'needs_human': 'needs_human', 'gate_timeout': 'gate_timeout', 'signal': 'stopped_by_signal'}[code]
@@ -2336,7 +2344,9 @@ def ledger_live(out):
 
 def foreign_folders(out):
     """Clip folders on the card the database did not create (plan section 7: WAITING, never deleted)."""
-    known = {c['clip'] for c in ledger_live(out)} | set(CS.get('preserve') or ())
+    # own_clips.txt counts too: a record_start Core refused after it had made the folder (EST 2026-11-21, the mic's audio
+    # format rejected, the retry recorded into the next folder) leaves a folder of ours the ledger never saw
+    known = {c['clip'] for c in ledger_live(out)} | set(CS.get('preserve') or ()) | set(OWN['clips'])
     return sorted(clip_dirs() - known)
 
 
@@ -3674,8 +3684,9 @@ def est_append(out, name, rec):
     if rec.get('ckey') and os.path.exists(p):
         for l in open(p):
             try:
-                if json.loads(l).get('ckey') == rec['ckey']:
-                    return          # a resumed night returns the recorded take: recorded once
+                old = json.loads(l)
+                if old.get('ckey') == rec['ckey'] and old.get('verdict') != 'stop':
+                    return          # a resumed night returns the recorded take: recorded once (a stopped one runs again)
             except ValueError:
                 pass
     with open(p, 'a') as f:
@@ -3751,6 +3762,7 @@ def apply_ladder_take(c, fps):
     """A Mode Ladder take (P4): the ladder is on with c.ladder as its rungs; only the levers and the fps are set, the ladder
     picks the mode, and verify() then compares it with the rung the estimate expects (c's mode)."""
     apply_levers(c)
+    core('set_cdng_log', value='on' if c.log else 'off')     # Log is one switch for the camera; 'auto' applies it in HDR16
     core('set_preview_tdn', enabled=c.tdn)
     core('set_fps_phase_lock', enabled=c.lock)
     core('set_media_trim', enabled=c.trim)
@@ -3780,6 +3792,7 @@ def est_ladder(out):
     if not r.get('ok'):
         decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (text, r.get('error')))
         return
+    CS['ladder_owned'] = True       # the quiet gate lets the ladder be on during P4 (it ended the night on 2026-11-21)
     decide(out, 'EST P4: ladder %s' % text)
     steps = sorted(set(x for x in (25, th[0] - 1, th[0], th[0] + 1, 35, 40, 45, 50) if x >= 1))
     try:
@@ -3789,12 +3802,57 @@ def est_ladder(out):
             want = next((i for i, t in enumerate(th[:-1]) if t and f <= t), len(rungs) - 1)
             c = est_cfg(rungs[want][0])
             c.ladder = text
-            r = est_ctake(out, c, f, 60, 'P4-%s-rung%d' % (f, want + 1), stop_on_drop=True)
+            r = est_ctake(out, c, f, 60, 'P4r2-%s-rung%d' % (f, want + 1), stop_on_drop=True)
             rec = {'fps': f, 'expected_rung': want + 1, 'spec': rungs[want][0], 'verdict': r.get('verdict'),
                    'outcome': r.get('outcome'), 'mismatch': r.get('mismatch'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey')}
-            est_append(out, 'ladder', rec)
+            if r.get('verdict') != 'stop':
+                est_append(out, 'ladder', rec)
     finally:
         core('set_mode_ladder', enabled='false')
+        CS['ladder_owned'] = False
+
+
+EST_WARM_SPECS = ('4kHDR16:cdng:unc', '4kSDR12:cdng:unc', '4kSDR12:cdng:lj', '4kSDR12:lossydng:3to1', '4kP:prores:hq',
+                  '4kP:h264:2560x1440')
+EST_WARM_S = 900
+
+
+def est_warm(out):
+    """P6, the warm drive (User 2026-11-21, after P3 met 6 of 12): a 15-min take at the model's estimate p and at p-1 for the
+    main modes, levers at the reference, stopped at the first drop. The NVMe nights showed the drive pausing writes for
+    about 2 s from about 10 min (72-78 C); the 60-s probes do not see that. Records: warm.jsonl (first drop, outcome)."""
+    E = est_model()
+    model = E.fit(E.load(out))
+    for spec in EST_WARM_SPECS:
+        p = E.predict(model, spec, {})
+        if not p or not p.get('fps'):
+            decide(out, 'EST P6 %s: no estimate: skipped' % spec)
+            continue
+        est = int(p['fps'])
+        for f in (est, est - 1):
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                return
+            r = est_cell(out, 'P6', spec, {}, f, EST_WARM_S, 'warm%d' % (f - est))
+            if r.get('verdict') == 'stop':
+                return
+            rec = {'spec': spec, 'estimate': est, 'fps': f, 'secs': EST_WARM_S, 'verdict': r.get('verdict'),
+                   'outcome': r.get('outcome'), 'seconds': r.get('seconds'), 'first_drop_s': r.get('first_drop_s'),
+                   'dropped': r.get('dropped'), 'nvme_c_max': r.get('nvme_c_max'), 'take_id': r.get('take_id'),
+                   'ckey': r.get('ckey'), 'limited_by': p.get('limiter')}
+            est_append(out, 'warm', rec)
+            decide(out, 'EST P6 %s at %d (estimate %d): %s after %s s' % (spec, f, est, r.get('outcome'), r.get('seconds')))
+
+
+EST_BLOCKS_DEFAULT = 'P0,P1,P2,P1b,P3,P4,P5'
+
+
+def done_key(n):
+    """The DONE marker's name for a stage. An EST set run with other blocks than the default (P6 on a finished set) gets
+    its own marker, so the set's DONE does not skip the new blocks (2026-11-21: P6 was skipped behind DONE-EST-05fb8f1-a)."""
+    b = getattr(CS.get('args'), 'est_blocks', EST_BLOCKS_DEFAULT) or EST_BLOCKS_DEFAULT
+    if is_est(n) and b != EST_BLOCKS_DEFAULT:
+        return '%s@%s' % (n, b.replace(',', '+'))
+    return n
 
 
 def est_night(out):
@@ -3827,6 +3885,8 @@ def est_night(out):
             est_validate(out, pre)
         elif b == 'P4':
             est_ladder(out)
+        elif b == 'P6':
+            est_warm(out)
         else:
             decide(out, 'EST: unknown block %s: skipped' % b)
     if smoke:
@@ -3913,7 +3973,7 @@ def campaign_main(a, out):
         for i, n in enumerate(nights):
             if CS['stop'] or STOP['sig'] or HALT['why']:
                 break
-            if os.path.exists(out + '/DONE-' + n):
+            if os.path.exists(out + '/DONE-' + done_key(n)):
                 decide(out, 'stage %s already done: skipped' % n)
                 continue
             if i and a.idle_between:
@@ -3946,7 +4006,7 @@ def campaign_main(a, out):
             elif is_est(n):
                 est_night(out)
             if not (CS['stop'] or STOP['sig'] or HALT['why']):
-                write_atomic(out + '/DONE-' + n, time.strftime('%F %T') + ' done\n')
+                write_atomic(out + '/DONE-' + done_key(n), time.strftime('%F %T') + ' done\n')
                 decide(out, 'stage %s done' % n)
     finally:
         why = CS['stop'] or (('stopped by ' + STOP['sig']) if STOP['sig'] else '') or HALT['why'] or 'all stages of the night done'
@@ -3987,6 +4047,10 @@ def restore_formats(found):
     if 'profiles' not in found:
         return []
     bad = []
+    # the ladder first: while it is on Core refuses the lossy ratio and the compression (kLadderOwnsCompression; EST
+    # 2026-11-21: P4 left it on, the restore read back lossy_dng_ratio 5to1)
+    core('set_mode_ladder', enabled='false'); time.sleep(2)
+    CS['ladder_owned'] = False
     for fmt in sorted(CS.get('fmts_touched') or ()):
         if fmt == (found.get('recording_format') or 'cdng'):
             continue
@@ -4021,6 +4085,10 @@ def restore_night(out, found, nights, why):
     bad0 = restore_formats(found)
     ow, oh = (found.get('resolution') or '3840x2160').split('x')
     set_format(found.get('recording_format') or 'cdng')
+    if found.get('lossy_dng_ratio'):
+        # again after the switch back: cDNG and lossy DNG share one saved profile, whose ratio the switch brings back
+        # (EST 2026-11-21: 5to1 from the last lossy probe; set by hand it took at once)
+        core('set_lossy_dng_ratio', value=found['lossy_dng_ratio'])
     for cmd, kw in (('set_clear_hdr', {'enabled': bool(found.get('clear_hdr', True))}),
                     ('set_resolution', {'width': int(ow), 'height': int(oh)}),
                     ('set_raw_bit_depth', {'value': 12 if found.get('raw_bit_depth') == 16 else 16}),
@@ -4135,7 +4203,7 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
-    ap.add_argument('--est-blocks', default='P0,P1,P2,P1b,P3,P4,P5',
+    ap.add_argument('--est-blocks', default=EST_BLOCKS_DEFAULT,     # P6: the warm-drive 15-min takes, on request
                     help='N, EST (estimator plan section 5): blocks in order; P1b = the second P1 pass over the 4K rows')
     ap.add_argument('--max-voids', type=int, default=2, help='N: voids in one night before it stops (the estimator day: 4)')
     ap.add_argument('--arms', default='4kHDR16:lossless_jpeg:nolog:25,4kHDR16:none:log:25',

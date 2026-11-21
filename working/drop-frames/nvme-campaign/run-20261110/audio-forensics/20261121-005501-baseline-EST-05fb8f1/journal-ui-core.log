@@ -1,0 +1,26 @@
+Nov 21 00:51:39.228788 apertar sudo[2803]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/sbin/mkfs.exfat -n RAW /dev/nvme0n1p2
+Nov 21 00:51:39.229080 apertar sudo[2803]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 21 00:51:39.391691 apertar sudo[2803]: pam_unix(sudo:session): session closed for user root
+Nov 21 00:51:39.631223 apertar sudo[2814]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/usr/bin/mkdir -p /media/RAW
+Nov 21 00:51:39.631539 apertar sudo[2814]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 21 00:51:39.632827 apertar sudo[2814]: pam_unix(sudo:session): session closed for user root
+Nov 21 00:51:39.644359 apertar sudo[2823]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/usr/bin/mount -t exfat -o uid=1000,gid=1000,umask=0002,noatime /dev/nvme0n1p2 /media/RAW
+Nov 21 00:51:39.645356 apertar sudo[2823]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 21 00:51:39.675727 apertar sudo[2823]: pam_unix(sudo:session): session closed for user root
+Nov 21 00:51:44.006900 apertar sudo[2879]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/usr/local/libexec/apertar-media-trim /media/RAW
+Nov 21 00:51:44.007193 apertar sudo[2879]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 21 00:51:44.370242 apertar sudo[2879]: pam_unix(sudo:session): session closed for user root
+Nov 21 00:51:44.370779 apertar start-apertar-core.sh[606]: ApertarCore media: trim /media/RAW reason=free-space result=trimmed bytes=999959560192 ms=378
+Nov 21 00:51:44.991334 apertar start-apertar-core.sh[606]: ApertarCore CineMate Log 16->12 mu=10000 black=3200 white=65520 footroom=32/487
+Nov 21 00:51:44.991505 apertar start-apertar-core.sh[606]: ApertarCore buffer: ram budget 1431 MiB (MemAvailable 3239 MiB, fraction 0.60, floor 512 MiB, cap 2024 MiB, frame 15.8 MiB = 90 frames) source=conf
+Nov 21 00:51:44.991857 apertar start-apertar-core.sh[606]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_00514429_C0001_cam0 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=0
+Nov 21 00:51:47.088704 apertar start-apertar-core.sh[606]: ApertarCore recording stats: enqueued=58 written=58 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=0 fault= peak_queue=2/12 queue_bytes_peak=33177600 queue_budget=1501482188
+Nov 21 00:51:47.109963 apertar start-apertar-core.sh[606]: ApertarCore recording stop: synced to the medium in 21 ms
+Nov 21 00:51:47.110117 apertar start-apertar-core.sh[606]: ApertarCore storage preroll: requested_fps=30 measured_fps=30.166 enqueued=58 last_frame_us=33333 echoed_min_us=33333
+Nov 21 00:51:47.212858 apertar start-apertar-core.sh[606]: ApertarCore storage preroll: reason=format fps=30 measured_fps=30.166 seconds=2 frames=58 bytes=722181432 result=ok ms=4536
+Nov 21 00:51:49.730064 apertar sudo[2978]:       pi : PWD=/home/pi/ApertarCore ; USER=root ; COMMAND=/usr/local/libexec/apertar-media-trim /media/RAW
+Nov 21 00:51:49.730399 apertar sudo[2978]: pam_unix(sudo:session): session opened for user root(uid=0) by (uid=1000)
+Nov 21 00:51:50.129660 apertar sudo[2978]: pam_unix(sudo:session): session closed for user root
+Nov 21 00:51:50.130291 apertar start-apertar-core.sh[606]: ApertarCore media: trim /media/RAW reason=delete result=trimmed bytes=999959560192 ms=416
+Nov 21 00:55:01.700399 apertar start-apertar-core.sh[606]: ApertarCore controls: applied: restarted CFexpress hat in 0 ms
+Nov 21 00:55:02.176865 apertar start-apertar-core.sh[606]: ApertarCore media: cfexpress hat now on bus=1 address=0x34

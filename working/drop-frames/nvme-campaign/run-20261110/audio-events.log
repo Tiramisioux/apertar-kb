@@ -9,3 +9,15 @@
 2026-11-11 04:56:30 tag baseline-EST at 2026-11-11 04:56:30; journal since 04:46:30: 106 lines, 0 MESA, first MESA: - -> 20261111-045630-baseline-EST
 2026-11-11 05:08:15 tag baseline-EST at 2026-11-11 05:08:15; journal since 04:58:15: 867 lines, 0 MESA, first MESA: - -> 20261111-050815-baseline-EST
 2026-11-11 09:02:28 tag baseline-EST at 2026-11-11 09:02:28; journal since 08:52:28: 41 lines, 0 MESA, first MESA: - -> 20261111-090228-baseline-EST
+2026-11-11 23:51:23 tag baseline-EST-05fb8f1 at 2026-11-11 23:51:23; journal since 23:41:23: 1865 lines, 0 MESA, first MESA: - -> 20261111-235123-baseline-EST-05fb8f1
+2026-11-21 00:55:02 tag baseline-EST-05fb8f1 at 2026-11-21 00:55:02; journal since 00:45:01: 26 lines, 0 MESA, first MESA: - -> 20261121-005501-baseline-EST-05fb8f1
+2026-11-21 00:56:42 tag precheck-notready at 2026-11-21 00:56:42; journal since 00:46:42: 133 lines, 0 MESA, first MESA: - -> 20261121-005642-precheck-notready
+2026-11-21 00:57:13 tag take-4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps60_20261121-005521 at 2026-11-21 00:57:13; journal since 00:47:13: 144 lines, 0 MESA, first MESA: - -> 20261121-005713-take-4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps60_20261121-00
+2026-11-21 00:58:53 tag precheck-notready at 2026-11-21 00:58:53; journal since 00:48:53: 248 lines, 0 MESA, first MESA: - -> 20261121-005853-precheck-notready
+2026-11-21 00:59:17 tag take-4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps30_20261121-005732 at 2026-11-21 00:59:17; journal since 00:49:17: 262 lines, 0 MESA, first MESA: - -> 20261121-005917-take-4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps30_202611
+2026-11-21 11:17:04 tag baseline-EST-05fb8f1-a at 2026-11-21 11:17:04; journal since 11:07:03: 1064 lines, 0 MESA, first MESA: - -> 20261121-111703-baseline-EST-05fb8f1-a
+2026-11-21 11:22:29 tag baseline-EST-05fb8f1-a at 2026-11-21 11:22:29; journal since 11:12:29: 1347 lines, 0 MESA, first MESA: - -> 20261121-112229-baseline-EST-05fb8f1-a
+2026-11-21 17:47:19 tag baseline-EST-05fb8f1-a at 2026-11-21 17:47:19; journal since 17:37:19: 158 lines, 0 MESA, first MESA: - -> 20261121-174719-baseline-EST-05fb8f1-a
+2026-11-21 17:50:16 tag baseline-EST-05fb8f1-a at 2026-11-21 17:50:16; journal since 17:40:16: 252 lines, 0 MESA, first MESA: - -> 20261121-175016-baseline-EST-05fb8f1-a
+2026-11-21 18:20:28 tag baseline-EST-05fb8f1-a at 2026-11-21 18:20:28; journal since 18:10:28: 787 lines, 0 MESA, first MESA: - -> 20261121-182028-baseline-EST-05fb8f1-a
+2026-11-21 18:39:17 tag baseline-EST-05fb8f1-a at 2026-11-21 18:39:17; journal since 18:29:17: 1 lines, 0 MESA, first MESA: - -> 20261121-183917-baseline-EST-05fb8f1-a

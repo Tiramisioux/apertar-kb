@@ -1,10 +1,10 @@
 {
- "head": "NIGHT OVER (fault: fault:   | unconfirmed: no counter or context pointed to a cause): safe to read; report report-EST.md",
+ "head": "NIGHT OVER (stopped_by_signal: stopped by SIGTERM while waiting at the gate): safe to read; report report-EST-05fb8f1-a.md",
  "decision": "",
- "night": "EST",
+ "night": "EST-05fb8f1-a",
  "current": {},
  "take_in_progress": false,
- "stop": "fault: fault:   | unconfirmed: no counter or context pointed to a cause",
- "heartbeat_age_s": 52,
- "t": 1794387138.3864684
+ "stop": "stopped_by_signal: stopped by SIGTERM while waiting at the gate",
+ "heartbeat_age_s": 32,
+ "t": 1795297428.64445
 }

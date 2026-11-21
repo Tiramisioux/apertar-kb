@@ -1,0 +1,13 @@
+1795265558.967942 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795265558.978121 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795265558.979221 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795265558.979221 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 1133 MiB (MemAvailable 2742 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 7.9 MiB = 143 frames) source=conf
+1795265558.993262 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_13523857_C0008_cam0 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000
+1795265559.020285 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=9574950128
+1795265565.270791 apertar start-apertar-core.sh[849]: ApertarCore buffer: safety stop at 90 % (1020/1133 MiB)
+1795265565.270791 apertar start-apertar-core.sh[849]: ApertarCore phase-lock stats: max_abs_err_us=143 duration_pushes=678
+1795265568.152256 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=373 written=373 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=0 fault= peak_queue=129/12 queue_bytes_peak=1069977600 queue_budget=1188786995
+1795265568.152256 apertar start-apertar-core.sh[849]: ApertarCore recorder stop time: 2.881s format=cdng discarded_on_stop=0
+1795265568.172279 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=4
+1795265568.172279 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=9574950128 audio_boot_us=9574931896 trim_samples=875 pad_samples=0 output_samples=298400 sample_rate=48000
+1795265568.175189 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 1 ms

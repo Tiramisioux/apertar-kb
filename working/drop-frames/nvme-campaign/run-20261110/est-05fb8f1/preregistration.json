@@ -1,0 +1,354 @@
+{
+ "written": "2026-11-11 23:51:23",
+ "seed": 2433635356,
+ "p0": [
+  [
+   "cap",
+   "4kSDR12:cdng:unc",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kHDR16:cdng:lj",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "2kSDR12:cdng:lj",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kSDR12:lossydng:3to1",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kP:prores:hq",
+   null,
+   null
+  ],
+  [
+   "cap",
+   "4kP:h264:1920x1080",
+   null,
+   null
+  ],
+  [
+   "gap",
+   "4kHDR16:cdng:unc",
+   28,
+   null
+  ],
+  [
+   "gap",
+   "2kHDR16:cdng:unc",
+   null,
+   null
+  ],
+  [
+   "gap",
+   "4kHDR16:cdng:unc:log",
+   28,
+   null
+  ],
+  [
+   "gap",
+   "4kHDR16:cdng:unc",
+   25,
+   {
+    "tdn": true
+   }
+  ]
+ ],
+ "p1_order": [
+  "4kP:h264:1920x1080",
+  "4kSDR10:lossydng:3to1",
+  "4kHDR12:cdng:unc",
+  "4kSDR12:lossydng:5to1",
+  "2kSDR12:cdng:unc",
+  "2kSDR12:lossydng:3to1",
+  "crop4k3SDR12:lossydng:5to1",
+  "2kSDR12:mlv",
+  "4kHDR16:cdng:lj:log",
+  "4kHDR12:cdng:lj",
+  "4kHDR16:cdng:unc:log",
+  "2kSDR12:cdng:lj",
+  "4kSDR12:lossydng:3to1",
+  "2kHDR16:cdng:lj",
+  "4kSDR10:cdng:unc",
+  "crop4k3SDR12:cdng:lj",
+  "crop4k3SDR12:mlv",
+  "4kSDR10:mlv",
+  "2kP:prores:lt",
+  "4kP:prores:lt",
+  "4kSDR12:cdng:lj",
+  "4kHDR16:cdng:lj",
+  "4kSDR10:cdng:lj",
+  "4kP:prores:hq:arri_logc4",
+  "4kHDR16:cdng:unc",
+  "2kP:prores:proxy",
+  "4kP:prores:422",
+  "2kHDR16:cdng:unc:log",
+  "2kHDR16:cdng:unc",
+  "4kHDR16:mlv",
+  "4kSDR10:lossydng:5to1",
+  "2kSDR12:lossydng:5to1",
+  "crop4k3SDR12:lossydng:3to1",
+  "crop4k3SDR12:cdng:unc",
+  "4kSDR12:cdng:unc",
+  "2kHDR16:mlv",
+  "2kP:prores:422",
+  "4kSDR12:mlv",
+  "4kHDR12:mlv",
+  "4kP:prores:proxy",
+  "4kP:prores:hq",
+  "4kP:h264:2560x1440",
+  "2kHDR16:cdng:lj:log",
+  "2kP:prores:hq"
+ ],
+ "p1b_order": [
+  "4kP:prores:hq:arri_logc4",
+  "4kHDR16:cdng:unc",
+  "4kSDR12:lossydng:3to1",
+  "4kP:prores:422",
+  "4kP:prores:lt",
+  "4kSDR10:mlv",
+  "4kSDR10:cdng:lj",
+  "4kHDR16:mlv",
+  "4kSDR12:cdng:lj",
+  "4kP:prores:hq",
+  "4kP:h264:2560x1440",
+  "4kSDR12:lossydng:5to1",
+  "4kSDR10:lossydng:5to1",
+  "4kHDR16:cdng:lj:log",
+  "4kHDR16:cdng:lj",
+  "4kSDR12:cdng:unc",
+  "4kSDR12:mlv",
+  "4kSDR10:lossydng:3to1",
+  "4kP:h264:1920x1080",
+  "4kHDR12:mlv",
+  "4kHDR16:cdng:unc:log",
+  "4kP:prores:proxy",
+  "4kHDR12:cdng:lj",
+  "4kHDR12:cdng:unc",
+  "4kSDR10:cdng:unc"
+ ],
+ "p2_design": [
+  {
+   "tdn": false,
+   "lock": false,
+   "web": false,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": false,
+   "web": false,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": false,
+   "lock": false,
+   "web": true,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": false,
+   "lock": false,
+   "web": true,
+   "audio": true,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": false,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": false,
+   "audio": true,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": true,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": false,
+   "lock": true,
+   "web": true,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": false,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": false,
+   "audio": true,
+   "aids": true
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": true,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": true,
+   "lock": false,
+   "web": true,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": false,
+   "audio": false,
+   "aids": true
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": false,
+   "audio": true,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": true,
+   "audio": false,
+   "aids": false
+  },
+  {
+   "tdn": true,
+   "lock": true,
+   "web": true,
+   "audio": true,
+   "aids": true
+  }
+ ],
+ "p2_anchors": [
+  [
+   "be",
+   "4kHDR16:cdng:unc",
+   28
+  ],
+  [
+   "enc",
+   "4kHDR16:cdng:lj",
+   25
+  ],
+  [
+   "stor",
+   "4kSDR12:cdng:unc",
+   null
+  ]
+ ],
+ "p2_orders": {
+  "be": [
+   2,
+   11,
+   14,
+   6,
+   7,
+   0,
+   8,
+   12,
+   5,
+   3,
+   15,
+   1,
+   10,
+   4,
+   9,
+   13
+  ],
+  "enc": [
+   5,
+   1,
+   10,
+   14,
+   6,
+   13,
+   4,
+   0,
+   3,
+   9,
+   7,
+   2,
+   11,
+   8,
+   15,
+   12
+  ],
+  "stor": [
+   7,
+   12,
+   14,
+   3,
+   9,
+   6,
+   8,
+   15,
+   11,
+   1,
+   0,
+   2,
+   10,
+   4,
+   13,
+   5
+  ],
+  "be2": [
+   3,
+   1,
+   0,
+   4,
+   7,
+   10,
+   6,
+   8,
+   9,
+   5,
+   14,
+   13,
+   11,
+   15,
+   12,
+   2
+  ]
+ },
+ "p3_n": 12,
+ "p3_seed": 487633588,
+ "probe_s": 60,
+ "success": {
+  "p3_clean_at_p": ">= 10 of 12",
+  "p3_out_at_p1": ">= 8 of 12",
+  "selftest_within_1fps": ">= 90 %"
+ }
+}

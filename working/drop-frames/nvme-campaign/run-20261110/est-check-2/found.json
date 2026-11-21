@@ -1,0 +1,57 @@
+{
+ "found": {
+  "fps": 25.0,
+  "raw_bit_depth": 12,
+  "cdng_compression": "lossless_jpeg",
+  "cdng_log": "auto",
+  "preview_tdn": false,
+  "fps_phase_lock": true,
+  "fps_speed_ramp": true,
+  "clear_hdr": false,
+  "resolution": "1920x1080",
+  "recording_format": "cdng",
+  "ladder_enabled": false,
+  "frames_per_folder": 5000,
+  "clip_merge_enabled": true,
+  "tuning_file": "",
+  "lossy_dng_ratio": "3to1",
+  "prores_profile": "hq",
+  "prores_color_profile": "davinci_intermediate",
+  "h264_resolution": "1920x1080",
+  "ui": {
+   "record_audio_enabled": true,
+   "focus_peaking_enabled": true,
+   "zebra_enabled": true
+  },
+  "ladder_text": "3840x2160:16:hdr::none,3840x2160:12:sdr:50:none,3840x2160:12:hdr::none,3840x2160:10:sdr::none,1920x1080:16:hdr::none,1920x1080:12:hdr::none,1920x1080:12:sdr::none,1920x1080:10:sdr::none",
+  "profiles": {
+   "cdng": {
+    "resolution_width": "1920",
+    "resolution_height": "1080",
+    "clear_hdr": "false"
+   },
+   "mlv": {
+    "resolution_width": "1920",
+    "resolution_height": "1080",
+    "clear_hdr": "false"
+   },
+   "h264": {
+    "resolution_width": "3840",
+    "resolution_height": "2160",
+    "clear_hdr": "false"
+   },
+   "prores": {
+    "resolution_width": "3840",
+    "resolution_height": "2160",
+    "clear_hdr": "false"
+   },
+   "still": {
+    "resolution_width": "3872",
+    "resolution_height": "2176",
+    "clear_hdr": "false"
+   }
+  }
+ },
+ "dual_sensor_enabled": null,
+ "started": "2026-11-11 23:40:03"
+}
