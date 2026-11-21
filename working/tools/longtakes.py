@@ -3804,6 +3804,37 @@ def est_ladder(out):
         CS['ladder_owned'] = False
 
 
+EST_WARM_SPECS = ('4kHDR16:cdng:unc', '4kSDR12:cdng:unc', '4kSDR12:cdng:lj', '4kSDR12:lossydng:3to1', '4kP:prores:hq',
+                  '4kP:h264:2560x1440')
+EST_WARM_S = 900
+
+
+def est_warm(out):
+    """P6, the warm drive (User 2026-11-21, after P3 met 6 of 12): a 15-min take at the model's estimate p and at p-1 for the
+    main modes, levers at the reference, stopped at the first drop. The NVMe nights showed the drive pausing writes for
+    about 2 s from about 10 min (72-78 C); the 60-s probes do not see that. Records: warm.jsonl (first drop, outcome)."""
+    E = est_model()
+    model = E.fit(E.load(out))
+    for spec in EST_WARM_SPECS:
+        p = E.predict(model, spec, {})
+        if not p or not p.get('fps'):
+            decide(out, 'EST P6 %s: no estimate: skipped' % spec)
+            continue
+        est = int(p['fps'])
+        for f in (est, est - 1):
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                return
+            r = est_cell(out, 'P6', spec, {}, f, EST_WARM_S, 'warm%d' % (f - est))
+            if r.get('verdict') == 'stop':
+                return
+            rec = {'spec': spec, 'estimate': est, 'fps': f, 'secs': EST_WARM_S, 'verdict': r.get('verdict'),
+                   'outcome': r.get('outcome'), 'seconds': r.get('seconds'), 'first_drop_s': r.get('first_drop_s'),
+                   'dropped': r.get('dropped'), 'nvme_c_max': r.get('nvme_c_max'), 'take_id': r.get('take_id'),
+                   'ckey': r.get('ckey'), 'limited_by': p.get('limiter')}
+            est_append(out, 'warm', rec)
+            decide(out, 'EST P6 %s at %d (estimate %d): %s after %s s' % (spec, f, est, r.get('outcome'), r.get('seconds')))
+
+
 def est_night(out):
     a = CS['args']
     pre = est_prereg(out)
@@ -3834,6 +3865,8 @@ def est_night(out):
             est_validate(out, pre)
         elif b == 'P4':
             est_ladder(out)
+        elif b == 'P6':
+            est_warm(out)
         else:
             decide(out, 'EST: unknown block %s: skipped' % b)
     if smoke:
@@ -4150,7 +4183,7 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
-    ap.add_argument('--est-blocks', default='P0,P1,P2,P1b,P3,P4,P5',
+    ap.add_argument('--est-blocks', default='P0,P1,P2,P1b,P3,P4,P5',     # P6: the warm-drive 15-min takes, on request
                     help='N, EST (estimator plan section 5): blocks in order; P1b = the second P1 pass over the 4K rows')
     ap.add_argument('--max-voids', type=int, default=2, help='N: voids in one night before it stops (the estimator day: 4)')
     ap.add_argument('--arms', default='4kHDR16:lossless_jpeg:nolog:25,4kHDR16:none:log:25',
