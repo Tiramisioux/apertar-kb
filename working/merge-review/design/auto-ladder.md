@@ -455,3 +455,19 @@ full analysis (P4, P6, P5) will replace some numbers; the update steps:
    below 23 fps, the T7 in 4K, MLV / lossy / ProRes rows, a second NVMe model, the Pi 4.
 3. KB pages that restate numbers (`estimator-campaign/pre-analysis.md` section 1, `drop-frames/README.md`) link to the header
    instead of copying; the header's `source` strings name the KB file and date.
+
+## Owner answers (2026-11-21)
+
+Patrik: "go with your recommendations and build it". So, for the questions under "For the owner":
+1. A manual pick pins until the next fps change or until the switch is turned off (D7 is built, right after D3).
+2. Caps stay at 30 minutes. The limit line for 4K Clear HDR 16-bit also says it holds 27 fps for 8 minutes. The three hot 30-minute takes (4K HDR16 at 24, 22, 20) go on the rig list. No take-length choice.
+3. Literal order (33 fps can give 4K 12-bit again).
+4. Clear HDR 12-bit stays listed, shown as "never used here" where it is never chosen.
+5. The ladder keeps the running mode's aspect ratio.
+6. Dynamic resolution owns cDNG compression per table cell.
+7. Speed ramp inside a take is capped at the running mode's cap.
+8. Unmeasured storage uses the USB SSD column, labelled unconfirmed; other boards use sensor-only limits; D8 (speed-test guard) is built.
+9. No new TDN or phase-lock switches in the touch UI.
+10. Clip split default on stays; it is documented in APERTAR.md for the original developer.
+11. Crop-ins are opt-in, after the non-crop modes of a class, caps from the pixel rule (derived).
+12. TDN control defaults to keep.
