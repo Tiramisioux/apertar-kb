@@ -132,6 +132,44 @@ about 1 fps of a back-end edge (4K HDR16, 4K HDR12, 4K Log). There, lock, audio 
 minute and the aids help a little. When the drive or the encoder limits the mode, only the fps and the format count.
 At 2K, nothing measured here matters.
 
+## 2c-0. NVMe temperature, sustained writes, and what failed the long takes
+
+From the 1 Hz samples of every NVMe take of 3 min or longer. The temperature is the drive's own SMART reading, the
+rate is device sectors written. "First event" = the RAM buffer above 50 %, or the first drop.
+
+| Take | Rate | Drive temp start -> max | Clean sustained writing | Written before the event | Temp at the event | Outcome |
+| --- | --- | --- | --- | --- | --- | --- |
+| 4K HDR16 unc 27 fps, 15 min | 447 MB/s | 40 -> 75 °C | **707 s** | 316 GB | 73.9 °C | 3 dropped at 708 s |
+| 4K HDR16 unc 26 fps, 15 min | 430 MB/s | 59 -> 76 °C | **616 s** | 265 GB | 75.9 °C | 2 dropped at 621 s |
+| 4K HDR16 unc 25 fps, 15 min | 414 MB/s | 60 -> 76 °C | **755 s** | 312 GB | 75.9 °C | buffer full at 758 s |
+| 4K SDR12 unc 38 fps, 15 min | 472 MB/s | 59 -> 80 °C | **795 s** (small pauses from 662 s) | 375 GB | 78.9 °C | buffer full at 799 s |
+| 4K SDR12 unc 37 fps, 15 min | 459 MB/s | 41 -> 77 °C | **904 s, the whole take** (pauses at 661 and 787 s drained) | 362 GB at the first pause > 25 % | 75.9 °C | **passed** |
+| 4K HDR16 / SDR12 at 27-38 fps, 3 and 5 min (11 takes) | 439-467 MB/s | 34-63 -> 62-76 °C | 180-300 s | 81-142 GB | - | all clean |
+| 4K SDR12 unc 39 fps, 3 and 5 min | 475 MB/s | 47 -> 67 °C | 105-146 s | ~58 GB | 64.9 °C | buffer full: **above the drive's rate, not heat** |
+| 4K HDR16 unc 28 fps, 3 min (one of six) | 456 MB/s | 50 -> 70 °C | 160 s | 73 GB | 67.9 °C | dropped: a capture gap (back end), not the drive |
+| 4K HDR16 + Log 25 fps, 3 and 5 min | 307 MB/s | 34-52 -> 49-66 °C | 180-300 s | 56-94 GB | - | clean |
+| 4K SDR12 lossless 29-44 fps, 3 and 5 min | 172-239 MB/s | 50-63 -> 60-65 °C | 180-300 s | 32-72 GB | - | clean; the drive stays under 66 °C below ~240 MB/s |
+
+What caused the dropped frames in the long takes:
+- **The drive stopped taking writes for about 2 s at a time** (measured). The buffer went from empty to 700-900 MB in
+  2-3 s, at an unchanged frame rate and with the 1-min write rate flat. When one pause overflowed the 1.06 GB to
+  Core's safety stop, the take ended "buffer full". When it starved the copy path first, capture gaps came and frames
+  were dropped.
+- **When the pauses start** (measured): after **10-13 min of sustained writing at 414-472 MB/s**, with
+  **265-375 GB written in the take**, at a drive temperature of **74-79 °C**.
+- **Not temperature alone** (measured). 5-min takes at the same rates reached 74-76 °C with 135-142 GB written and
+  stayed clean. Every failure came only after at least 265 GB in one take.
+- **Probable mechanism:** the drive's fast write cache (SLC) running out within the take, made worse by heat. The
+  drive then has to fold the cache into slower flash while it keeps writing, and it pauses. Which of the two dominates
+  is unconfirmed: no take separated "hot but under 265 GB" from "past 265 GB but cool".
+- **The longest clean sustained writing** was 904 s, 362 GB at 459 MB/s (4K SDR12 37 fps; it survived two pauses).
+  For 4K HDR16 it was 755 s, 312 GB at 414 MB/s.
+- **Below ~240 MB/s** (lossless, lossy, ProRes) the drive stayed at 60-66 °C over 5 min and never paused (measured,
+  short takes only).
+- The Pi stayed at 52-66 °C in every take: no Pi throttling in these takes (measured).
+- **Between takes** the drive cooled back to 40-63 °C. How long the cache takes to recover idle is unmeasured; that
+  matters for back-to-back long takes.
+
 ## 2c. Will a 30-min take work? (projection)
 
 Nothing in 4K has been recorded for 30 min yet. The NVMe's longest takes are 15 min, and the S6 flat controls never
@@ -141,6 +179,8 @@ ran. This is a projection from four measured facts:
    2-3 s at 450 MB/s.
 3. Between pauses the warm drive takes at least **~470 MB/s** (1-min rates in the 15-min takes).
 4. The split caps the exFAT folder cost at 1.6 ms per file, so the folder no longer grows the load.
+
+**Since 2c-0:** the pauses began only after 265-375 GB in one take. Modes above ~300 MB/s write that within 15-20 min, so their 30-min rows below are uncertain, not probable. Modes under ~240 MB/s stay cool and under ~430 GB in 30 min: probable.
 
 So on NVMe a mode survives 30 min if (a) one pause fits in the buffer, which takes **pause tolerance = 1060 MB / data
 rate > ~2.5 s** (about 420 MB/s or less), and (b) the buffer drains before the next pause, which takes
@@ -152,16 +192,16 @@ measured the same way.
 | Mode | fps | Data rate | NVMe pause tolerance | NVMe 30 min | T7 30 min |
 | --- | --- | --- | --- | --- | --- |
 | 4K HDR16 uncompressed | 25 | 415 MB/s | 2.6 s, drain margin ~55 MB/s | **unlikely**: 25 already failed at 12.6 min (measured) | no (6 fps max) |
-| 4K HDR16 uncompressed | 22-23 | 365-380 MB/s | 2.8-2.9 s, margin ~90-105 | **probable** (projected; untested) | no |
+| 4K HDR16 uncompressed | 22-23 | 365-380 MB/s | 2.8-2.9 s, margin ~90-105 | **uncertain**: a 30-min take writes ~660 GB, far past the 265-375 GB where the pauses began (2c-0); one pause fits, a longer or denser run of them may not | no |
 | 4K HDR16 + Log | 24 | ~400 MB/s | 2.7 s | uncertain: Log's capture gaps start at 28 | no |
 | 4K HDR16 lossless | 14 | ~140 MB/s | 7.6 s | **probable** (encoder-limited; CPU ~190 %) | probable at ≤ 10 |
 | 4K HDR12 uncompressed | ≤ 24 | ≤ 300 MB/s | 3.5 s | **uncertain**: the back end drops frames at any fps tried (25-30); 22-23 untested | no |
 | 4K SDR12 uncompressed | 37 | 460 MB/s | 2.3 s, margin ~10 MB/s | **unlikely**: passed 15 min with two pauses (58 and 299 MB); the backlog grows as the drive heats | no |
-| 4K SDR12 uncompressed | 33 | 410 MB/s | 2.6 s, margin ~60 | **probable** (projected) | no |
+| 4K SDR12 uncompressed | 33 | 410 MB/s | 2.6 s, margin ~60 | **uncertain**: ~740 GB in 30 min, past the 265-375 GB point; the margin over a 2-s pause is thin | no |
 | 4K SDR12 lossless | 40 | ~230 MB/s | 4.6 s | **probable**; CPU heat over 30 min unmeasured (~200 % Core CPU) | at ≤ 18 probable |
 | 4K SDR12 lossy 3:1 / 5:1 | 37 / 41 | ~130 / ~85 MB/s | 8 / 12 s | **probable** | 3:1 at ≤ 28, 5:1 at ≤ 41: probable (85 MB/s under 100) |
 | 2880x2160 crop SDR12 lossless | 56 | ~210 MB/s | 5 s | probable | ≤ 24 |
-| 4K SDR12 MLV | 25 | ~310 MB/s | 3.4 s | probable (one file, no folder cost) | no |
+| 4K SDR12 MLV | 25 | ~310 MB/s | 3.4 s | uncertain-to-probable: ~560 GB in 30 min; one file, no folder cost | no |
 | 4K ProRes HQ / 422 / LT / Proxy | 27 / 40 / 43 / 45 | ~80 / ~85 / ~60 / ~30 MB/s | > 10 s | **probable**; the limit is CPU (220-340 %), not the drive; CPU heat over 30 min unmeasured | HQ at ≤ 27 marginal (~80-90 MB/s), 422 / LT / Proxy probable |
 | H.264 2560x1440 / 1080p | 45 / 60 | < 10 MB/s | - | probable (CPU) | probable |
 | 2K HDR16 uncompressed | 30 | 125 MB/s | 8.5 s | **probable** | no (18 fps meter); lossless 27: **passed 30 min** (measured) |
