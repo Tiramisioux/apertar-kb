@@ -1674,6 +1674,14 @@ def run_take(out, c, fps, max_seconds, written, stop_on_drop=True, variant='', t
         SAID[('fits', c.key, fps)] = True
         log(out, '%s: a %d s take at %s fps could write %.0f GB, more than the %.0f GiB drive holds: it will end at drive-full' % (
             c.id, max_seconds or 1800, fps, proj, total_gib))
+    try:                    # 2026-11-21: ctake's fill gate sized a lossless take smaller than this projection, and the
+        sv = os.statvfs(MEDIA)  # quiet gate below then waited 3 h for space only a delete could give: delete first
+        if need and sv.f_bavail * sv.f_frsize < need * 2**30:
+            w = fill_gate(out, need * 2**30)
+            if w:
+                log(out, 'gate: fill gate before the quiet gate: %s' % w)
+    except OSError:
+        pass
     code = wait_for_quiet(out, need_free_gib=need)
     if code:
         row['outcome'] = {'needs_human': 'needs_human', 'gate_timeout': 'gate_timeout', 'signal': 'stopped_by_signal'}[code]
