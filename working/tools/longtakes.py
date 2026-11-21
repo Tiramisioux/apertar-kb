@@ -3835,6 +3835,18 @@ def est_warm(out):
             decide(out, 'EST P6 %s at %d (estimate %d): %s after %s s' % (spec, f, est, r.get('outcome'), r.get('seconds')))
 
 
+EST_BLOCKS_DEFAULT = 'P0,P1,P2,P1b,P3,P4,P5'
+
+
+def done_key(n):
+    """The DONE marker's name for a stage. An EST set run with other blocks than the default (P6 on a finished set) gets
+    its own marker, so the set's DONE does not skip the new blocks (2026-11-21: P6 was skipped behind DONE-EST-05fb8f1-a)."""
+    b = getattr(CS.get('args'), 'est_blocks', EST_BLOCKS_DEFAULT) or EST_BLOCKS_DEFAULT
+    if is_est(n) and b != EST_BLOCKS_DEFAULT:
+        return '%s@%s' % (n, b.replace(',', '+'))
+    return n
+
+
 def est_night(out):
     a = CS['args']
     pre = est_prereg(out)
@@ -3953,7 +3965,7 @@ def campaign_main(a, out):
         for i, n in enumerate(nights):
             if CS['stop'] or STOP['sig'] or HALT['why']:
                 break
-            if os.path.exists(out + '/DONE-' + n):
+            if os.path.exists(out + '/DONE-' + done_key(n)):
                 decide(out, 'stage %s already done: skipped' % n)
                 continue
             if i and a.idle_between:
@@ -3986,7 +3998,7 @@ def campaign_main(a, out):
             elif is_est(n):
                 est_night(out)
             if not (CS['stop'] or STOP['sig'] or HALT['why']):
-                write_atomic(out + '/DONE-' + n, time.strftime('%F %T') + ' done\n')
+                write_atomic(out + '/DONE-' + done_key(n), time.strftime('%F %T') + ' done\n')
                 decide(out, 'stage %s done' % n)
     finally:
         why = CS['stop'] or (('stopped by ' + STOP['sig']) if STOP['sig'] else '') or HALT['why'] or 'all stages of the night done'
@@ -4183,7 +4195,7 @@ def main():
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
-    ap.add_argument('--est-blocks', default='P0,P1,P2,P1b,P3,P4,P5',     # P6: the warm-drive 15-min takes, on request
+    ap.add_argument('--est-blocks', default=EST_BLOCKS_DEFAULT,     # P6: the warm-drive 15-min takes, on request
                     help='N, EST (estimator plan section 5): blocks in order; P1b = the second P1 pass over the 4K rows')
     ap.add_argument('--max-voids', type=int, default=2, help='N: voids in one night before it stops (the estimator day: 4)')
     ap.add_argument('--arms', default='4kHDR16:lossless_jpeg:nolog:25,4kHDR16:none:log:25',
