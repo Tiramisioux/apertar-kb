@@ -1699,3 +1699,270 @@ Needs the camera: nothing. No hardware path changes.
 
 **Rule.** Every door that writes a whole file runs the same sanity checks, in the place where the original code runs them.
 
+
+---
+
+## C31. core, web: hardware-file refusals are one sentence
+
+Apertar-Core `926a62b`. Finding: command-plane commit 6. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:12801@cinemate-port (same shape at :12841, :12881, :12915):
+        if (!result.ok) {
+            return errorReplyBody(command.id, result.error,
+                "\"code\":\"" + escapeJson(result.code) + "\",\"revision\":\"" + escapeJson(result.revision) + "\""
+                ",\"issues\":" + controlsIssuesJson(result.issues) + ...
+src/web/WebControlPage.cpp:18662@cinemate-port:
+          const kept = result.code === "stale" || result.code === "conflict"
+            ? " Your choices stay on the page. Press Reload to see the newer file." : "";
+
+**Why it is a problem.** A refusal carried a second error vocabulary (code) and lists, and the page translated the code into its own words. Original Apertar has two reply builders only, okReply and errorReply (src/ApertarCoreApp.cpp:108-128@upstream-1.6.0), and every surface shows the refusal sentence as written (CMD-9, CMD-28, WEB-14). The Check button also sent base "h", which is no revision, so a Check before the file loaded was always refused as stale (WCP-10-F7).
+
+**How to spot it.** grep -n 'errorReplyBody\|"code\\"' src/ApertarCoreApp.cpp, and in the page grep -n 'result.code ===\|new_errors' src/web/WebControlPage.cpp. A page that appends its own text to Core's error is translating a code; ask why Core's sentence does not say it.
+
+**Options.**
+
+- errorReply(id, result.error) in the five commands, Core's sentence on the page, conflict sentence completed: about -35/+18, one reply shape (chosen)
+- Keep the lists in refusals as a documented extension: no page change, but two error shapes stay
+- Also skip the store's new-errors refusal on a dry run (the plan): after C27 a text Check is never refused on new errors, so this would only make a key-edit dry run say ok while the real save is refused
+
+**Chosen, and why.** Option 1, without the plan's store change for dry runs. The code contradicted the plan there: since C27 newErrors is computed only for key edits (if (edits) ...), so Check (a text dry run) already answers ok:true with its issues; adding && !flags.dryRun would break the store's rule that a dry run's ok means 'would save'. Given up: a refused key edit names only the count and the first new error; Check lists all. Kept on purpose: StoreResult::conflicts and hwconf::conflicts (they decide the refusal), textToEdits, needs_review/merged/confirm_merge (Q17's unbuilt review) and "Script paths are changed over ssh, not here." (Q2). The Undo refusal's read of result.issues also went, because no refusal carries issues now.
+
+**After.**
+
+```
+        if (!result.ok)
+            return errorReply(command.id, result.error);
+  store: "The file changed in the same place since you loaded it. Reload, then change it again."
+  page:  showControlsMessage(result.error || "Could not save the controls.", [], false);
+         controlsCall({ cmd: "set_controls", base: state.configRevision, ..., dry_run: "true" })
+         if (checkButton) checkButton.disabled = !state.configRevision;
+```
+
+**Checked.** Here: the gate (above). --simulate with HOME and APERTAR_HARDWARE_CONFIG in /home/user/build/sim/cp2/c6a: a key edit adding an error -> "Not saved: 1 new error. Unknown action ..."; a second edit from the old base -> the conflict sentence with "Reload, then change it again."; a stale base on set_controls, set_buffer_mode, set_clip_merge, set_frames_per_folder, set_storage_preroll -> the stale sentence only; a stale values-only text save -> ok, merged:true, needs_review:true. c6b with APERTAR_SCRIPT_PATHS=ssh: save and dry run -> "Script paths are changed over ssh, not here.". Chromium (/home/user/build/sim/cp2/c6-page.js): Check disabled with no revision, enabled after load, lists "Line 3: Unknown action ..."; stale and error-adding Controls saves and a stale Hardware save show Core's sentence and keep the edits; no page errors. smoke_core.sh -> smoke-1.txt; shape_subset vs smoke-upstream.txt: every base field present with the same type. Camera: nothing, no hardware path changes.
+
+**Rule.** A refusal is one sentence through errorReply; the page shows it as written. Lists of what is wrong belong in ok replies (a dry run), not in refusals.
+
+
+---
+
+## C32. core, web: a config text save names its revision only to be refused when stale
+
+Apertar-Core `46d28cd`. Finding: command-plane commit 7. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:8611@cinemate-port (POST /api/config):
+        const auto revisionHeader = request.headers.find("x-apertar-revision");
+        if (revisionHeader == request.headers.end() && request.headers.count("origin")) {
+            response.status = 409;
+            response.body = errorReplyBody(-1, "Apertar was updated: reload this page. Your text stays in the box.",
+                                           "\"code\":\"old_page\"");
+  ... response.body = errorReplyBody(-1, message, "\"code\":...,\"conflicts\":" + controlsConflictsJson(result.conflicts));
+WebControlPage.cpp: const kept = payload.code === "stale" || payload.code === "conflict" || payload.code === "merge_review" ? " Your text stays in the box. ..." : "";
+
+**Why it is a problem.** The route behaved differently for a browser (Origin header) and a script, and spoke a second error vocabulary (code). Upstream's POST /api/config saves the text, last writer wins, and refuses only with errorReply(-1, sentence) and an HTTP status (src/ApertarCoreApp.cpp:7175-7195@upstream-1.6.0; WEB-5, CMD-9). Core and page ship together (CMD-30), so a tab from before an update needs no machine code. A header beside a raw body is upstream's own shape: x-preset-filename (src/ApertarCoreApp.cpp:7396-7400@upstream-1.6.0), so the revision header stays.
+
+**How to spot it.** grep -n 'headers.count("origin")\|"code\\"' src/ApertarCoreApp.cpp. A route that asks who is calling (browser or script) to decide what a request means is a smell: the same request should mean the same thing from every client.
+
+**Options.**
+
+- Delete the Origin test; a missing header means the current revision; errorReply with the status kept (chosen): -35/+7, 1.6.0 behaviour without the header
+- Keep old_page on Origin presence: protects one tab left open across an update, at the cost of a client-dependent rule and a code
+- Require the header from every client: scripts and the KB restore step (curl without header) break
+
+**Chosen, and why.** Option 1, as the plan says. Given up: a tab left open across an update can save over a newer file once (owner row a, 'old_page'). Kept: the revision header, the store's merge review (a stale values-only save still answers 409 'Reload; your text stays in the box.'), and the script-path rule, which does not depend on the header. Not in the plan: controlsConflictsJson had this route as its last caller after commit 6; it is in the anonymous namespace, so leaving it would add a -Wunused-function warning, and it is removed. The store still computes the conflicts list (StoreResult::conflicts) that decides the refusal. A refused save now always fills the issue box with the sentence (before, only when the reply had a payload; a network error now also shows there).
+
+**After.**
+
+```
+        // The page names the revision it loaded, to be refused when the file is newer. Without it the text is
+        // saved over the current file, as in 1.6.0.
+        const auto revisionHeader = request.headers.find("x-apertar-revision");
+        const std::string base = revisionHeader != request.headers.end() ? revisionHeader->second : store.currentRevision();
+        ...
+            response.status = changed ? 409 : 400;
+            response.body = errorReply(-1, message);
+  page:  if (!payload.ok) throw new Error(payload.error || "Could not save config.");
+         showConfigIssues(error.message || "Could not save config.", []);
+```
+
+**Checked.** Here: the gate (above). --simulate in /home/user/build/sim/cp2/c7a with its own hardware file: curl -X POST --data-binary @a.txt /api/config without the header -> 200, written; with -H 'Origin: http://127.0.0.1:8175' and no header -> 200, written; with a stale X-Apertar-Revision -> 409 {"ok":false,"error":"The file changed ... Reload, then change it again."}; empty body -> 400 "Config file cannot be empty.". Chromium, two tabs (/home/user/build/sim/cp2/c7-page.js): tab two's save is refused with Core's sentence, its text stays in the box, the file has tab one's line only; no page errors. smoke-2.txt vs smoke-upstream.txt: every base field present with the same type. Camera: nothing.
+
+**Rule.** A request means the same from every client: do not read Origin to decide what a save means. An optional header may narrow a save (refuse when stale); without it the 1.6.0 behaviour holds.
+
+
+---
+
+## C33. core, web: playback routes refuse through errorReply
+
+Apertar-Core `d092b04`. Finding: command-plane commit 8. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp@cinemate-port, the frame route (same at the sound, download and download-selected routes):
+            response.status = 409;
+            response.body = "{\"ok\":false,\"error\":\"Playback held: " + hold + ".\",\"hold\":\"" + hold + "\"}";
+            response.status = 404;
+            response.body = "{\"ok\":false,\"error\":\"This clip was removed.\",\"gone\":true}";
+                response.body = "{\"ok\":false,\"busy\":true}";
+WebControlPage.cpp: pbvApplyHold(clip.hold || state.pb.snapshotHold || "recording");
+
+**Why it is a problem.** Hand-built JSON bypasses errorReply and carries a second vocabulary (hold tokens, gone, busy); the sentences were tokens ("Playback held: media_test.") or missing. Original Apertar answers a route refusal with errorReply(-1, sentence) and a status (WEB-5, CMD-9) and its busy sentences say what to do: "Stop recording before deleting media." (src/ApertarCoreApp.cpp:7514-7520@upstream-1.6.0), "Wait for the media speed test to finish first." (:9110). The clip route's 409 already had no hold member at the tip, so the viewer fell back to the last 1 s poll: a clip opened in standby right after a poll showed the Recording card instead of Wake (Patrik's DA-65, playback held in standby).
+
+**How to spot it.** grep -n 'response.body = "{' src/ApertarCoreApp.cpp finds JSON built by hand. In the page, a member read from an error body (body.gone, clip.hold) is a second protocol beside the status code.
+
+**Options.**
+
+- One local lambda holdResponse(hold) -> 409 + errorReply sentence; 410 for gone, 503 + sentence for busy; the page reads the hold from GET /api/state on a held clip open (chosen): -45/+46
+- Keep a hold member in the refusal: no page fetch, but a second vocabulary in error replies stays
+- Let the page map hold from its last poll only (the plan as first written): one fewer request, but a stale poll shows the wrong card (the audit's conflict with DA-65)
+
+**Chosen, and why.** Option 1, with the audit's change. A C++ lambda defined at the top of handleWebRequest is a small local function object; CMD-25 names that shape for a repeated block. The empty hold after an interrupted frame read falls to the recording sentence, as before (why = "recording"). All recording holds (take, sound recorder, timelapse) use "Stop recording or the timelapse before playing or downloading media.", because the hold name does not tell them apart. The state lookup awaits, so the page checks the viewer is still the same clip before showing the card. Given up: the download sentence "Recording. Downloads wait until the take ends." (one family sentence now), and one extra GET /api/state when a clip open is held.
+
+**After.**
+
+```
+    const auto holdResponse = [](const std::string &hold) {
+        WebServer::Response response;
+        response.status = 409;
+        ...
+        const char *sentence = hold == "writing" ? "Wait for the current capture to finish writing to media."
+            : ... : "Stop recording or the timelapse before playing or downloading media.";
+        response.body = errorReply(-1, sentence);
+    if (const std::string hold = playbackHoldReason(); !hold.empty())
+        return holdResponse(hold);
+  page: if (response.status === 410) return { outcome: "gone" };  /  hold = String(snapshot.playback_hold || "") || hold;
+```
+
+**Checked.** Here: the gate (above). --simulate with a copied cDNG clip folder (/home/user/build/sim/cp2/c8a): during record_start the frame, file, download and download-selected routes answer 409 with the recording sentence; after enter_standby 409 "Wake the camera first."; a frame of a missing clip 410 "This clip was removed."; an idle frame 200 image/jpeg. Chromium (/home/user/build/sim/cp2/c8-page.js): standby, last poll set to no hold, open the clip -> requests /api/media/clip then /api/state, card "Standby / Wake the camera to play clips."; c8-gone.js: the frame outcome is ok, then gone after the folder is deleted; no page errors. smoke-3.txt vs smoke-upstream.txt: every base field present with the same type. Camera: play a clip, press record; playback stops before the first frame is written, and curl -s localhost:8000/api/state shows recording_dropped_frames 0. Not exercised here: the writing, media_test and media sentences and the 503 busy reply (simulate has no slow card).
+
+**Rule.** A route refusal is a status plus errorReply's sentence. Where the page needs to know more (which hold), it asks a lock-free state route, not a member hidden in the error body.
+
+
+---
+
+## C34. core: Boot Config and set_controls switches read true or false, 1 or 0
+
+Apertar-Core `111ccf7`. Finding: command-plane commit 10. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp@cinemate-port (boolFieldValue, bootConfigSet):
+    std::transform(v.begin(), v.end(), v.begin(), ... std::tolower ...);
+    if (v == "true" || v == "1" || v == "on" || v == "yes")
+        return true;
+    const bool dryRun = boolFieldValue(command.string("dry_run").value_or("false")).value_or(false);
+  set_controls:
+            if (const auto value = command.string(name); value && !parseBooleanToken(*value, flag))
+
+**Why it is a problem.** A switch whose wrong value writes a file must refuse the wrong value. .value_or(false) on an std::optional turned 'not understood' into 'false', and for dry_run false means 'write config.txt'. Original Apertar has two boolean forms: lenient (true/1, else off) for a plain switch, strict (true/1, false/0, else refused) where a wrong value must not pass: set_standby_usb_power_off, src/ApertarCoreApp.cpp:9130-9133@upstream-1.6.0 (conventions section 4, CMD-8). parseBooleanToken was written to read timedatectl output (yes/no) and was reused for commands.
+
+**How to spot it.** grep -n 'value_or(false)' src/ApertarCoreApp.cpp near a parser that returns std::optional: a nullopt (parse failure) silently becomes a value. Ask of each boolean flag: what happens if the client sends a typo?
+
+**Options.**
+
+- Strict boolFieldValue and refusal of a bad dry_run/confirm_display; the set_controls flags on the same helper (chosen): about -12/+19
+- Keep the lenient words, refuse only unknown words: still accepts on/yes where upstream does not, two dialects of boolean
+- Lenient upstream form (true/1 else false): a typo in dry_run would then write, the problem itself
+
+**Chosen, and why.** Option 1, as the plan with its extra. The new refusal in bootConfigSet uses the same errorReplyBody 'invalid' shape as the refusal right above it, because command-plane commit 9 converts all Boot Config refusals at once; a lone errorReply there would mix two shapes in one function. Given up: scripts that sent yes/on/True; none found in the KB tools (grep). The page sends JSON booleans, which the command parser stores as the strings true/false, so the card is unaffected.
+
+**After.**
+
+```
+// A switch that decides whether a file is written: true or 1, false or 0, nothing else.
+std::optional<bool> boolFieldValue(const std::string &value)
+{
+    if (value == "true" || value == "1")
+        return true;
+    ...
+    if (!dryRunValue || !confirmDisplayValue)
+        return {400, errorReplyBody(command.id, std::string(dryRunValue ? "confirm_display" : "dry_run") + " must be true or false.", ...)};
+```
+
+**Checked.** Here: the gate (above; boot_config_test is one of the 18). --simulate (/home/user/build/sim/cp2/c10a): set_controls dry_run=yes, on, True -> "dry_run must be true or false."; restore=yes and force=no refused; md5sum of the hardware file unchanged by those; dry_run "true", JSON true and 1 -> dry run, 0 -> a real save. set_boot_config dry_run=yes and confirm_display=on -> refused 400; POST /api/boot-config {"dry_run":"yes"} -> 400; {"dry_run":true} passes the flag check and stops at 'Could not read /boot/firmware/config.txt.' (no config.txt here). smoke-4.txt: every base field present with the same type. Camera: on the Pi, the Boot Config card's review and Save still work (python3 ~/apertar-kb/working/tools/core.py set_boot_config dry_run=true answers the review; dry_run=yes is refused).
+
+**Rule.** A flag whose wrong value writes a file is parsed strictly and refused when not understood; never turn a parse failure into a value with value_or.
+
+
+---
+
+## C35. camera: the new camera switches are written 0 and 1 in camera_settings.conf
+
+Apertar-Core `ee141f9`. Finding: command-plane commit 15. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/CameraController.cpp:963,974-979@cinemate-port (writeCaptureSettings):
+    output << prefix << "clear_hdr=" << (s.clearHdr ? "true" : "false") << '\n';
+    output << prefix << "fps_phase_lock=" << (s.fpsPhaseLock ? "true" : "false") << '\n';
+    output << prefix << "preview_tdn=" << (s.previewTdn ? "true" : "false") << '\n';
+    output << prefix << "media_trim=" << (s.mediaTrimEnabled ? "true" : "false") << '\n';
+    ... fps_speed_ramp, fps_speed_ramp_keep_exposure, fps_speed_ramp_stretch_audio the same
+
+**Why it is a problem.** One file, two spellings of a boolean. 1.6.0 writes its switches by streaming the bool, which gives 0 or 1: output << prefix << "iso_auto=" << s.isoAuto (src/camera/CameraController.cpp:749@upstream-1.6.0), read back with std::stoul(value) != 0 (:659-660). The port's lines are the only true/false in the file (X-knobs-19, CC-1-F4).
+
+**How to spot it.** grep -n '? "true" : "false") << .\\n.' src/camera/CameraController.cpp: in a settings writer (not JSON) this spelling differs from the file's other switches.
+
+**Options.**
+
+- Stream the bool (0/1) and keep the lenient readers (chosen): 7 lines, old files keep loading
+- Also change the readers to std::stoul(value) != 0: would read a port file's 'true' as an error and fall back to the default, losing the operator's setting
+- Leave true/false: no change, the file keeps two spellings
+
+**Chosen, and why.** Option 1. In C++, streaming a bool into an std::ostream without std::boolalpha writes 0 or 1, which is exactly what upstream relies on. The readers stay as they are, so a file the port wrote (true/false) loads unchanged and is rewritten in 0/1 at the next debounced persist, the way upstream rewrites the whole file on every change. Downgrade: fork main reads clear_hdr as true or 1 (core-main CC:710-711), and 1.6.0 ignores the port keys, so going back is safe. fps_speed_ramp_after=return|stay stays: it is an enum word. Given up: nothing.
+
+**After.**
+
+```
+    output << prefix << "clear_hdr=" << s.clearHdr << '\n';
+    output << prefix << "fps_phase_lock=" << s.fpsPhaseLock << '\n';
+    output << prefix << "preview_tdn=" << s.previewTdn << '\n';
+    output << prefix << "media_trim=" << s.mediaTrimEnabled << '\n';
+    output << prefix << "fps_speed_ramp=" << s.fpsSpeedRamp << '\n';
+```
+
+**Checked.** Here: the gate (above; the 3 nolc warnings are the old ones in CameraController.cpp at 1242, 7782, 7935, not in these lines). --simulate with HOME=/home/user/build/sim/cp2/c15a and a camera_settings.conf holding preview_tdn=true, media_trim=false, fps_phase_lock=true: get_state shows preview_tdn and fps_phase_lock true; after set_iso value=400 the file holds clear_hdr=0, fps_phase_lock=1, preview_tdn=1, media_trim=0, fps_speed_ramp=0, fps_speed_ramp_keep_exposure=0, fps_speed_ramp_stretch_audio=1; a restart reads the same values. Camera: nothing; on the rig, grep preview_tdn ~/.config/apertar-core/camera_settings.conf after the first settings change shows 0 or 1 and the WebUI shows the same switch state as before.
+
+**Rule.** In a settings file, write a new switch the way the file's existing switches are written; keep the reader accepting the old spelling so files written before still load.
+
+
+---
+
+## C36. core: set_value_steps echoes the lists flat
+
+Apertar-Core `86a33a1`. Finding: command-plane commit 16. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:14178@cinemate-port:
+        if (!updateSharedUiGeneralSettings(updates))
+            return errorReply(command.id, "Could not save the value list.");
+        return okReply(command.id, "\"ui\":{" + valueStepsJson(readSharedUiSettings(), camera_.sensorName()) + "}");
+
+**Why it is a problem.** A command reply that nests its values in an object breaks the flat reply shape (CMD-8, CMD-9) and borrows the "ui" group, which in 1.6.0 exists only in /api/state (CMD-11). Upstream's UI.conf commands echo what they stored flat: okReply(command.id, "\"sleep_mode\":...") (src/ApertarCoreApp.cpp:9802-9813@upstream-1.6.0; CMD-6). Finding App-5-F5 (the reply part).
+
+**How to spot it.** grep -n 'okReply(command.id, "\\"[a-z_]*\\":{' src/ApertarCoreApp.cpp finds replies that nest an object. Before changing a reply, grep every client for the command name: grep -rn set_value_steps src ../ui-work/src ../ui-work/qml.
+
+**Options.**
+
+- Drop the wrapper, same members (chosen): 1 line; safe because no client reads the reply
+- Keep the wrapper: no change, but the reply stays nested and looks like /api/state
+- Return only what changed (one list): smaller reply, but a different member set per call
+
+**Chosen, and why.** Option 1, as the plan says, after the check the instructions asked for. Readers: WebControlPage.cpp:8494 sendValueSteps only awaits sendCommand; sendCommand's applyCommandSnapshotPatch reads result.state and result.imu generically, never result.ui, and has no set_value_steps case; the card redraws from the next /api/state. The touch UI (/home/user/wt/ui-work) has no sender: its three hits are comments (SettingsBridge.hpp:106, SettingsBridge.cpp:1843, CameraPage.qml:518), and it reads the lists from UI.conf. No KB tool sends the command. Given up: nothing.
+
+**After.**
+
+```
+        if (!updateSharedUiGeneralSettings(updates))
+            return errorReply(command.id, "Could not save the value list.");
+        return okReply(command.id, valueStepsJson(readSharedUiSettings(), camera_.sensorName()));
+```
+
+**Checked.** Here: the gate (above). --simulate (/home/user/build/sim/cp2/c16a): curl -X POST /api/command -d '{"cmd":"set_value_steps","name":"iso","free":"true"}' -> {"ok":true,"iso_steps":[...],"shutter_angle_steps":[...],...} flat; /api/state ui.iso_free true. Chromium (/home/user/build/sim/cp2/c16-page.js): sendValueSteps({name:'iso', free:'false'}) -> state.snapshot.ui.iso_free false, no error toast, no page errors. smoke-6.txt vs smoke-upstream.txt: every base field present with the same type. Camera: nothing.
+
+**Rule.** A command reply is flat; before changing its shape, grep every client of the command (WebUI, touch UI, KB tools) and name what each reads.
+

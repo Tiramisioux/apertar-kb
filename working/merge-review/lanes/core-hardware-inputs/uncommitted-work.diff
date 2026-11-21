@@ -1,335 +1,114 @@
 diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
-index 06fe008..33e4d88 100644
+index 1e7a5a8..f7d6ac5 100644
 --- a/src/ApertarCoreApp.cpp
 +++ b/src/ApertarCoreApp.cpp
-@@ -7935,13 +7935,13 @@ ApertarCoreApp::ApertarCoreApp(Options options)
-     , camera_(
-           [this](const std::string &eventJson) { publishEvent(eventJson); },
-           [this](PreviewFrameDescriptor frame) { enqueuePreviewFrame(std::move(frame)); })
--    , gpioInput_([this](const std::string &action) { handleHardwareInputAction(action); },
-+    , gpioInput_([this](const std::string &action) { return handleHardwareInputAction(action); },
-                  [this](const std::string &action) { handleHardwareInputAction(action, false); })
-     , standbyPowerButton_([this](bool doublePress) { return handlePowerButtonPress(doublePress); })
-     , groveAnalogInput_([this](const GroveAnalogInput::AnalogEvent &event) { handleHardwareAnalogInput(event); })
--    , neoRotary4Input_([this](const std::string &action) { handleHardwareInputAction(action); },
-+    , neoRotary4Input_([this](const std::string &action) { return handleHardwareInputAction(action); },
-                        [this](const std::string &action) { handleHardwareInputAction(action, false); })
--    , pcf8574Input_([this](const std::string &action) { handleHardwareInputAction(action); })
-+    , pcf8574Input_([this](const std::string &action) { return handleHardwareInputAction(action); })
- {
-     // The write queue's safety stop (see runBufferSafetyStop): lock-free, runs under the queue's mutex. Set before any take.
-     bufferbudget::safetyStopHook() = [this](const bufferbudget::SafetyStopHit &hit) {
-@@ -10282,25 +10282,26 @@ bool ApertarCoreApp::handlePowerButtonPress(bool doublePress)
-     return true;
- }
+@@ -5119,11 +5119,108 @@ path4=
+ path5=
  
--void ApertarCoreApp::handleHardwareInputAction(const std::string &action, bool buttonPress)
-+// True when the press only woke the camera from Standby: the input then counts nothing more from it.
-+bool ApertarCoreApp::handleHardwareInputAction(const std::string &action, bool buttonPress)
- {
-     if (!running_.load(std::memory_order_relaxed) || action.empty())
--        return;
-+        return false;
+ [imu]
+-enabled=false
++# Current options: driver=mpu6050, bmi160, bmi270, icm42688p.
++# Free-running IMUs use sync_offset_ms to bake in a measured Gyroflow sync correction.
++enabled=true
+ driver=mpu6050
+ sync_mode=free_run
+ sync_offset_ms=0
  
-     const auto actions = hardware::parseButtonActions(action, [](const std::string &token) { return token; });
-     if (!actions.error.empty()) {
-         std::cerr << "Hardware input mapping ignored: " << actions.error << '\n';
--        return;
-+        return false;
-     }
-     // Keep one button's sequence together across GPIO, I2C and analog inputs.
-     std::lock_guard<std::mutex> sequenceLock(hardwareInputSequenceMutex_);
-     if (camera_.state() == CameraState::Standby) {
-         if (!buttonPress)
--            return;
-+            return false;
-         ControlCommand wake;
-         wake.name = "wake";
-         dispatchHardwareInputCommand(std::move(wake));
--        return;
-+        return true;
-     }
-     lastUserActivityMs_.store(std::chrono::duration_cast<std::chrono::milliseconds>(
-         std::chrono::steady_clock::now().time_since_epoch()).count());
-@@ -10310,6 +10311,7 @@ void ApertarCoreApp::handleHardwareInputAction(const std::string &action, bool b
-         handleSingleHardwareInputAction(singleAction);
-         if (camera_.state() == CameraState::Standby) break;
-     }
-+    return false;
- }
- 
- void ApertarCoreApp::handleSingleHardwareInputAction(const std::string &action)
-diff --git a/src/ApertarCoreApp.hpp b/src/ApertarCoreApp.hpp
-index aee3c34..9ebcd9d 100644
---- a/src/ApertarCoreApp.hpp
-+++ b/src/ApertarCoreApp.hpp
-@@ -145,7 +145,7 @@ private:
-     enum class ClipMergeOutcome { Done, Stopped, Shutdown };
-     ClipMergeOutcome mergeSplitClip(const std::filesystem::path &clip);
-     MediaProfile mediaProfile() const;
--    void handleHardwareInputAction(const std::string &action, bool buttonPress = true);
-+    bool handleHardwareInputAction(const std::string &action, bool buttonPress = true);
-     bool handlePowerButtonPress(bool doublePress);
-     void handleSingleHardwareInputAction(const std::string &action);
-     void handleHardwareAnalogInput(const GroveAnalogInput::AnalogEvent &event);
-diff --git a/src/hardware/ButtonGesture.hpp b/src/hardware/ButtonGesture.hpp
-index 9b9579d..726ebfd 100644
---- a/src/hardware/ButtonGesture.hpp
-+++ b/src/hardware/ButtonGesture.hpp
-@@ -52,6 +52,16 @@ public:
-         return events;
-     }
- 
-+    // The press so far fires nothing more: no click, long press or Hold follows from it (a press that woke the camera).
-+    void consume()
-+    {
-+        clicks_ = 0;
-+        if (down_) {
-+            longPress_ = true;
-+            holdFired_ = true;
-+        }
-+    }
++[mpu6050]
++# Optional gyro/accelerometer sidecar recording for Gyroflow stabilization.
++# Enable "Record Gyro Data" in Record settings to write a .gcsv beside each clip.
++enabled=true
++bus=1
++address=0x68
++sample_rate_hz=500
++gyro_range_dps=1000
++accel_range_g=8
++dlpf_hz=98
++use_fifo=true
++fifo_batch_samples=24
++# orientation uses Gyroflow axis notation. For chip facing back, X left, Y down, use xYz.
++orientation=XYZ
++# UI-only neutral level reference. Use Set Level in Gyro Calibration to update these.
++level_reference_set=false
++level_reference_orientation=XYZ
++level_accel_x=0
++level_accel_y=0
++level_accel_z=0
++# Prefer stored/manual bias. Set auto_calibrate_seconds only if the camera is guaranteed still after pressing record.
++auto_calibrate_seconds=0
++gyro_bias_x=0
++gyro_bias_y=0
++gyro_bias_z=0
++# Optional Gyroflow rolling-shutter metadata. Direction: 0=top-bottom, 1=bottom-top.
++frame_readout_time_ms=0
++frame_readout_direction=0
 +
-     // When update() next has something to do with no edge in between (a long press, Hold, clicks to read out),
-     // or -1 when it can wait for the next edge.
-     int64_t nextWakeMs() const
-diff --git a/src/hardware/GpioInput.cpp b/src/hardware/GpioInput.cpp
-index bab76d4..b1ce148 100644
---- a/src/hardware/GpioInput.cpp
-+++ b/src/hardware/GpioInput.cpp
-@@ -195,9 +195,9 @@ int8_t quadratureDelta(int previousState, int currentState)
- 
- } // namespace
- 
--GpioInput::GpioInput(ActionCallback actionCallback, ActionCallback rotationCallback)
-+GpioInput::GpioInput(PressCallback actionCallback, ActionCallback rotationCallback)
-     : actionCallback_(std::move(actionCallback))
--    , rotationCallback_(rotationCallback ? std::move(rotationCallback) : actionCallback_)
-+    , rotationCallback_(rotationCallback ? std::move(rotationCallback) : ActionCallback(actionCallback_))
- {
- }
- 
-@@ -564,11 +564,11 @@ void GpioInput::closeFd(int *fd) const
-     }
- }
- 
--void GpioInput::emitAction(const std::string &action)
-+bool GpioInput::emitAction(const std::string &action)
- {
-     if (action.empty() || !actionCallback_)
--        return;
--    actionCallback_(action);
-+        return false;
-+    return actionCallback_(action);
- }
- 
- void GpioInput::setLastError(const std::string &error)
-@@ -657,13 +657,16 @@ void GpioInput::run()
-                     const auto at = static_cast<size_t>(event);
-                     seenCallback_(button.seenKey + (at == 0 ? button.pressSuffix : std::string(suffixes[at])));
-                 }
-+                bool woke = false;
-                 switch (event) {
--                case hardware::ButtonGesture::Event::Press: emitAction(button.action); break;
--                case hardware::ButtonGesture::Event::Single: emitAction(button.single); break;
--                case hardware::ButtonGesture::Event::Double: emitAction(button.doubleClick); break;
--                case hardware::ButtonGesture::Event::Triple: emitAction(button.triple); break;
--                case hardware::ButtonGesture::Event::Hold: emitAction(button.hold); break;
-+                case hardware::ButtonGesture::Event::Press: woke = emitAction(button.action); break;
-+                case hardware::ButtonGesture::Event::Single: woke = emitAction(button.single); break;
-+                case hardware::ButtonGesture::Event::Double: woke = emitAction(button.doubleClick); break;
-+                case hardware::ButtonGesture::Event::Triple: woke = emitAction(button.triple); break;
-+                case hardware::ButtonGesture::Event::Hold: woke = emitAction(button.hold); break;
-                 }
-+                if (woke)
-+                    button.gesture.consume();   // A wake press does nothing else.
-             }
-         }
- 
-diff --git a/src/hardware/GpioInput.hpp b/src/hardware/GpioInput.hpp
-index d407b60..9285d77 100644
---- a/src/hardware/GpioInput.hpp
-+++ b/src/hardware/GpioInput.hpp
-@@ -16,8 +16,9 @@ namespace apertar {
- class GpioInput {
- public:
-     using ActionCallback = std::function<void(const std::string &)>;
-+    using PressCallback = std::function<bool(const std::string &)>;   // true: the press woke the camera, nothing else follows
- 
--    explicit GpioInput(ActionCallback actionCallback, ActionCallback rotationCallback = {});
-+    explicit GpioInput(PressCallback actionCallback, ActionCallback rotationCallback = {});
-     // Called with "section|key" each time a control fires, mapped or not (the WebUI's Listen). Set before start().
-     void setSeenCallback(ActionCallback seenCallback) { seenCallback_ = std::move(seenCallback); }
-     ~GpioInput();
-@@ -129,10 +130,10 @@ private:
-                               std::string *errorMessage) const;
-     bool readLineValues(int lineFd, size_t lineCount, uint64_t *bits) const;
-     void closeFd(int *fd) const;
--    void emitAction(const std::string &action);
-+    bool emitAction(const std::string &action);
-     void setLastError(const std::string &error);
- 
--    ActionCallback actionCallback_;
-+    PressCallback actionCallback_;
-     ActionCallback rotationCallback_;
-     ActionCallback seenCallback_;
-     Config config_;
-diff --git a/src/hardware/NeoRotary4Input.cpp b/src/hardware/NeoRotary4Input.cpp
-index c0fafc4..e11da9c 100644
---- a/src/hardware/NeoRotary4Input.cpp
-+++ b/src/hardware/NeoRotary4Input.cpp
-@@ -203,9 +203,9 @@ uint32_t readBigEndianU32(const uint8_t in[4])
- 
- } // namespace
- 
--NeoRotary4Input::NeoRotary4Input(ActionCallback actionCallback, ActionCallback rotationCallback)
-+NeoRotary4Input::NeoRotary4Input(PressCallback actionCallback, ActionCallback rotationCallback)
-     : actionCallback_(std::move(actionCallback))
--    , rotationCallback_(rotationCallback ? std::move(rotationCallback) : actionCallback_)
-+    , rotationCallback_(rotationCallback ? std::move(rotationCallback) : ActionCallback(actionCallback_))
- {
- }
- 
-@@ -519,11 +519,11 @@ void NeoRotary4Input::closeDevice(int *fd) const
-     }
- }
- 
--void NeoRotary4Input::emitAction(const std::string &action)
-+bool NeoRotary4Input::emitAction(const std::string &action)
- {
-     if (action.empty() || !actionCallback_)
--        return;
--    actionCallback_(action);
-+        return false;
-+    return actionCallback_(action);
- }
- 
- void NeoRotary4Input::setLastError(const std::string &error)
-@@ -634,13 +634,16 @@ void NeoRotary4Input::run()
-                     static const char *const suffixes[] = {"_press", "_single", "_double", "_triple", "_hold"};
-                     seenCallback_("neorotary4|encoder" + std::to_string(encoder) + suffixes[static_cast<size_t>(event)]);
-                 }
-+                bool woke = false;
-                 switch (event) {
--                case hardware::ButtonGesture::Event::Press: emitAction(actions.press); break;
--                case hardware::ButtonGesture::Event::Single: emitAction(actions.single); break;
--                case hardware::ButtonGesture::Event::Double: emitAction(actions.doubleClick); break;
--                case hardware::ButtonGesture::Event::Triple: emitAction(actions.triple); break;
--                case hardware::ButtonGesture::Event::Hold: emitAction(actions.hold); break;
-+                case hardware::ButtonGesture::Event::Press: woke = emitAction(actions.press); break;
-+                case hardware::ButtonGesture::Event::Single: woke = emitAction(actions.single); break;
-+                case hardware::ButtonGesture::Event::Double: woke = emitAction(actions.doubleClick); break;
-+                case hardware::ButtonGesture::Event::Triple: woke = emitAction(actions.triple); break;
-+                case hardware::ButtonGesture::Event::Hold: woke = emitAction(actions.hold); break;
-                 }
-+                if (woke)
-+                    gestures[encoder].consume();   // A wake press does nothing else.
-             }
-         }
- 
-diff --git a/src/hardware/NeoRotary4Input.hpp b/src/hardware/NeoRotary4Input.hpp
-index fa32b15..bb3c213 100644
---- a/src/hardware/NeoRotary4Input.hpp
-+++ b/src/hardware/NeoRotary4Input.hpp
-@@ -14,8 +14,9 @@ namespace apertar {
- class NeoRotary4Input {
- public:
-     using ActionCallback = std::function<void(const std::string &)>;
-+    using PressCallback = std::function<bool(const std::string &)>;   // true: the press woke the camera, nothing else follows
- 
--    explicit NeoRotary4Input(ActionCallback actionCallback, ActionCallback rotationCallback = {});
-+    explicit NeoRotary4Input(PressCallback actionCallback, ActionCallback rotationCallback = {});
-     ~NeoRotary4Input();
- 
-     bool start();
-@@ -63,10 +64,10 @@ private:
-     bool readEncoderDelta(int fd, int encoder, int32_t *delta) const;
-     bool readButtonMask(int fd, uint32_t *mask) const;
-     void closeDevice(int *fd) const;
--    void emitAction(const std::string &action);
-+    bool emitAction(const std::string &action);
-     void setLastError(const std::string &error);
- 
--    ActionCallback actionCallback_;
-+    PressCallback actionCallback_;
-     ActionCallback rotationCallback_;
-     ActionCallback seenCallback_;
-     Config config_;
-diff --git a/src/hardware/Pcf8574Input.cpp b/src/hardware/Pcf8574Input.cpp
-index 5ed30b1..b138395 100644
---- a/src/hardware/Pcf8574Input.cpp
-+++ b/src/hardware/Pcf8574Input.cpp
-@@ -167,7 +167,7 @@ std::string i2cDevicePath(int busNumber)
- 
- } // namespace
- 
--Pcf8574Input::Pcf8574Input(ActionCallback actionCallback)
-+Pcf8574Input::Pcf8574Input(PressCallback actionCallback)
-     : actionCallback_(std::move(actionCallback))
- {
- }
-@@ -374,11 +374,11 @@ void Pcf8574Input::closeDevice(int *fd) const
-     }
- }
- 
--void Pcf8574Input::emitAction(const std::string &action)
-+bool Pcf8574Input::emitAction(const std::string &action)
- {
-     if (action.empty() || !actionCallback_)
--        return;
--    actionCallback_(action);
-+        return false;
-+    return actionCallback_(action);
- }
- 
- void Pcf8574Input::setLastError(const std::string &error)
-@@ -470,13 +470,16 @@ void Pcf8574Input::run()
-                     static const char *const suffixes[] = {"", "_single", "_double", "_triple", "_hold"};
-                     seenCallback_("pcf8574|pin" + std::to_string(pin) + suffixes[static_cast<size_t>(event)]);
-                 }
-+                bool woke = false;
-                 switch (event) {
--                case hardware::ButtonGesture::Event::Press: emitAction(config_.actions[pin]); break;
--                case hardware::ButtonGesture::Event::Single: emitAction(more[0]); break;
--                case hardware::ButtonGesture::Event::Double: emitAction(more[1]); break;
--                case hardware::ButtonGesture::Event::Triple: emitAction(more[2]); break;
--                case hardware::ButtonGesture::Event::Hold: emitAction(more[3]); break;
-+                case hardware::ButtonGesture::Event::Press: woke = emitAction(config_.actions[pin]); break;
-+                case hardware::ButtonGesture::Event::Single: woke = emitAction(more[0]); break;
-+                case hardware::ButtonGesture::Event::Double: woke = emitAction(more[1]); break;
-+                case hardware::ButtonGesture::Event::Triple: woke = emitAction(more[2]); break;
-+                case hardware::ButtonGesture::Event::Hold: woke = emitAction(more[3]); break;
-                 }
-+                if (woke)
-+                    gestures[pin].consume();   // A wake press does nothing else.
-             }
-         }
- 
-diff --git a/src/hardware/Pcf8574Input.hpp b/src/hardware/Pcf8574Input.hpp
-index ce4130b..8446471 100644
---- a/src/hardware/Pcf8574Input.hpp
-+++ b/src/hardware/Pcf8574Input.hpp
-@@ -12,8 +12,9 @@ namespace apertar {
- class Pcf8574Input {
- public:
-     using ActionCallback = std::function<void(const std::string &)>;
-+    using PressCallback = std::function<bool(const std::string &)>;   // true: the press woke the camera, nothing else follows
- 
--    explicit Pcf8574Input(ActionCallback actionCallback);
-+    explicit Pcf8574Input(PressCallback actionCallback);
-     ~Pcf8574Input();
- 
-     bool start();
-@@ -48,10 +49,10 @@ private:
-     bool configureAsInputs(int fd) const;
-     bool readByte(int fd, uint8_t *value) const;
-     void closeDevice(int *fd) const;
--    void emitAction(const std::string &action);
-+    bool emitAction(const std::string &action);
-     void setLastError(const std::string &error);
- 
--    ActionCallback actionCallback_;
-+    PressCallback actionCallback_;
-     ActionCallback seenCallback_;
-     Config config_;
-     std::atomic<bool> running_{false};
++[bmi160]
++# Direct-polled Bosch BMI160 IMU. Use driver=bmi160 in [imu] to select it.
++enabled=false
++bus=1
++address=0x68
++sample_rate_hz=500
++gyro_range_dps=1000
++accel_range_g=8
++use_fifo=false
++orientation=XYZ
++level_reference_set=false
++level_reference_orientation=XYZ
++level_accel_x=0
++level_accel_y=0
++level_accel_z=0
++auto_calibrate_seconds=0
++gyro_bias_x=0
++gyro_bias_y=0
++gyro_bias_z=0
++frame_readout_time_ms=0
++frame_readout_direction=0
++
++[bmi270]
++# Direct-polled Bosch BMI270 IMU. Some boards need their Bosch config blob initialized by their driver.
++enabled=false
++bus=1
++address=0x68
++sample_rate_hz=500
++gyro_range_dps=1000
++accel_range_g=8
++use_fifo=false
++orientation=XYZ
++level_reference_set=false
++level_reference_orientation=XYZ
++level_accel_x=0
++level_accel_y=0
++level_accel_z=0
++auto_calibrate_seconds=0
++gyro_bias_x=0
++gyro_bias_y=0
++gyro_bias_z=0
++frame_readout_time_ms=0
++frame_readout_direction=0
++
++[icm42688p]
++# Direct-polled TDK InvenSense ICM42688-P IMU. Use driver=icm42688p in [imu] to select it.
++enabled=false
++bus=1
++address=0x68
++sample_rate_hz=500
++gyro_range_dps=1000
++accel_range_g=8
++use_fifo=false
++orientation=XYZ
++level_reference_set=false
++level_reference_orientation=XYZ
++level_accel_x=0
++level_accel_y=0
++level_accel_z=0
++auto_calibrate_seconds=0
++gyro_bias_x=0
++gyro_bias_y=0
++gyro_bias_z=0
++frame_readout_time_ms=0
++frame_readout_direction=0
++
+ [pcf8574]
+ # Pin actions include capture, record_toggle, iso_up/down, fps_up/down, wb_up/down,
+ # exact shortcuts like iso200, wb5000, fps24, resolution4056x2280,

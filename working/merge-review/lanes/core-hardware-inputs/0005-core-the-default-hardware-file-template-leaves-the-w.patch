@@ -1,0 +1,66 @@
+From 280e6612f84428973b818683b8a1eaad595ec766 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 09:46:19 +0000
+Subject: [PATCH] core: the default hardware file template leaves the
+ write-buffer and Clear HDR keys as comments
+
+Why: the template Core shows for a missing hardware file held six live
+keys the port invented: [storage] buffer=frames, buffer_ram_fraction,
+buffer_ram_floor_mb, buffer_ram_max_fraction and [camera]
+clear_hdr_iso_max_12bit, clear_hdr_iso_max_16bit. Once Core writes the
+template as a camera's first file, those lines would pin port settings
+onto stock cameras. Upstream's template carries only sections and keys
+of 1.6.0 (src/ApertarCoreApp.cpp:4291-4404 at upstream-1.6.0); the
+port's own [media] keys in the same template are already comments.
+
+What: the six lines are comments with the same values. The readers
+already use those numbers as defaults (CameraController.cpp max12=720,
+max16=1585; BufferBudget.hpp 0.6, 512, 0.5; buffer unset = frames), so
+no camera behaves differently.
+
+Tested: check_core.sh both builds and the 18 host tests pass.
+--simulate with no hardware file: GET /api/config text has no live
+buffer= or clear_hdr_iso_max line, the six commented lines are there;
+the 24 storage, buffer and Clear HDR fields of /api/state equal the run
+before this commit. KB controls_test section 13: no template errors.
+Pi: none.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarCoreApp.cpp | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/ApertarCoreApp.cpp b/src/ApertarCoreApp.cpp
+index 33e4d88..76c0479 100644
+--- a/src/ApertarCoreApp.cpp
++++ b/src/ApertarCoreApp.cpp
+@@ -5055,10 +5055,10 @@ pcie_controller=1000110000.pcie
+ # Write buffer: frames = the original queue (12 frames; a frame is dropped when it is full), ram = a large RAM queue
+ # sized from the free memory at the start of a take (CineMate style). ram refuses itself when it would be smaller
+ # than the original queue. Takes effect at the next take.
+-buffer=frames
+-buffer_ram_fraction=0.6
+-buffer_ram_floor_mb=512
+-buffer_ram_max_fraction=0.5
++# buffer=frames
++# buffer_ram_fraction=0.6
++# buffer_ram_floor_mb=512
++# buffer_ram_max_fraction=0.5
+ # Safety stop: ram mode ends the take cleanly (every queued frame is still written) when the buffer is this full, in percent. 0 = never; 50 to 99.
+ # buffer_stop_percent=90
+ # Frames per folder: 0 keeps every frame of a take in its clip folder; 100 to 100000 starts a new part_NNN folder inside
+@@ -5079,8 +5079,8 @@ buffer_ram_max_fraction=0.5
+ # Highest ISO in Clear HDR, per sensor mode; 0 = no cap. SDR is never capped. Restart Core after a change.
+ # 12-bit: the sensor merges HG/LG only up to gain code 57 (17.1 dB) = ISO 720.
+ # 16-bit: the driver caps Clear HDR gain at code 80 (24 dB) = ISO 1585.
+-clear_hdr_iso_max_12bit=720
+-clear_hdr_iso_max_16bit=1585
++# clear_hdr_iso_max_12bit=720
++# clear_hdr_iso_max_16bit=1585
+ 
+ [display]
+ # Resolutions: 720x720(Default), 640x480, 800x480, 1280x720, 1024x600, 1920x1080
+-- 
+2.43.0
+
