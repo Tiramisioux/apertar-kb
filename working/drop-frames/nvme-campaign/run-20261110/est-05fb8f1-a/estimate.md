@@ -21,15 +21,15 @@ Run `nvme-20261110`; drive Corsair MP600 Mini (sustained 596 MB/s, stored profil
 | 4kHDR12:cdng:lj | 30.0 | 30.015 | measured | 28 | back end | back end: gaps at 30 fps (measured) |
 | 4kHDR12:cdng:unc | 30.0 | 26.235 | measured | 25 | back end | back end: gaps at 30 fps (measured) |
 | 4kHDR12:mlv | 30.0 | 24.79 | measured | 24 | back end | back end: gaps at 30 fps (measured) |
-| 4kHDR16:cdng:lj | 30.0 | 14.76 | measured | 14 | encoder | back end: gaps at 30 fps (measured); cell out at 25 fps (measured) |
+| 4kHDR16:cdng:lj | 30.0 | 14.7 | measured | 14 | encoder | back end: gaps at 30 fps (measured); cell out at 25 fps (measured) |
 | 4kHDR16:cdng:lj:log | 30.0 | 29.9 | measured | 24 | measured cell | back end: gaps at 30 fps (measured); cell out at 25 fps (measured) |
 | 4kHDR16:cdng:unc | 30.0 | 29.37 | measured | 27 | measured cell | back end: gaps at 30 fps (measured); cell out at 28 fps (measured) |
-| 4kHDR16:cdng:unc:log | 30.0 | 25.71 | measured | 24 | back end | back end: gaps at 28 fps (measured); cell out at 28 fps (measured) |
+| 4kHDR16:cdng:unc:log | 30.0 | 25.765 | measured | 24 | back end | back end: gaps at 28 fps (measured); cell out at 28 fps (measured) |
 | 4kHDR16:mlv | 30.0 | 27.66 | measured | 26 | back end | back end: gaps at 30 fps (measured) |
 | 4kP:h264:1920x1080 | 60.0 | 60.0 | at least | 60 | sensor |  |
 | 4kP:h264:2560x1440 | 60.0 | 47.28 | measured | 45 | encoder | back end: gaps at 60 fps (measured) |
 | 4kP:prores:422 | 60.0 | 41.455 | measured | 40 | encoder | back end: gaps at 60 fps (measured) |
-| 4kP:prores:hq | 60.0 | 28.58 | measured | 27 | encoder | back end: gaps at 60 fps (measured) |
+| 4kP:prores:hq | 60.0 | 28.365 | measured | 27 | encoder | back end: gaps at 60 fps (measured) |
 | 4kP:prores:hq:arri_logc4 | 60.0 | 43.09 | measured | 41 | encoder | back end: gaps at 60 fps (measured) |
 | 4kP:prores:lt | 60.0 | 44.355000000000004 | measured | 43 | encoder | back end: gaps at 60 fps (measured) |
 | 4kP:prores:proxy | 60.0 | 47.315 | measured | 45 | encoder | back end: gaps at 60 fps (measured) |
@@ -39,8 +39,8 @@ Run `nvme-20261110`; drive Corsair MP600 Mini (sustained 596 MB/s, stored profil
 | 4kSDR10:lossydng:5to1 | 60.0 | 44.38 | measured | 43 | encoder |  |
 | 4kSDR10:mlv | 60.0 | 10.945 | measured | 10 | storage |  |
 | 4kSDR12:cdng:lj | 60.0 | 41.525000000000006 | measured | 40 | encoder |  |
-| 4kSDR12:cdng:unc | 60.0 | 40.68 | measured | 39 | back end | back end: gaps at 60 fps (measured) |
-| 4kSDR12:lossydng:3to1 | 60.0 | 38.44 | measured | 37 | encoder |  |
+| 4kSDR12:cdng:unc | 60.0 | 40.595 | measured | 39 | back end | back end: gaps at 60 fps (measured) |
+| 4kSDR12:lossydng:3to1 | 60.0 | 38.19 | measured | 37 | encoder |  |
 | 4kSDR12:lossydng:5to1 | 60.0 | 43.01 | measured | 41 | encoder |  |
 | 4kSDR12:mlv | 60.0 | 25.865000000000002 | measured | 25 | storage |  |
 | crop4k3SDR12:cdng:lj | 60.54 | 58.73 | measured | 56 | encoder |  |
@@ -68,3 +68,11 @@ Run `nvme-20261110`; drive Corsair MP600 Mini (sustained 596 MB/s, stored profil
 - 25 fps: rung 1 expected, skip setup_mismatch log_applied=True
 - 26 fps: rung 1 expected, skip setup_mismatch log_applied=True
 - 27 fps: rung 1 expected, skip setup_mismatch log_applied=True
+- 25 fps: rung 1 expected, clean pass_capped_60s 
+- 26 fps: rung 1 expected, clean pass_capped_60s 
+- 27 fps: rung 1 expected, drop drop 
+- 28 fps: rung 2 expected, clean pass_capped_60s 
+- 35 fps: rung 2 expected, clean pass_capped_60s 
+- 40 fps: rung 2 expected, drop buffer_full 
+- 45 fps: rung 3 expected, clean pass_capped_60s 
+- 50 fps: rung 3 expected, clean pass_capped_60s 

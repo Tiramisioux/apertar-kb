@@ -543,38 +543,38 @@ spec,family,tdn,lock,web,audio,aids,estimate_fps,limit_fps,limited_by,label,note
 4kHDR12:mlv,mlv,1,1,1,0,1,23,24,back end,derived,"back end: gaps at 30 fps (measured); back end: levers tdn,lock,audio raise the gap rate at 28 fps by 315.2/min (P2)"
 4kHDR12:mlv,mlv,1,1,1,1,0,23,24,back end,derived,"back end: gaps at 30 fps (measured); back end: levers tdn,lock,aids raise the gap rate at 28 fps by 366.2/min (P2)"
 4kHDR12:mlv,mlv,1,1,1,1,1,23,24,back end,derived,"back end: gaps at 30 fps (measured); back end: levers tdn,lock raise the gap rate at 28 fps by 319.2/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,0,0,0,0,16,16.55,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc); back end: gaps at 30 fps (measured); back end: levers web,audio,aids raise the gap rate at 28 fps by 34.2/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,0,0,0,1,15,15.61,encoder,derived,"levers web,audio: x1.058 (P2 enc); back end: gaps at 30 fps (measured)"
-4kHDR16:cdng:lj,cdng-lj,0,0,0,1,0,15,15.86,encoder,derived,"levers web,aids: x1.075 (P2 enc); back end: gaps at 30 fps (measured); back end: levers web,aids raise the gap rate at 28 fps by 38.2/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,0,0,1,1,14,14.96,encoder,derived,levers web: x1.013 (P2 enc); back end: gaps at 30 fps (measured)
-4kHDR16:cdng:lj,cdng-lj,0,0,1,0,0,15,16.33,encoder,derived,"levers audio,aids: x1.107 (P2 enc); back end: gaps at 30 fps (measured); back end: levers audio,aids raise the gap rate at 28 fps by 42.9/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,0,1,0,1,14,15.41,encoder,derived,levers audio: x1.044 (P2 enc); back end: gaps at 30 fps (measured)
-4kHDR16:cdng:lj,cdng-lj,0,0,1,1,0,15,15.65,encoder,derived,levers aids: x1.060 (P2 enc); back end: gaps at 30 fps (measured); back end: levers aids raise the gap rate at 28 fps by 47.0/min (P2)
-4kHDR16:cdng:lj,cdng-lj,0,0,1,1,1,14,14.76,encoder,measured,back end: gaps at 30 fps (measured); cell out at 25 fps (measured)
-4kHDR16:cdng:lj,cdng-lj,0,1,0,0,0,15,16.47,encoder,derived,"levers lock,web,audio,aids: x1.116 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,web,audio,aids raise the gap rate at 28 fps by 65.7/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,0,0,1,15,15.54,encoder,derived,"levers lock,web,audio: x1.053 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,web,audio raise the gap rate at 28 fps by 18.7/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,0,1,0,15,15.78,encoder,derived,"levers lock,web,aids: x1.069 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,web,aids raise the gap rate at 28 fps by 69.7/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,0,1,1,14,14.76,encoder,derived,"back end: gaps at 30 fps (measured); back end: levers lock,web raise the gap rate at 28 fps by 22.8/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,1,0,0,15,16.26,encoder,derived,"levers lock,audio,aids: x1.101 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,audio,aids raise the gap rate at 28 fps by 74.4/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,1,0,1,14,15.33,encoder,derived,"levers lock,audio: x1.039 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,audio raise the gap rate at 28 fps by 27.4/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,1,1,0,15,15.57,encoder,derived,"levers lock,aids: x1.055 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,aids raise the gap rate at 28 fps by 78.4/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,0,1,1,1,1,14,14.76,encoder,derived,back end: gaps at 30 fps (measured); back end: levers lock raise the gap rate at 28 fps by 31.5/min (P2)
-4kHDR16:cdng:lj,cdng-lj,1,0,0,0,0,20,21.24,encoder,derived,"levers tdn,web,audio,aids: x1.439 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web,audio,aids raise the gap rate at 28 fps by 322.0/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,0,0,1,19,20.03,encoder,derived,"levers tdn,web,audio: x1.357 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web,audio raise the gap rate at 28 fps by 275.0/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,0,1,0,19,20.35,encoder,derived,"levers tdn,web,aids: x1.379 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web,aids raise the gap rate at 28 fps by 326.0/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,0,1,1,18,19.19,encoder,derived,"levers tdn,web: x1.300 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web raise the gap rate at 28 fps by 279.0/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,1,0,0,20,20.96,encoder,derived,"levers tdn,audio,aids: x1.420 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,audio,aids raise the gap rate at 28 fps by 330.7/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,1,0,1,19,19.77,encoder,derived,"levers tdn,audio: x1.339 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,audio raise the gap rate at 28 fps by 283.7/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,1,1,0,19,20.08,encoder,derived,"levers tdn,aids: x1.360 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,aids raise the gap rate at 28 fps by 334.7/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,0,1,1,1,18,18.94,encoder,derived,levers tdn: x1.283 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn raise the gap rate at 28 fps by 287.8/min (P2)
-4kHDR16:cdng:lj,cdng-lj,1,1,0,0,0,20,21.14,encoder,derived,"levers tdn,lock,web,audio,aids: x1.432 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web,audio,aids raise the gap rate at 28 fps by 353.4/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,0,0,1,19,19.93,encoder,derived,"levers tdn,lock,web,audio: x1.351 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web,audio raise the gap rate at 28 fps by 306.5/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,0,1,0,19,20.25,encoder,derived,"levers tdn,lock,web,aids: x1.372 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web,aids raise the gap rate at 28 fps by 357.5/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,0,1,1,18,19.1,encoder,derived,"levers tdn,lock,web: x1.294 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web raise the gap rate at 28 fps by 310.5/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,1,0,0,20,20.86,encoder,derived,"levers tdn,lock,audio,aids: x1.413 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,audio,aids raise the gap rate at 28 fps by 362.1/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,1,0,1,19,19.67,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,audio raise the gap rate at 28 fps by 315.2/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,1,1,0,19,19.98,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,aids raise the gap rate at 28 fps by 366.2/min (P2)"
-4kHDR16:cdng:lj,cdng-lj,1,1,1,1,1,18,18.85,encoder,derived,"levers tdn,lock: x1.277 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock raise the gap rate at 28 fps by 319.2/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,0,0,0,0,15,16.49,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc); back end: gaps at 30 fps (measured); back end: levers web,audio,aids raise the gap rate at 28 fps by 34.2/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,0,0,0,1,15,15.55,encoder,derived,"levers web,audio: x1.058 (P2 enc); back end: gaps at 30 fps (measured)"
+4kHDR16:cdng:lj,cdng-lj,0,0,0,1,0,15,15.8,encoder,derived,"levers web,aids: x1.075 (P2 enc); back end: gaps at 30 fps (measured); back end: levers web,aids raise the gap rate at 28 fps by 38.2/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,0,0,1,1,14,14.9,encoder,derived,levers web: x1.013 (P2 enc); back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,0,0,15,16.27,encoder,derived,"levers audio,aids: x1.107 (P2 enc); back end: gaps at 30 fps (measured); back end: levers audio,aids raise the gap rate at 28 fps by 42.9/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,0,1,0,1,14,15.34,encoder,derived,levers audio: x1.044 (P2 enc); back end: gaps at 30 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,1,0,15,15.59,encoder,derived,levers aids: x1.060 (P2 enc); back end: gaps at 30 fps (measured); back end: levers aids raise the gap rate at 28 fps by 47.0/min (P2)
+4kHDR16:cdng:lj,cdng-lj,0,0,1,1,1,14,14.7,encoder,measured,back end: gaps at 30 fps (measured); cell out at 25 fps (measured)
+4kHDR16:cdng:lj,cdng-lj,0,1,0,0,0,15,16.41,encoder,derived,"levers lock,web,audio,aids: x1.116 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,web,audio,aids raise the gap rate at 28 fps by 65.7/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,0,0,1,15,15.47,encoder,derived,"levers lock,web,audio: x1.053 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,web,audio raise the gap rate at 28 fps by 18.7/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,0,1,0,15,15.72,encoder,derived,"levers lock,web,aids: x1.069 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,web,aids raise the gap rate at 28 fps by 69.7/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,0,1,1,14,14.7,encoder,derived,"back end: gaps at 30 fps (measured); back end: levers lock,web raise the gap rate at 28 fps by 22.8/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,1,0,0,15,16.19,encoder,derived,"levers lock,audio,aids: x1.101 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,audio,aids raise the gap rate at 28 fps by 74.4/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,1,0,1,14,15.27,encoder,derived,"levers lock,audio: x1.039 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,audio raise the gap rate at 28 fps by 27.4/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,1,1,0,15,15.51,encoder,derived,"levers lock,aids: x1.055 (P2 enc); back end: gaps at 30 fps (measured); back end: levers lock,aids raise the gap rate at 28 fps by 78.4/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,0,1,1,1,1,14,14.7,encoder,derived,back end: gaps at 30 fps (measured); back end: levers lock raise the gap rate at 28 fps by 31.5/min (P2)
+4kHDR16:cdng:lj,cdng-lj,1,0,0,0,0,20,21.15,encoder,derived,"levers tdn,web,audio,aids: x1.439 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web,audio,aids raise the gap rate at 28 fps by 322.0/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,0,0,1,19,19.95,encoder,derived,"levers tdn,web,audio: x1.357 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web,audio raise the gap rate at 28 fps by 275.0/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,0,1,0,19,20.27,encoder,derived,"levers tdn,web,aids: x1.379 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web,aids raise the gap rate at 28 fps by 326.0/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,0,1,1,18,19.11,encoder,derived,"levers tdn,web: x1.300 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,web raise the gap rate at 28 fps by 279.0/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,1,0,0,20,20.87,encoder,derived,"levers tdn,audio,aids: x1.420 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,audio,aids raise the gap rate at 28 fps by 330.7/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,1,0,1,19,19.68,encoder,derived,"levers tdn,audio: x1.339 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,audio raise the gap rate at 28 fps by 283.7/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,1,1,0,19,20.0,encoder,derived,"levers tdn,aids: x1.360 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,aids raise the gap rate at 28 fps by 334.7/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,0,1,1,1,18,18.86,encoder,derived,levers tdn: x1.283 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn raise the gap rate at 28 fps by 287.8/min (P2)
+4kHDR16:cdng:lj,cdng-lj,1,1,0,0,0,20,21.05,encoder,derived,"levers tdn,lock,web,audio,aids: x1.432 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web,audio,aids raise the gap rate at 28 fps by 353.4/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,0,0,1,19,19.85,encoder,derived,"levers tdn,lock,web,audio: x1.351 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web,audio raise the gap rate at 28 fps by 306.5/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,0,1,0,19,20.17,encoder,derived,"levers tdn,lock,web,aids: x1.372 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web,aids raise the gap rate at 28 fps by 357.5/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,0,1,1,18,19.02,encoder,derived,"levers tdn,lock,web: x1.294 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,web raise the gap rate at 28 fps by 310.5/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,1,0,0,20,20.77,encoder,derived,"levers tdn,lock,audio,aids: x1.413 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,audio,aids raise the gap rate at 28 fps by 362.1/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,1,0,1,19,19.59,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,audio raise the gap rate at 28 fps by 315.2/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,1,1,0,19,19.9,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock,aids raise the gap rate at 28 fps by 366.2/min (P2)"
+4kHDR16:cdng:lj,cdng-lj,1,1,1,1,1,18,18.77,encoder,derived,"levers tdn,lock: x1.277 (P2 enc); back end: gaps at 30 fps (measured); back end: levers tdn,lock raise the gap rate at 28 fps by 319.2/min (P2)"
 4kHDR16:cdng:lj:log,log,0,0,0,0,0,26,27,back end,derived,"back end: gaps at 30 fps (measured); back end: levers web,audio,aids raise the gap rate at 28 fps by 34.2/min (P2)"
 4kHDR16:cdng:lj:log,log,0,0,0,0,1,28,29,back end,measured,back end: gaps at 30 fps (measured)
 4kHDR16:cdng:lj:log,log,0,0,0,1,0,26,27,back end,derived,"back end: gaps at 30 fps (measured); back end: levers web,aids raise the gap rate at 28 fps by 38.2/min (P2)"
@@ -639,22 +639,22 @@ spec,family,tdn,lock,web,audio,aids,estimate_fps,limit_fps,limited_by,label,note
 4kHDR16:cdng:unc,cdng-unc,1,1,1,0,1,23,24,back end,derived,"back end: gaps at 30 fps (measured); back end: levers tdn,lock,audio raise the gap rate at 28 fps by 315.2/min (P2)"
 4kHDR16:cdng:unc,cdng-unc,1,1,1,1,0,23,24,back end,derived,"back end: gaps at 30 fps (measured); back end: levers tdn,lock,aids raise the gap rate at 28 fps by 366.2/min (P2)"
 4kHDR16:cdng:unc,cdng-unc,1,1,1,1,1,23,24,back end,derived,"back end: gaps at 30 fps (measured); back end: levers tdn,lock raise the gap rate at 28 fps by 319.2/min (P2)"
-4kHDR16:cdng:unc:log,log,0,0,0,0,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers web,audio,aids raise the gap rate at 28 fps by 34.2/min (P2)"
-4kHDR16:cdng:unc:log,log,0,0,0,0,1,24,25.71,back end,measured,back end: gaps at 28 fps (measured)
-4kHDR16:cdng:unc:log,log,0,0,0,1,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers web,aids raise the gap rate at 28 fps by 38.2/min (P2)"
-4kHDR16:cdng:unc:log,log,0,0,0,1,1,24,25.71,back end,measured,back end: gaps at 28 fps (measured)
-4kHDR16:cdng:unc:log,log,0,0,1,0,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers audio,aids raise the gap rate at 28 fps by 42.9/min (P2)"
-4kHDR16:cdng:unc:log,log,0,0,1,0,1,24,25.71,back end,measured,back end: gaps at 28 fps (measured)
-4kHDR16:cdng:unc:log,log,0,0,1,1,0,24,25.71,back end,derived,back end: gaps at 28 fps (measured); back end: levers aids raise the gap rate at 28 fps by 47.0/min (P2)
-4kHDR16:cdng:unc:log,log,0,0,1,1,1,24,25.71,back end,measured,back end: gaps at 28 fps (measured); cell out at 28 fps (measured)
-4kHDR16:cdng:unc:log,log,0,1,0,0,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web,audio,aids raise the gap rate at 28 fps by 65.7/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,0,0,1,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web,audio raise the gap rate at 28 fps by 18.7/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,0,1,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web,aids raise the gap rate at 28 fps by 69.7/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,0,1,1,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web raise the gap rate at 28 fps by 22.8/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,1,0,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,audio,aids raise the gap rate at 28 fps by 74.4/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,1,0,1,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,audio raise the gap rate at 28 fps by 27.4/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,1,1,0,24,25.71,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,aids raise the gap rate at 28 fps by 78.4/min (P2)"
-4kHDR16:cdng:unc:log,log,0,1,1,1,1,24,25.71,back end,derived,back end: gaps at 28 fps (measured); back end: levers lock raise the gap rate at 28 fps by 31.5/min (P2)
+4kHDR16:cdng:unc:log,log,0,0,0,0,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers web,audio,aids raise the gap rate at 28 fps by 34.2/min (P2)"
+4kHDR16:cdng:unc:log,log,0,0,0,0,1,24,25.77,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,0,1,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers web,aids raise the gap rate at 28 fps by 38.2/min (P2)"
+4kHDR16:cdng:unc:log,log,0,0,0,1,1,24,25.77,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,1,0,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers audio,aids raise the gap rate at 28 fps by 42.9/min (P2)"
+4kHDR16:cdng:unc:log,log,0,0,1,0,1,24,25.77,back end,measured,back end: gaps at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,0,1,1,0,24,25.77,back end,derived,back end: gaps at 28 fps (measured); back end: levers aids raise the gap rate at 28 fps by 47.0/min (P2)
+4kHDR16:cdng:unc:log,log,0,0,1,1,1,24,25.77,back end,measured,back end: gaps at 28 fps (measured); cell out at 28 fps (measured)
+4kHDR16:cdng:unc:log,log,0,1,0,0,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web,audio,aids raise the gap rate at 28 fps by 65.7/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,0,0,1,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web,audio raise the gap rate at 28 fps by 18.7/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,0,1,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web,aids raise the gap rate at 28 fps by 69.7/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,0,1,1,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,web raise the gap rate at 28 fps by 22.8/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,1,0,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,audio,aids raise the gap rate at 28 fps by 74.4/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,1,0,1,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,audio raise the gap rate at 28 fps by 27.4/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,1,1,0,24,25.77,back end,derived,"back end: gaps at 28 fps (measured); back end: levers lock,aids raise the gap rate at 28 fps by 78.4/min (P2)"
+4kHDR16:cdng:unc:log,log,0,1,1,1,1,24,25.77,back end,derived,back end: gaps at 28 fps (measured); back end: levers lock raise the gap rate at 28 fps by 31.5/min (P2)
 4kHDR16:cdng:unc:log,log,1,0,0,0,0,23,24,back end,derived,"back end: gaps at 28 fps (measured); back end: levers tdn,web,audio,aids raise the gap rate at 28 fps by 322.0/min (P2)"
 4kHDR16:cdng:unc:log,log,1,0,0,0,1,23,24,back end,derived,"back end: gaps at 28 fps (measured); back end: levers tdn,web,audio raise the gap rate at 28 fps by 275.0/min (P2)"
 4kHDR16:cdng:unc:log,log,1,0,0,1,0,23,24,back end,derived,"back end: gaps at 28 fps (measured); back end: levers tdn,web,aids raise the gap rate at 28 fps by 326.0/min (P2)"
@@ -799,38 +799,38 @@ spec,family,tdn,lock,web,audio,aids,estimate_fps,limit_fps,limited_by,label,note
 4kP:prores:422,prores,1,1,1,0,1,53,55.24,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc); back end: gaps at 60 fps (measured)"
 4kP:prores:422,prores,1,1,1,1,0,54,56.12,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc); back end: gaps at 60 fps (measured)"
 4kP:prores:422,prores,1,1,1,1,1,51,52.93,encoder,derived,"levers tdn,lock: x1.277 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,0,0,0,0,31,32.05,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,0,0,0,1,29,30.23,encoder,derived,"levers web,audio: x1.058 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,0,0,1,0,29,30.71,encoder,derived,"levers web,aids: x1.075 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,0,0,1,1,28,28.96,encoder,derived,levers web: x1.013 (P2 enc); back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,0,0,1,0,0,30,31.63,encoder,derived,"levers audio,aids: x1.107 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,0,1,0,1,28,29.83,encoder,derived,levers audio: x1.044 (P2 enc); back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,0,0,1,1,0,29,30.3,encoder,derived,levers aids: x1.060 (P2 enc); back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,0,0,1,1,1,27,28.58,encoder,measured,back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,0,1,0,0,0,30,31.9,encoder,derived,"levers lock,web,audio,aids: x1.116 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,1,0,0,1,29,30.08,encoder,derived,"levers lock,web,audio: x1.053 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,1,0,1,0,29,30.56,encoder,derived,"levers lock,web,aids: x1.069 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,1,0,1,1,27,28.58,encoder,derived,back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,0,1,1,0,0,30,31.48,encoder,derived,"levers lock,audio,aids: x1.101 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,1,1,0,1,28,29.69,encoder,derived,"levers lock,audio: x1.039 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,1,1,1,0,29,30.16,encoder,derived,"levers lock,aids: x1.055 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,0,1,1,1,1,27,28.58,encoder,derived,back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,1,0,0,0,0,39,41.12,encoder,derived,"levers tdn,web,audio,aids: x1.439 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,0,0,1,37,38.79,encoder,derived,"levers tdn,web,audio: x1.357 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,0,1,0,38,39.4,encoder,derived,"levers tdn,web,aids: x1.379 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,0,1,1,36,37.16,encoder,derived,"levers tdn,web: x1.300 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,1,0,0,39,40.58,encoder,derived,"levers tdn,audio,aids: x1.420 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,1,0,1,37,38.27,encoder,derived,"levers tdn,audio: x1.339 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,1,1,0,37,38.88,encoder,derived,"levers tdn,aids: x1.360 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,0,1,1,1,35,36.67,encoder,derived,levers tdn: x1.283 (P2 enc); back end: gaps at 60 fps (measured)
-4kP:prores:hq,prores,1,1,0,0,0,39,40.93,encoder,derived,"levers tdn,lock,web,audio,aids: x1.432 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,0,0,1,37,38.6,encoder,derived,"levers tdn,lock,web,audio: x1.351 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,0,1,0,38,39.21,encoder,derived,"levers tdn,lock,web,aids: x1.372 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,0,1,1,35,36.98,encoder,derived,"levers tdn,lock,web: x1.294 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,1,0,0,39,40.38,encoder,derived,"levers tdn,lock,audio,aids: x1.413 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,1,0,1,36,38.09,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,1,1,0,37,38.69,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc); back end: gaps at 60 fps (measured)"
-4kP:prores:hq,prores,1,1,1,1,1,35,36.49,encoder,derived,"levers tdn,lock: x1.277 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,0,0,0,0,30,31.81,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,0,0,0,1,29,30.0,encoder,derived,"levers web,audio: x1.058 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,0,0,1,0,29,30.48,encoder,derived,"levers web,aids: x1.075 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,0,0,1,1,27,28.75,encoder,derived,levers web: x1.013 (P2 enc); back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,0,0,30,31.39,encoder,derived,"levers audio,aids: x1.107 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,0,1,0,1,28,29.61,encoder,derived,levers audio: x1.044 (P2 enc); back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,1,0,29,30.07,encoder,derived,levers aids: x1.060 (P2 enc); back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,0,1,1,1,27,28.36,encoder,measured,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,0,0,0,30,31.66,encoder,derived,"levers lock,web,audio,aids: x1.116 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,1,0,0,1,28,29.86,encoder,derived,"levers lock,web,audio: x1.053 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,1,0,1,0,29,30.33,encoder,derived,"levers lock,web,aids: x1.069 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,1,0,1,1,27,28.36,encoder,derived,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,0,1,1,0,0,30,31.24,encoder,derived,"levers lock,audio,aids: x1.101 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,1,1,0,1,28,29.46,encoder,derived,"levers lock,audio: x1.039 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,1,1,1,0,29,29.93,encoder,derived,"levers lock,aids: x1.055 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,0,1,1,1,1,27,28.36,encoder,derived,back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,0,0,0,0,39,40.81,encoder,derived,"levers tdn,web,audio,aids: x1.439 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,0,0,1,37,38.49,encoder,derived,"levers tdn,web,audio: x1.357 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,0,1,0,37,39.1,encoder,derived,"levers tdn,web,aids: x1.379 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,0,1,1,35,36.88,encoder,derived,"levers tdn,web: x1.300 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,1,0,0,39,40.27,encoder,derived,"levers tdn,audio,aids: x1.420 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,1,0,1,36,37.98,encoder,derived,"levers tdn,audio: x1.339 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,1,1,0,37,38.59,encoder,derived,"levers tdn,aids: x1.360 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,0,1,1,1,35,36.39,encoder,derived,levers tdn: x1.283 (P2 enc); back end: gaps at 60 fps (measured)
+4kP:prores:hq,prores,1,1,0,0,0,39,40.62,encoder,derived,"levers tdn,lock,web,audio,aids: x1.432 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,0,0,1,37,38.31,encoder,derived,"levers tdn,lock,web,audio: x1.351 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,0,1,0,37,38.91,encoder,derived,"levers tdn,lock,web,aids: x1.372 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,0,1,1,35,36.7,encoder,derived,"levers tdn,lock,web: x1.294 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,1,0,0,38,40.08,encoder,derived,"levers tdn,lock,audio,aids: x1.413 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,1,0,1,36,37.8,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,1,1,0,37,38.4,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc); back end: gaps at 60 fps (measured)"
+4kP:prores:hq,prores,1,1,1,1,1,35,36.22,encoder,derived,"levers tdn,lock: x1.277 (P2 enc); back end: gaps at 60 fps (measured)"
 4kP:prores:hq:arri_logc4,prores,0,0,0,0,0,46,48.33,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc); back end: gaps at 60 fps (measured)"
 4kP:prores:hq:arri_logc4,prores,0,0,0,0,1,44,45.58,encoder,derived,"levers web,audio: x1.058 (P2 enc); back end: gaps at 60 fps (measured)"
 4kP:prores:hq:arri_logc4,prores,0,0,0,1,0,44,46.3,encoder,derived,"levers web,aids: x1.075 (P2 enc); back end: gaps at 60 fps (measured)"
@@ -1119,70 +1119,70 @@ spec,family,tdn,lock,web,audio,aids,estimate_fps,limit_fps,limited_by,label,note
 4kSDR12:cdng:lj,cdng-lj,1,1,1,0,1,53,55.34,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc)"
 4kSDR12:cdng:lj,cdng-lj,1,1,1,1,0,54,56.21,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc)"
 4kSDR12:cdng:lj,cdng-lj,1,1,1,1,1,51,53.02,encoder,derived,"levers tdn,lock: x1.277 (P2 enc)"
-4kSDR12:cdng:unc,cdng-unc,0,0,0,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,0,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,0,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,0,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,1,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,1,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,1,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,0,1,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,0,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,0,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,0,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,0,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,1,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,1,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,1,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,0,1,1,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,0,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,0,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,0,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,0,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,1,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,1,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,1,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,0,1,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,0,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,0,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,0,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,0,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,1,0,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,1,0,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,1,1,0,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:cdng:unc,cdng-unc,1,1,1,1,1,39,40.68,back end,measured,back end: gaps at 60 fps (measured)
-4kSDR12:lossydng:3to1,lossy,0,0,0,0,0,41,43.11,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,0,0,0,1,39,40.66,encoder,derived,"levers web,audio: x1.058 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,0,0,1,0,40,41.3,encoder,derived,"levers web,aids: x1.075 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,0,0,1,1,37,38.96,encoder,derived,levers web: x1.013 (P2 enc)
-4kSDR12:lossydng:3to1,lossy,0,0,1,0,0,41,42.54,encoder,derived,"levers audio,aids: x1.107 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,0,1,0,1,38,40.12,encoder,derived,levers audio: x1.044 (P2 enc)
-4kSDR12:lossydng:3to1,lossy,0,0,1,1,0,39,40.76,encoder,derived,levers aids: x1.060 (P2 enc)
-4kSDR12:lossydng:3to1,lossy,0,0,1,1,1,37,38.44,encoder,measured,
-4kSDR12:lossydng:3to1,lossy,0,1,0,0,0,41,42.9,encoder,derived,"levers lock,web,audio,aids: x1.116 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,1,0,0,1,39,40.46,encoder,derived,"levers lock,web,audio: x1.053 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,1,0,1,0,39,41.11,encoder,derived,"levers lock,web,aids: x1.069 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,1,0,1,1,37,38.44,encoder,derived,
-4kSDR12:lossydng:3to1,lossy,0,1,1,0,0,41,42.33,encoder,derived,"levers lock,audio,aids: x1.101 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,1,1,0,1,38,39.93,encoder,derived,"levers lock,audio: x1.039 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,1,1,1,0,39,40.56,encoder,derived,"levers lock,aids: x1.055 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,0,1,1,1,1,37,38.44,encoder,derived,
-4kSDR12:lossydng:3to1,lossy,1,0,0,0,0,53,55.31,encoder,derived,"levers tdn,web,audio,aids: x1.439 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,0,0,1,50,52.17,encoder,derived,"levers tdn,web,audio: x1.357 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,0,1,0,51,52.99,encoder,derived,"levers tdn,web,aids: x1.379 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,0,1,1,48,49.98,encoder,derived,"levers tdn,web: x1.300 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,1,0,0,52,54.58,encoder,derived,"levers tdn,audio,aids: x1.420 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,1,0,1,49,51.47,encoder,derived,"levers tdn,audio: x1.339 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,1,1,0,50,52.29,encoder,derived,"levers tdn,aids: x1.360 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,0,1,1,1,47,49.32,encoder,derived,levers tdn: x1.283 (P2 enc)
-4kSDR12:lossydng:3to1,lossy,1,1,0,0,0,53,55.04,encoder,derived,"levers tdn,lock,web,audio,aids: x1.432 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,0,0,1,50,51.91,encoder,derived,"levers tdn,lock,web,audio: x1.351 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,0,1,0,51,52.74,encoder,derived,"levers tdn,lock,web,aids: x1.372 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,0,1,1,48,49.74,encoder,derived,"levers tdn,lock,web: x1.294 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,1,0,0,52,54.31,encoder,derived,"levers tdn,lock,audio,aids: x1.413 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,1,0,1,49,51.23,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,1,1,0,50,52.04,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc)"
-4kSDR12:lossydng:3to1,lossy,1,1,1,1,1,47,49.08,encoder,derived,"levers tdn,lock: x1.277 (P2 enc)"
+4kSDR12:cdng:unc,cdng-unc,0,0,0,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,0,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,0,1,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,0,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,0,1,1,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,0,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,0,1,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,0,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,0,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,0,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,1,0,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:cdng:unc,cdng-unc,1,1,1,1,1,39,40.59,back end,measured,back end: gaps at 60 fps (measured)
+4kSDR12:lossydng:3to1,lossy,0,0,0,0,0,41,42.83,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,0,0,0,1,39,40.4,encoder,derived,"levers web,audio: x1.058 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,0,0,1,0,39,41.04,encoder,derived,"levers web,aids: x1.075 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,0,0,1,1,37,38.7,encoder,derived,levers web: x1.013 (P2 enc)
+4kSDR12:lossydng:3to1,lossy,0,0,1,0,0,40,42.26,encoder,derived,"levers audio,aids: x1.107 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,0,1,0,1,38,39.86,encoder,derived,levers audio: x1.044 (P2 enc)
+4kSDR12:lossydng:3to1,lossy,0,0,1,1,0,39,40.49,encoder,derived,levers aids: x1.060 (P2 enc)
+4kSDR12:lossydng:3to1,lossy,0,0,1,1,1,37,38.19,encoder,measured,
+4kSDR12:lossydng:3to1,lossy,0,1,0,0,0,41,42.62,encoder,derived,"levers lock,web,audio,aids: x1.116 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,1,0,0,1,38,40.2,encoder,derived,"levers lock,web,audio: x1.053 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,1,0,1,0,39,40.84,encoder,derived,"levers lock,web,aids: x1.069 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,1,0,1,1,37,38.19,encoder,derived,
+4kSDR12:lossydng:3to1,lossy,0,1,1,0,0,40,42.06,encoder,derived,"levers lock,audio,aids: x1.101 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,1,1,0,1,38,39.67,encoder,derived,"levers lock,audio: x1.039 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,1,1,1,0,39,40.3,encoder,derived,"levers lock,aids: x1.055 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,0,1,1,1,1,37,38.19,encoder,derived,
+4kSDR12:lossydng:3to1,lossy,1,0,0,0,0,53,54.95,encoder,derived,"levers tdn,web,audio,aids: x1.439 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,0,0,1,50,51.83,encoder,derived,"levers tdn,web,audio: x1.357 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,0,1,0,51,52.65,encoder,derived,"levers tdn,web,aids: x1.379 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,0,1,1,48,49.66,encoder,derived,"levers tdn,web: x1.300 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,1,0,0,52,54.22,encoder,derived,"levers tdn,audio,aids: x1.420 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,1,0,1,49,51.14,encoder,derived,"levers tdn,audio: x1.339 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,1,1,0,50,51.95,encoder,derived,"levers tdn,aids: x1.360 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,0,1,1,1,47,49.0,encoder,derived,levers tdn: x1.283 (P2 enc)
+4kSDR12:lossydng:3to1,lossy,1,1,0,0,0,53,54.69,encoder,derived,"levers tdn,lock,web,audio,aids: x1.432 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,0,0,1,50,51.58,encoder,derived,"levers tdn,lock,web,audio: x1.351 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,0,1,0,50,52.39,encoder,derived,"levers tdn,lock,web,aids: x1.372 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,0,1,1,47,49.42,encoder,derived,"levers tdn,lock,web: x1.294 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,1,0,0,52,53.96,encoder,derived,"levers tdn,lock,audio,aids: x1.413 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,1,0,1,49,50.89,encoder,derived,"levers tdn,lock,audio: x1.333 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,1,1,0,50,51.7,encoder,derived,"levers tdn,lock,aids: x1.354 (P2 enc)"
+4kSDR12:lossydng:3to1,lossy,1,1,1,1,1,47,48.76,encoder,derived,"levers tdn,lock: x1.277 (P2 enc)"
 4kSDR12:lossydng:5to1,lossy,0,0,0,0,0,46,48.24,encoder,derived,"levers web,audio,aids: x1.122 (P2 enc)"
 4kSDR12:lossydng:5to1,lossy,0,0,0,0,1,44,45.49,encoder,derived,"levers web,audio: x1.058 (P2 enc)"
 4kSDR12:lossydng:5to1,lossy,0,0,0,1,0,44,46.22,encoder,derived,"levers web,aids: x1.075 (P2 enc)"

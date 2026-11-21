@@ -1,10 +1,10 @@
 {
- "head": "NIGHT OVER (stopped_by_signal: stopped by SIGTERM after 1 s: not a result): safe to read; report report-EST-05fb8f1-a.md",
+ "head": "NIGHT OVER (stopped_by_signal: stopped by SIGTERM while waiting at the gate): safe to read; report report-EST-05fb8f1-a.md",
  "decision": "",
  "night": "EST-05fb8f1-a",
  "current": {},
  "take_in_progress": false,
- "stop": "stopped_by_signal: stopped by SIGTERM after 1 s: not a result",
- "heartbeat_age_s": 7,
- "t": 1795279704.4381163
+ "stop": "stopped_by_signal: stopped by SIGTERM while waiting at the gate",
+ "heartbeat_age_s": 32,
+ "t": 1795297428.64445
 }

@@ -318,6 +318,29 @@ Target per take: 30 min, or as long as the drive allows at these settings (pass_
 | 4kHDR16 | unc | off | off | off | on | on | 26.0 | setup_mismatch |  |  |  |  |  |  () |  |  |  |  |  |
 | 4kHDR16 | unc | off | off | off | on | on | 27.0 | setup_mismatch |  |  |  |  |  |  () |  |  |  |  |  |
 | 4kSDR12 | lossless | off | off | off | on | on | 28.0 | stopped_by_signal | 0.5 | 0 |  |  | 52.9 | 35.85 (35.85) | 100.0 | 2656 | 80.5 |  | stopped by SIGTERM after 1 s: not a result |
+| 4kHDR16 | unc | off | off | off | on | on | 25.0 | pass_capped_60s | 60.1 | 0 |  |  | 59.5 | 43.85 (43.85) | 59.9 | 2319 | 83.0 |  |  |
+| 4kHDR16 | unc | off | off | off | on | on | 26.0 | pass_capped_60s | 60.1 | 0 |  |  | 57.85 | 46.85 (46.85) | 58.0 | 2381 | 85.6 |  |  |
+| 4kHDR16 | unc | off | off | off | on | on | 27.0 | drop | 58.1 | 2 | 57.9 | capture-gap:1 | 59.5 | 57.85 (57.85) | 79.3 | 2278 | 88.2 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kSDR12 | lossless | off | off | off | on | on | 28.0 | pass_capped_60s | 60.0 | 0 |  |  | 60.05 | 52.85 (53.85) | 63.3 | 2573 | 89.4 |  |  |
+| 4kSDR12 | lossless | off | off | off | on | on | 35.0 | pass_capped_60s | 60.0 | 0 |  |  | 61.15 | 55.85 (55.85) | 85.2 | 2526 | 88.1 |  |  |
+| 4kSDR12 | lossless | off | off | off | on | on | 40.0 | buffer_full | 52.0 | 0 |  | buffer_full:1 | 58.4 | 56.85 (56.85) | 89.7 | 2365 | 89.5 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 121/24 frames, stopped after 52 s); probable: lossless JPEG encoder too slow above ~17.5 fps (recipe row 2) |
+| 2kSDR12 | lossless | off | off | off | on | on | 45.0 | pass_capped_60s | 60.0 | 0 |  |  | 57.3 | 53.85 (53.85) | 29.8 | 2838 | 89.9 |  |  |
+| 2kSDR12 | lossless | off | off | off | on | on | 50.0 | pass_capped_60s | 60.0 | 0 |  |  | 58.4 | 53.85 (55.85) | 34.5 | 2896 | 88.1 |  |  |
+| 4kSDR12 | unc | off | off | off | on | on | 60.0 | buffer_full | 10.0 | 0 |  | buffer_full:1 | 58.4 | 57.85 (58.85) | 74.6 | 2168 | 83.9 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 137/12 frames, stopped after 10 s) |
+| 4kHDR16 | lossless | off | off | off | on | on | 30.0 | buffer_full | 7.5 | 8 | 2.7 | capture-gap:5 buffer_full:1 | 58.95 | 50.85 (52.85) | 92.9 | 1992 | 84.1 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 54/24 frames, stopped after 8 s); probable: lossless JPEG encoder too slow above ~17.5 fps (recipe row 2); capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 2kSDR12 | lossless | off | off | off | on | on | 60.0 | ab_clean | 60.0 | 0 |  |  | 57.3 | 53.85 (53.85) | 42.4 | 2788 | 84.6 |  |  |
+| 4kSDR12 | unc | off | off | off | on | on | 60.0 | buffer_full | 9.5 | 0 |  | buffer_full:1 | 60.05 | 46.85 (46.85) | 91.2 | 2238 | 84.7 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 131/24 frames, stopped after 10 s) |
+| 4kP | unc | off | off | off | on | on | 60.0 | ab_dropped | 60.0 | 1952 | 0.7 | capture-gap:114 prores-queue-full:750 | 63.35 | 48.85 (48.85) | 96.7 | 2149 | 85.5 |  | write queue full = the drive fell behind; drive >=75% full (86%); capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kP | unc | off | off | off | on | on | 60.0 | ab_clean | 60.0 | 0 |  |  | 58.4 | 48.85 (49.85) | 43.0 | 2847 | 85.5 |  |  |
+| 4kHDR16 | unc | off | off | off | on | on | 28.0 | ab_clean | 60.1 | 0 |  |  | 57.85 | 61.85 (61.85) | 79.2 | 2413 | 88.3 |  |  |
+| 2kHDR16 | unc | off | off | off | on | on | 30.0 | ab_clean | 60.0 | 0 |  |  | 54.0 | 51.85 (51.85) | 17.3 | 2698 | 89.0 |  |  |
+| 4kHDR16 | unc | on | off | off | on | on | 28.0 | ab_dropped | 60.1 | 120 | 3.7 | capture-gap:11 | 57.85 | 58.85 (58.85) | 70.5 | 2344 | 88.7 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kHDR16 | unc | off | on | off | on | on | 25.0 | ab_dropped | 60.0 | 87 | 4.8 | capture-gap:3 | 58.4 | 62.85 (62.85) | 49.2 | 2384 | 88.8 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); TDN on adds back-end load (row 7); WebUI client adds preview load |
+| 4kHDR16 | unc | off | off | off | on | on | 27.0 | drop | 432.3 | 1 | 431.9 | capture-gap:1 | 57.85 | 69.85 (69.85) | 81.8 | 2109 | 64.7 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kHDR16 | unc | off | off | off | on | on | 26.0 | drop | 788.5 | 1 | 788.0 | capture-gap:1 | 57.85 | 75.85 (75.85) | 68.9 | 2232 | 82.4 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kSDR12 | unc | off | off | off | on | on | 39.0 | buffer_full | 750.2 | 0 |  |  | 57.3 | 74.85 (77.85) | 59.3 | 2199 | 77.1 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 146/12 frames, stopped after 750 s) |
+| 4kSDR12 | unc | off | off | off | on | on | 38.0 | buffer_full | 268.7 | 0 |  | buffer_full:1 | 57.3 | 71.85 (72.85) | 68.6 | 2431 | 55.5 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 148/12 frames, stopped after 269 s) |
+| 4kSDR12 | lossless | off | off | off | on | on | 40.0 | stopped_by_signal |  |  |  |  |  |  () |  |  |  |  | stopped by SIGTERM while waiting at the gate |
 
 ## Best clean fps per config (first pass while stepping down)
 
@@ -336,3 +359,6 @@ Target per take: 30 min, or as long as the drive allows at these settings (pass_
 | 2kHDR16_lossless_log1_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 | 24.0 | pass_3min | 3.0 |
 | 2kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids0 | 60.0 | pass_3min | 3.0 |
 | 2kP_unc_log0_tdn1_lock1_trim1_web1_prores-proxy_aud0_aids0 | 60.0 | pass_3min | 3.0 |
+| 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder | 26.0 | pass_capped_60s | 1.0 |
+| 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder | 35.0 | pass_capped_60s | 1.0 |
+| 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder | 50.0 | pass_capped_60s | 1.0 |

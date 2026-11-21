@@ -58,6 +58,26 @@ success was >= 10 of 12 clean at p: **not met**. The estimate is too high for ha
 cold 60-s probes, see the NVMe findings' warm-drive write pauses, and the lever interactions the fit carries only as
 main effects). P3 rows: `est-05fb8f1-a/validation.jsonl`.
 
+### P6, the warm-drive 15-min takes (2026-11-21 18:39-19:35; 4 of 12) - measured
+
+| Take | Drive at the start | First event | Temp at the event | Written up to it | Rate | Outcome |
+| --- | --- | --- | --- | --- | --- | --- |
+| 4K HDR16 unc 27 | 39 C | 426 s | 68.8 C | 190 GB | 446 MB/s | 1 dropped at 432 s |
+| 4K HDR16 unc 26 | 52 C | 714 s | 74.8 C | 307 GB | 430 MB/s | 1 dropped at 788 s |
+| 4K SDR12 unc 39 | 58 C | 663 s | 77.8 C | 321 GB | 484 MB/s | buffer full at 750 s |
+| 4K SDR12 unc 38 | 57 C | 231 s | 72.8 C | 108 GB | 468 MB/s | buffer full at 269 s |
+
+- None of the four held 15 min. Neither did the estimate (27, 39) or one below it (26, 38).
+- Two of the four failed **earlier than every take before**: 4K HDR16 27 at 190 GB and 69 C, and 4K SDR12 38 at 108 GB
+  and 73 C. So the 265-375 GB band of the pre-analysis (2c-0) is not a floor. A pause can come after ~110 GB on a drive
+  already at ~57 C from the take before. The 4K SDR12 38 take started 2 min after the 39 take ended.
+- 4K SDR12 37 still holds the only clean 15 min (S4). 4K HDR16 has no clean 15-min fps yet: 25, 26 and 27 have all
+  failed (10-13 min, and now 7 min).
+- **Stopped 19:35-22:43 by a runner bug.** The fill gate before a take sized the next one (4K SDR12 lossless) smaller
+  than the quiet gate did. Nothing was deleted, and the quiet gate waited for space ("only 415 GiB free, the take needs
+  427"). Fixed in the runner (the fill gate now runs before the quiet gate waits). Stopped by hand, RESTORE OK, the Pi
+  stayed on. The remaining 8 takes (4K SDR12 lossless 40/39, lossy 3:1, ProRes HQ, H.264 1440) are not run.
+
 ### Stops and fixes
 
 - 11:18 the runner waited on its own folder: the mic's audio format was refused after Core had made the clip folder, the
