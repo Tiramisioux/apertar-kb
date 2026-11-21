@@ -3401,3 +3401,238 @@ onValueSelected: v === "Same as Mode"
 Apertar-Core `0889122`. Finding: CLIP-C-1 (`raw/rev-clip-core.md`). Made by hand. Short entry: same kind as C4.
 
 The clip-split commit 6e340c8 added a second `<< clipMergeStateJson()` to the `get_state` chain, after the settings body, so every `clip_merge_*` key came twice. The second line is gone. How to spot it and the rule: see C4 (read each value once at the top of the handler, write each key once; grep the raw reply, because a JSON parser hides duplicate keys).
+
+---
+
+## C60. build: __int128 is declared with __extension__, as FramePhaseLock.hpp does
+
+Apertar-Core `7962744`. Finding: CLIP-C-6. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/audio/RecordingClock.hpp:48-56@cinemate-port
+  const __int128 period = static_cast<__int128>(1000000) * periodDen;
+  const __int128 scaled = static_cast<__int128>(bootUs) * periodNum;
+  __int128 slot = scaled / period;
+src/util/TakeSlots.hpp:30-91: the same, 12 more lines
+
+**Why it is a problem.** ISO C++ has no __int128; -Wpedantic (CMakeLists.txt, core and both plugins) warns at every declaration and cast. src/camera/FramePhaseLock.hpp:42 already writes '__extension__ typedef __int128 PhaseLockInt128;', which is silent. Upstream 1.6.0 has no __int128 and a clean build, so a new warning source is a mismatch with the build's habit of staying quiet.
+
+**How to spot it.** Count warnings in the gate's build log before and after a series: grep -c 'warning:' <log>. grep -rn __int128 src shows every user. A 'warning: ISO C++ does not support' line is the smell.
+
+**Options.**
+
+- One shared typedef header util/Int128.hpp (chosen, one new 6-line file)
+- Reuse PhaseLockInt128 from camera/FramePhaseLock.hpp (no new file, but TakeSlots.hpp is 'std only' and would pull in the phase lock)
+- Put the same typedef in each of the two headers under one guard (no new file, two copies)
+- Replace __int128 by a mulDiv helper with 64-bit pieces (also builds on 32-bit ARM, much larger change)
+
+**Chosen, and why.** The shared header, because the plan asked for one typedef used by both. A typedef is just another name for a type; __extension__ tells GCC and Clang that the use of a non-standard extension is on purpose. RecordingClock.hpp includes it by relative path because the ProRes and H.264 plugins are compiled without -I src. Given up: 32-bit ARM still cannot build (as before, FramePhaseLock.hpp has the same limit).
+
+**After.**
+
+```
+src/util/Int128.hpp:
+  namespace apertar {
+  __extension__ typedef __int128 Int128;
+  }
+RecordingClock.hpp: #include "../util/Int128.hpp"; const Int128 period = static_cast<Int128>(1000000) * periodDen;
+TakeSlots.hpp: #include "Int128.hpp"
+```
+
+**Checked.** Ran here: gate both builds and 21 host tests (take_slots arithmetic included): warnings 166->1 and 169->4, none left in touched files. The first try failed in both builds because the plugins have no -I src; that is why the include is relative. Needs the Pi only for an aarch64 build, which uses the same compiler family.
+
+**Rule.** A compiler extension is declared once, with __extension__, in one place; a warning count that grows by 165 hides the next real warning.
+
+
+---
+
+## C61. scripts: the pipeline config is exported only when APERTAR_PIPELINE_CONFIG names it
+
+Apertar-Core `cc7203c`. Finding: CLIP-C-2. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+scripts/start-apertar-core.sh:20-26@cinemate-port
+  PIPELINE_CONFIG=/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml
+  if [[ -z "${LIBCAMERA_RPI_CONFIG_FILE:-}" && -f "$PIPELINE_CONFIG" ]]; then
+      export LIBCAMERA_RPI_CONFIG_FILE="$PIPELINE_CONFIG"
+  fi
+
+**Why it is a problem.** The file's presence switched a behaviour on, for the primary and cam1 alike. Original start script (start-apertar-core.sh:16-18@upstream-1.6.0) exports a libcamera variable only from an APERTAR_* variable the operator set. A pisp file on a Pi 4 (vc4) is also the wrong target. Conventions R8: bench knobs are APERTAR_<AREA>_<KNOB>, default off.
+
+**How to spot it.** In a start script or unit: any 'if [ -f /home/pi/... ]' that exports something. Ask: what does a camera that merely has this file do?
+
+**Options.**
+
+- Delete the block (stock safe, the rig loses depth 4 unless it exports the variable itself; trivial)
+- APERTAR_PIPELINE_CONFIG opt-in, mapped like APERTAR_TUNING_FILE (chosen, 5 lines + README row)
+- Keep the file test but also require a UI or hardware-file key (more code, no gain)
+
+**Chosen, and why.** The opt-in variable, as the plan said. An env var set in a systemd drop-in is the Apertar way to switch a bench knob. Given up: the rig must add one Environment line to two units once.
+
+**After.**
+
+```
+if [[ -n "${APERTAR_PIPELINE_CONFIG:-}" && -z "${LIBCAMERA_RPI_CONFIG_FILE:-}" ]]; then
+    export LIBCAMERA_RPI_CONFIG_FILE="$APERTAR_PIPELINE_CONFIG"
+fi
+README: row APERTAR_PIPELINE_CONFIG=/path/file.yaml | off
+```
+
+**Checked.** Ran here: the script with a stand-in binary printing the env, fresh HOME: unset gives no variable, the variable gives the path, LIBCAMERA_RPI_CONFIG_FILE already set wins; gate clean. Needs the Pi: on the rig, systemctl edit apertar-core.service and apertar-core-cam1.service, add [Service] and Environment=APERTAR_PIPELINE_CONFIG=/home/pi/Tuning-Files/pipeline/pisp-depth4.yaml, restart; LIBCAMERA_LOG_LEVELS=RPI:DEBUG shows the config being read.
+
+**Rule.** A libcamera variable is exported from an APERTAR_ variable the operator set, never from the presence of a file.
+
+
+---
+
+## C62. core: the socket get_state no longer carries the ui object
+
+Apertar-Core `332bde9`. Finding: CLIP-C-3. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:14204@cinemate-port (get_state, after settingsBody)
+  << ",\"ui\":{" << dualSensorUiStateJson(uiState) << "}"
+  << cam1StateMembers(cam1Client_, uiState, camera_.isRecording());
+
+**Why it is a problem.** Original get_state is flat: status keys + settingsBody; UI.conf values live in the ui group of /api/state only (conventions CMD-11, CMD-8, CMD-9; /api/state at ApertarCoreApp.cpp:7965@upstream-1.6.0). A flat-line client saw a nested shape on a stock camera for fields no one reads.
+
+**How to spot it.** grep -n '\\"ui\\"' src/ApertarCoreApp.cpp: a ui object outside the /api/state builder. Then grep the readers (ui-work, tools, the WebUI page) for the keys before deleting.
+
+**Options.**
+
+- Drop ui from get_state, keep it in /api/state (chosen, one line)
+- Keep it only when cam1 is configured (still a shape difference on dual rigs, nothing reads it)
+- Keep it and document it (a protocol field for no reader)
+
+**Chosen, and why.** Drop it. Grep of /home/user/wt/ui-work (src, qml), the WebUI page and /home/user/apertar-kb/working/tools: every reader of dual_sensor_enabled, preview_source and friends uses /api/state (web_state() in longtakes.py says 'not in get_state'). The relay reads the secondary's get_state only by key (state, recording, sensor, resolution..clip_merge_env_off, fps_phase_lock_locked), none inside ui. Given up: nothing in behaviour. A reader of the socket that wants them uses /api/state.
+
+**After.**
+
+```
+             << ",\"media_alive\":" << ...
+             << clipMergeStateJson()
+             << "," << settingsBody(camera_.settings())
+             << cam1StateMembers(cam1Client_, uiState, camera_.isRecording());
+(comments naming get_state beside dualSensorUiStateJson and the /api/state cam1 line updated)
+```
+
+**Checked.** Ran here: Core --simulate, get_state over the socket and /api/command: no ui, no cam1 key; /api/state has ui.dual_sensor_enabled and preview_source; smoke_core.sh + shape_subset.py: every base field present with the same type; gate clean (the one warning is convertPlanarYuv420ToRgb, also in 1.6.0). Needs the Pi with cam1: apertar-cmd '{"cmd":"get_state","id":1}' still shows "cam1":{...} and the touch UI's cam1 view works.
+
+**Rule.** get_state is flat status plus camera settings; grouped UI values belong to /api/state.
+
+
+---
+
+## C63. core: time_left_percent is out of 2 hours again unless a second camera records
+
+Apertar-Core `1ceda63`. Finding: CLIP-C-8. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ApertarCoreApp.cpp:9628-9640@clip-split (0902ac5)
+  cardRecordMinutes = mediaTotalBytes / estimatedBytesPerSecond / 60.0;
+  timeLeftPercent = clamp(recordTimeLeftMinutes / cardRecordMinutes * 100, 0, 100);
+  time_left_label = timeLeftEstimateLabel(settings, cardRecordMinutes)  // '<format> estimate (card: 2 h 10 min)'
+
+**Why it is a problem.** 1.6.0 (ApertarCoreApp.cpp:7817@upstream-1.6.0): timeLeftPercent = clamp(recordTimeLeftMinutes / 120.0 * 100.0, 0, 100) and time_left_label 'Current format estimate' (:7926). A field keeps its 1.6.0 meaning on a stock camera (campaign rule 1, 3).
+
+**How to spot it.** Diff a published numeric field against upstream: grep the key in core-upstream and compare the expression, not only the type. A constant that became a variable is the smell.
+
+**Options.**
+
+- Card-wide scale only when the second camera is in the take set, 1.6.0 otherwise (chosen, about 10 lines)
+- A UI.conf setting for the card scale, default off (keeps Patrik's choice on his single-sensor rig; a new setting, command and WebUI row)
+- New field time_left_card_percent beside the old one (the finding's fallback; a new field)
+- Keep as is (changes a stock camera)
+
+**Chosen, and why.** The first option, as the lead's item says. A local bool secondCameraRecords is set where the code already asks which cameras record. Given up: Patrik's card-wide bar on a one-sensor rig; if he wants it there, option 2 or 3 is the way and needs his decision.
+
+**After.**
+
+```
+bool secondCameraRecords = false;   // set where record_cameras is read: both or cam1
+timeLeftPercent = !secondCameraRecords ? clamp(minutes / 120.0 * 100.0) : clamp(minutes / cardRecordMinutes * 100.0)
+time_left_label: secondCameraRecords ? timeLeftEstimateLabel(settings, cardRecordMinutes) : "Current format estimate"
+```
+
+**Checked.** Ran here: Core --simulate, /api/state system.time_left_label is 'Current format estimate'; the sim has no mounted card, so time_left_percent is null and the arithmetic itself was not exercised; gate clean. Needs the camera: one-sensor rig with a card: curl -s :8000/api/state | python3 -c 'import sys,json;s=json.load(sys.stdin)["system"];print(s["time_left_percent"],s["record_time_left_minutes"])' gives minutes/1.2 capped at 100; dual rig, record_cameras both: card-wide percent and '(card: ...)' label.
+
+**Rule.** A published value keeps its 1.6.0 formula on a stock camera; a new scale starts only where the new feature is on.
+
+
+---
+
+## C64. core: the relay's forward queue is capped and a signal ends the secondary's sensor wait
+
+Apertar-Core `aac5980`. Finding: CLIP-C-14. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ipc/ControlClient.cpp:233-262@clip-split
+  queue_.push_back(std::move(forward));   // no limit while linked
+  if (pending_++ == 0) busySinceMs_ = nowMs();
+src/main.cpp:150@clip-split
+  secondaryHasSensor({}, options.camera, ..., 20000, 500, &why)   // sleep_for loop, no stop
+
+**Why it is a problem.** A bounded queue is the usual rule for a producer faster than its consumer; the knob is the producer, a stuck cam1 the consumer. Original start path ends waits at a signal (signal pipe, main.cpp@upstream-1.6.0 uses no long waits) and the port's own waitForPrimaryIdle takes a stop lambda (src/ipc/PrimaryWait.hpp:130). The sensor wait was the one wait that did not.
+
+**How to spot it.** grep -n 'push_back' on any queue_ guarded by a mutex: where is the limit? grep -n 'sleep_for' in loops reached before the signal thread starts: does a signal end it?
+
+**Options.**
+
+- Coalesce the last same setter and cap at 64, dropping the oldest plain forward (chosen)
+- Cap only: refuse the new forward when full (the caller would say 'CAM1 is offline.', wrong)
+- Coalesce anywhere in the queue (can reorder dependent setters such as fps and resolution)
+
+**Chosen, and why.** Coalesce only with the last entry so the order of different setters never changes; a hard cap of 64 drops the oldest forward that nobody waits for. A dropped forward is the same case as a forward with no link: the 1 Hz compare and resync bring cam1 back to the primary's settings when both are idle. The stop callback is a std::function (a callable object) passed down as an optional last parameter, so the callers and tests that pass nothing behave as before. Given up: a lost step is only corrected at the next idle compare.
+
+**After.**
+
+```
+if (origin == Origin::Forward && !reply && !queue_.empty()) { Forward &last = queue_.back(); if (same kind, origin, name, keys, no reply) { last.fields = fields; return true; } }
+if (queue_.size() >= kMaxQueued) erase the first Setter/Forward/no-reply entry; --pending_;
+waitForSensorSubdev(root, node, timeoutMs, pollMs, stop)  // stop(ms) waits and returns true at a signal
+main.cpp: secondaryHasSensor(..., &why, [&](int ms){ pollfd stop{signalPipe[0], POLLIN, 0}; return ::poll(&stop, 1, ms) > 0; })
+```
+
+**Checked.** Ran here: a throwaway harness (not committed) with a silent cam1 socket: 1000 set_iso forwards leave pending 2, 1000 alternating setters stop at 65; waitForSensorSubdev with a stop callback returns at the first true, without one it waits as before; gate clean. Needs the Pi: config.txt naming cam1, no sensor fitted, start apertar-core-cam1 then systemctl stop apertar-core-cam1 within the 20 s: it returns at once and logs 'stopped by a signal while waiting for a sensor'.
+
+**Rule.** Every queue has a limit and every wait has a stop; the knob and the signal are the two producers you do not control.
+
+
+---
+
+## C65. core: the relay thread sleeps until its next tick while there is no cam1 link
+
+Apertar-Core `d4fd79a`. Finding: CLIP-C-10. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/ipc/ControlClient.cpp:272-285@clip-split
+  while (running_) { tick when due; ioStep(kIoStepMs /*100*/); watchTake(); ... }
+
+**Why it is a problem.** A thread that has nothing to do should not wake. Original Apertar has no relay; its threads are started when needed and block on a condition variable or a long timeout (CMD-19, CMD-21). 10 wake-ups a second forever is cost for a camera that never turns the feature on.
+
+**How to spot it.** strace -f -c -e trace=poll,ppoll,futex on an idle Core; or grep for poll/wait_for with a small constant in a loop that runs unconditionally.
+
+**Options.**
+
+- Poll timeout = time to the next tick while unlinked (chosen, 2 lines)
+- Start the client only while the Dual sensor switch is on (finding option a; needs start/stop from the 1 Hz loop, the switch is read inside the client today: M)
+- Return early in noteRelayEvent when cam1 is not configured (finding option b; separate, per-event cost, not done)
+
+**Chosen, and why.** The first. poll() is the system call that waits on file descriptors with a timeout; the wake pipe is how other threads cut the wait short. Stop, enqueue, reads and takes need a link, so with no link only the tick has work. Given up: the thread still exists and wakes once a second (and stats UI.conf in tick); option 2 would remove that and is left to the lead.
+
+**After.**
+
+```
+ioStep(fd_ < 0 ? static_cast<int>(std::max<int64_t>(1, nextTickMs_ - nowMs())) : kIoStepMs);
+```
+
+**Checked.** Ran here: a harness with an unlinked client under strace -c: 5 poll calls in 5 s (about 50 before); the silent-cam1 harness still links and forwards; gate clean. Needs the Pi: dual rig, journalctl -u apertar-core | grep 'cam1 linked' shows the link within about a second of cam1 starting; one-sensor rig: strace -f -c -p $(pidof apertar-core) -e trace=poll shows the relay thread at 1 per second.
+
+**Rule.** An idle thread waits for its next deadline, not for a fixed short step.
+
