@@ -3843,6 +3843,29 @@ def est_warm(out):
             decide(out, 'EST P6 %s at %d (estimate %d): %s after %s s' % (spec, f, est, r.get('outcome'), r.get('seconds')))
 
 
+EST_WARM_LOG = (('4kHDR16:cdng:unc:log', (25, 24)),      # P6b (User 2026-11-21: "add log to everything"): every Log there is,
+                ('4kHDR16:cdng:lj:log', (14, 13)),       # Clear HDR 16-bit cDNG (uncompressed, lossless) and ProRes ARRI LogC4;
+                ('4kP:prores:hq:arri_logc4', (41, 40)))  # SDR12, lossy and H.264 have no Log
+
+
+def est_warm_fixed(out, cells):
+    """P6b: 15-min warm takes at fixed fps (spec, fps list), as P6 but without the model's estimate. 4K HDR16 + Log was clean
+    for 3 and 5 min at 25 (drive <= 66 C, 307 MB/s); this asks whether it holds 15 min on a drive warm from P6."""
+    for spec, fpss in cells:
+        for f in fpss:
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                return
+            r = est_cell(out, 'P6', spec, {}, f, EST_WARM_S, 'warmfix')
+            if r.get('verdict') == 'stop':
+                return
+            rec = {'spec': spec, 'estimate': None, 'fps': f, 'secs': EST_WARM_S, 'verdict': r.get('verdict'),
+                   'outcome': r.get('outcome'), 'seconds': r.get('seconds'), 'first_drop_s': r.get('first_drop_s'),
+                   'dropped': r.get('dropped'), 'nvme_c_max': r.get('nvme_c_max'), 'take_id': r.get('take_id'),
+                   'ckey': r.get('ckey'), 'limited_by': 'fixed fps (P6b)'}
+            est_append(out, 'warm', rec)
+            decide(out, 'EST P6b %s at %d: %s after %s s' % (spec, f, r.get('outcome'), r.get('seconds')))
+
+
 EST_BLOCKS_DEFAULT = 'P0,P1,P2,P1b,P3,P4,P5'
 
 
@@ -3887,6 +3910,8 @@ def est_night(out):
             est_ladder(out)
         elif b == 'P6':
             est_warm(out)
+        elif b == 'P6b':
+            est_warm_fixed(out, EST_WARM_LOG)
         else:
             decide(out, 'EST: unknown block %s: skipped' % b)
     if smoke:
