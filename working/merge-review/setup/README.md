@@ -11,6 +11,7 @@ A stock camera needs **nothing** from this list. It behaves as Apertar 1.6.0. Ea
 | [config-files.md](config-files.md) | new sections in `apertar-hardware.conf`, and the other files |
 | [environment.md](environment.md) | switches set in Core's environment |
 | [boot-and-tuning.md](boot-and-tuning.md) | `config.txt` and libcamera files |
+| [walkthrough.md](walkthrough.md) | a short tour of what cinemate-port adds |
 
 The touch UI needs nothing new. Build it and install it as before.
 
