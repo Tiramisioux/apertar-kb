@@ -4120,3 +4120,70 @@ if (!writeBootConfigText(result.text, &error, &how, &denied)) return errorReply(
 
 **Rule.** One error vocabulary: errorReply with one sentence; when a helper loses its last caller, delete it in the same commit.
 
+
+---
+
+## C77. web: lever info lines under the performance switches
+
+Apertar-Core `57da4eb`. Finding: W1. Reviewed by a second agent: not reviewed.
+
+**What was there.** WebControlPage.cpp@cinemate-port: Performance card TDN hint explained the mechanism ('Smooths noise ... six times faster per frame'), phase lock hint said what it does, no cost text. Peaking, Zebra, Record Audio, Log and Live preview had no cost line.
+
+**Why it is a problem.** Original Apertar puts short <span class="subtle-note"> hints under controls (e.g. 'Frame buffer bar' in Live preview). The operator needs the cost of each lever, because the limit depends on it (requirements item 10).
+
+**How to spot it.** grep -n 'pill-grid' WebControlPage.cpp and look for controls with no subtle-note next to them; ask 'what does this switch cost?'
+
+**Options.**
+
+- Static text in the page: small, no Core change
+- Strings in SustainedFps.hpp sent by get_mode_ladder: one source for numbers, but needs Core and the D1 file, which this lane may not touch
+
+**Chosen, and why.** Static text, as the task says. Cost: the numbers live in the page until D1/W2 can send them from Core. The Automatic split sentence is left out because no Automatic mode exists yet; D5 should add it.
+
+**After.**
+
+```
+<span class="subtle-note">Costs under 1 fps, only at the limit of 4K Clear HDR. Record sound as you like; at the limit, turning it off gains about 1 fps.</span>
+```
+
+**Checked.** node --check of the extracted script; headless Chromium load with mocked routes: no page errors, lines present. On the rig: open the WebUI Settings and read the lines.
+
+**Rule.** A switch that changes performance gets one plain line saying what it costs and when to use it.
+
+
+---
+
+## U18. ui: lever info lines under Record Audio, Peaking, Zebra, Log, Split
+
+Apertar-UI `0981e32`. Finding: U1. Reviewed by a second agent: not reviewed.
+
+**What was there.** No lever text in the touch UI. Cards had one short elided description, e.g. qml/SettingsPage.qml Focus Peaking: description: "Highlight in-focus edges"; Record Audio: "Capture audio alongside recorded clips".
+
+**Why it is a problem.** The operator cannot see which switches cost frames at the limit of 4K Clear HDR (design auto-ladder.md, Lever info lines). Original Apertar shows hints as a grey secondary Text under the control (Split Long Takes hint, SettingsPage.qml@upstream-1.6.0, same colour #8cffffff, interRegular, WordWrap). MonitoringRow.description is one elided line, so it cannot hold a long sentence.
+
+**How to spot it.** Question: where does the operator learn what a switch costs? Grep the design page for exact texts, then grep SettingsPage.qml for the card title and see whether a Text line already exists.
+
+**Options.**
+
+- Put the text in MonitoringRow.description: no layout change, but it is elided to one line and the text is cut off.
+- Add a wrapped note property to MonitoringRow.qml: clean, but edits a shared component for five users and is outside the plan's file list.
+- Wrap the card in a Column with a Text under it in SettingsPage.qml (chosen): local, copies the existing Text style; the diff re-indents the card bodies.
+
+**Chosen, and why.** Third option. Column is a Qt Quick item that stacks children vertically and takes its height from them, so the Loader around the component still sizes correctly. Given up: a small re-indent diff for Peaking, Zebra and Record Audio (git diff -w shows 66 added lines only). Split text drops 'Automatic turns it on above 32 fps' because the UI has no Automatic mode until D5; adding it now would be untrue.
+
+**After.**
+
+```
+Column {
+    width: parent.width
+    spacing: 6
+    MonitoringRow { ... unchanged ... }
+    Text { width: parent.width; text: "No measured cost. ..."; color: "#8cffffff"
+           font.family: interRegular.font.family; wrapMode: Text.WordWrap; renderType: Text.NativeRendering }
+}
+```
+
+**Checked.** Ran check_ui.sh lane-dr-ui: PASS, 0 warnings (QML compiled ahead of time). Nothing seen on a screen. On the HDMI build with a mouse: open Settings, Overlays & Assist (Peaking, Zebra), Audio, Record (Log with a Clear HDR cDNG mode, Split Long Takes); check the lines wrap and that the favourites page still shows Peaking/Zebra/Record Audio correctly.
+
+**Rule.** A card's description line is one elided line; a longer hint goes in a wrapped grey Text under the control, in the existing style.
+
