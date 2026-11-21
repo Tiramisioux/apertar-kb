@@ -1,0 +1,59 @@
+1795269500.915558 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795269500.925902 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795269500.926319 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795269500.933239 apertar start-apertar-core.sh[849]: ApertarCore ProRes: direct avio refused (this libavformat's file protocol has no pkt_size option); using buffered writes
+1795269500.933592 apertar start-apertar-core.sh[849]: ApertarCore ProRes: disk arm=buffered APERTAR_PRORES_ODIRECT=1 pkt_size=262144 writeback=off write arm=WRITER THREAD (av_interleaved_write_frame off the encode worker) writer_queue=48pkt/96MiB clip=/media/RAW/ProRes_26-11-21_14582054_C0012_cam0/ProRes_26-11-21_14582054_C0012_cam0.mov
+1795269500.935703 apertar start-apertar-core.sh[849]: ApertarCore ProRes recording clip: /media/RAW/ProRes_26-11-21_14582054_C0012_cam0/ProRes_26-11-21_14582054_C0012_cam0.mov profile=422 source=RGB48 output=yuv422p10le threads=4 queue=4
+1795269500.973902 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=13516894524
+1795269501.238711 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=1
+1795269502.965921 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33336 nominal_us=16666 total_estimate=30
+1795269504.654776 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=60
+1795269506.326207 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=90
+1795269507.905312 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33325 nominal_us=16666 total_estimate=120
+1795269508.616583 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66665 nominal_us=16666 total_estimate=134
+1795269509.323860 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=148
+1795269509.435822 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33327 nominal_us=16666 total_estimate=150
+1795269511.036523 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33331 nominal_us=16666 total_estimate=180
+1795269511.900423 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=196
+1795269512.676492 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=210
+1795269514.331365 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=240
+1795269514.789843 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66658 nominal_us=16666 total_estimate=250
+1795269515.824574 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=270
+1795269517.541123 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=300
+1795269519.168762 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=330
+1795269520.857007 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33327 nominal_us=16666 total_estimate=360
+1795269522.376060 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=390
+1795269523.959461 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33332 nominal_us=16666 total_estimate=420
+1795269525.598823 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=450
+1795269527.211519 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33327 nominal_us=16666 total_estimate=480
+1795269528.819392 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=510
+1795269530.467089 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33335 nominal_us=16666 total_estimate=540
+1795269532.104653 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33332 nominal_us=16666 total_estimate=570
+1795269533.541343 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=597
+1795269533.729309 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=600
+1795269535.302701 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=630
+1795269536.926029 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33332 nominal_us=16666 total_estimate=660
+1795269538.570772 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33335 nominal_us=16666 total_estimate=690
+1795269540.178951 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33322 nominal_us=16666 total_estimate=720
+1795269541.369463 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=743
+1795269541.739241 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33329 nominal_us=16666 total_estimate=750
+1795269543.401778 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=780
+1795269544.992488 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33307 nominal_us=16666 total_estimate=810
+1795269546.600085 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33332 nominal_us=16666 total_estimate=840
+1795269546.668780 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=842
+1795269548.047219 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=869
+1795269548.117359 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33336 nominal_us=16666 total_estimate=870
+1795269549.756806 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=900
+1795269551.370173 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=930
+1795269552.970507 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33393 nominal_us=16666 total_estimate=960
+1795269554.537454 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33317 nominal_us=16666 total_estimate=990
+1795269556.129799 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33336 nominal_us=16666 total_estimate=1020
+1795269557.764484 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=1050
+1795269559.407051 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33327 nominal_us=16666 total_estimate=1080
+1795269560.979047 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=1109 requeue_failures=0
+1795269561.065105 apertar start-apertar-core.sh[849]: no ICC profile found, will write nclx/nclc colour info instead
+1795269561.067082 apertar start-apertar-core.sh[849]: ApertarCore ProRes recording stats: queued=2489 submitted=2489 dropped_queue_full=0 failures=0 peak_queue=2/4
+1795269561.084611 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=4
+1795269561.084810 apertar start-apertar-core.sh[849]: ApertarCore audio clock: measured_drift_ppm=1163.5 points=5598 endpoint_ppm=1161.93 correction=resample
+1795269561.084810 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=13516894524 audio_boot_us=13516879753 trim_samples=710 pad_samples=0 output_samples=2878400 sample_rate=48000
+1795269561.443961 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 212 ms

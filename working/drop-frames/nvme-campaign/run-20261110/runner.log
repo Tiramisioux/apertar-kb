@@ -582,3 +582,645 @@
 2026-11-11 09:51:24 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est/estimate.md, /home/pi/longtakes/nvme-20261110/est/selftest.md
 2026-11-11 09:52:18 DECISION RESTORE OK
 2026-11-11 09:52:18 night EST over: fault: fault:   | unconfirmed: no counter or context pointed to a cause
+2026-11-11 18:41:45 waiting for Core (down) and the mount (up)
+2026-11-11 23:51:20 write budget 16000 GB, 4975 GB used so far in this run
+2026-11-11 23:51:20 preserving 0 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-11 23:51:20 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-11 23:51:22 DECISION night EST-05fb8f1 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 512 GB; Core pid 8091; drop-in checked; timers-mask rc=0; smart temp 37 C
+2026-11-11 23:51:23 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 55 frames, 0.7 GB written and deleted)
+2026-11-11 23:51:23 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261111-235123-baseline-EST-05fb8f1
+2026-11-11 23:51:23 DECISION EST preregistration written: seed 2433635356, 44 P1 specs (+25 repeated), P2 16 runs x 3 anchors + the back end twice
+2026-11-11 23:51:23 DECISION EST block P0 starts
+2026-11-11 23:51:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-11 23:53:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-11 23:55:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-11 23:57:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-11 23:59:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:01:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:03:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:05:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:07:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:09:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:11:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:13:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:15:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:17:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:19:58 WAITING: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-12 00:21:58 DECISION EST-05fb8f1 P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: waiting_timeout (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-12 00:21:58 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1/selftest.md
+2026-11-12 00:22:22 DECISION RESTORE OK
+2026-11-12 00:22:22 night EST-05fb8f1 over: WAITING for 30 min: a folder on the card the database did not create: cDNG_26-11-11_20022420_C0001, cDNG_26-11-11_20235603_C0002, cDNG_26-11-11_20351504_C0003, cDNG_26-11-11_20432818_C0004, cDNG_26-11-11_21345310_C0005, cDNG_26-11-11_21353018_C0006, cDNG_26-11-11_213542 (Patrik moves it; it is never deleted)
+2026-11-21 00:54:59 write budget 16000 GB, 4975 GB used so far in this run
+2026-11-21 00:54:59 preserving 0 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-21 00:54:59 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 00:55:01 DECISION night EST-05fb8f1 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 1000 GB; Core pid 606; drop-in checked; timers-mask rc=0; smart temp 25 C
+2026-11-21 00:55:01 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.2), 58 frames, 0.7 GB written and deleted)
+2026-11-21 00:55:02 DECISION audio baseline: record_audio_enabled=True audio_input_device='' input_devices=[] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-005501-baseline-EST-05fb8f1
+2026-11-21 00:55:02 DECISION EST block P0 starts
+2026-11-21 00:56:42 DECISION audio pre-check: Core does not see the mic after 60 s (record_audio_enabled=True audio_input_device='' input_devices=[]; ui_fds=101 ui_dmabuf=72 arec_fds=None core_fds=130 cma_free_kb=55040 uiconf_rec=1 uiconf_dev= uiconf_mtime=1795218933.06); the take runs, the void decides
+2026-11-21 00:57:13 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 17s dropped=2 kinds=capture-gap:2 buffer_full:1 pi=54C nvme=32.85
+2026-11-21 00:57:13 DECISION no audio in 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps60_20261121-005521 (pre-check: NOT READY: record_audio_enabled=True audio_input_device='' input_devices=[]; UI MESA errors in the take: 0): counted anyway (--audio-optional)
+2026-11-21 00:57:13 DECISION EST-05fb8f1 P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (16.5 s, dropped 2, first drop 7.0, gap 0, boundary 0)
+2026-11-21 00:58:53 DECISION audio pre-check: Core does not see the mic after 60 s (record_audio_enabled=True audio_input_device='' input_devices=[]; ui_fds=101 ui_dmabuf=72 arec_fds=None core_fds=130 cma_free_kb=16 uiconf_rec=1 uiconf_dev= uiconf_mtime=1795219064.1); the take runs, the void decides
+2026-11-21 00:59:17 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 10s dropped=2 kinds=capture-gap:1 buffer_full:1 pi=55C nvme=31.85
+2026-11-21 00:59:17 DECISION no audio in 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps30_20261121-005732 (pre-check: NOT READY: record_audio_enabled=True audio_input_device='' input_devices=[]; UI MESA errors in the take: 0): counted anyway (--audio-optional)
+2026-11-21 00:59:17 DECISION EST-05fb8f1 P0-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (9.5 s, dropped 2, first drop 1.9, gap 0, boundary 0)
+2026-11-21 11:14:43 DECISION RESTORE OK
+2026-11-21 11:17:01 write budget 16000 GB, 4987 GB used so far in this run
+2026-11-21 11:17:01 preserving 0 pre-existing clip folder(s); 2 clip folder(s) of this run on the drive
+2026-11-21 11:17:01 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 11:17:03 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 988 GB; Core pid 849; drop-in checked; timers-mask rc=0; smart temp 28 C
+2026-11-21 11:17:03 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 60 fps (measured 60.0), 120 frames, 0.2 GB written and deleted)
+2026-11-21 11:17:04 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-111703-baseline-EST-05fb8f1-a
+2026-11-21 11:17:04 DECISION EST preregistration written: seed 776302384, 44 P1 specs (+25 repeated), P2 16 runs x 3 anchors + the back end twice
+2026-11-21 11:17:04 DECISION EST block P0 starts
+2026-11-21 11:17:47 audio format rejected by the device: switching the audio format to auto (restored at the end)
+2026-11-21 11:18:14 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 16s dropped=0 kinds=buffer_full:1 pi=55C nvme=33.85
+2026-11-21 11:18:14 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (16.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:18:49 WAITING: a folder on the card the database did not create: cDNG_26-11-21_11174731_C0003_cam0 (Patrik moves it; it is never deleted)
+2026-11-21 11:20:49 WAITING: a folder on the card the database did not create: cDNG_26-11-21_11174731_C0003_cam0 (Patrik moves it; it is never deleted)
+2026-11-21 11:21:59 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: waiting_timeout (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 11:21:59 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-21 11:22:24 DECISION RESTORE OK
+2026-11-21 11:22:24 night EST-05fb8f1-a over: stopped by SIGTERM
+2026-11-21 11:22:27 write budget 16000 GB, 4996 GB used so far in this run
+2026-11-21 11:22:27 preserving 0 pre-existing clip folder(s); 4 clip folder(s) of this run on the drive
+2026-11-21 11:22:27 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 11:22:29 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 979 GB; Core pid 849; drop-in checked; timers-mask rc=0; smart temp 33 C
+2026-11-21 11:22:29 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 60 fps (measured 60.0), 120 frames, 0.2 GB written and deleted)
+2026-11-21 11:22:29 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-112229-baseline-EST-05fb8f1-a
+2026-11-21 11:22:29 DECISION EST block P0 starts
+2026-11-21 11:23:52 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 10s dropped=3 kinds=capture-gap:1 buffer_full:1 pi=60C nvme=34.85
+2026-11-21 11:23:52 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (9.5 s, dropped 3, first drop 1.7, gap 0, boundary 0)
+2026-11-21 11:25:50 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=40.85
+2026-11-21 11:25:50 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:27:01 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 14s dropped=0 kinds=buffer_full:1 pi=58C nvme=42.85
+2026-11-21 11:27:01 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: buffer_full (13.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:28:35 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1838 kinds=capture-gap:91 prores-queue-full:660 pi=62C nvme=38.85
+2026-11-21 11:28:35 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1838, first drop 0.7, gap 0, boundary )
+2026-11-21 11:30:07 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=59C nvme=41.85
+2026-11-21 11:30:07 DECISION EST-05fb8f1-a P0-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 11:32:08 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=60C nvme=46.85
+2026-11-21 11:32:08 DECISION EST-05fb8f1-a P0-gap-t0l0w1a1a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:34:03 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=55C nvme=43.85
+2026-11-21 11:34:03 DECISION EST-05fb8f1-a P0-gap-t0l0w1a1a1-r1 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:35:58 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=95 kinds=capture-gap:4 pi=58C nvme=50.85
+2026-11-21 11:35:58 DECISION EST-05fb8f1-a P0-gap-t0l0w1a1a1-r1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 95, first drop 2.7, gap 0, boundary 0)
+2026-11-21 11:37:33 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> ab_dropped after 60s dropped=173 kinds=capture-gap:6 pi=58C nvme=55.85
+2026-11-21 11:37:33 DECISION EST-05fb8f1-a P0-gap-t1l0w1a1a1-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 60 s: ab_dropped (60.1 s, dropped 173, first drop 2.7, gap 0, boundary 0)
+2026-11-21 11:37:33 DECISION EST block P1 starts
+2026-11-21 11:38:40 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 12s dropped=10 kinds=capture-gap:3 buffer_full:1 pi=60C nvme=54.85
+2026-11-21 11:38:40 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (12.0 s, dropped 10, first drop 11.8, gap 0, boundary 0)
+2026-11-21 11:40:19 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=260 kinds=capture-gap:19 pi=57C nvme=56.85
+2026-11-21 11:40:19 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 260, first drop 1.7, gap 0, boundary 0)
+2026-11-21 11:41:53 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=969 kinds=capture-gap:44 prores-queue-full:1 pi=64C nvme=46.85
+2026-11-21 11:41:53 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 969, first drop 0.8, gap 0, boundary )
+2026-11-21 11:42:34 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0: setup_mismatch (bits=10 format=prores) 
+2026-11-21 11:42:34 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 11:43:11 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0: setup_mismatch (bits=10 format=prores) 
+2026-11-21 11:43:11 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 11:45:04 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=204 kinds=capture-gap:7 pi=60C nvme=56.85
+2026-11-21 11:45:04 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 204, first drop 1.7, gap 0, boundary 0)
+2026-11-21 11:45:54 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=58C nvme=54.85
+2026-11-21 11:45:54 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (10.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:47:49 crop4k3SDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=61C nvme=56.85
+2026-11-21 11:47:49 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 crop4k3SDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:49:28 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-422_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1112 kinds=capture-gap:52 pi=63C nvme=47.85
+2026-11-21 11:49:28 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-422_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1112, first drop 0.7, gap 0, boundary )
+2026-11-21 11:50:44 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 23s dropped=0 kinds=buffer_full:1 pi=58C nvme=57.85
+2026-11-21 11:50:44 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (23.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:52:38 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=55.85
+2026-11-21 11:52:39 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:53:47 4kSDR10_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 15s dropped=0 kinds=buffer_full:1 pi=60C nvme=48.85
+2026-11-21 11:53:47 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR10_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (14.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:55:45 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=44.85
+2026-11-21 11:55:45 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:57:35 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=44.85
+2026-11-21 11:57:35 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 11:59:17 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=48.85
+2026-11-21 11:59:17 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:01:08 2kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=59C nvme=48.85
+2026-11-21 12:01:08 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:03:02 4kHDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=121 kinds=capture-gap:5 pi=61C nvme=50.85
+2026-11-21 12:03:02 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 121, first drop 3.7, gap 0, boundary 0)
+2026-11-21 12:04:40 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-422_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=45.85
+2026-11-21 12:04:40 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-422_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:05:22 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0: setup_mismatch (bits=10 format=prores) 
+2026-11-21 12:05:22 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 12:07:00 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=51 kinds=capture-gap:6 pi=58C nvme=60.85
+2026-11-21 12:07:01 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 51, first drop 21.7, gap 0, boundary 0)
+2026-11-21 12:08:51 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=240 kinds=capture-gap:17 pi=60C nvme=54.85
+2026-11-21 12:08:51 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.0 s, dropped 240, first drop 1.7, gap 0, boundary 0)
+2026-11-21 12:10:16 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1882 kinds=capture-gap:98 prores-queue-full:690 pi=62C nvme=49.85
+2026-11-21 12:10:16 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1882, first drop 0.8, gap 0, boundary )
+2026-11-21 12:12:09 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=53.85
+2026-11-21 12:12:09 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:12:50 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0: setup_mismatch (format=mlv) 
+2026-11-21 12:12:50 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 12:14:22 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=767 kinds=capture-gap:31 pi=62C nvme=45.85
+2026-11-21 12:14:22 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 767, first drop 0.8, gap 0, boundary )
+2026-11-21 12:16:19 2kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=57C nvme=47.85
+2026-11-21 12:16:20 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:17:52 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=967 kinds=capture-gap:41 pi=63C nvme=45.85
+2026-11-21 12:17:52 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 967, first drop 0.8, gap 0, boundary )
+2026-11-21 12:19:25 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=46.85
+2026-11-21 12:19:25 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:20:07 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0: setup_mismatch (format=prores) 
+2026-11-21 12:20:07 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 12:21:40 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=775 kinds=capture-gap:26 pi=59C nvme=49.85
+2026-11-21 12:21:40 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 775, first drop 0.7, gap 0, boundary )
+2026-11-21 12:23:42 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=55C nvme=47.85
+2026-11-21 12:23:42 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kHDR16_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:33:42 DECISION cooldown 1: 601 s; NVMe 45.9 -> 39.9 C, Pi 55.6 -> 52.4 C
+2026-11-21 12:34:34 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 9s dropped=8 kinds=capture-gap:5 buffer_full:1 pi=58C nvme=40.85
+2026-11-21 12:34:34 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (9.0 s, dropped 8, first drop 2.7, gap 0, boundary 0)
+2026-11-21 12:36:11 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=40.85
+2026-11-21 12:36:11 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:37:25 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> buffer_full after 13s dropped=0 kinds= pi=55C nvme=40.85
+2026-11-21 12:37:25 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: buffer_full (12.5 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:38:24 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> buffer_full after 10s dropped=0 kinds= pi=56C nvme=40.85
+2026-11-21 12:38:24 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: buffer_full (9.5 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:39:56 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=2 kinds=capture-gap:1 pi=57C nvme=42.85
+2026-11-21 12:39:56 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 2, first drop 4.8, gap 0, boundary )
+2026-11-21 12:41:43 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=59C nvme=45.85
+2026-11-21 12:41:43 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:43:37 2kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_clean after 60s dropped=0 kinds= pi=56C nvme=44.85
+2026-11-21 12:43:37 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 2kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:45:02 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=45.85
+2026-11-21 12:45:02 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:46:14 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> buffer_full after 15s dropped=0 kinds= pi=57C nvme=46.85
+2026-11-21 12:46:14 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 crop4k3SDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: buffer_full (14.5 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 12:47:45 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=30.0 -> buffer_full after 32s dropped=9 kinds=capture-gap:1 buffer_full:1 pi=58C nvme=46.85
+2026-11-21 12:47:45 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 30 fps, 60 s: buffer_full (32.0 s, dropped 9, first drop 5.7, gap 0, boundary )
+2026-11-21 12:49:18 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=30.0 -> buffer_full after 44s dropped=25 kinds=capture-gap:1 buffer_full:1 pi=58C nvme=48.85
+2026-11-21 12:49:18 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 30 fps, 60 s: buffer_full (43.6 s, dropped 25, first drop 13.7, gap 0, boundary )
+2026-11-21 12:50:31 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=61C nvme=46.85
+2026-11-21 12:50:31 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (11.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:51:18 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=60C nvme=44.85
+2026-11-21 12:51:18 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: buffer_full (9.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:51:18 DECISION EST block P2 starts
+2026-11-21 12:53:00 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 fps=28.0 -> ab_dropped after 60s dropped=176 kinds=capture-gap:6 pi=58C nvme=55.85
+2026-11-21 12:53:00 DECISION EST-05fb8f1-a P2-be-t1l0w1a0a1-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 176, first drop 3.0, gap 0, boundary 0)
+2026-11-21 12:54:35 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 fps=28.0 -> ab_dropped after 60s dropped=390 kinds=capture-gap:16 pi=58C nvme=56.85
+2026-11-21 12:54:35 DECISION EST-05fb8f1-a P2-be-t1l1w1a0a0-r1 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 390, first drop 1.9, gap 0, boundary 0)
+2026-11-21 12:56:07 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=62.85
+2026-11-21 12:56:07 DECISION EST-05fb8f1-a P2-be-t0l0w0a0a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 12:57:43 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=344 kinds=capture-gap:16 pi=57C nvme=60.85
+2026-11-21 12:57:43 DECISION EST-05fb8f1-a P2-be-t1l0w1a1a0-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 344, first drop 1.7, gap 0, boundary 0)
+2026-11-21 12:59:18 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=64.85
+2026-11-21 12:59:18 DECISION EST-05fb8f1-a P2-be-t0l0w1a0a0-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:00:50 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 fps=28.0 -> ab_dropped after 60s dropped=299 kinds=capture-gap:10 pi=57C nvme=62.85
+2026-11-21 13:00:50 DECISION EST-05fb8f1-a P2-be-t1l0w0a0a0-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 299, first drop 1.9, gap 0, boundary 0)
+2026-11-21 13:02:24 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=4 kinds=capture-gap:1 pi=57C nvme=66.85
+2026-11-21 13:02:24 DECISION EST-05fb8f1-a P2-be-t0l0w0a1a0-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 4, first drop 40.8, gap 0, boundary 0)
+2026-11-21 13:04:00 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=59C nvme=66.85
+2026-11-21 13:04:00 DECISION EST-05fb8f1-a P2-be-t0l0w1a1a1-r1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:05:33 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=236 kinds=capture-gap:12 pi=58C nvme=65.85
+2026-11-21 13:05:33 DECISION EST-05fb8f1-a P2-be-t1l0w0a1a1-r1 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 236, first drop 2.7, gap 0, boundary 0)
+2026-11-21 13:07:05 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 fps=28.0 -> ab_dropped after 60s dropped=304 kinds=capture-gap:11 pi=57C nvme=64.85
+2026-11-21 13:07:05 DECISION EST-05fb8f1-a P2-be-t1l1w0a0a1-r1 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 304, first drop 1.9, gap 0, boundary 0)
+2026-11-21 13:08:38 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=67.85
+2026-11-21 13:08:38 DECISION EST-05fb8f1-a P2-be-t0l1w0a1a1-r1 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:10:10 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=61C nvme=67.85
+2026-11-21 13:10:10 DECISION EST-05fb8f1-a P2-be-t0l1w0a0a0-r1 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:11:47 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=29 kinds=capture-gap:7 pi=57C nvme=68.85
+2026-11-21 13:11:47 DECISION EST-05fb8f1-a P2-be-t0l1w1a1a0-r1 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 29, first drop 19.8, gap 0, boundary 0)
+2026-11-21 13:13:20 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=307 kinds=capture-gap:16 pi=58C nvme=65.85
+2026-11-21 13:13:20 DECISION EST-05fb8f1-a P2-be-t1l1w0a1a0-r1 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 307, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:14:55 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=68.85
+2026-11-21 13:14:55 DECISION EST-05fb8f1-a P2-be-t0l1w1a0a1-r1 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:16:31 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=281 kinds=capture-gap:10 pi=58C nvme=65.85
+2026-11-21 13:16:31 DECISION EST-05fb8f1-a P2-be-t1l1w1a1a1-r1 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 281, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:17:21 4kHDR16_lossless_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 fps=25.0 -> buffer_full after 18s dropped=52 kinds=capture-gap:6 buffer_full:1 pi=59C nvme=57.85
+2026-11-21 13:17:21 DECISION EST-05fb8f1-a P2-enc-t1l1w0a0a1-r1 4kHDR16_lossless_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 at 25 fps, 60 s: buffer_full (18.0 s, dropped 52, first drop 1.9, gap 0, boundary 0)
+2026-11-21 13:18:11 4kHDR16_lossless_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 fps=25.0 -> buffer_full after 17s dropped=50 kinds=capture-gap:2 buffer_full:1 pi=60C nvme=56.85
+2026-11-21 13:18:11 DECISION EST-05fb8f1-a P2-enc-t1l0w0a1a1-r1 4kHDR16_lossless_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 at 25 fps, 60 s: buffer_full (17.0 s, dropped 50, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:19:03 4kHDR16_lossless_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 fps=25.0 -> buffer_full after 18s dropped=76 kinds=capture-gap:9 buffer_full:1 pi=60C nvme=54.85
+2026-11-21 13:19:03 DECISION EST-05fb8f1-a P2-enc-t1l1w1a0a0-r1 4kHDR16_lossless_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 at 25 fps, 60 s: buffer_full (17.5 s, dropped 76, first drop 1.9, gap 0, boundary 0)
+2026-11-21 13:19:45 4kHDR16_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 fps=25.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=60C nvme=52.85
+2026-11-21 13:19:45 DECISION EST-05fb8f1-a P2-enc-t0l1w0a1a1-r1 4kHDR16_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 at 25 fps, 60 s: buffer_full (10.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:20:31 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=60C nvme=51.85
+2026-11-21 13:20:31 DECISION EST-05fb8f1-a P2-enc-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 60 s: buffer_full (10.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:21:23 4kHDR16_lossless_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> buffer_full after 17s dropped=55 kinds=capture-gap:2 buffer_full:1 pi=60C nvme=51.85
+2026-11-21 13:21:23 DECISION EST-05fb8f1-a P2-enc-t1l1w1a1a1-r1 4kHDR16_lossless_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 60 s: buffer_full (17.0 s, dropped 55, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:22:05 4kHDR16_lossless_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 fps=25.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=57C nvme=49.85
+2026-11-21 13:22:05 DECISION EST-05fb8f1-a P2-enc-t0l0w0a1a0-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 at 25 fps, 60 s: buffer_full (9.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:22:50 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 fps=25.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=59C nvme=49.85
+2026-11-21 13:22:50 DECISION EST-05fb8f1-a P2-enc-t0l0w1a0a0-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 at 25 fps, 60 s: buffer_full (10.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:23:32 4kHDR16_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=25.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=58C nvme=48.85
+2026-11-21 13:23:32 DECISION EST-05fb8f1-a P2-enc-t0l1w0a0a0-r1 4kHDR16_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 25 fps, 60 s: buffer_full (10.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:24:23 4kHDR16_lossless_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 fps=25.0 -> buffer_full after 17s dropped=51 kinds=capture-gap:2 buffer_full:1 pi=60C nvme=49.85
+2026-11-21 13:24:23 DECISION EST-05fb8f1-a P2-enc-t1l0w1a0a1-r1 4kHDR16_lossless_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 at 25 fps, 60 s: buffer_full (16.5 s, dropped 51, first drop 1.9, gap 0, boundary 0)
+2026-11-21 13:25:05 4kHDR16_lossless_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 fps=25.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=59C nvme=47.85
+2026-11-21 13:25:05 DECISION EST-05fb8f1-a P2-enc-t0l0w0a0a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 at 25 fps, 60 s: buffer_full (9.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:25:49 4kHDR16_lossless_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 fps=25.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=59C nvme=46.85
+2026-11-21 13:25:49 DECISION EST-05fb8f1-a P2-enc-t0l1w1a0a1-r1 4kHDR16_lossless_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 at 25 fps, 60 s: buffer_full (9.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:26:43 4kHDR16_lossless_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 fps=25.0 -> buffer_full after 23s dropped=92 kinds=capture-gap:8 buffer_full:1 pi=59C nvme=49.85
+2026-11-21 13:26:43 DECISION EST-05fb8f1-a P2-enc-t1l0w0a0a0-r1 4kHDR16_lossless_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 at 25 fps, 60 s: buffer_full (22.5 s, dropped 92, first drop 1.9, gap 0, boundary 0)
+2026-11-21 13:27:27 4kHDR16_lossless_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 fps=25.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=58C nvme=46.85
+2026-11-21 13:27:27 DECISION EST-05fb8f1-a P2-enc-t0l1w1a1a0-r1 4kHDR16_lossless_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 at 25 fps, 60 s: buffer_full (8.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:28:26 4kHDR16_lossless_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 fps=25.0 -> buffer_full after 24s dropped=117 kinds=capture-gap:21 buffer_full:1 pi=58C nvme=48.85
+2026-11-21 13:28:26 DECISION EST-05fb8f1-a P2-enc-t1l0w1a1a0-r1 4kHDR16_lossless_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 at 25 fps, 60 s: buffer_full (24.0 s, dropped 117, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:29:21 4kHDR16_lossless_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 fps=25.0 -> buffer_full after 23s dropped=105 kinds=capture-gap:6 buffer_full:1 pi=59C nvme=48.85
+2026-11-21 13:29:21 DECISION EST-05fb8f1-a P2-enc-t1l1w0a1a0-r1 4kHDR16_lossless_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 at 25 fps, 60 s: buffer_full (22.5 s, dropped 105, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:31:00 4kSDR12_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 fps=60.0 -> ab_dropped after 60s dropped=1243 kinds=capture-gap:438 pi=59C nvme=60.85
+2026-11-21 13:31:00 DECISION EST-05fb8f1-a P2-stor-t1l1w0a0a1-r1 4kSDR12_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1243, first drop 0.9, gap 0, boundary 0)
+2026-11-21 13:31:00 fill gate: deleting cDNG_26-11-21_00564534_C0001_cam0 (778 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
+2026-11-21 13:31:00 DECISION deleted cDNG_26-11-21_00564534_C0001_cam0: 778 frames in 0.2 s (cold, budget 0 s)
+2026-11-21 13:32:36 4kSDR12_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 fps=60.0 -> ab_dropped after 60s dropped=1417 kinds=capture-gap:472 pi=60C nvme=63.85
+2026-11-21 13:32:36 DECISION EST-05fb8f1-a P2-stor-t1l0w1a1a0-r1 4kSDR12_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1417, first drop 0.7, gap 0, boundary 0)
+2026-11-21 13:32:36 fill gate: deleting cDNG_26-11-21_00585620_C0002_cam0 (158 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
+2026-11-21 13:32:37 DECISION deleted cDNG_26-11-21_00585620_C0002_cam0: 158 frames in 0.0 s (cold, budget 0 s)
+2026-11-21 13:32:37 fill gate: deleting cDNG_26-11-21_11174746_C0004_cam0 (750 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 13:32:39 DECISION deleted cDNG_26-11-21_11174746_C0004_cam0: 750 frames in 2.4 s (warm, budget 0 s)
+2026-11-21 13:32:39 fill gate: deleting cDNG_26-11-21_11233203_C0005_cam0 (153 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:32:42 DECISION deleted cDNG_26-11-21_11233203_C0005_cam0: 153 frames in 2.5 s (warm, budget 0 s)
+2026-11-21 13:32:42 fill gate: deleting cDNG_26-11-21_11243939_C0006_cam0 (3600 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:32:47 DECISION deleted cDNG_26-11-21_11243939_C0006_cam0: 3600 frames in 4.8 s (warm, budget 0 s)
+2026-11-21 13:32:47 fill gate: deleting cDNG_3to1_26-11-21_11263658_C0001_cam0 (550 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:32:49 DECISION deleted cDNG_3to1_26-11-21_11263658_C0001_cam0: 550 frames in 2.3 s (warm, budget 0 s)
+2026-11-21 13:32:49 fill gate: deleting cDNG_26-11-21_11305703_C0007_cam0 (1679 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:32:52 DECISION deleted cDNG_26-11-21_11305703_C0007_cam0: 1679 frames in 3.0 s (warm, budget 0 s)
+2026-11-21 13:33:53 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 13:43:56 DECISION cooldown 2: 601 s; NVMe 60.9 -> 45.9 C, Pi 54.0 -> 52.9 C
+2026-11-21 13:45:27 4kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 fps=60.0 -> ab_dropped after 60s dropped=1278 kinds=capture-gap:265 pi=61C nvme=53.85
+2026-11-21 13:45:27 DECISION EST-05fb8f1-a P2-stor-t1l0w0a0a0-r1 4kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1278, first drop 1.0, gap 0, boundary 0)
+2026-11-21 13:45:27 fill gate: deleting cDNG_26-11-21_11325127_C0008_cam0 (1799 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:45:28 DECISION deleted cDNG_26-11-21_11325127_C0008_cam0: 1799 frames in 0.6 s (warm, budget 0 s)
+2026-11-21 13:45:28 fill gate: deleting cDNG_26-11-21_11344611_C0009_cam0 (1580 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:45:30 DECISION deleted cDNG_26-11-21_11344611_C0009_cam0: 1580 frames in 2.2 s (warm, budget 0 s)
+2026-11-21 13:46:31 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 13:48:08 4kSDR12_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 fps=60.0 -> ab_dropped after 60s dropped=1221 kinds=capture-gap:275 pi=58C nvme=60.85
+2026-11-21 13:48:08 DECISION EST-05fb8f1-a P2-stor-t1l0w1a0a1-r1 4kSDR12_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1221, first drop 1.0, gap 0, boundary 0)
+2026-11-21 13:48:08 fill gate: deleting cDNG_26-11-21_11362203_C0010_cam0 (1319 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:48:09 DECISION deleted cDNG_26-11-21_11362203_C0010_cam0: 1319 frames in 0.3 s (warm, budget 0 s)
+2026-11-21 13:48:52 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 fps=60.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=57C nvme=57.85
+2026-11-21 13:48:52 DECISION EST-05fb8f1-a P2-stor-t0l0w1a0a0-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 at 60 fps, 60 s: buffer_full (9.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:50:27 4kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1319 kinds=capture-gap:479 pi=59C nvme=64.85
+2026-11-21 13:50:27 DECISION EST-05fb8f1-a P2-stor-t1l0w0a1a1-r1 4kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1319, first drop 0.7, gap 0, boundary 0)
+2026-11-21 13:50:27 fill gate: deleting cDNG_26-11-21_11381647_C0011_cam0 (559 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:50:27 DECISION deleted cDNG_26-11-21_11381647_C0011_cam0: 559 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 13:50:27 fill gate: deleting cDNG_26-11-21_11390806_C0012_cam0 (1533 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:50:30 DECISION deleted cDNG_26-11-21_11390806_C0012_cam0: 1533 frames in 2.8 s (warm, budget 0 s)
+2026-11-21 13:51:30 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 13:52:14 4kSDR12_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 fps=60.0 -> buffer_full after 7s dropped=29 kinds=capture-gap:7 buffer_full:1 pi=57C nvme=53.85
+2026-11-21 13:52:15 DECISION EST-05fb8f1-a P2-stor-t0l1w1a1a0-r1 4kSDR12_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 at 60 fps, 60 s: buffer_full (7.0 s, dropped 29, first drop 1.7, gap 0, boundary 0)
+2026-11-21 13:52:59 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=58C nvme=56.85
+2026-11-21 13:52:59 DECISION EST-05fb8f1-a P2-stor-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (9.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:52:59 fill gate: deleting cDNG_26-11-21_11435311_C0013_cam0 (1590 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:53:00 DECISION deleted cDNG_26-11-21_11435311_C0013_cam0: 1590 frames in 0.5 s (warm, budget 0 s)
+2026-11-21 13:53:40 4kSDR12_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 fps=60.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=59C nvme=61.85
+2026-11-21 13:53:40 DECISION EST-05fb8f1-a P2-stor-t0l0w0a0a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 at 60 fps, 60 s: buffer_full (8.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:54:19 4kSDR12_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=60.0 -> buffer_full after 7s dropped=0 kinds=buffer_full:1 pi=57C nvme=62.85
+2026-11-21 13:54:19 DECISION EST-05fb8f1-a P2-stor-t0l1w0a0a0-r1 4kSDR12_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 60 fps, 60 s: buffer_full (7.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 13:55:54 4kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 fps=60.0 -> ab_dropped after 60s dropped=1410 kinds=capture-gap:472 pi=59C nvme=65.85
+2026-11-21 13:55:54 DECISION EST-05fb8f1-a P2-stor-t1l1w1a0a0-r1 4kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1410, first drop 1.0, gap 0, boundary 0)
+2026-11-21 13:55:54 fill gate: deleting cDNG_26-11-21_11453235_C0014_cam0 (444 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:55:54 DECISION deleted cDNG_26-11-21_11453235_C0014_cam0: 444 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 13:55:54 fill gate: deleting cDNG_26-11-21_11463717_C0015_cam0 (3601 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:55:59 DECISION deleted cDNG_26-11-21_11463717_C0015_cam0: 3601 frames in 4.5 s (warm, budget 0 s)
+2026-11-21 13:56:59 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 13:58:38 4kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1370 kinds=capture-gap:478 pi=60C nvme=66.85
+2026-11-21 13:58:38 DECISION EST-05fb8f1-a P2-stor-t1l1w1a1a1-r1 4kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1370, first drop 0.7, gap 0, boundary 0)
+2026-11-21 13:58:38 fill gate: deleting cDNG_26-11-21_11501018_C0016_cam0 (1156 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:58:38 DECISION deleted cDNG_26-11-21_11501018_C0016_cam0: 1156 frames in 0.3 s (warm, budget 0 s)
+2026-11-21 13:58:38 fill gate: deleting cDNG_26-11-21_11512741_C0017_cam0 (3600 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:58:43 DECISION deleted cDNG_26-11-21_11512741_C0017_cam0: 3600 frames in 4.5 s (warm, budget 0 s)
+2026-11-21 13:58:43 fill gate: deleting cDNG_26-11-21_11532201_C0018_cam0 (685 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:58:46 DECISION deleted cDNG_26-11-21_11532201_C0018_cam0: 685 frames in 3.3 s (warm, budget 0 s)
+2026-11-21 13:58:46 fill gate: deleting cDNG_3to1_26-11-21_11543336_C0002_cam0 (3601 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 13:58:51 DECISION deleted cDNG_3to1_26-11-21_11543336_C0002_cam0: 3601 frames in 4.4 s (warm, budget 0 s)
+2026-11-21 13:59:51 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:00:34 4kSDR12_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 9s dropped=2 kinds=capture-gap:1 buffer_full:1 pi=59C nvme=57.85
+2026-11-21 14:00:34 DECISION EST-05fb8f1-a P2-stor-t0l1w0a1a1-r1 4kSDR12_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (9.0 s, dropped 2, first drop 5.7, gap 0, boundary 0)
+2026-11-21 14:00:34 fill gate: deleting cDNG_5to1_26-11-21_11562405_C0001_cam0 (3601 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:00:37 DECISION deleted cDNG_5to1_26-11-21_11562405_C0001_cam0: 3601 frames in 2.4 s (warm, budget 0 s)
+2026-11-21 14:00:37 fill gate: deleting cDNG_26-11-21_11580615_C0019_cam0 (1800 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:00:39 DECISION deleted cDNG_26-11-21_11580615_C0019_cam0: 1800 frames in 2.0 s (warm, budget 0 s)
+2026-11-21 14:01:39 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:02:24 4kSDR12_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 fps=60.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=58C nvme=57.85
+2026-11-21 14:02:24 DECISION EST-05fb8f1-a P2-stor-t0l1w1a0a1-r1 4kSDR12_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 at 60 fps, 60 s: buffer_full (9.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:03:57 4kSDR12_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 fps=60.0 -> ab_dropped after 60s dropped=1415 kinds=capture-gap:514 pi=58C nvme=66.85
+2026-11-21 14:03:57 DECISION EST-05fb8f1-a P2-stor-t1l1w0a1a0-r1 4kSDR12_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 1415, first drop 0.8, gap 0, boundary 0)
+2026-11-21 14:03:58 fill gate: deleting cDNG_26-11-21_11595624_C0020_cam0 (1800 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:03:58 DECISION deleted cDNG_26-11-21_11595624_C0020_cam0: 1800 frames in 0.6 s (warm, budget 0 s)
+2026-11-21 14:03:58 fill gate: deleting cDNG_26-11-21_12015107_C0021_cam0 (1673 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:04:01 DECISION deleted cDNG_26-11-21_12015107_C0021_cam0: 1673 frames in 2.5 s (warm, budget 0 s)
+2026-11-21 14:04:01 fill gate: deleting cDNG_26-11-21_12054902_C0022_cam0 (1745 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:04:01 DECISION deleted cDNG_26-11-21_12054902_C0022_cam0: 1745 frames in 0.7 s (warm, budget 0 s)
+2026-11-21 14:05:02 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:05:45 4kSDR12_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 fps=60.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=58C nvme=60.85
+2026-11-21 14:05:45 DECISION EST-05fb8f1-a P2-stor-t0l0w0a1a0-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 at 60 fps, 60 s: buffer_full (8.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:07:21 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=28.0 -> ab_dropped after 60s dropped=6 kinds=capture-gap:1 pi=57C nvme=67.85
+2026-11-21 14:07:21 DECISION EST-05fb8f1-a P2-be2-t0l1w0a0a0-r2 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 6, first drop 34.1, gap 0, boundary 0)
+2026-11-21 14:08:55 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=18 kinds=capture-gap:3 pi=59C nvme=67.85
+2026-11-21 14:08:55 DECISION EST-05fb8f1-a P2-be2-t0l1w0a1a1-r2 4kHDR16_unc_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 18, first drop 29.9, gap 0, boundary 0)
+2026-11-21 14:08:55 fill gate: deleting cDNG_26-11-21_12074004_C0023_cam0 (1553 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:08:56 DECISION deleted cDNG_26-11-21_12074004_C0023_cam0: 1553 frames in 0.6 s (warm, budget 0 s)
+2026-11-21 14:08:56 fill gate: deleting MLV_26-11-21_12105804_C0001_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:08:56 DECISION deleted MLV_26-11-21_12105804_C0001_cam0: 0 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 14:10:32 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=12 kinds=capture-gap:1 pi=57C nvme=68.85
+2026-11-21 14:10:32 DECISION EST-05fb8f1-a P2-be2-t0l0w1a1a1-r2 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 12, first drop 30.8, gap 0, boundary 0)
+2026-11-21 14:10:32 fill gate: deleting cDNG_26-11-21_12150821_C0024_cam0 (1799 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:33 DECISION deleted cDNG_26-11-21_12150821_C0024_cam0: 1799 frames in 0.7 s (warm, budget 0 s)
+2026-11-21 14:10:33 fill gate: deleting MLV_26-11-21_12223025_C0002_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:33 DECISION deleted MLV_26-11-21_12223025_C0002_cam0: 0 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 14:10:33 fill gate: deleting cDNG_26-11-21_12341326_C0025_cam0 (126 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:35 DECISION deleted cDNG_26-11-21_12341326_C0025_cam0: 126 frames in 1.3 s (warm, budget 0 s)
+2026-11-21 14:10:35 fill gate: deleting MLV_26-11-21_12370131_C0003_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:35 DECISION deleted MLV_26-11-21_12370131_C0003_cam0: 0 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 14:10:35 fill gate: deleting MLV_26-11-21_12380403_C0004_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:35 DECISION deleted MLV_26-11-21_12380403_C0004_cam0: 0 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 14:10:35 fill gate: deleting cDNG_26-11-21_12403158_C0026_cam0 (3601 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:37 DECISION deleted cDNG_26-11-21_12403158_C0026_cam0: 3601 frames in 2.6 s (warm, budget 0 s)
+2026-11-21 14:10:37 fill gate: deleting cDNG_26-11-21_12422610_C0027_cam0 (1799 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:10:38 DECISION deleted cDNG_26-11-21_12422610_C0027_cam0: 1799 frames in 0.7 s (warm, budget 0 s)
+2026-11-21 14:11:39 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:13:12 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 fps=28.0 -> ab_dropped after 60s dropped=291 kinds=capture-gap:10 pi=58C nvme=65.85
+2026-11-21 14:13:12 DECISION EST-05fb8f1-a P2-be2-t1l0w0a0a0-r2 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 291, first drop 1.9, gap 0, boundary 0)
+2026-11-21 14:13:12 fill gate: deleting MLV_26-11-21_12454845_C0005_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:13:12 DECISION deleted MLV_26-11-21_12454845_C0005_cam0: 0 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 14:13:12 fill gate: deleting MLV_26-11-21_12470128_C0006_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:13:14 DECISION deleted MLV_26-11-21_12470128_C0006_cam0: 0 frames in 1.4 s (warm, budget 0 s)
+2026-11-21 14:13:14 fill gate: deleting MLV_26-11-21_12482407_C0007_cam0 (0 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 14:13:15 DECISION deleted MLV_26-11-21_12482407_C0007_cam0: 0 frames in 1.5 s (warm, budget 0 s)
+2026-11-21 14:14:16 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:15:50 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=321 kinds=capture-gap:11 pi=60C nvme=64.85
+2026-11-21 14:15:50 DECISION EST-05fb8f1-a P2-be2-t1l1w0a1a0-r2 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 321, first drop 1.7, gap 0, boundary 0)
+2026-11-21 14:15:50 fill gate: deleting cDNG_26-11-21_12500916_C0028_cam0 (462 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:15:50 DECISION deleted cDNG_26-11-21_12500916_C0028_cam0: 462 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 14:15:50 fill gate: deleting cDNG_3to1_26-11-21_12505808_C0003_cam0 (359 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:15:52 DECISION deleted cDNG_3to1_26-11-21_12505808_C0003_cam0: 359 frames in 1.8 s (warm, budget 0 s)
+2026-11-21 14:15:52 fill gate: deleting cDNG_26-11-21_12514903_C0029_cam0 (1498 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:15:52 DECISION deleted cDNG_26-11-21_12514903_C0029_cam0: 1498 frames in 0.5 s (warm, budget 0 s)
+2026-11-21 14:16:53 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:18:30 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 fps=28.0 -> ab_dropped after 60s dropped=245 kinds=capture-gap:9 pi=57C nvme=65.85
+2026-11-21 14:18:30 DECISION EST-05fb8f1-a P2-be2-t1l0w1a0a1-r2 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 245, first drop 1.9, gap 0, boundary 0)
+2026-11-21 14:20:05 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=282 kinds=capture-gap:12 pi=58C nvme=65.85
+2026-11-21 14:20:05 DECISION EST-05fb8f1-a P2-be2-t1l1w1a1a1-r2 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 282, first drop 1.7, gap 0, boundary 0)
+2026-11-21 14:20:05 fill gate: deleting cDNG_26-11-21_12532412_C0030_cam0 (1282 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:20:06 DECISION deleted cDNG_26-11-21_12532412_C0030_cam0: 1282 frames in 0.4 s (warm, budget 0 s)
+2026-11-21 14:20:06 fill gate: deleting cDNG_26-11-21_12545614_C0031_cam0 (1681 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:20:08 DECISION deleted cDNG_26-11-21_12545614_C0031_cam0: 1681 frames in 2.4 s (warm, budget 0 s)
+2026-11-21 14:21:09 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:22:46 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=350 kinds=capture-gap:14 pi=58C nvme=63.85
+2026-11-21 14:22:46 DECISION EST-05fb8f1-a P2-be2-t1l0w1a1a0-r2 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 350, first drop 1.7, gap 0, boundary 0)
+2026-11-21 14:24:19 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 fps=28.0 -> ab_dropped after 60s dropped=203 kinds=capture-gap:9 pi=59C nvme=66.85
+2026-11-21 14:24:19 DECISION EST-05fb8f1-a P2-be2-t1l1w0a0a1-r2 4kHDR16_unc_log0_tdn1_lock1_trim1_web0_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 203, first drop 1.9, gap 0, boundary 0)
+2026-11-21 14:24:19 fill gate: deleting cDNG_26-11-21_12563123_C0032_cam0 (1327 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:24:19 DECISION deleted cDNG_26-11-21_12563123_C0032_cam0: 1327 frames in 0.4 s (warm, budget 0 s)
+2026-11-21 14:25:51 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=68.85
+2026-11-21 14:25:51 DECISION EST-05fb8f1-a P2-be2-t0l0w0a0a1-r2 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:25:51 fill gate: deleting cDNG_26-11-21_12580710_C0033_cam0 (1679 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:25:52 DECISION deleted cDNG_26-11-21_12580710_C0033_cam0: 1679 frames in 0.6 s (warm, budget 0 s)
+2026-11-21 14:27:27 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=67 kinds=capture-gap:10 pi=60C nvme=70.85
+2026-11-21 14:27:27 DECISION EST-05fb8f1-a P2-be2-t0l1w1a1a0-r2 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 67, first drop 4.8, gap 0, boundary 0)
+2026-11-21 14:27:27 fill gate: deleting cDNG_26-11-21_12593918_C0034_cam0 (1375 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:27:28 DECISION deleted cDNG_26-11-21_12593918_C0034_cam0: 1375 frames in 0.4 s (warm, budget 0 s)
+2026-11-21 14:27:28 fill gate: deleting cDNG_26-11-21_13011126_C0035_cam0 (1676 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:27:30 DECISION deleted cDNG_26-11-21_13011126_C0035_cam0: 1676 frames in 2.1 s (warm, budget 0 s)
+2026-11-21 14:28:31 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:30:08 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 fps=28.0 -> ab_dropped after 60s dropped=6 kinds=capture-gap:3 pi=57C nvme=68.85
+2026-11-21 14:30:08 DECISION EST-05fb8f1-a P2-be2-t0l1w1a0a1-r2 4kHDR16_unc_log0_tdn0_lock1_trim1_web1_fpf5000_aud0_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 6, first drop 45.1, gap 0, boundary 0)
+2026-11-21 14:30:09 fill gate: deleting cDNG_26-11-21_13024808_C0036_cam0 (1677 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:30:09 DECISION deleted cDNG_26-11-21_13024808_C0036_cam0: 1677 frames in 0.7 s (warm, budget 0 s)
+2026-11-21 14:31:41 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 fps=28.0 -> ab_dropped after 60s dropped=2 kinds=capture-gap:1 pi=60C nvme=70.85
+2026-11-21 14:31:42 DECISION EST-05fb8f1-a P2-be2-t0l0w0a1a0-r2 4kHDR16_unc_log0_tdn0_lock0_trim1_web0_fpf5000_aud1_aids0 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 2, first drop 51.7, gap 0, boundary 0)
+2026-11-21 14:31:42 fill gate: deleting cDNG_26-11-21_13042123_C0037_cam0 (1437 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:31:42 DECISION deleted cDNG_26-11-21_13042123_C0037_cam0: 1437 frames in 0.5 s (warm, budget 0 s)
+2026-11-21 14:33:17 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 fps=28.0 -> ab_dropped after 60s dropped=459 kinds=capture-gap:24 pi=58C nvme=67.85
+2026-11-21 14:33:17 DECISION EST-05fb8f1-a P2-be2-t1l1w1a0a0-r2 4kHDR16_unc_log0_tdn1_lock1_trim1_web1_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_dropped (60.0 s, dropped 459, first drop 1.9, gap 0, boundary 0)
+2026-11-21 14:34:52 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 fps=28.0 -> ab_clean after 60s dropped=0 kinds= pi=58C nvme=71.85
+2026-11-21 14:34:52 DECISION EST-05fb8f1-a P2-be2-t0l0w1a0a0-r2 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud0_aids0 at 28 fps, 60 s: ab_clean (60.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:34:52 fill gate: deleting cDNG_26-11-21_13055325_C0038_cam0 (1366 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:34:53 DECISION deleted cDNG_26-11-21_13055325_C0038_cam0: 1366 frames in 0.4 s (warm, budget 0 s)
+2026-11-21 14:34:53 fill gate: deleting cDNG_26-11-21_13072611_C0039_cam0 (1680 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:34:55 DECISION deleted cDNG_26-11-21_13072611_C0039_cam0: 1680 frames in 2.1 s (warm, budget 0 s)
+2026-11-21 14:35:55 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:37:30 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 fps=28.0 -> ab_dropped after 60s dropped=268 kinds=capture-gap:13 pi=58C nvme=67.85
+2026-11-21 14:37:30 DECISION EST-05fb8f1-a P2-be2-t1l0w0a1a1-r2 4kHDR16_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud1_aids1 at 28 fps, 60 s: ab_dropped (60.1 s, dropped 268, first drop 1.7, gap 0, boundary 0)
+2026-11-21 14:37:30 DECISION EST block P1b starts
+2026-11-21 14:39:05 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=247 kinds=capture-gap:18 pi=58C nvme=65.85
+2026-11-21 14:39:06 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 247, first drop 1.7, gap 0, boundary 0)
+2026-11-21 14:39:06 fill gate: deleting cDNG_26-11-21_13085902_C0040_cam0 (1679 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:39:06 DECISION deleted cDNG_26-11-21_13085902_C0040_cam0: 1679 frames in 0.7 s (warm, budget 0 s)
+2026-11-21 14:39:06 fill gate: deleting cDNG_26-11-21_13103426_C0041_cam0 (1646 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 14:39:07 DECISION deleted cDNG_26-11-21_13103426_C0041_cam0: 1646 frames in 0.7 s (warm, budget 0 s)
+2026-11-21 14:40:08 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 14:40:59 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=3 kinds=capture-gap:1 buffer_full:1 pi=60C nvme=56.85
+2026-11-21 14:40:59 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (10.5 s, dropped 3, first drop 6.7, gap 0, boundary 0)
+2026-11-21 14:41:46 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=59C nvme=53.85
+2026-11-21 14:41:46 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (8.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:43:15 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=906 kinds=capture-gap:39 pi=63C nvme=49.85
+2026-11-21 14:43:16 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-lt_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 906, first drop 0.7, gap 0, boundary )
+2026-11-21 14:44:09 4kSDR10_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=62C nvme=51.85
+2026-11-21 14:44:09 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR10_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (11.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:54:10 DECISION cooldown 3: 601 s; NVMe 48.9 -> 42.9 C, Pi 55.6 -> 53.5 C
+2026-11-21 14:54:50 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=58C nvme=43.85
+2026-11-21 14:54:50 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: buffer_full (10.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:56:14 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 fps=60.0 -> ab_clean after 60s dropped=0 kinds= pi=60C nvme=40.85
+2026-11-21 14:56:14 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-1920x1080_aud1_aids1 at 60 fps, 60 s: ab_clean (60.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 14:57:12 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> buffer_full after 16s dropped=0 kinds= pi=57C nvme=41.85
+2026-11-21 14:57:12 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: buffer_full (15.5 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 14:58:00 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=61C nvme=40.85
+2026-11-21 14:58:00 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: buffer_full (10.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 14:59:24 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-422_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1109 kinds=capture-gap:55 pi=64C nvme=40.85
+2026-11-21 14:59:24 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-422_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1109, first drop 0.7, gap 0, boundary )
+2026-11-21 15:00:44 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=752 kinds=capture-gap:26 pi=63C nvme=44.85
+2026-11-21 15:00:44 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-proxy_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 752, first drop 0.8, gap 0, boundary )
+2026-11-21 15:02:30 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=65 kinds=capture-gap:7 pi=59C nvme=49.85
+2026-11-21 15:02:30 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 65, first drop 4.8, gap 0, boundary 0)
+2026-11-21 15:02:30 fill gate: deleting cDNG_26-11-21_13120820_C0042_cam0 (1367 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:02:31 DECISION deleted cDNG_26-11-21_13120820_C0042_cam0: 1367 frames in 0.4 s (warm, budget 0 s)
+2026-11-21 15:03:55 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1908 kinds=capture-gap:126 prores-queue-full:690 pi=63C nvme=45.85
+2026-11-21 15:03:55 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1908, first drop 0.7, gap 0, boundary )
+2026-11-21 15:05:34 4kHDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=268 kinds=capture-gap:23 pi=61C nvme=52.85
+2026-11-21 15:05:34 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 268, first drop 1.7, gap 0, boundary 0)
+2026-11-21 15:05:34 fill gate: deleting cDNG_26-11-21_13134400_C0043_cam0 (1678 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:05:35 DECISION deleted cDNG_26-11-21_13134400_C0043_cam0: 1678 frames in 0.6 s (warm, budget 0 s)
+2026-11-21 15:07:10 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=526 kinds=capture-gap:181 pi=61C nvme=55.85
+2026-11-21 15:07:10 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.0 s, dropped 526, first drop 1.7, gap 0, boundary 0)
+2026-11-21 15:08:08 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=30.0 -> buffer_full after 16s dropped=15 kinds=capture-gap:1 buffer_full:1 pi=58C nvme=54.85
+2026-11-21 15:08:08 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 30 fps, 60 s: buffer_full (15.5 s, dropped 15, first drop 6.7, gap 0, boundary )
+2026-11-21 15:09:01 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=0 kinds=buffer_full:1 pi=61C nvme=50.85
+2026-11-21 15:09:01 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (10.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:09:01 fill gate: deleting cDNG_26-11-21_13151910_C0044_cam0 (1391 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:09:02 DECISION deleted cDNG_26-11-21_13151910_C0044_cam0: 1391 frames in 0.4 s (warm, budget 0 s)
+2026-11-21 15:10:28 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=1055 kinds=capture-gap:57 prores-queue-full:90 pi=68C nvme=48.85
+2026-11-21 15:10:28 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.0 s, dropped 1055, first drop 0.7, gap 0, boundary )
+2026-11-21 15:11:17 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 11s dropped=4 kinds=capture-gap:1 buffer_full:1 pi=60C nvme=54.85
+2026-11-21 15:11:17 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (10.5 s, dropped 4, first drop 6.7, gap 0, boundary 0)
+2026-11-21 15:12:04 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=60.0 -> buffer_full after 10s dropped=0 kinds=buffer_full:1 pi=59C nvme=47.85
+2026-11-21 15:12:04 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR10_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 60 fps, 60 s: buffer_full (9.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:12:04 fill gate: deleting cDNG_26-11-21_13165203_C0045_cam0 (296 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:12:04 DECISION deleted cDNG_26-11-21_13165203_C0045_cam0: 296 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:12:04 fill gate: deleting cDNG_26-11-21_13174218_C0046_cam0 (270 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:12:04 DECISION deleted cDNG_26-11-21_13174218_C0046_cam0: 270 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:13:29 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 fps=60.0 -> ab_dropped after 60s dropped=746 kinds=capture-gap:29 pi=57C nvme=49.85
+2026-11-21 15:13:29 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 at 60 fps, 60 s: ab_dropped (60.1 s, dropped 746, first drop 0.7, gap 0, boundary )
+2026-11-21 15:13:29 fill gate: deleting cDNG_26-11-21_13183422_C0047_cam0 (294 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:13:29 DECISION deleted cDNG_26-11-21_13183422_C0047_cam0: 294 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:13:29 fill gate: deleting cDNG_26-11-21_13192416_C0048_cam0 (150 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:13:30 DECISION deleted cDNG_26-11-21_13192416_C0048_cam0: 150 frames in 1.1 s (warm, budget 0 s)
+2026-11-21 15:13:30 fill gate: deleting cDNG_26-11-21_13200923_C0049_cam0 (152 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:13:32 DECISION deleted cDNG_26-11-21_13200923_C0049_cam0: 152 frames in 1.1 s (warm, budget 0 s)
+2026-11-21 15:14:32 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:15:25 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=60.0 -> buffer_full after 9s dropped=0 kinds=buffer_full:1 pi=57C nvme=46.85
+2026-11-21 15:15:25 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 60 fps, 60 s: buffer_full (9.0 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 15:15:25 fill gate: deleting cDNG_26-11-21_13205506_C0050_cam0 (267 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:15:25 DECISION deleted cDNG_26-11-21_13205506_C0050_cam0: 267 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:16:03 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0 -> buffer_full after 8s dropped=0 kinds=buffer_full:1 pi=60C nvme=49.85
+2026-11-21 15:16:03 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 60 s: buffer_full (8.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:17:46 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> ab_dropped after 60s dropped=229 kinds=capture-gap:20 pi=59C nvme=58.85
+2026-11-21 15:17:46 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: ab_dropped (60.1 s, dropped 229, first drop 1.7, gap 0, boundary 0)
+2026-11-21 15:17:46 fill gate: deleting cDNG_26-11-21_13214414_C0051_cam0 (152 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:17:46 DECISION deleted cDNG_26-11-21_13214414_C0051_cam0: 152 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:17:46 fill gate: deleting cDNG_26-11-21_13222902_C0052_cam0 (159 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:17:48 DECISION deleted cDNG_26-11-21_13222902_C0052_cam0: 159 frames in 1.4 s (warm, budget 0 s)
+2026-11-21 15:17:48 fill gate: deleting cDNG_26-11-21_13231101_C0053_cam0 (160 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:17:49 DECISION deleted cDNG_26-11-21_13231101_C0053_cam0: 160 frames in 1.4 s (warm, budget 0 s)
+2026-11-21 15:18:50 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:19:57 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 fps=30.0 -> buffer_full after 22s dropped=24 kinds=capture-gap:5 buffer_full:1 pi=58C nvme=55.85
+2026-11-21 15:19:57 DECISION EST-05fb8f1-a P1-cap-t0l0w1a1a1-r2 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_mlv_aud1_aids1 at 30 fps, 60 s: buffer_full (22.0 s, dropped 24, first drop 3.7, gap 0, boundary )
+2026-11-21 15:19:57 DECISION EST block P3 starts
+2026-11-21 15:23:40 2kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 fps=60.0 -> pass_3min after 180s dropped=0 kinds= pi=55C nvme=59.85
+2026-11-21 15:23:40 DECISION EST-05fb8f1-a P3-0-p-t1l0w0a0a0 2kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 at 60 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:23:40 fill gate: deleting cDNG_26-11-21_13235600_C0054_cam0 (266 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:40 DECISION deleted cDNG_26-11-21_13235600_C0054_cam0: 266 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:23:40 fill gate: deleting cDNG_26-11-21_13244415_C0055_cam0 (153 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:42 DECISION deleted cDNG_26-11-21_13244415_C0055_cam0: 153 frames in 1.4 s (warm, budget 0 s)
+2026-11-21 15:23:42 fill gate: deleting cDNG_26-11-21_13252901_C0056_cam0 (145 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:43 DECISION deleted cDNG_26-11-21_13252901_C0056_cam0: 145 frames in 1.5 s (warm, budget 0 s)
+2026-11-21 15:23:43 fill gate: deleting cDNG_26-11-21_13261001_C0057_cam0 (382 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:46 DECISION deleted cDNG_26-11-21_13261001_C0057_cam0: 382 frames in 2.8 s (warm, budget 0 s)
+2026-11-21 15:23:46 fill gate: deleting cDNG_26-11-21_13270723_C0058_cam0 (125 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:46 DECISION deleted cDNG_26-11-21_13270723_C0058_cam0: 125 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:23:46 fill gate: deleting cDNG_26-11-21_13275106_C0059_cam0 (377 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:46 DECISION deleted cDNG_26-11-21_13275106_C0059_cam0: 377 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 15:23:46 fill gate: deleting cDNG_26-11-21_13284712_C0060_cam0 (365 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:46 DECISION deleted cDNG_26-11-21_13284712_C0060_cam0: 365 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 15:23:46 fill gate: deleting cDNG_26-11-21_13294608_C0061_cam0 (2348 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:47 DECISION deleted cDNG_26-11-21_13294608_C0061_cam0: 2348 frames in 1.0 s (warm, budget 0 s)
+2026-11-21 15:23:47 fill gate: deleting cDNG_26-11-21_13312431_C0001_cam0 (2175 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:23:48 DECISION deleted cDNG_26-11-21_13312431_C0001_cam0: 2175 frames in 0.9 s (warm, budget 0 s)
+2026-11-21 15:24:49 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:30:24 2kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 fps=60.0 -> pass_5min after 300s dropped=0 kinds= pi=55C nvme=63.85
+2026-11-21 15:30:24 DECISION EST-05fb8f1-a P3-0-p-5min-t1l0w0a0a0 2kSDR12_unc_log0_tdn1_lock0_trim1_web0_fpf5000_aud0_aids0 at 60 fps, 300 s: pass_5min (300.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:30:24 DECISION EST P3 0 2kSDR12:cdng:unc t1l0w0a0a0: estimate 60 (sensor): p=clean p-5min=clean
+2026-11-21 15:30:24 fill gate: deleting cDNG_26-11-21_13441637_C0002_cam0 (2316 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:30:25 DECISION deleted cDNG_26-11-21_13441637_C0002_cam0: 2316 frames in 1.0 s (warm, budget 0 s)
+2026-11-21 15:30:25 fill gate: deleting cDNG_26-11-21_13465648_C0004_cam0 (2372 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:30:28 DECISION deleted cDNG_26-11-21_13465648_C0004_cam0: 2372 frames in 2.3 s (warm, budget 0 s)
+2026-11-21 15:31:28 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:35:07 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=44.0 -> pass_3min after 180s dropped=0 kinds= pi=62C nvme=62.85
+2026-11-21 15:35:07 DECISION EST-05fb8f1-a P3-1-p-t0l1w0a0a0 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 44 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:35:07 fill gate: deleting cDNG_26-11-21_13483243_C0005_cam0 (354 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:35:07 DECISION deleted cDNG_26-11-21_13483243_C0005_cam0: 354 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 15:35:07 fill gate: deleting cDNG_26-11-21_13491349_C0006_cam0 (2270 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:35:10 DECISION deleted cDNG_26-11-21_13491349_C0006_cam0: 2270 frames in 2.4 s (warm, budget 0 s)
+2026-11-21 15:36:10 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:37:04 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=45.0 -> buffer_full after 19s dropped=0 kinds=buffer_full:1 pi=58C nvme=63.85
+2026-11-21 15:37:04 DECISION EST-05fb8f1-a P3-1-p+1-t0l1w0a0a0 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 45 fps, 180 s: buffer_full (19.0 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:37:04 fill gate: deleting cDNG_26-11-21_13515641_C0007_cam0 (255 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:37:04 DECISION deleted cDNG_26-11-21_13515641_C0007_cam0: 255 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:37:04 fill gate: deleting cDNG_26-11-21_13523857_C0008_cam0 (373 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:37:05 DECISION deleted cDNG_26-11-21_13523857_C0008_cam0: 373 frames in 1.4 s (warm, budget 0 s)
+2026-11-21 15:37:05 fill gate: deleting cDNG_26-11-21_13532038_C0009_cam0 (327 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:37:08 DECISION deleted cDNG_26-11-21_13532038_C0009_cam0: 327 frames in 2.8 s (warm, budget 0 s)
+2026-11-21 15:37:08 fill gate: deleting cDNG_26-11-21_13540059_C0010_cam0 (280 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:37:08 DECISION deleted cDNG_26-11-21_13540059_C0010_cam0: 280 frames in 0.0 s (warm, budget 0 s)
+2026-11-21 15:37:08 fill gate: deleting cDNG_26-11-21_13544250_C0011_cam0 (2182 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:37:09 DECISION deleted cDNG_26-11-21_13544250_C0011_cam0: 2182 frames in 1.0 s (warm, budget 0 s)
+2026-11-21 15:38:10 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:43:43 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 fps=44.0 -> pass_5min after 300s dropped=0 kinds= pi=64C nvme=64.85
+2026-11-21 15:43:44 DECISION EST-05fb8f1-a P3-1-p-5min-t0l1w0a0a0 4kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud0_aids0 at 44 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:43:44 DECISION EST P3 1 4kSDR12:cdng:lj t0l1w0a0a0: estimate 44 (encoder): p=clean p+1=drop p-5min=clean
+2026-11-21 15:43:44 fill gate: deleting cDNG_26-11-21_13572529_C0012_cam0 (2222 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:43:45 DECISION deleted cDNG_26-11-21_13572529_C0012_cam0: 2222 frames in 1.0 s (warm, budget 0 s)
+2026-11-21 15:44:45 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:45:20 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud0_aids1 fps=28.0 -> drop after 2s dropped=4 kinds=capture-gap:1 pi=59C nvme=58.85
+2026-11-21 15:45:20 DECISION EST-05fb8f1-a P3-2-p-t0l0w1a0a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud0_aids1 at 28 fps, 180 s: drop (2.0 s, dropped 4, first drop 1.9, gap 0, boundary 0)
+2026-11-21 15:45:20 fill gate: deleting cDNG_26-11-21_14001430_C0013_cam0 (357 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:45:20 DECISION deleted cDNG_26-11-21_14001430_C0013_cam0: 357 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 15:45:49 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud0_aids1 fps=29.0 -> drop after 2s dropped=8 kinds=capture-gap:1 pi=58C nvme=61.85
+2026-11-21 15:45:49 DECISION EST-05fb8f1-a P3-2-p+1-t0l0w1a0a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud0_aids1 at 29 fps, 180 s: drop (2.0 s, dropped 8, first drop 1.9, gap 0, boundary 0)
+2026-11-21 15:45:49 fill gate: deleting cDNG_26-11-21_14020448_C0014_cam0 (343 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:45:49 DECISION deleted cDNG_26-11-21_14020448_C0014_cam0: 343 frames in 0.1 s (warm, budget 0 s)
+2026-11-21 15:45:49 fill gate: deleting cDNG_26-11-21_14024558_C0015_cam0 (2177 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:45:51 DECISION deleted cDNG_26-11-21_14024558_C0015_cam0: 2177 frames in 2.1 s (warm, budget 0 s)
+2026-11-21 15:45:51 fill gate: deleting cDNG_26-11-21_14052533_C0016_cam0 (317 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 15:45:53 DECISION deleted cDNG_26-11-21_14052533_C0016_cam0: 317 frames in 1.1 s (warm, budget 0 s)
+2026-11-21 15:46:53 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 15:47:23 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud0_aids1 fps=28.0 -> drop after 2s dropped=6 kinds=capture-gap:1 pi=58C nvme=54.85
+2026-11-21 15:47:23 DECISION EST-05fb8f1-a P3-2-p-5min-t0l0w1a0a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud0_aids1 at 28 fps, 300 s: drop (2.0 s, dropped 6, first drop 1.9, gap 0, boundary 0)
+2026-11-21 15:47:23 DECISION EST P3 2 4kHDR16:cdng:lj:log t0l0w1a0a1: estimate 28 (back end): p=drop p+1=drop p-5min=drop
+2026-11-21 15:47:53 2kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0: setup_mismatch (format=cdng) 
+2026-11-21 15:47:53 DECISION EST-05fb8f1-a P3-3-p-t1l1w1a1a1 2kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 180 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 15:53:32 2kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 fps=60.0 -> pass_5min after 300s dropped=0 kinds= pi=58C nvme=44.85
+2026-11-21 15:53:32 DECISION EST-05fb8f1-a P3-3-p-5min-t1l1w1a1a1 2kSDR12_unc_log0_tdn1_lock1_trim1_web1_fpf5000_lossydng-5to1_aud1_aids1 at 60 fps, 300 s: pass_5min (300.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 15:53:32 DECISION EST P3 3 2kSDR12:lossydng:5to1 t1l1w1a1a1: estimate 60 (sensor): p=skip p-5min=clean
+2026-11-21 15:54:05 4kHDR12_unc_log0_tdn1_lock1_trim1_web1_mlv_aud1_aids1 fps=23.0 -> drop after 3s dropped=2 kinds=capture-gap:1 pi=56C nvme=43.85
+2026-11-21 15:54:05 DECISION EST-05fb8f1-a P3-4-p-t1l1w1a1a1 4kHDR12_unc_log0_tdn1_lock1_trim1_web1_mlv_aud1_aids1 at 23 fps, 180 s: drop (3.0 s, dropped 2, first drop 2.7, gap 0, boundary )
+2026-11-21 15:54:44 4kHDR12_unc_log0_tdn1_lock1_trim1_web1_mlv_aud1_aids1 fps=24.0 -> drop after 3s dropped=2 kinds=capture-gap:1 pi=57C nvme=45.85
+2026-11-21 15:54:44 DECISION EST-05fb8f1-a P3-4-p+1-t1l1w1a1a1 4kHDR12_unc_log0_tdn1_lock1_trim1_web1_mlv_aud1_aids1 at 24 fps, 180 s: drop (3.0 s, dropped 2, first drop 2.8, gap 0, boundary )
+2026-11-21 15:54:44 DECISION EST P3 4 4kHDR12:mlv t1l1w1a1a1: estimate 23 (back end): p=drop p+1=drop
+2026-11-21 16:04:46 DECISION cooldown 4: 602 s; NVMe 43.9 -> 41.9 C, Pi 54.0 -> 55.6 C
+2026-11-21 16:08:16 2kP_unc_log0_tdn1_lock0_trim1_web1_prores-422_aud0_aids0 fps=60.0 -> pass_3min after 180s dropped=0 kinds= pi=56C nvme=39.85
+2026-11-21 16:08:16 DECISION EST-05fb8f1-a P3-5-p-t1l0w1a0a0 2kP_unc_log0_tdn1_lock0_trim1_web1_prores-422_aud0_aids0 at 60 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 16:08:16 DECISION EST P3 5 2kP:prores:422 t1l0w1a0a0: estimate 60 (sensor): p=clean
+2026-11-21 16:08:16 fill gate: deleting cDNG_26-11-21_14060922_C0017_cam0 (1672 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 16:08:17 DECISION deleted cDNG_26-11-21_14060922_C0017_cam0: 1672 frames in 0.6 s (warm, budget 0 s)
+2026-11-21 16:08:17 fill gate: deleting cDNG_26-11-21_14074219_C0018_cam0 (1661 frames, 1 parts, warm, budget 0 s) through the media route
+2026-11-21 16:08:19 DECISION deleted cDNG_26-11-21_14074219_C0018_cam0: 1661 frames in 1.8 s (warm, budget 0 s)
+2026-11-21 16:09:19 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 16:09:43 4kP_unc_log0_tdn1_lock1_trim1_web0_h264-1920x1080_aud0_aids0 fps=60.0 -> drop after 1s dropped=13 kinds=capture-gap:1 pi=56C nvme=44.85
+2026-11-21 16:09:43 DECISION EST-05fb8f1-a P3-6-p-t1l1w0a0a0 4kP_unc_log0_tdn1_lock1_trim1_web0_h264-1920x1080_aud0_aids0 at 60 fps, 180 s: drop (1.0 s, dropped 13, first drop 0.9, gap 0, boundary )
+2026-11-21 16:09:43 DECISION EST P3 6 4kP:h264:1920x1080 t1l1w0a0a0: estimate 60 (sensor): p=drop
+2026-11-21 16:10:16 4kP_unc_log0_tdn0_lock1_trim1_web1_prores-hq-arri_logc4_aud0_aids0 fps=46.0 -> drop after 2s dropped=7 kinds=capture-gap:1 pi=57C nvme=40.85
+2026-11-21 16:10:17 DECISION EST-05fb8f1-a P3-7-p-t0l1w1a0a0 4kP_unc_log0_tdn0_lock1_trim1_web1_prores-hq-arri_logc4_aud0_aids0 at 46 fps, 180 s: drop (1.5 s, dropped 7, first drop 1.0, gap 0, boundary )
+2026-11-21 16:10:38 4kP_unc_log0_tdn0_lock1_trim1_web1_prores-hq-arri_logc4_aud0_aids0 fps=47.0 -> drop after 2s dropped=7 kinds=capture-gap:1 pi=57C nvme=40.85
+2026-11-21 16:10:38 DECISION EST-05fb8f1-a P3-7-p+1-t0l1w1a0a0 4kP_unc_log0_tdn0_lock1_trim1_web1_prores-hq-arri_logc4_aud0_aids0 at 47 fps, 180 s: drop (1.5 s, dropped 7, first drop 1.0, gap 0, boundary )
+2026-11-21 16:10:38 DECISION EST P3 7 4kP:prores:hq:arri_logc4 t0l1w1a0a0: estimate 46 (encoder): p=drop p+1=drop
+2026-11-21 16:14:21 2kHDR16_lossless_log1_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 fps=23.0 -> pass_3min after 180s dropped=0 kinds= pi=54C nvme=43.85
+2026-11-21 16:14:21 DECISION EST-05fb8f1-a P3-8-p-t1l1w0a1a0 2kHDR16_lossless_log1_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 at 23 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 16:17:53 2kHDR16_lossless_log1_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 fps=24.0 -> pass_3min after 180s dropped=0 kinds= pi=53C nvme=43.85
+2026-11-21 16:17:53 DECISION EST-05fb8f1-a P3-8-p+1-t1l1w0a1a0 2kHDR16_lossless_log1_tdn1_lock1_trim1_web0_fpf5000_aud1_aids0 at 24 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 16:17:53 DECISION EST P3 8 2kHDR16:cdng:lj:log t1l1w0a1a0: estimate 23 (back end): p=clean p+1=clean
+2026-11-21 16:21:30 2kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids0 fps=60.0 -> pass_3min after 180s dropped=0 kinds= pi=56C nvme=48.85
+2026-11-21 16:21:30 DECISION EST-05fb8f1-a P3-9-p-t0l1w0a1a0 2kSDR12_lossless_log0_tdn0_lock1_trim1_web0_fpf5000_aud1_aids0 at 60 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 16:21:30 DECISION EST P3 9 2kSDR12:cdng:lj t0l1w0a1a0: estimate 60 (sensor): p=clean
+2026-11-21 16:25:01 2kP_unc_log0_tdn1_lock1_trim1_web1_prores-proxy_aud0_aids0 fps=60.0 -> pass_3min after 180s dropped=0 kinds= pi=56C nvme=41.85
+2026-11-21 16:25:01 DECISION EST-05fb8f1-a P3-10-p-t1l1w1a0a0 2kP_unc_log0_tdn1_lock1_trim1_web1_prores-proxy_aud0_aids0 at 60 fps, 180 s: pass_3min (180.1 s, dropped 0, first drop , gap 0, boundary )
+2026-11-21 16:25:01 DECISION EST P3 10 2kP:prores:proxy t1l1w1a0a0: estimate 60 (sensor): p=clean
+2026-11-21 16:25:53 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 fps=23.0 -> drop after 5s dropped=1 kinds=capture-gap:1 pi=57C nvme=42.85
+2026-11-21 16:25:53 DECISION EST-05fb8f1-a P3-11-p-t1l0w1a1a1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 at 23 fps, 180 s: drop (5.0 s, dropped 1, first drop 4.8, gap 0, boundary 0)
+2026-11-21 16:26:32 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 fps=24.0 -> drop after 4s dropped=2 kinds=capture-gap:1 pi=57C nvme=41.85
+2026-11-21 16:26:32 DECISION EST-05fb8f1-a P3-11-p+1-t1l0w1a1a1 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1 at 24 fps, 180 s: drop (4.0 s, dropped 2, first drop 3.7, gap 0, boundary 0)
+2026-11-21 16:26:32 DECISION EST P3 11 4kHDR16:cdng:unc t1l0w1a1a1: estimate 23 (back end): p=drop p+1=drop
+2026-11-21 16:26:32 DECISION EST block P4 starts
+2026-11-21 16:26:32 DECISION EST P4: ladder 3840x2160:16:hdr:27:none,3840x2160:12:sdr:40:lossless_jpeg,1920x1080:12:sdr::lossless_jpeg
+2026-11-21 16:26:33 gate: NEEDS A HUMAN: the Mode Ladder is on and the campaign cannot switch modes; turn it off (WebUI, Camera > Mode Ladder)
+2026-11-21 16:26:33 DECISION EST-05fb8f1-a P4-25-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 25 fps, 60 s: needs_human (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 16:26:33 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-21 16:27:27 DECISION RESTORE INCOMPLETE: lossy_dng_ratio=5to1 (want 3to1)
+2026-11-21 16:27:27 night EST-05fb8f1-a over: needs_human: a condition only a human can clear (see the gate lines in runner.log)
+2026-11-21 17:46:34 DECISION RESTORE INCOMPLETE: lossy_dng_ratio=5to1 (want 3to1)
+2026-11-21 17:47:16 write budget 16000 GB, 6817 GB used so far in this run
+2026-11-21 17:47:16 preserving 0 pre-existing clip folder(s); 49 clip folder(s) of this run on the drive
+2026-11-21 17:47:16 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 17:47:19 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 195 GB; Core pid 849; drop-in checked; timers-mask rc=0; smart temp 36 C
+2026-11-21 17:47:19 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 60 fps (measured 60.0), 120 frames, 0.2 GB written and deleted)
+2026-11-21 17:47:19 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-174719-baseline-EST-05fb8f1-a
+2026-11-21 17:47:19 DECISION EST block P4 starts
+2026-11-21 17:47:19 DECISION EST P4: ladder 3840x2160:16:hdr:27:none,3840x2160:12:sdr:40:lossless_jpeg,1920x1080:12:sdr::lossless_jpeg
+2026-11-21 17:47:26 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=25.0: setup_mismatch (log_applied=True) 
+2026-11-21 17:47:26 DECISION EST-05fb8f1-a P4-25-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 25 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 17:47:32 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=26.0: setup_mismatch (log_applied=True) 
+2026-11-21 17:47:32 DECISION EST-05fb8f1-a P4-26-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 26 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 17:47:38 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=27.0: setup_mismatch (log_applied=True) 
+2026-11-21 17:47:38 DECISION EST-05fb8f1-a P4-27-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 27 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 17:47:57 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=28.0 -> stopped_by_signal after 1s dropped=0 kinds= pi=53C nvme=35.85
+2026-11-21 17:47:57 DECISION EST-05fb8f1-a P4-28-rung2 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 28 fps, 60 s: stopped_by_signal (0.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 17:47:57 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-21 17:48:24 DECISION RESTORE OK
+2026-11-21 17:48:24 night EST-05fb8f1-a over: stopped_by_signal: stopped by SIGTERM after 1 s: not a result

@@ -1,0 +1,19 @@
+2026-11-21 17:47:16 write budget 16000 GB, 6817 GB used so far in this run
+2026-11-21 17:47:16 preserving 0 pre-existing clip folder(s); 49 clip folder(s) of this run on the drive
+2026-11-21 17:47:16 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 17:47:19 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 195 GB; Core pid 849; drop-in checked; timers-mask rc=0; smart temp 36 C
+2026-11-21 17:47:19 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 60 fps (measured 60.0), 120 frames, 0.2 GB written and deleted)
+2026-11-21 17:47:19 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-174719-baseline-EST-05fb8f1-a
+2026-11-21 17:47:19 DECISION EST block P4 starts
+2026-11-21 17:47:19 DECISION EST P4: ladder 3840x2160:16:hdr:27:none,3840x2160:12:sdr:40:lossless_jpeg,1920x1080:12:sdr::lossless_jpeg
+2026-11-21 17:47:26 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=25.0: setup_mismatch (log_applied=True) 
+2026-11-21 17:47:26 DECISION EST-05fb8f1-a P4-25-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 25 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 17:47:32 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=26.0: setup_mismatch (log_applied=True) 
+2026-11-21 17:47:32 DECISION EST-05fb8f1-a P4-26-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 26 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 17:47:38 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=27.0: setup_mismatch (log_applied=True) 
+2026-11-21 17:47:38 DECISION EST-05fb8f1-a P4-27-rung1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 27 fps, 60 s: setup_mismatch (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-21 17:47:57 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder fps=28.0 -> stopped_by_signal after 1s dropped=0 kinds= pi=53C nvme=35.85
+2026-11-21 17:47:57 DECISION EST-05fb8f1-a P4-28-rung2 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder at 28 fps, 60 s: stopped_by_signal (0.5 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 17:47:57 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-21 17:48:24 DECISION RESTORE OK
+2026-11-21 17:48:24 night EST-05fb8f1-a over: stopped_by_signal: stopped by SIGTERM after 1 s: not a result

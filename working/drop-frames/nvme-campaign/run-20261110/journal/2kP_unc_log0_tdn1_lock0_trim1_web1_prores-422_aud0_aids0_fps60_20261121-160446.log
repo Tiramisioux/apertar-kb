@@ -1,0 +1,9 @@
+1795273513.164041 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795273513.177707 apertar start-apertar-core.sh[849]: ApertarCore ProRes: direct avio refused (this libavformat's file protocol has no pkt_size option); using buffered writes
+1795273513.177707 apertar start-apertar-core.sh[849]: ApertarCore ProRes: disk arm=buffered APERTAR_PRORES_ODIRECT=1 pkt_size=262144 writeback=off write arm=WRITER THREAD (av_interleaved_write_frame off the encode worker) writer_queue=48pkt/96MiB clip=/media/RAW/ProRes_26-11-21_16051309_C0016_cam0/ProRes_26-11-21_16051309_C0016_cam0.mov
+1795273513.182524 apertar start-apertar-core.sh[849]: ApertarCore ProRes recording clip: /media/RAW/ProRes_26-11-21_16051309_C0016_cam0/ProRes_26-11-21_16051309_C0016_cam0.mov profile=422 source=RGB48 output=yuv422p10le threads=4 queue=4
+1795273513.220993 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=17529151032
+1795273693.253731 apertar start-apertar-core.sh[849]: ApertarCore phase-lock stats: max_abs_err_us=1005 duration_pushes=13204
+1795273693.256327 apertar start-apertar-core.sh[849]: no ICC profile found, will write nclx/nclc colour info instead
+1795273693.256991 apertar start-apertar-core.sh[849]: ApertarCore ProRes recording stats: queued=10802 submitted=10802 dropped_queue_full=0 failures=0 peak_queue=1/4
+1795273693.521466 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 264 ms

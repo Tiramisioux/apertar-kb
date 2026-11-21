@@ -1,0 +1,299 @@
+1795265353.839372 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795265353.849747 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795265353.849747 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795265353.850570 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 952 MiB (MemAvailable 2440 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 7.9 MiB = 120 frames) source=conf
+1795265353.867442 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_13491349_C0006_cam0 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000
+1795265353.912217 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=9369831775
+1795265354.450875 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33328 nominal_us=16666 total_estimate=1
+1795265354.451264 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=24 count=23 skipped=1 dt_us=33328 since_first_us=400001 total=1
+1795265354.476407 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=26 count=25 skipped=1 dt_us=33333 since_first_us=433334 total=2
+1795265354.515548 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=29 count=28 skipped=1 dt_us=33332 since_first_us=483335 total=3
+1795265354.633687 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=35 count=34 skipped=1 dt_us=33336 since_first_us=583336 total=4
+1795265354.652413 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=37 count=36 skipped=1 dt_us=33337 since_first_us=616673 total=5
+1795265355.280240 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=16
+1795265355.992842 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50006 nominal_us=16666 total_estimate=30
+1795265356.177496 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=126 count=125 skipped=1 dt_us=33337 since_first_us=2100006 total=30
+1795265356.785885 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49989 nominal_us=16666 total_estimate=45
+1795265356.952489 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50007 nominal_us=16666 total_estimate=48
+1795265357.324212 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=56
+1795265357.416675 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=58
+1795265357.531912 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=60
+1795265357.797336 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=225 count=224 skipped=1 dt_us=33332 since_first_us=3749999 total=60
+1795265358.167659 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50008 nominal_us=16666 total_estimate=72
+1795265358.262599 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=74
+1795265358.347097 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=76
+1795265358.942493 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50013 nominal_us=16666 total_estimate=85
+1795265359.168692 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33340 nominal_us=16666 total_estimate=90
+1795265359.461372 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=97
+1795265359.645809 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=331 count=330 skipped=1 dt_us=33334 since_first_us=5516671 total=90
+1795265359.690898 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=103
+1795265359.840708 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=109
+1795265359.915483 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=111
+1795265360.118392 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66666 nominal_us=16666 total_estimate=117
+1795265360.287196 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=120
+1795265360.559342 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=127
+1795265360.864060 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=134
+1795265361.203582 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=428 count=427 skipped=1 dt_us=33339 since_first_us=7133340 total=120
+1795265361.376362 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50010 nominal_us=16666 total_estimate=143
+1795265361.536017 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=148
+1795265361.776112 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=150
+1795265362.465315 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=162
+1795265362.875342 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=170
+1795265363.058300 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=537 count=536 skipped=1 dt_us=33336 since_first_us=8950002 total=150
+1795265363.083669 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=175
+1795265363.306625 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33330 nominal_us=16666 total_estimate=180
+1795265363.402794 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=183
+1795265363.484704 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=186
+1795265363.603633 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=189
+1795265363.943114 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=198
+1795265364.096232 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50009 nominal_us=16666 total_estimate=203
+1795265364.357811 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=616 count=615 skipped=1 dt_us=33333 since_first_us=10266673 total=180
+1795265364.423605 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=210
+1795265364.562913 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=215
+1795265364.996004 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=224
+1795265365.180868 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=229
+1795265365.462406 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=234
+1795265365.728762 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=240
+1795265365.809860 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=242
+1795265365.943008 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=712 count=711 skipped=1 dt_us=33330 since_first_us=11866668 total=210
+1795265366.396700 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=255
+1795265366.905588 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=265
+1795265366.999387 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=267
+1795265367.205197 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49995 nominal_us=16666 total_estimate=271
+1795265367.349602 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=273
+1795265367.784269 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=822 count=821 skipped=1 dt_us=33343 since_first_us=13700009 total=240
+1795265368.066394 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=286
+1795265368.309942 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=291
+1795265368.346134 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66663 nominal_us=16666 total_estimate=294
+1795265368.457884 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=296
+1795265368.562801 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=299
+1795265368.603895 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33353 nominal_us=16666 total_estimate=300
+1795265368.737854 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49986 nominal_us=16666 total_estimate=305
+1795265368.805800 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50005 nominal_us=16666 total_estimate=308
+1795265368.874428 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49977 nominal_us=16666 total_estimate=310
+1795265368.926920 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66670 nominal_us=16666 total_estimate=314
+1795265369.047281 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=318
+1795265369.296877 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=914 count=913 skipped=1 dt_us=33335 since_first_us=15233340 total=270
+1795265369.484748 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50008 nominal_us=16666 total_estimate=324
+1795265369.569595 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=327
+1795265369.707793 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33328 nominal_us=16666 total_estimate=330
+1795265370.013880 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49994 nominal_us=16666 total_estimate=338
+1795265370.077304 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=340
+1795265370.826502 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=354
+1795265370.937531 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1011 count=1010 skipped=1 dt_us=33342 since_first_us=16850010 total=300
+1795265371.075553 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33343 nominal_us=16666 total_estimate=360
+1795265371.481290 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49994 nominal_us=16666 total_estimate=369
+1795265371.595435 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=372
+1795265372.117565 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=381
+1795265372.492765 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1104 count=1103 skipped=1 dt_us=33332 since_first_us=18400002 total=330
+1795265372.508923 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=390
+1795265372.842942 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=399
+1795265373.034657 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=403
+1795265373.254002 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=408
+1795265373.428605 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=412
+1795265373.562962 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=415
+1795265373.624516 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=418
+1795265373.700486 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33338 nominal_us=16666 total_estimate=420
+1795265373.848807 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1186 count=1185 skipped=1 dt_us=33330 since_first_us=19766669 total=360
+1795265373.911515 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=427
+1795265375.159362 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33335 nominal_us=16666 total_estimate=450
+1795265375.369637 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=455
+1795265375.431986 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49971 nominal_us=16666 total_estimate=457
+1795265375.462858 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1284 count=1283 skipped=1 dt_us=33335 since_first_us=21400004 total=390
+1795265376.024404 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=471
+1795265376.177248 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=473
+1795265376.598886 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33329 nominal_us=16666 total_estimate=480
+1795265376.955491 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66662 nominal_us=16666 total_estimate=488
+1795265377.125069 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49991 nominal_us=16666 total_estimate=491
+1795265377.331236 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1396 count=1395 skipped=1 dt_us=33335 since_first_us=23266673 total=420
+1795265377.530513 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=497
+1795265377.641937 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=500
+1795265378.168802 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=510
+1795265378.281777 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=512
+1795265378.683420 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49990 nominal_us=16666 total_estimate=520
+1795265378.889659 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50006 nominal_us=16666 total_estimate=524
+1795265379.039531 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1495 count=1494 skipped=1 dt_us=33339 since_first_us=24916673 total=450
+1795265379.099301 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=531
+1795265379.171285 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50005 nominal_us=16666 total_estimate=533
+1795265379.320538 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66664 nominal_us=16666 total_estimate=540
+1795265379.380228 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=542
+1795265379.586456 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66669 nominal_us=16666 total_estimate=546
+1795265379.636607 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=548
+1795265380.132108 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=559
+1795265380.384442 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50009 nominal_us=16666 total_estimate=563
+1795265380.534106 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=566
+1795265380.603132 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50007 nominal_us=16666 total_estimate=568
+1795265380.743494 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33341 nominal_us=16666 total_estimate=570
+1795265380.827298 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1607 count=1606 skipped=1 dt_us=33328 since_first_us=26783334 total=480
+1795265381.182207 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=578
+1795265381.314226 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=580
+1795265381.675464 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=588
+1795265381.956429 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=593
+1795265381.976728 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50006 nominal_us=16666 total_estimate=595
+1795265382.151666 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=599
+1795265382.234611 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=601
+1795265382.351334 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=603
+1795265382.563145 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=607
+1795265382.742224 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=611
+1795265382.742224 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1722 count=1720 skipped=2 dt_us=50004 since_first_us=28700005 total=510
+1795265383.062854 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=617
+1795265383.326754 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=621
+1795265383.565037 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66678 nominal_us=16666 total_estimate=626
+1795265383.790796 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33311 nominal_us=16666 total_estimate=630
+1795265383.823035 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=632
+1795265384.031615 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50031 nominal_us=16666 total_estimate=638
+1795265384.365460 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1816 count=1815 skipped=1 dt_us=33316 since_first_us=30266671 total=540
+1795265384.510521 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=652
+1795265384.825509 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=658
+1795265384.886573 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33330 nominal_us=16666 total_estimate=660
+1795265385.149672 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49994 nominal_us=16666 total_estimate=667
+1795265385.398166 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=673
+1795265385.590186 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=677
+1795265385.826153 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66664 nominal_us=16666 total_estimate=682
+1795265385.894496 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1911 count=1910 skipped=1 dt_us=33340 since_first_us=31850010 total=570
+1795265385.985804 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=687
+1795265386.259118 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=690
+1795265386.609503 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49992 nominal_us=16666 total_estimate=697
+1795265386.712263 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=700
+1795265386.755262 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=702
+1795265387.496910 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2007 count=2006 skipped=1 dt_us=33325 since_first_us=33450002 total=600
+1795265387.651801 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=721
+1795265387.826025 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=724
+1795265388.072596 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=730
+1795265388.780555 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50008 nominal_us=16666 total_estimate=743
+1795265388.860553 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=746
+1795265388.894116 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=748
+1795265388.965057 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=751
+1795265389.140940 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2102 count=2101 skipped=1 dt_us=33332 since_first_us=35033340 total=630
+1795265389.339333 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=762
+1795265389.652144 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=771
+1795265389.908548 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66668 nominal_us=16666 total_estimate=777
+1795265390.135654 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33339 nominal_us=16666 total_estimate=780
+1795265390.326478 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=786
+1795265390.554476 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=789
+1795265390.648070 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2194 count=2193 skipped=1 dt_us=33336 since_first_us=36566672 total=660
+1795265390.757294 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50020 nominal_us=16666 total_estimate=795
+1795265391.120961 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=802
+1795265391.587570 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33338 nominal_us=16666 total_estimate=810
+1795265391.945882 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=818
+1795265392.098442 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=821
+1795265392.338204 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=826
+1795265392.338204 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2297 count=2295 skipped=2 dt_us=49996 since_first_us=38283336 total=690
+1795265392.802439 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=835
+1795265392.924027 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=838
+1795265393.086017 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49995 nominal_us=16666 total_estimate=841
+1795265393.302890 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=845
+1795265393.532296 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66666 nominal_us=16666 total_estimate=851
+1795265393.753315 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66667 nominal_us=16666 total_estimate=855
+1795265393.833622 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=857
+1795265393.941970 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=861
+1795265394.124792 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=866
+1795265394.157052 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2403 count=2402 skipped=1 dt_us=33336 since_first_us=40050007 total=720
+1795265394.296999 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33325 nominal_us=16666 total_estimate=870
+1795265394.365458 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50006 nominal_us=16666 total_estimate=872
+1795265394.434558 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66670 nominal_us=16666 total_estimate=875
+1795265394.512924 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=877
+1795265394.564021 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=880
+1795265394.631671 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=882
+1795265394.688242 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=884
+1795265394.808963 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49987 nominal_us=16666 total_estimate=887
+1795265394.827048 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=889
+1795265395.090902 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=892
+1795265395.500275 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33331 nominal_us=16666 total_estimate=900
+1795265395.605798 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49993 nominal_us=16666 total_estimate=902
+1795265395.867520 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=907
+1795265395.945749 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66664 nominal_us=16666 total_estimate=911
+1795265395.945749 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2515 count=2512 skipped=3 dt_us=66664 since_first_us=41916670 total=750
+1795265396.422349 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=919
+1795265396.539356 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50005 nominal_us=16666 total_estimate=922
+1795265396.842503 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=928
+1795265396.969943 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33334 nominal_us=16666 total_estimate=930
+1795265397.059542 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50005 nominal_us=16666 total_estimate=933
+1795265397.621516 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=943
+1795265397.750684 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2620 count=2619 skipped=1 dt_us=33334 since_first_us=43666671 total=780
+1795265397.882377 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66668 nominal_us=16666 total_estimate=950
+1795265398.167447 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=957
+1795265398.396321 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33333 nominal_us=16666 total_estimate=960
+1795265398.494860 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66672 nominal_us=16666 total_estimate=963
+1795265398.824558 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50010 nominal_us=16666 total_estimate=969
+1795265399.085643 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=977
+1795265399.182465 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=980
+1795265399.241169 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=982
+1795265399.315360 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=984
+1795265399.427747 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2717 count=2716 skipped=1 dt_us=33330 since_first_us=45283344 total=810
+1795265399.551567 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=991
+1795265399.589116 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49995 nominal_us=16666 total_estimate=993
+1795265399.727386 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66670 nominal_us=16666 total_estimate=998
+1795265400.027834 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49995 nominal_us=16666 total_estimate=1006
+1795265400.853754 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66671 nominal_us=16666 total_estimate=1022
+1795265400.928019 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2810 count=2809 skipped=1 dt_us=33329 since_first_us=46833338 total=840
+1795265400.993393 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49991 nominal_us=16666 total_estimate=1026
+1795265402.014710 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50016 nominal_us=16666 total_estimate=1047
+1795265402.116973 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33338 nominal_us=16666 total_estimate=1050
+1795265402.379587 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=2900 count=2899 skipped=1 dt_us=33332 since_first_us=48333337 total=870
+1795265402.687097 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1061
+1795265402.869977 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49993 nominal_us=16666 total_estimate=1064
+1795265402.954101 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=1066
+1795265403.077092 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=1069
+1795265403.160378 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=1071
+1795265403.267996 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=1074
+1795265403.480092 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=1078
+1795265403.626509 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33338 nominal_us=16666 total_estimate=1080
+1795265403.854565 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=1087
+1795265404.070196 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=1091
+1795265404.147918 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1094
+1795265404.182006 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3004 count=3003 skipped=1 dt_us=33332 since_first_us=50066674 total=900
+1795265404.221178 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1097
+1795265404.477342 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66666 nominal_us=16666 total_estimate=1105
+1795265404.559946 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50005 nominal_us=16666 total_estimate=1107
+1795265404.650245 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=1110
+1795265404.875234 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=1116
+1795265405.705695 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3097 count=3096 skipped=1 dt_us=33335 since_first_us=51616674 total=930
+1795265406.085857 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1140
+1795265406.466889 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=1147
+1795265406.746831 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=1154
+1795265406.905729 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=1157
+1795265407.012710 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=1159
+1795265407.116489 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1161
+1795265407.359457 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3197 count=3196 skipped=1 dt_us=33335 since_first_us=53283345 total=960
+1795265407.530019 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=1170
+1795265407.901246 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1179
+1795265408.171461 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +3 frame(s) estimate dt_us=66668 nominal_us=16666 total_estimate=1185
+1795265408.374025 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50012 nominal_us=16666 total_estimate=1188
+1795265408.587668 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50005 nominal_us=16666 total_estimate=1191
+1795265408.832064 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1197
+1795265408.940471 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50003 nominal_us=16666 total_estimate=1201
+1795265408.967808 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=1203
+1795265409.006428 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3294 count=3293 skipped=1 dt_us=33327 since_first_us=54900006 total=990
+1795265409.183094 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=1208
+1795265409.264395 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50006 nominal_us=16666 total_estimate=1211
+1795265409.334646 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=1213
+1795265409.345673 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=1215
+1795265409.609165 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49991 nominal_us=16666 total_estimate=1222
+1795265409.921415 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49996 nominal_us=16666 total_estimate=1229
+1795265409.947695 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33337 nominal_us=16666 total_estimate=1230
+1795265410.036949 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50007 nominal_us=16666 total_estimate=1232
+1795265410.449005 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50001 nominal_us=16666 total_estimate=1241
+1795265410.517404 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3389 count=3388 skipped=1 dt_us=33342 since_first_us=56483347 total=1020
+1795265410.613879 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=1244
+1795265411.018239 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50002 nominal_us=16666 total_estimate=1252
+1795265411.129018 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50000 nominal_us=16666 total_estimate=1254
+1795265411.288988 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49990 nominal_us=16666 total_estimate=1257
+1795265411.415262 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=33335 nominal_us=16666 total_estimate=1260
+1795265411.476046 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=1263
+1795265411.732496 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=1267
+1795265411.773792 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50017 nominal_us=16666 total_estimate=1269
+1795265411.920095 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49999 nominal_us=16666 total_estimate=1272
+1795265412.239889 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3491 count=3490 skipped=1 dt_us=33342 since_first_us=58183348 total=1050
+1795265412.658168 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=1288
+1795265412.767376 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49998 nominal_us=16666 total_estimate=1291
+1795265413.666832 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=3573 count=3572 skipped=1 dt_us=33323 since_first_us=59550007 total=1080
+1795265413.746117 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=50004 nominal_us=16666 total_estimate=1315
+1795265413.895427 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=49997 nominal_us=16666 total_estimate=1319
+1795265413.933169 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=1319 requeue_failures=0
+1795265415.621161 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=2270 written=2270 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=1085 fault= peak_queue=80/12 queue_bytes_peak=663552000 queue_budget=998558924
+1795265415.621161 apertar start-apertar-core.sh[849]: ApertarCore recorder stop time: 1.680s format=cdng discarded_on_stop=0
+1795265415.639189 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=6
+1795265415.640069 apertar start-apertar-core.sh[849]: ApertarCore audio clock: measured_drift_ppm=1210.6 points=5776 endpoint_ppm=1233.29 correction=resample
+1795265415.640069 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=9369831775 audio_boot_us=9369803441 trim_samples=1362 pad_samples=0 output_samples=2871200 sample_rate=48000
+1795265415.797181 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 8 ms

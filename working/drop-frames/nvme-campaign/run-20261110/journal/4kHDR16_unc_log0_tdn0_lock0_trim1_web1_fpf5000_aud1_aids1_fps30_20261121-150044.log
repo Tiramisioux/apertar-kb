@@ -1,0 +1,25 @@
+1795269678.815351 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795269678.825177 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795269678.825177 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795269678.825815 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 1084 MiB (MemAvailable 2661 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 15.8 MiB = 68 frames) source=conf
+1795269678.851917 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_15011824_C0037_cam0 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000
+1795269678.906211 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=13694805839
+1795269682.852950 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=66659 nominal_us=33333 total_estimate=1
+1795269682.852950 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=115 count=114 skipped=1 dt_us=66659 since_first_us=3833344 total=1
+1795269684.179291 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=154 count=153 skipped=1 dt_us=66670 since_first_us=5133352 total=2
+1795269684.745534 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=170 count=169 skipped=1 dt_us=66662 since_first_us=5666680 total=3
+1795269685.476413 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=193 count=192 skipped=1 dt_us=66665 since_first_us=6433351 total=4
+1795269687.180137 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=243 count=242 skipped=1 dt_us=66665 since_first_us=8100019 total=5
+1795269702.935800 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=99998 nominal_us=33333 total_estimate=27
+1795269706.838438 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=66666 nominal_us=33333 total_estimate=30
+1795269708.355240 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=878 count=877 skipped=1 dt_us=66676 since_first_us=29266750 total=30
+1795269733.922878 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=100006 nominal_us=33333 total_estimate=59
+1795269734.507198 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=66673 nominal_us=33333 total_estimate=60
+1795269735.206263 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1685 count=1684 skipped=1 dt_us=66669 since_first_us=56166810 total=60
+1795269738.917492 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=65 requeue_failures=0
+1795269739.475640 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=1732 written=1732 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=63 fault= peak_queue=3/12 queue_bytes_peak=49766400 queue_budget=1137600102
+1795269739.475640 apertar start-apertar-core.sh[849]: ApertarCore recorder stop time: 0.558s format=cdng discarded_on_stop=0
+1795269739.498738 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=4
+1795269739.498897 apertar start-apertar-core.sh[849]: ApertarCore audio clock: measured_drift_ppm=1183.21 points=5655 endpoint_ppm=1188.77 correction=resample
+1795269739.498897 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=13694805839 audio_boot_us=13694779083 trim_samples=1286 pad_samples=0 output_samples=2875200 sample_rate=48000
+1795269739.656456 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 7 ms

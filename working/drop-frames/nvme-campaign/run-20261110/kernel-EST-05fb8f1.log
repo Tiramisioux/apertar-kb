@@ -1,0 +1,300 @@
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
+2026-11-11T23:50:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
+2026-11-11T23:51:20+01:00 apertar kernel: nvme nvme0: using unchecked data buffer
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: HDR=0, HCG=0
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-11T23:51:23+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-11T23:51:23+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-11T23:51:23+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-11T23:51:24+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-11T23:51:27+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-11T23:51:27+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-11T23:51:27+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-11T23:51:27+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-11T23:51:27+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-11T23:51:27+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-11T23:51:28+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-11T23:51:32+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-11T23:51:32+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-11T23:51:32+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-11T23:51:32+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-11T23:51:32+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-11T23:51:32+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-11T23:51:33+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-11T23:51:42+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-11T23:51:42+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-11T23:51:42+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-11T23:51:42+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-11T23:51:42+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-11T23:51:42+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-11T23:51:43+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-11T23:51:47+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-11T23:51:47+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-11T23:51:47+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-11T23:51:47+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-11T23:51:47+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-11T23:51:47+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-11T23:51:48+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-11T23:51:54+01:00 apertar kernel: imx585 10-001a: VBLANK=90 -> VMAX=2250

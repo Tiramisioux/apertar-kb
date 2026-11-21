@@ -1,0 +1,8 @@
+2026-11-21 12:58:04 start host=127.0.0.1 port=8000
+2026-11-21 12:58:14 mjpeg connected=yes reconnects=0 parts/s=20.8 KB/s=166.8 state ok=10 fail=0
+2026-11-21 12:58:24 mjpeg connected=yes reconnects=0 parts/s=18.4 KB/s=147.7 state ok=10 fail=0
+2026-11-21 12:58:34 mjpeg connected=yes reconnects=0 parts/s=18.4 KB/s=147.7 state ok=10 fail=0
+2026-11-21 12:58:44 mjpeg connected=yes reconnects=0 parts/s=16.7 KB/s=134.0 state ok=10 fail=0
+2026-11-21 12:58:54 mjpeg connected=yes reconnects=0 parts/s=17.7 KB/s=142.1 state ok=10 fail=0
+2026-11-21 12:59:04 mjpeg connected=yes reconnects=0 parts/s=16.8 KB/s=135.0 state ok=10 fail=0
+2026-11-21 12:59:07 stopping

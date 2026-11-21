@@ -1,0 +1,21 @@
+1795261439.370919 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795261439.381586 apertar start-apertar-core.sh[849]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795261439.381693 apertar start-apertar-core.sh[849]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795261439.392167 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] using cpu capabilities: ARMv8 NEON
+1795261439.393471 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] profile Constrained Baseline, level 4.2, 4:2:0, 8-bit
+1795261439.393544 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=0 ref=1 deblock=0:0:0 analyse=0:0 me=dia subme=0 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=0 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=3 lookahead_threads=3 sliced_threads=1 slices=3 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=0 keyint=60 keyint_min=6 scenecut=0 intra_refresh=0 rc=crf mbtree=0 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=0
+1795261439.394728 apertar start-apertar-core.sh[849]: ApertarCore H.264 recording clip: /media/RAW/H264_26-11-21_12435921_C0003_cam0/H264_26-11-21_12435921_C0003_cam0.mp4 preview=1920x1080 fps=60.000 backend=libav encoder=libx264 input=staged-yuv copy_threads=1 tune=zerolatency threads=3 queue=6 crf=18
+1795261439.420754 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=5455348487
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] frame I:61    Avg QP:15.00  size:105337
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] frame P:3540  Avg QP:18.05  size:  5743
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] mb I  I16..4: 100.0%  0.0%  0.0%
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] mb P  I16..4:  0.7%  0.0%  0.0%  P16..4: 19.2%  0.0%  0.0%  0.0%  0.0%    skip:80.0%
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] coded y,uvDC,uvAC intra: 57.3% 41.5% 13.0% inter: 2.7% 11.9% 0.0%
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] i16 v,h,dc,p: 28% 22% 15% 35%
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] i8c dc,h,v,p: 41% 23% 19% 17%
+1795261499.437400 apertar start-apertar-core.sh[849]: [libx264 @ 0x7ffe1898ba60] kb/s:3566.43
+1795261499.439290 apertar start-apertar-core.sh[849]: ApertarCore H.264 recording stats: queued=3601 written=3601 dropped_queue_full=0 skipped_stopping=0 write_failures=0 peak_queue=1/6 max_copy_ms=6 slow_copies=0 max_write_ms=17 slow_writes=0
+1795261499.455886 apertar start-apertar-core.sh[849]: ApertarCore audio writer: peak_backlog_kb=1
+1795261499.456051 apertar start-apertar-core.sh[849]: ApertarCore audio clock: measured_drift_ppm=1172.09 points=5648 endpoint_ppm=1159.89 correction=resample
+1795261499.456051 apertar start-apertar-core.sh[849]: ApertarCore audio sync: video_boot_us=5455348487 audio_boot_us=5455335458 trim_samples=626 pad_samples=0 output_samples=2880800 sample_rate=48000
+1795261499.614948 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 17 ms

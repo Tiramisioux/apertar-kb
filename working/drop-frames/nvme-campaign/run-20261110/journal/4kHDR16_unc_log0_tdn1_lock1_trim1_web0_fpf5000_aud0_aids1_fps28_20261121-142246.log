@@ -1,0 +1,28 @@
+1795267387.406846 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795267387.406846 apertar start-apertar-core.sh[849]: ApertarCore buffer: ram budget 1068 MiB (MemAvailable 2633 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 15.8 MiB = 67 frames) source=conf
+1795267387.437451 apertar start-apertar-core.sh[849]: ApertarCore recording clip: /media/RAW/cDNG_26-11-21_14230710_C0025_cam0 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no frames_per_folder=5000
+1795267387.503137 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=11403392860
+1795267389.147264 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71422 nominal_us=35718 total_estimate=1
+1795267389.147264 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=40 count=39 skipped=1 dt_us=71422 since_first_us=1428538 total=1
+1795267389.286759 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=45 count=44 skipped=1 dt_us=71410 since_first_us=1607097 total=2
+1795267389.891034 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=62 count=61 skipped=1 dt_us=71421 since_first_us=2214241 total=3
+1795267390.453204 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=75 count=74 skipped=1 dt_us=71421 since_first_us=2678563 total=4
+1795267390.614883 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=80 count=79 skipped=1 dt_us=71429 since_first_us=2857158 total=5
+1795267398.455067 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71411 nominal_us=35703 total_estimate=30
+1795267398.455067 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=299 count=298 skipped=1 dt_us=71411 since_first_us=10678565 total=30
+1795267406.916676 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71430 nominal_us=35718 total_estimate=60
+1795267406.916676 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=536 count=535 skipped=1 dt_us=71430 since_first_us=19142777 total=60
+1795267407.604578 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +2 frame(s) estimate dt_us=107151 nominal_us=35718 total_estimate=65
+1795267415.013172 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71433 nominal_us=35718 total_estimate=90
+1795267415.333134 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=772 count=771 skipped=1 dt_us=71408 since_first_us=27571439 total=90
+1795267424.017644 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71413 nominal_us=35718 total_estimate=120
+1795267424.142956 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1019 count=1018 skipped=1 dt_us=71414 since_first_us=36392774 total=120
+1795267432.614778 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71431 nominal_us=35718 total_estimate=150
+1795267432.843833 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1262 count=1261 skipped=1 dt_us=71417 since_first_us=45071440 total=150
+1795267440.308037 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=71413 nominal_us=35703 total_estimate=180
+1795267440.579379 apertar start-apertar-core.sh[849]: ApertarCore frame index jump: frame=1480 count=1479 skipped=1 dt_us=71404 since_first_us=52857192 total=180
+1795267447.503238 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=203 requeue_failures=0
+1795267447.503238 apertar start-apertar-core.sh[849]: ApertarCore phase-lock stats: max_abs_err_us=143 duration_pushes=940
+1795267448.152285 apertar start-apertar-core.sh[849]: ApertarCore recording stats: enqueued=1472 written=1472 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=202 fault= peak_queue=2/12 queue_bytes_peak=33177600 queue_budget=1120190464
+1795267448.152285 apertar start-apertar-core.sh[849]: ApertarCore recorder stop time: 0.651s format=cdng discarded_on_stop=0
+1795267448.153026 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 0 ms

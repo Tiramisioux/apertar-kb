@@ -1,0 +1,15 @@
+2026-11-21 00:54:59 write budget 16000 GB, 4975 GB used so far in this run
+2026-11-21 00:54:59 preserving 0 pre-existing clip folder(s); 0 clip folder(s) of this run on the drive
+2026-11-21 00:54:59 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 00:55:01 DECISION night EST-05fb8f1 start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 1000 GB; Core pid 606; drop-in checked; timers-mask rc=0; smart temp 25 C
+2026-11-21 00:55:01 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.2), 58 frames, 0.7 GB written and deleted)
+2026-11-21 00:55:02 DECISION audio baseline: record_audio_enabled=True audio_input_device='' input_devices=[] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-005501-baseline-EST-05fb8f1
+2026-11-21 00:55:02 DECISION EST block P0 starts
+2026-11-21 00:56:42 DECISION audio pre-check: Core does not see the mic after 60 s (record_audio_enabled=True audio_input_device='' input_devices=[]; ui_fds=101 ui_dmabuf=72 arec_fds=None core_fds=130 cma_free_kb=55040 uiconf_rec=1 uiconf_dev= uiconf_mtime=1795218933.06); the take runs, the void decides
+2026-11-21 00:57:13 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=60.0 -> buffer_full after 17s dropped=2 kinds=capture-gap:2 buffer_full:1 pi=54C nvme=32.85
+2026-11-21 00:57:13 DECISION no audio in 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps60_20261121-005521 (pre-check: NOT READY: record_audio_enabled=True audio_input_device='' input_devices=[]; UI MESA errors in the take: 0): counted anyway (--audio-optional)
+2026-11-21 00:57:13 DECISION EST-05fb8f1 P0-cap-t0l0w1a1a1-r1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 60 fps, 60 s: buffer_full (16.5 s, dropped 2, first drop 7.0, gap 0, boundary 0)
+2026-11-21 00:58:53 DECISION audio pre-check: Core does not see the mic after 60 s (record_audio_enabled=True audio_input_device='' input_devices=[]; ui_fds=101 ui_dmabuf=72 arec_fds=None core_fds=130 cma_free_kb=16 uiconf_rec=1 uiconf_dev= uiconf_mtime=1795219064.1); the take runs, the void decides
+2026-11-21 00:59:17 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=30.0 -> buffer_full after 10s dropped=2 kinds=capture-gap:1 buffer_full:1 pi=55C nvme=31.85
+2026-11-21 00:59:17 DECISION no audio in 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps30_20261121-005732 (pre-check: NOT READY: record_audio_enabled=True audio_input_device='' input_devices=[]; UI MESA errors in the take: 0): counted anyway (--audio-optional)
+2026-11-21 00:59:17 DECISION EST-05fb8f1 P0-cap-t0l0w1a1a1-r1 4kHDR16_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 30 fps, 60 s: buffer_full (9.5 s, dropped 2, first drop 1.9, gap 0, boundary 0)

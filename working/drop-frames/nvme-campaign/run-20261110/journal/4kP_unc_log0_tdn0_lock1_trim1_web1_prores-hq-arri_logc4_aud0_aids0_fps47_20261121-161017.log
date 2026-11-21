@@ -1,0 +1,13 @@
+1795273833.911934 apertar start-apertar-core.sh[849]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795273833.912469 apertar start-apertar-core.sh[849]: ApertarCore ProRes: direct avio refused (this libavformat's file protocol has no pkt_size option); using buffered writes
+1795273833.912525 apertar start-apertar-core.sh[849]: ApertarCore ProRes: disk arm=buffered APERTAR_PRORES_ODIRECT=1 pkt_size=262144 writeback=off write arm=WRITER THREAD (av_interleaved_write_frame off the encode worker) writer_queue=48pkt/96MiB clip=/media/RAW/ProRes_26-11-21_16103342_C0018_cam0/ProRes_26-11-21_16103342_C0018_cam0.mov
+1795273833.914554 apertar start-apertar-core.sh[849]: ApertarCore ProRes recording clip: /media/RAW/ProRes_26-11-21_16103342_C0018_cam0/ProRes_26-11-21_16103342_C0018_cam0.mov profile=hq source=RGB48 output=yuv422p10le threads=4 queue=4
+1795273833.955877 apertar start-apertar-core.sh[849]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=17849872352
+1795273833.955991 apertar start-apertar-core.sh[849]: [mov @ 0x7ffe60012200] Using non-standard frame rate 47000/1000
+1795273833.955991 apertar start-apertar-core.sh[849]: [mov @ 0x7ffe60012200] Using non-standard frame rate 47000/1000
+1795273834.467985 apertar start-apertar-core.sh[849]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=42544 nominal_us=21274 total_estimate=1
+1795273835.421598 apertar start-apertar-core.sh[849]: ApertarCore capture stats: dropped_gap_estimate=7 requeue_failures=0
+1795273835.422301 apertar start-apertar-core.sh[849]: ApertarCore phase-lock stats: max_abs_err_us=112 duration_pushes=501
+1795273835.513935 apertar start-apertar-core.sh[849]: no ICC profile found, will write nclx/nclc colour info instead
+1795273835.514469 apertar start-apertar-core.sh[849]: ApertarCore ProRes recording stats: queued=60 submitted=60 dropped_queue_full=0 failures=0 peak_queue=1/4
+1795273835.677448 apertar start-apertar-core.sh[849]: ApertarCore recording stop: synced to the medium in 162 ms
