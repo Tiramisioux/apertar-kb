@@ -341,6 +341,26 @@ Target per take: 30 min, or as long as the drive allows at these settings (pass_
 | 4kSDR12 | unc | off | off | off | on | on | 39.0 | buffer_full | 750.2 | 0 |  |  | 57.3 | 74.85 (77.85) | 59.3 | 2199 | 77.1 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 146/12 frames, stopped after 750 s) |
 | 4kSDR12 | unc | off | off | off | on | on | 38.0 | buffer_full | 268.7 | 0 |  | buffer_full:1 | 57.3 | 71.85 (72.85) | 68.6 | 2431 | 55.5 |  | buffer_full:   | probable: the drive fell behind - the write queue filled the RAM buffer to Core's 90 % safety stop (peak queue 148/12 frames, stopped after 269 s) |
 | 4kSDR12 | lossless | off | off | off | on | on | 40.0 | stopped_by_signal |  |  |  |  |  |  () |  |  |  |  | stopped by SIGTERM while waiting at the gate |
+| 4kSDR12 | lossless | off | off | off | on | on | 40.0 | pass_15min | 900.1 | 0 |  |  | 65.0 | 64.85 (66.85) | 89.8 | 2730 | 42.0 |  |  |
+| 4kSDR12 | lossless | off | off | off | on | on | 39.0 | stopped_by_signal | 395.8 | 0 |  |  | 64.45 | 63.85 (65.85) | 88.4 | 2788 | 51.7 |  | stopped by SIGTERM after 396 s: not a result |
+| 4kSDR12 | lossless | off | off | off | on | on | 39.0 | waiting_timeout |  |  |  |  |  |  () |  |  |  |  |  |
+| 4kSDR12 | lossless | off | off | off | on | on | 39.0 | void |  |  |  |  |  |  () |  |  |  |  |  |
+| 4kSDR12 | lossless | off | off | off | on | on | 39.0 | void |  |  |  |  |  |  () |  |  |  |  |  |
+| 4kSDR12 | unc | off | off | off | on | on | 37.0 | void |  |  |  |  |  |  () |  |  |  |  |  |
+| 4kSDR12 | unc | off | off | off | on | on | 37.0 | void |  |  |  |  |  |  () |  |  |  |  |  |
+| 4kSDR12 | lossless | off | off | off | on | on | 39.0 | pass_15min | 900.0 | 0 |  |  | 63.9 | 64.85 (67.85) | 88.9 | 3280 | 64.2 |  |  |
+| 4kSDR12 | unc | off | off | off | on | on | 37.0 | pass_15min | 900.2 | 0 |  |  | 62.8 | 54.85 (56.85) | 85.2 | 3137 | 54.6 |  |  |
+| 4kSDR12 | unc | off | off | off | on | on | 36.0 | pass_15min | 900.2 | 0 |  |  | 61.7 | 53.85 (55.85) | 84.1 | 3223 | 57.7 |  |  |
+| 4kP | unc | off | off | off | on | on | 27.0 | drop | 12.0 | 1 | 11.7 | capture-gap:1 | 57.85 | 40.85 (41.85) | 79.4 | 2689 | 57.8 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kP | unc | off | off | off | on | on | 26.0 | pass_15min | 900.3 | 0 |  |  | 60.05 | 44.85 (45.85) | 78.8 | 2685 | 66.6 |  |  |
+| 4kP | unc | off | off | off | on | on | 45.0 | drop | 1.5 | 7 | 1.3 | capture-gap:1 | 54.55 | 46.85 (46.85) | 52.2 | 3265 | 42.4 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kP | unc | off | off | off | on | on | 44.0 | drop | 1.0 | 2 | 0.8 | capture-gap:1 | 56.75 | 44.85 (44.85) | 38.0 | 3228 | 42.4 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kHDR16 | unc | on | off | off | on | on | 25.0 | pass_15min | 900.4 | 0 |  |  | 57.3 | 66.85 (68.85) | 77.7 | 2596 | 70.5 |  |  |
+| 4kHDR16 | unc | on | off | off | on | on | 24.0 | pass_15min | 900.3 | 0 |  |  | 57.3 | 65.85 (65.85) | 59.7 | 2712 | 84.3 |  |  |
+| 4kHDR16 | lossless | on | off | off | on | on | 14.0 | pass_15min | 900.1 | 0 |  |  | 56.75 | 51.85 (53.85) | 40.3 | 2753 | 81.7 |  |  |
+| 4kHDR16 | lossless | on | off | off | on | on | 13.0 | pass_15min | 900.1 | 0 |  |  | 57.85 | 50.85 (51.85) | 38.6 | 2699 | 63.2 |  |  |
+| 4kP | unc | off | off | off | on | on | 41.0 | drop | 1.0 | 4 | 0.8 | capture-gap:1 | 58.4 | 47.85 (47.85) | 46.2 | 2392 | 36.3 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
+| 4kP | unc | off | off | off | on | on | 40.0 | drop | 1.0 | 3 | 0.8 | capture-gap:1 | 57.85 | 44.85 (44.85) | 45.9 | 2416 | 36.3 |  | capture gap = CFE had no free raw buffer; ISP back end behind (memory bandwidth, recipe section 4); WebUI client adds preview load |
 
 ## Best clean fps per config (first pass while stepping down)
 
@@ -362,3 +382,8 @@ Target per take: 30 min, or as long as the drive allows at these settings (pass_
 | 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder | 26.0 | pass_capped_60s | 1.0 |
 | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder | 35.0 | pass_capped_60s | 1.0 |
 | 2kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_ladder | 50.0 | pass_capped_60s | 1.0 |
+| 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | pass_15min | 15.0 |
+| 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 | 36.0 | pass_15min | 15.0 |
+| 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 | 26.0 | pass_15min | 15.0 |
+| 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 24.0 | pass_15min | 15.0 |
+| 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 13.0 | pass_15min | 15.0 |

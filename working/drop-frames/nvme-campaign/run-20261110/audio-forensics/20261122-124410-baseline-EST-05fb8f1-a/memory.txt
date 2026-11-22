@@ -1,0 +1,5 @@
+MemFree:         2814704 kB
+MemAvailable:    3369344 kB
+CmaTotal:          65536 kB
+CmaFree:           33120 kB
+dmabuf sysfs: FileNotFoundError(2, 'No such file or directory')

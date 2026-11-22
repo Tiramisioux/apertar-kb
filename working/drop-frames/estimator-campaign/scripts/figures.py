@@ -110,7 +110,7 @@ def fig_pipeline(out):
              (4.6, 'Encoder (CPU)', 'uncompressed: ~0\nlossless / lossy JPEG,\nProRes, H.264: the\n4 cores, up to ~340 %', '#2471a3'),
              (6.9, 'RAM buffer\n1.06 GB to\nsafety stop', 'absorbs pauses:\n1.06 GB / MB/s =\n2-3 s at 4K unc,\n10 s at 2K', '#8e44ad'),
              (9.0, 'Writer\nexFAT', 'one file per frame\n(cDNG): folder walk\ngrows per file;\nsplit take caps it', '#e67e22'),
-             (11.1, 'Drive', 'NVMe ~560 cold, ~465\nwarm MB/s; pauses ~2 s\nafter 265-375 GB / 74 °C\nT7 SSD ~105 MB/s', '#17a589')]
+             (11.1, 'Drive', 'NVMe ~560 cold MB/s;\nabove ~410 MB/s pauses\n~2 s after 4-13 min;\nT7 SSD ~105 MB/s', '#17a589')]
     for x, title, body, col in boxes:
         ax.add_patch(FancyBboxPatch((x, 2.6), 1.75, 1.6, boxstyle='round,pad=0.05', fc=col, ec='none', alpha=0.9))
         ax.text(x + 0.875, 3.4, title, ha='center', va='center', color='white', fontsize=10.5, weight='bold')
@@ -178,7 +178,7 @@ def fig_long(takes, out):
             a.plot([xe], [t['ev_c']], 'X', color=col, ms=10, mec='black')
     a.axhspan(73.5, 80, color='#c0392b', alpha=0.08)
     a.set_ylabel('drive temperature, °C')
-    a.set_title('The 10-15 min takes: the drive heats for ~10 min, then the first write pause (X)')
+    a.set_title('The 10-15 min takes: above ~410 MB/s the drive pauses after 4-13 min (X); under ~320 MB/s it does not')
     a.legend(fontsize=7.6, loc='lower right')
     a.grid(alpha=0.3)
     b.set_ylabel('RAM buffer, %')
@@ -211,20 +211,20 @@ WALLS = [('4K HDR16 unc', '4kHDR16:cdng:unc', 29, 'back end'),
 
 # how long a take records clean (from the recipes, pre-analysis 5a): NVMe | T7
 REC_TIME = {
-    '4K HDR16 unc': 'NVMe 27: ~10-12 min (measured); 24: 15 min+ (derived)  |  T7: 6 fps',
-    '4K HDR16 unc + Log': 'NVMe 24-25: 5 min measured, 30 min uncertain  |  T7: ~8 fps',
-    '4K HDR16 lossless': 'NVMe 14: 30 min probable  |  T7 9: 30 min probable',
+    '4K HDR16 unc': 'NVMe 27: ~5 min; warm 15 min failed at 25-27 (measured)  |  T7: 6 fps',
+    '4K HDR16 unc + Log': 'NVMe 25: 15 min passed (measured), 30 min probable  |  T7: ~8 fps',
+    '4K HDR16 lossless': 'NVMe 14: 15 min passed (+ Log), 30 min probable  |  T7 9: 30 min probable',
     '4K HDR12 unc': 'NVMe 25-30: dropped within 2-93 s (measured)  |  T7: ~8 fps',
     '4K SDR12 unc': 'NVMe 37: 15 min passed, 38: 13 min (measured)  |  T7: ~8 fps',
-    '4K SDR12 lossless': 'NVMe 40: 30 min probable  |  T7 18: 30 min probable',
-    '4K SDR12 lossy 3:1': 'NVMe 37: 30 min probable  |  T7 28: 30 min probable',
+    '4K SDR12 lossless': 'NVMe 40: 15 min passed, 30 min probable  |  T7 18: 30 min probable',
+    '4K SDR12 lossy 3:1': 'NVMe 37: 15 min passed, 30 min probable  |  T7 28: 30 min probable',
     '4K SDR12 lossy 5:1': 'NVMe 41: 30 min probable  |  T7 41: 30 min probable',
     '4K SDR12 MLV': 'NVMe 25: 30 min uncertain  |  T7: ~8 fps',
     '4K SDR10 unc': 'NVMe 43-45: ~10 min (derived)  |  T7: ~10 fps',
     '2880 crop SDR12 unc': 'NVMe 50: ~10 min (derived)  |  T7: ~11 fps',
-    '4K ProRes HQ': 'NVMe 25: 30 min probable  |  T7 22: 30 min probable',
+    '4K ProRes HQ': 'NVMe 26: 15 min passed, 30 min probable  |  T7 22: 30 min probable',
     '4K ProRes 422': 'NVMe and T7 40: 30 min probable',
-    'H.264 2560x1440': 'NVMe and T7 45: 30 min probable',
+    'H.264 2560x1440': 'NVMe 44-45: dropped within 2 s (measured); limit not found',
     '2K HDR16 unc': 'NVMe 30: 30 min probable  |  T7 lossless 27: 30 min passed',
     '2K SDR12 unc': 'NVMe 60: 30 min probable  |  T7 32 (split): 30 min passed',
 }

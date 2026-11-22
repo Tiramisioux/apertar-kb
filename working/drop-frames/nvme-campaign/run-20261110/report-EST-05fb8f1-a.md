@@ -1,4 +1,4 @@
-# NVMe campaign report: EST-05fb8f1-a (2026-11-21 22:43:48)
+# NVMe campaign report: EST-05fb8f1-a (2026-11-22 15:59:15)
 
 Labels: every number here is measured by the runner on this night unless it says derived. Card A936B442006AC2.
 
@@ -200,11 +200,31 @@ Labels: every number here is measured by the runner on this night unless it says
 | s1_fps39_20261121-191034 | EST-05fb8f1-a | 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | 900 | buffer_full | 750.2 | 0 |  | 0 | 0 | 239.1 | 90.5 | 77.85 | 361.4 | 195.0 | drop |
 | s1_fps38_20261121-192917 | EST-05fb8f1-a | 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 38.0 | 900 | buffer_full | 268.7 | 0 |  | 0 | 0 | 226.5 | 90.2 | 72.85 | 125.0 | 23.1 | drop |
 | s1_fps40_20261121-193452 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 40.0 | 900 | stopped_by_signal |  |  |  |  |  |  |  |  |  |  | stop |
+| s1_fps40_20261121-224517 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 40.0 | 900 | pass_15min | 900.1 | 0 |  | 0 | 0 | 320.0 | 3.6 | 66.85 | 222.5 | 262.9 | clean |
+| s1_fps39_20261121-230852 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | 900 | stopped_by_signal | 395.8 | 0 |  | 0 | 0 | 309.0 | 2.4 | 65.85 | 95.6 | 0.0 | stop |
+| s1_fps39_20261122-124411 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | 900 | waiting_timeout |  |  |  |  |  |  |  |  |  |  | stop |
+| s1_fps39_20261122-124643 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | 900 | void |  |  |  |  |  |  |  |  |  |  | void |
+| s1_fps39_20261122-124707 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | 900 | void |  |  |  |  |  |  |  |  |  |  | void |
+| s1_fps37_20261122-124847 | EST-05fb8f1-a | 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 | 37.0 | 900 | void |  |  |  |  |  |  |  |  |  |  | void |
+| s1_fps37_20261122-124910 | EST-05fb8f1-a | 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 | 37.0 | 900 | void |  |  |  |  |  |  |  |  |  |  | void |
+| s1_fps39_20261122-125015 | EST-05fb8f1-a | 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 39.0 | 900 | pass_15min | 900.0 | 0 |  | 1 | 0 | 319.3 | 2.6 | 67.85 | 239.4 | 210.3 | clean |
+| s1_fps37_20261122-131415 | EST-05fb8f1-a | 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 | 37.0 | 900 | pass_15min | 900.2 | 0 |  | 0 | 0 | 306.3 | 1.6 | 56.85 | 108.3 | 260.1 | clean |
+| s1_fps36_20261122-133610 | EST-05fb8f1-a | 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 | 36.0 | 900 | pass_15min | 900.2 | 0 |  | 0 | 0 | 298.7 | 1.2 | 55.85 | 105.2 | 251.9 | clean |
+| s1_fps27_20261122-140612 | EST-05fb8f1-a | 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 | 27.0 | 900 | drop | 12.0 | 1 | 11.7 | 0 |  | 226.8 | 0.0 | 41.85 | 0 |  | drop |
+| s1_fps26_20261122-140649 | EST-05fb8f1-a | 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 | 26.0 | 900 | pass_15min | 900.3 | 0 |  | 0 |  | 276.2 | 0.0 | 45.85 | 0 |  | clean |
+| s1_fps45_20261122-142605 | EST-05fb8f1-a | 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 | 45.0 | 900 | drop | 1.5 | 7 | 1.3 | 0 |  | 70.5 | 0.0 | 46.85 | 0 |  | drop |
+| s1_fps44_20261122-142632 | EST-05fb8f1-a | 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 | 44.0 | 900 | drop | 1.0 | 2 | 0.8 | 0 |  | 43.1 | 0.0 | 44.85 | 0 |  | drop |
+| s1_fps25_20261122-142911 | EST-05fb8f1-a | 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 25.0 | 900 | pass_15min | 900.4 | 0 |  | 0 | 0 | 237.1 | 2.5 | 68.85 | 280.3 | 96.4 | clean |
+| s1_fps24_20261122-145120 | EST-05fb8f1-a | 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 24.0 | 900 | pass_15min | 900.3 | 0 |  | 0 | 0 | 208.5 | 2.5 | 65.85 | 269.0 | 91.7 | clean |
+| s1_fps14_20261122-151258 | EST-05fb8f1-a | 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 14.0 | 900 | pass_15min | 900.1 | 0 |  | 0 | 0 | 133.9 | 2.6 | 53.85 | 100.4 | 28.8 | clean |
+| s1_fps13_20261122-154038 | EST-05fb8f1-a | 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 | 13.0 | 900 | pass_15min | 900.1 | 0 |  | 0 | 0 | 126.2 | 2.6 | 51.85 | 93.8 | 24.2 | clean |
+| s1_fps41_20261122-155753 | EST-05fb8f1-a | 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 | 41.0 | 900 | drop | 1.0 | 4 | 0.8 | 0 |  | 54.2 | 0.0 | 47.85 | 0 |  | drop |
+| s1_fps40_20261122-155819 | EST-05fb8f1-a | 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 | 40.0 | 900 | drop | 1.0 | 3 | 0.8 | 0 |  | 55.1 | 0.0 | 44.85 | 0 |  | drop |
 
 ## Fix checks (whole campaign so far)
 
-- **8ec2f1a, part folder made on the writer**: 74 part boundaries crossed in 257 split takes (704466 frames); 0 drops within 64 frames after a boundary; 38 copy-slot drops in all. The buffer around a boundary (1 s before to 3 s after) rose at most 86.9 points above its take median (mean 7.63, 76 boundaries). Expectation if the fix holds: 0 boundary drops, 0 copy-slot drops (night 2 on the old binary: 3 copy-slot drops at 1 of ~40 boundaries).
-- **e298d4a, frame index jump logged and counted**: 19043 index jumps in Core's stats over the campaign; 0 takes had a numbering gap explained by them (0 frames, no picture lost); 118 takes had missing frames NOT explained by index jumps (each is a drop).
+- **8ec2f1a, part folder made on the writer**: 115 part boundaries crossed in 266 split takes (925140 frames); 0 drops within 64 frames after a boundary; 38 copy-slot drops in all. The buffer around a boundary (1 s before to 3 s after) rose at most 86.9 points above its take median (mean 5.2, 117 boundaries). Expectation if the fix holds: 0 boundary drops, 0 copy-slot drops (night 2 on the old binary: 3 copy-slot drops at 1 of ~40 boundaries).
+- **e298d4a, frame index jump logged and counted**: 19044 index jumps in Core's stats over the campaign; 1 takes had a numbering gap explained by them (1 frames, no picture lost); 118 takes had missing frames NOT explained by index jumps (each is a drop).
   - 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_fps28_20261110-034628: missing 1, index_jumps 1, frames 3778
   - 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_fps28_20261110-034921: missing 1, index_jumps 1, frames 4252
   - 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_fps28_20261110-110124: missing 1, index_jumps 1, frames 122
@@ -215,6 +235,7 @@ Labels: every number here is measured by the runner on this night unless it says
   - 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_fps25_20261110-112643: missing 2, index_jumps 2, frames 97 110
   - 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_fps28_20261110-112723: missing 4, index_jumps 4, frames 4406 4408 4414 4416
   - 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_fps26_20261110-210700: missing 1, index_jumps 1, frames 139
+  - jump in 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps39_20261122-125015 at frame 23351: skipped 1, dt 25650 us
   - jump in 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps26_20261121-185325 at frame 20463: skipped 1, dt 76926 us
   - jump in 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps27_20261121-184149 at frame 11643: skipped 1, dt 74077 us
   - jump in 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1_fps25_20261121-181658 at frame 1052: skipped 1, dt 80002 us
@@ -224,7 +245,6 @@ Labels: every number here is measured by the runner on this night unless it says
   - jump in 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1_fps25_20261121-181658 at frame 120: skipped 1, dt 80000 us
   - jump in 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1_fps25_20261121-181658 at frame 112: skipped 1, dt 79989 us
   - jump in 4kHDR16_unc_log0_tdn1_lock0_trim1_web1_fpf5000_aud1_aids1_fps25_20261121-181658 at frame 97: skipped 1, dt 79998 us
-  - jump in 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1_fps28_20261121-181522 at frame 1278: skipped 1, dt 71427 us
 
 ## Merges after the long takes (User, 2026-11-10)
 
@@ -240,6 +260,15 @@ Labels: every number here is measured by the runner on this night unless it says
 | s1_fps26_20261121-185325 | cDNG_26-11-21_18534821_C0002_cam0 | 20498 | 5 | 93.6 | 4.566 | -28.0 | 1 |
 | s1_fps39_20261121-191034 | cDNG_26-11-21_19110216_C0001_cam0 | 29045 | 6 | 195.0 | 6.714 | -28.1 | 1 |
 | s1_fps38_20261121-192917 | cDNG_26-11-21_19294104_C0002_cam0 | 10046 | 3 | 23.1 | 2.299 | -43.1 | 1 |
+| s1_fps40_20261121-224517 | cDNG_26-11-21_22491100_C0001_cam0 | 36003 | 8 | 262.9 | 7.302 | -20.9 | 1 |
+| s1_fps39_20261121-230852 | cDNG_26-11-21_23091614_C0004_cam0 | 15437 | 4 | 0.0 | 0.0 | None | 0 |
+| s1_fps39_20261122-125015 | cDNG_26-11-22_C0001_12504315 | 35100 | 8 | 210.3 | 5.991 | -9.1 | 1 |
+| s1_fps37_20261122-131415 | cDNG_3to1_26-11-22_C0001_13144217 | 33309 | 7 | 260.1 | 7.809 | -29.4 | 1 |
+| s1_fps36_20261122-133610 | cDNG_3to1_26-11-22_C0002_13363426 | 32408 | 7 | 251.9 | 7.773 | -31.5 | 1 |
+| s1_fps25_20261122-142911 | cDNG_26-11-22_C0001_14293423 | 22508 | 5 | 96.4 | 4.283 | -18.2 | 1 |
+| s1_fps24_20261122-145120 | cDNG_26-11-22_C0002_14514417 | 21607 | 5 | 91.7 | 4.244 | -22.1 | 1 |
+| s1_fps14_20261122-151258 | cDNG_26-11-22_C0003_15132210 | 12600 | 3 | 28.8 | 2.286 | -13.9 | 1 |
+| s1_fps13_20261122-154038 | cDNG_26-11-22_C0001_15410112 | 11702 | 3 | 24.2 | 2.068 | -27.1 | 1 |
 
 Model (T7 night 2, derived): 0.1 ms + 0.32 us x files already in the main folder per frame; 45,001 frames in 342 s.
 
@@ -260,99 +289,63 @@ Directory walk share of the frame period, derived: s(t) = 5 x c x fps^2 x t (c i
 | 4kSDR12 | 39.0 | split 5000 | s1_fps39_20261121-191034 | buffer_full | 750.2 |  |  | 216.6 -> 256.1 | 81.4 |
 | 4kSDR12 | 38.0 | split 5000 | s1_fps38_20261121-192917 | buffer_full | 268.7 |  |  | 224.0 -> 251.6 | 72.0 |
 | 4kSDR12 | 40.0 | split 5000 | s1_fps40_20261121-193452 | stopped_by_signal |  |  |  | None -> None |  |
+| 4kSDR12 | 40.0 | split 5000 | s1_fps40_20261121-224517 | pass_15min | 900.1 |  |  | 322.9 -> 325.6 | 0.7 |
+| 4kSDR12 | 39.0 | split 5000 | s1_fps39_20261121-230852 | stopped_by_signal | 395.8 |  |  | 314.3 -> 319.6 | 0.4 |
+| 4kSDR12 | 39.0 | split 5000 | s1_fps39_20261122-124411 | waiting_timeout |  |  |  | None -> None |  |
+| 4kSDR12 | 39.0 | split 5000 | s1_fps39_20261122-125015 | pass_15min | 900.0 |  |  | 319.9 -> 326.9 | 0.5 |
+| 4kSDR12 | 37.0 | split 5000 | s1_fps37_20261122-131415 | pass_15min | 900.2 |  |  | 305.5 -> 309.3 | 0.3 |
+| 4kSDR12 | 36.0 | split 5000 | s1_fps36_20261122-133610 | pass_15min | 900.2 |  |  | 300.8 -> 298.1 | 0.2 |
+| 4kP | 27.0 | split  | s1_fps27_20261122-140612 | drop | 12.0 | 11.7 |  | None -> 282.3 |  |
+| 4kP | 26.0 | split  | s1_fps26_20261122-140649 | pass_15min | 900.3 |  | 6.6 | 276.5 -> 278.5 |  |
+| 4kP | 45.0 | split  | s1_fps45_20261122-142605 | drop | 1.5 | 1.3 |  | None -> None |  |
+| 4kP | 44.0 | split  | s1_fps44_20261122-142632 | drop | 1.0 | 0.8 |  | None -> None |  |
+| 4kHDR16 | 25.0 | split 5000 | s1_fps25_20261122-142911 | pass_15min | 900.4 |  |  | 234.6 -> 235.5 | 0.2 |
+| 4kHDR16 | 24.0 | split 5000 | s1_fps24_20261122-145120 | pass_15min | 900.3 |  |  | 207.5 -> 207.1 | 0.3 |
+| 4kHDR16 | 14.0 | split 5000 | s1_fps14_20261122-151258 | pass_15min | 900.1 |  |  | 133.3 -> 134.8 | 0.4 |
+| 4kHDR16 | 13.0 | split 5000 | s1_fps13_20261122-154038 | pass_15min | 900.1 |  |  | 125.5 -> 126.0 | 0.4 |
+| 4kP | 41.0 | split  | s1_fps41_20261122-155753 | drop | 1.0 | 0.8 |  | None -> None |  |
+| 4kP | 40.0 | split  | s1_fps40_20261122-155819 | drop | 1.0 | 0.8 |  | None -> None |  |
 
 ## Deletes (media route)
 
+- cDNG_26-11-22_C0002_14514417: 21607 frames, 0 parts, warm, budget 0 s, took 0.9 s
+- cDNG_26-11-22_C0001_14293423: 22508 frames, 0 parts, warm, budget 0 s, took 25.1 s
+- cDNG_3to1_26-11-22_C0002_13363426: 32408 frames, 0 parts, warm, budget 0 s, took 194.4 s
+- cDNG_3to1_26-11-22_C0001_13144217: 33309 frames, 0 parts, warm, budget 0 s, took 225.5 s
+- cDNG_26-11-22_C0001_12504315: 35100 frames, 0 parts, warm, budget 0 s, took 170.5 s
+- cDNG_26-11-21_23091614_C0004_cam0: 15437 frames, 0 parts, cold, budget 32 s, took 41.3 s
+- cDNG_26-11-21_22491100_C0001_cam0: 36003 frames, 0 parts, cold, budget 176 s, took 213.0 s
+- cDNG_26-11-21_19294104_C0002_cam0: 10046 frames, 0 parts, cold, budget 14 s, took 16.9 s
+- cDNG_26-11-21_19110216_C0001_cam0: 29045 frames, 0 parts, warm, budget 0 s, took 142.3 s
 - cDNG_26-11-21_18534821_C0002_cam0: 20498 frames, 0 parts, warm, budget 0 s, took 70.1 s
-- cDNG_26-11-21_18421310_C0001_cam0: 11669 frames, 0 parts, warm, budget 0 s, took 10.7 s
-- cDNG_26-11-21_18172201_C0024_cam0: 1407 frames, 0 parts, cold, budget 0 s, took 0.4 s
-- cDNG_26-11-21_18154525_C0023_cam0: 1552 frames, 0 parts, cold, budget 0 s, took 0.5 s
-- cDNG_26-11-21_18135015_C0048_cam0: 1800 frames, 0 parts, cold, budget 0 s, took 0.7 s
-- cDNG_26-11-21_18115408_C0047_cam0: 1677 frames, 0 parts, cold, budget 0 s, took 0.6 s
-- cDNG_3to1_26-11-21_18073737_C0003_cam0: 348 frames, 0 parts, cold, budget 0 s, took 0.0 s
-- cDNG_26-11-21_18054003_C0046_cam0: 3600 frames, 0 parts, cold, budget 2 s, took 3.4 s
-- cDNG_26-11-21_18043323_C0022_cam0: 104 frames, 0 parts, cold, budget 0 s, took 1.0 s
-- cDNG_26-11-21_18032849_C0021_cam0: 375 frames, 0 parts, cold, budget 0 s, took 1.0 s
 
 ## Decisions
 
-    2026-11-21 18:39:17 [EST-05fb8f1-a] night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 112 GB; Core pid 862; drop-in checked; timers-mask rc=0; smart temp 38 C
-    2026-11-21 18:39:17 [EST-05fb8f1-a] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 55 frames, 0.7 GB written and deleted)
-    2026-11-21 18:39:17 [EST-05fb8f1-a] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-183917-baseline-EST-05fb8f1-a
-    2026-11-21 18:39:17 [EST-05fb8f1-a] EST block P6 starts
-    2026-11-21 18:39:18 [EST-05fb8f1-a] deleted cDNG_26-11-21_14230710_C0025_cam0: 1472 frames in 0.4 s (cold, budget 0 s)
-    2026-11-21 18:39:21 [EST-05fb8f1-a] deleted cDNG_26-11-21_14244013_C0026_cam0: 1680 frames in 2.7 s (cold, budget 0 s)
-    2026-11-21 18:39:23 [EST-05fb8f1-a] deleted cDNG_26-11-21_14261607_C0027_cam0: 1608 frames in 2.7 s (cold, budget 0 s)
-    2026-11-21 18:39:26 [EST-05fb8f1-a] deleted cDNG_26-11-21_14285610_C0028_cam0: 1671 frames in 2.8 s (cold, budget 0 s)
-    2026-11-21 18:39:27 [EST-05fb8f1-a] deleted cDNG_26-11-21_14303015_C0029_cam0: 1673 frames in 0.5 s (cold, budget 0 s)
-    2026-11-21 18:39:27 [EST-05fb8f1-a] deleted cDNG_26-11-21_14320608_C0030_cam0: 1209 frames in 0.3 s (cold, budget 0 s)
-    2026-11-21 18:39:27 [EST-05fb8f1-a] deleted cDNG_26-11-21_14334106_C0031_cam0: 1678 frames in 0.5 s (cold, budget 0 s)
-    2026-11-21 18:39:28 [EST-05fb8f1-a] deleted cDNG_26-11-21_14361806_C0032_cam0: 1403 frames in 0.4 s (cold, budget 0 s)
-    2026-11-21 18:39:28 [EST-05fb8f1-a] deleted cDNG_26-11-21_14375411_C0033_cam0: 1545 frames in 0.4 s (cold, budget 0 s)
-    2026-11-21 18:39:28 [EST-05fb8f1-a] deleted cDNG_26-11-21_14403737_C0034_cam0: 431 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:28 [EST-05fb8f1-a] deleted cDNG_26-11-21_14412710_C0035_cam0: 125 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:29 [EST-05fb8f1-a] deleted cDNG_26-11-21_14434701_C0036_cam0: 515 frames in 0.1 s (cold, budget 0 s)
-    2026-11-21 18:39:29 [EST-05fb8f1-a] deleted cDNG_5to1_26-11-21_14543649_C0001_cam0: 457 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:29 [EST-05fb8f1-a] deleted MLV_26-11-21_14564537_C0001_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:29 [EST-05fb8f1-a] deleted cDNG_3to1_26-11-21_14573859_C0001_cam0: 378 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:29 [EST-05fb8f1-a] deleted cDNG_26-11-21_15011824_C0037_cam0: 1732 frames in 0.5 s (cold, budget 0 s)
-    2026-11-21 18:39:30 [EST-05fb8f1-a] deleted cDNG_26-11-21_15042224_C0038_cam0: 1527 frames in 0.4 s (cold, budget 0 s)
-    2026-11-21 18:39:30 [EST-05fb8f1-a] deleted cDNG_26-11-21_15055821_C0039_cam0: 1267 frames in 0.3 s (cold, budget 0 s)
-    2026-11-21 18:39:30 [EST-05fb8f1-a] deleted MLV_26-11-21_15074126_C0002_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:30 [EST-05fb8f1-a] deleted cDNG_26-11-21_15083946_C0040_cam0: 440 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:32 [EST-05fb8f1-a] deleted cDNG_26-11-21_15105529_C0041_cam0: 451 frames in 2.0 s (cold, budget 0 s)
-    2026-11-21 18:39:32 [EST-05fb8f1-a] deleted cDNG_3to1_26-11-21_15114354_C0002_cam0: 381 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:32 [EST-05fb8f1-a] deleted MLV_26-11-21_15150455_C0003_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:32 [EST-05fb8f1-a] deleted cDNG_5to1_26-11-21_15155228_C0002_cam0: 339 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:33 [EST-05fb8f1-a] deleted cDNG_26-11-21_15163426_C0042_cam0: 1563 frames in 0.5 s (cold, budget 0 s)
-    2026-11-21 18:39:33 [EST-05fb8f1-a] deleted MLV_26-11-21_15192326_C0004_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:39:52 [EST-05fb8f1-a] deleted cDNG_26-11-21_15202923_C0043_cam0: 10803 frames in 19.5 s (cold, budget 16 s)
-    2026-11-21 18:40:46 [EST-05fb8f1-a] deleted cDNG_26-11-21_15251237_C0001_cam0: 18005 frames in 54.0 s (cold, budget 44 s)
-    2026-11-21 18:50:09 [EST-05fb8f1-a] merge of cDNG_26-11-21_18421310_C0001_cam0: 11669 frames, 3 parts, 29 s (2.47 ms per frame), first ETA error -23.4 %, intact; merge off again: True
-    2026-11-21 18:50:09 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 27 fps, 900 s: drop (432.3 s, dropped 1, first drop 431.9, gap 0, boundary 0)
-    2026-11-21 18:50:09 [EST-05fb8f1-a] EST P6 4kHDR16:cdng:unc at 27 (estimate 27): drop after 432.3 s
-    2026-11-21 18:50:21 [EST-05fb8f1-a] deleted cDNG_26-11-21_15315608_C0002_cam0: 7925 frames in 11.5 s (cold, budget 9 s)
-    2026-11-21 18:50:23 [EST-05fb8f1-a] deleted cDNG_26-11-21_15363401_C0004_cam0: 737 frames in 2.4 s (cold, budget 0 s)
-    2026-11-21 18:50:57 [EST-05fb8f1-a] deleted cDNG_26-11-21_15383221_C0005_cam0: 13208 frames in 32.1 s (cold, budget 24 s)
-    2026-11-21 18:50:57 [EST-05fb8f1-a] deleted cDNG_26-11-21_15451503_C0006_cam0: 42 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:50:57 [EST-05fb8f1-a] deleted cDNG_26-11-21_15454403_C0007_cam0: 42 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:50:57 [EST-05fb8f1-a] deleted cDNG_26-11-21_15471804_C0008_cam0: 43 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:51:55 [EST-05fb8f1-a] deleted cDNG_5to1_26-11-21_15481954_C0003_cam0: 18008 frames in 57.6 s (cold, budget 44 s)
-    2026-11-21 18:51:55 [EST-05fb8f1-a] deleted MLV_26-11-21_15535909_C0005_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:51:55 [EST-05fb8f1-a] deleted MLV_26-11-21_15542917_C0006_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 18:51:58 [EST-05fb8f1-a] deleted cDNG_26-11-21_16110914_C0009_cam0: 4141 frames in 3.1 s (cold, budget 2 s)
-    2026-11-21 18:52:01 [EST-05fb8f1-a] deleted cDNG_26-11-21_16144203_C0010_cam0: 4321 frames in 3.2 s (cold, budget 3 s)
-    2026-11-21 18:52:22 [EST-05fb8f1-a] deleted cDNG_26-11-21_16181847_C0011_cam0: 10806 frames in 20.9 s (cold, budget 16 s)
-    2026-11-21 19:08:52 [EST-05fb8f1-a] merge of cDNG_26-11-21_18534821_C0002_cam0: 20498 frames, 5 parts, 94 s (4.57 ms per frame), first ETA error -28.0 %, intact; merge off again: True
-    2026-11-21 19:08:53 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 26 fps, 900 s: drop (788.5 s, dropped 1, first drop 788.0, gap 0, boundary 0)
-    2026-11-21 19:08:53 [EST-05fb8f1-a] EST P6 4kHDR16:cdng:unc at 26 (estimate 27): drop after 788.5 s
-    2026-11-21 19:08:53 [EST-05fb8f1-a] deleted cDNG_26-11-21_16253620_C0012_cam0: 107 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 19:08:56 [EST-05fb8f1-a] deleted cDNG_26-11-21_16261708_C0013_cam0: 87 frames in 3.0 s (cold, budget 0 s)
-    2026-11-21 19:08:56 [EST-05fb8f1-a] deleted cDNG_26-11-21_17475316_C0014_cam0: 13 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 19:08:58 [EST-05fb8f1-a] deleted cDNG_26-11-21_17503116_C0015_cam0: 1501 frames in 1.9 s (cold, budget 0 s)
-    2026-11-21 19:09:00 [EST-05fb8f1-a] deleted cDNG_26-11-21_17515720_C0016_cam0: 1560 frames in 1.9 s (cold, budget 0 s)
-    2026-11-21 19:09:02 [EST-05fb8f1-a] deleted cDNG_26-11-21_17532406_C0017_cam0: 1562 frames in 1.9 s (cold, budget 0 s)
-    2026-11-21 19:09:03 [EST-05fb8f1-a] deleted cDNG_26-11-21_17544911_C0018_cam0: 1681 frames in 1.8 s (cold, budget 0 s)
-    2026-11-21 19:09:05 [EST-05fb8f1-a] deleted cDNG_26-11-21_17561606_C0019_cam0: 2100 frames in 1.6 s (cold, budget 1 s)
-    2026-11-21 19:09:07 [EST-05fb8f1-a] deleted cDNG_26-11-21_17574212_C0044_cam0: 1947 frames in 1.8 s (cold, budget 1 s)
-    2026-11-21 19:09:10 [EST-05fb8f1-a] deleted cDNG_26-11-21_17590037_C0045_cam0: 2700 frames in 2.5 s (cold, budget 1 s)
-    2026-11-21 19:09:13 [EST-05fb8f1-a] deleted cDNG_26-11-21_18002716_C0020_cam0: 3000 frames in 2.7 s (cold, budget 1 s)
-    2026-11-21 19:09:14 [EST-05fb8f1-a] deleted cDNG_26-11-21_18032849_C0021_cam0: 375 frames in 1.0 s (cold, budget 0 s)
-    2026-11-21 19:09:15 [EST-05fb8f1-a] deleted cDNG_26-11-21_18043323_C0022_cam0: 104 frames in 1.0 s (cold, budget 0 s)
-    2026-11-21 19:09:18 [EST-05fb8f1-a] deleted cDNG_26-11-21_18054003_C0046_cam0: 3600 frames in 3.4 s (cold, budget 2 s)
-    2026-11-21 19:09:18 [EST-05fb8f1-a] deleted cDNG_3to1_26-11-21_18073737_C0003_cam0: 348 frames in 0.0 s (cold, budget 0 s)
-    2026-11-21 19:09:19 [EST-05fb8f1-a] deleted cDNG_26-11-21_18115408_C0047_cam0: 1677 frames in 0.6 s (cold, budget 0 s)
-    2026-11-21 19:09:20 [EST-05fb8f1-a] deleted cDNG_26-11-21_18135015_C0048_cam0: 1800 frames in 0.7 s (cold, budget 0 s)
-    2026-11-21 19:09:20 [EST-05fb8f1-a] deleted cDNG_26-11-21_18154525_C0023_cam0: 1552 frames in 0.5 s (cold, budget 0 s)
-    2026-11-21 19:09:21 [EST-05fb8f1-a] deleted cDNG_26-11-21_18172201_C0024_cam0: 1407 frames in 0.4 s (cold, budget 0 s)
-    2026-11-21 19:09:32 [EST-05fb8f1-a] deleted cDNG_26-11-21_18421310_C0001_cam0: 11669 frames in 10.7 s (warm, budget 0 s)
-    2026-11-21 19:27:03 [EST-05fb8f1-a] merge of cDNG_26-11-21_19110216_C0001_cam0: 29045 frames, 6 parts, 195 s (6.71 ms per frame), first ETA error -28.1 %, intact; merge off again: True
-    2026-11-21 19:27:03 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: buffer_full (750.2 s, dropped 0, first drop , gap 0, boundary 0)
-    2026-11-21 19:27:03 [EST-05fb8f1-a] EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
-    2026-11-21 19:28:13 [EST-05fb8f1-a] deleted cDNG_26-11-21_18534821_C0002_cam0: 20498 frames in 70.1 s (warm, budget 0 s)
-    2026-11-21 19:34:51 [EST-05fb8f1-a] merge of cDNG_26-11-21_19294104_C0002_cam0: 10046 frames, 3 parts, 23 s (2.30 ms per frame), first ETA error -43.1 %, intact; merge off again: True
-    2026-11-21 19:34:51 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 38 fps, 900 s: buffer_full (268.7 s, dropped 0, first drop , gap 0, boundary 0)
-    2026-11-21 19:34:51 [EST-05fb8f1-a] EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
-    2026-11-21 22:43:21 [EST-05fb8f1-a] EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 40 fps, 900 s: stopped_by_signal (None s, dropped None, first drop None, gap None, boundary None)
-    2026-11-21 22:43:21 [EST-05fb8f1-a] EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
-    2026-11-21 22:43:48 [EST-05fb8f1-a] RESTORE OK
+    2026-11-22 14:29:10 [EST-05fb8f1-a] night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 576 GB; Core pid 17552; drop-in checked; timers-mask rc=0; smart temp 50 C
+    2026-11-22 14:29:11 [EST-05fb8f1-a] fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 58 frames, 0.7 GB written and deleted)
+    2026-11-22 14:29:11 [EST-05fb8f1-a] audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261122-142911-baseline-EST-05fb8f1-a
+    2026-11-22 14:29:11 [EST-05fb8f1-a] EST block P6b starts
+    2026-11-22 14:46:30 [EST-05fb8f1-a] merge of cDNG_26-11-22_C0001_14293423: 22508 frames, 5 parts, 96 s (4.28 ms per frame), first ETA error -18.2 %, intact; merge off again: True
+    2026-11-22 14:46:30 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 900 s: pass_15min (900.4 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-22 14:46:30 [EST-05fb8f1-a] EST P6b 4kHDR16:cdng:unc:log at 25: pass_15min after 900.4 s
+    2026-11-22 14:50:16 [EST-05fb8f1-a] deleted cDNG_3to1_26-11-22_C0001_13144217: 33309 frames in 225.5 s (warm, budget 0 s)
+    2026-11-22 15:08:40 [EST-05fb8f1-a] merge of cDNG_26-11-22_C0002_14514417: 21607 frames, 5 parts, 92 s (4.24 ms per frame), first ETA error -22.1 %, intact; merge off again: True
+    2026-11-22 15:08:40 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 24 fps, 900 s: pass_15min (900.3 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-22 15:08:40 [EST-05fb8f1-a] EST P6b 4kHDR16:cdng:unc:log at 24: pass_15min after 900.3 s
+    2026-11-22 15:11:55 [EST-05fb8f1-a] deleted cDNG_3to1_26-11-22_C0002_13363426: 32408 frames in 194.4 s (warm, budget 0 s)
+    2026-11-22 15:29:06 [EST-05fb8f1-a] merge of cDNG_26-11-22_C0003_15132210: 12600 frames, 3 parts, 29 s (2.29 ms per frame), first ETA error -13.9 %, intact; merge off again: True
+    2026-11-22 15:29:06 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 14 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-22 15:29:06 [EST-05fb8f1-a] EST P6b 4kHDR16:cdng:lj:log at 14: pass_15min after 900.1 s
+    2026-11-22 15:29:32 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0001_14293423: 22508 frames in 25.1 s (warm, budget 0 s)
+    2026-11-22 15:40:38 [EST-05fb8f1-a] cooldown 1: 601 s; NVMe 50.9 -> 40.9 C, Pi 52.9 -> 49.6 C
+    2026-11-22 15:56:46 [EST-05fb8f1-a] merge of cDNG_26-11-22_C0001_15410112: 11702 frames, 3 parts, 24 s (2.07 ms per frame), first ETA error -27.1 %, intact; merge off again: True
+    2026-11-22 15:56:46 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 13 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-22 15:56:46 [EST-05fb8f1-a] EST P6b 4kHDR16:cdng:lj:log at 13: pass_15min after 900.1 s
+    2026-11-22 15:56:47 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0002_14514417: 21607 frames in 0.9 s (warm, budget 0 s)
+    2026-11-22 15:58:19 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 41 fps, 900 s: drop (1.0 s, dropped 4, first drop 0.8, gap 0, boundary )
+    2026-11-22 15:58:19 [EST-05fb8f1-a] EST P6b 4kP:prores:hq:arri_logc4 at 41: drop after 1.0 s
+    2026-11-22 15:58:40 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 40 fps, 900 s: drop (1.0 s, dropped 3, first drop 0.8, gap 0, boundary )
+    2026-11-22 15:58:40 [EST-05fb8f1-a] EST P6b 4kP:prores:hq:arri_logc4 at 40: drop after 1.0 s
+    2026-11-22 15:58:40 [EST-05fb8f1-a] EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+    2026-11-22 15:58:40 [EST-05fb8f1-a] stage EST-05fb8f1-a done
+    2026-11-22 15:59:15 [EST-05fb8f1-a] RESTORE OK

@@ -1,300 +1,300 @@
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:53+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:54+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:55+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:56+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:57+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7944, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7956, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6412
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7956
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:58+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7943, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7955, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6411
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7955
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: exposure_max:7942, exposure_min:4, current_exposure:4
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX:7954, HMAX:362
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a: V4L2_CID_VBLANK : 6410
-2026-11-21T18:38:59+01:00 apertar kernel: imx283 0-001a:         VMAX : 7954
-2026-11-21T18:39:15+01:00 apertar kernel: nvme nvme0: using unchecked data buffer
-2026-11-21T18:41:49+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T18:41:49+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
-2026-11-21T18:41:49+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
-2026-11-21T18:41:49+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T18:41:49+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T18:41:49+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T18:41:50+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T18:41:54+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T18:41:54+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
-2026-11-21T18:41:54+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
-2026-11-21T18:41:55+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T18:41:55+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: VBLANK=3200 -> VMAX=5400
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T18:41:55+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T18:42:01+01:00 apertar kernel: imx585 10-001a: VBLANK=2800 -> VMAX=5000
-2026-11-21T18:53:25+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T18:53:25+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
-2026-11-21T18:53:25+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
-2026-11-21T18:53:25+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T18:53:25+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T18:53:25+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: VBLANK=2840 -> VMAX=5000
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T18:53:26+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T18:53:30+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T18:53:30+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
-2026-11-21T18:53:30+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
-2026-11-21T18:53:30+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T18:53:30+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T18:53:30+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: VBLANK=2800 -> VMAX=5000
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T18:53:31+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T18:53:36+01:00 apertar kernel: imx585 10-001a: VBLANK=2964 -> VMAX=5164
-2026-11-21T18:53:36+01:00 apertar kernel: imx585 10-001a: HBLANK=21 -> HMAX=553 (min_hmax=550, width=3840)
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: HDR=0, HCG=0
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
-2026-11-21T19:10:34+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T19:10:34+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T19:10:34+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: VBLANK=3004 -> VMAX=5164
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: HBLANK=21 -> HMAX=553 (min_hmax=550, width=3840)
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: HCG=0
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T19:10:35+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T19:10:38+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T19:10:38+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
-2026-11-21T19:10:38+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
-2026-11-21T19:10:38+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T19:10:38+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T19:10:38+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: VBLANK=3004 -> VMAX=5164
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: HBLANK=21 -> HMAX=553 (min_hmax=550, width=3840)
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: HCG=0
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T19:10:39+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T19:10:43+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
-2026-11-21T19:10:44+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T19:10:44+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: VBLANK=3004 -> VMAX=5164
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: HBLANK=21 -> HMAX=553 (min_hmax=550, width=3840)
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: HCG=0
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T19:10:44+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T19:10:50+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
-2026-11-21T19:10:50+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
-2026-11-21T19:29:17+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T19:29:17+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
-2026-11-21T19:29:17+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
-2026-11-21T19:29:17+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T19:29:17+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T19:29:17+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: HCG=0
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T19:29:18+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T19:29:22+01:00 apertar kernel: imx585 10-001a: power_off
-2026-11-21T19:29:22+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
-2026-11-21T19:29:22+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
-2026-11-21T19:29:22+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
-2026-11-21T19:29:22+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
-2026-11-21T19:29:22+01:00 apertar kernel: imx585 10-001a: power_on
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: HCG=0
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: VMAX=0
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: HMAX=0
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: SHR=0
-2026-11-21T19:29:23+01:00 apertar kernel: imx585 10-001a: Streaming started
-2026-11-21T19:29:29+01:00 apertar kernel: imx585 10-001a: VBLANK=1286 -> VMAX=3446
-2026-11-21T19:29:29+01:00 apertar kernel: imx585 10-001a: HBLANK=119 -> HMAX=567 (min_hmax=550, width=3840)
+2026-11-22T12:43:16+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:43:16+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VBLANK=90 -> VMAX=2250
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=60 (LCG)
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VBLANK=1170 -> VMAX=3330
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=3330 HMAX=550 pixel_rate=259200000
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VBLANK=3420 -> VMAX=4500
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=0 (LCG)
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VBLANK=1620 -> VMAX=2700
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:43:17+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:43:17+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VBLANK=1620 -> VMAX=2700
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=1920)
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:43:17+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: HDR=1, HCG=0
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=259200000
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
+2026-11-22T12:43:23+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:43:23+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:43:23+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: VBLANK=2340 -> VMAX=4500
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:43:24+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:43:35+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:43:35+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
+2026-11-22T12:43:35+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
+2026-11-22T12:43:35+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:43:35+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:43:35+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: VBLANK=2300 -> VMAX=4500
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:43:36+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:43:41+01:00 apertar kernel: imx585 10-001a: VBLANK=3200 -> VMAX=5400
+2026-11-22T12:44:08+01:00 apertar kernel: nvme nvme0: using unchecked data buffer
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: HDR=0, HCG=0
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:44:11+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:44:11+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:44:11+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:44:12+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:44:15+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:44:15+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:44:15+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:44:15+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:44:15+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:44:15+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:44:16+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:44:20+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:44:20+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:44:20+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:44:20+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:44:20+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:44:20+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:44:21+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:44:27+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
+2026-11-22T12:44:27+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: HDR=1, HCG=0
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:01+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:46:01+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:46:01+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: VBLANK=2340 -> VMAX=4500
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:46:02+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:46:13+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:46:13+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=2
+2026-11-22T12:46:13+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=4500 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:13+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:46:13+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:46:13+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: VBLANK=2300 -> VMAX=4500
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:46:14+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:46:19+01:00 apertar kernel: imx585 10-001a: VBLANK=3200 -> VMAX=5400
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: HDR=0, HCG=0
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:43+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:46:43+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:46:43+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:46:44+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:46:47+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:46:47+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:46:47+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:47+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:46:47+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:46:47+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:46:48+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:46:52+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:46:52+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:46:52+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:46:52+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:46:52+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:46:52+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: VBLANK=3240 -> VMAX=5400
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: HBLANK=0 -> HMAX=550 (min_hmax=550, width=3840)
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:46:53+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:46:58+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
+2026-11-22T12:46:58+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
+2026-11-22T12:47:07+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:47:07+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:47:07+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:47:08+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:47:08+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:47:08+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:47:13+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:47:13+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:47:13+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:47:13+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:47:13+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:47:13+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:47:13+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:47:14+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:48:50+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:48:50+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:48:50+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:48:50+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:48:50+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:48:50+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:48:51+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:48:55+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:48:55+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:48:55+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:48:55+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:48:55+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:48:55+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: VBLANK=1258 -> VMAX=3418
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: HBLANK=49 -> HMAX=557 (min_hmax=550, width=3840)
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:48:56+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:49:01+01:00 apertar kernel: imx585 10-001a: VBLANK=1482 -> VMAX=3642
+2026-11-22T12:49:01+01:00 apertar kernel: imx585 10-001a: HBLANK=7 -> HMAX=551 (min_hmax=550, width=3840)
+2026-11-22T12:49:10+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:49:10+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:49:10+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:49:10+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:49:10+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:49:10+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: VBLANK=1482 -> VMAX=3642
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: HBLANK=7 -> HMAX=551 (min_hmax=550, width=3840)
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:49:11+01:00 apertar kernel: imx585 10-001a: Streaming started
+2026-11-22T12:49:15+01:00 apertar kernel: imx585 10-001a: power_off
+2026-11-22T12:49:15+01:00 apertar kernel: imx585 10-001a: Update minimum HMAX: link_freq=891000000 lane_scale=1 hdr_scale=1
+2026-11-22T12:49:15+01:00 apertar kernel: imx585 10-001a: Framing: VMAX=2250 HMAX=550 pixel_rate=518400000
+2026-11-22T12:49:15+01:00 apertar kernel: rp1-cfe 1f00110000.csi: Using a link rate of 1782 Mbps
+2026-11-22T12:49:15+01:00 apertar kernel: rp1-cfe 1f00110000.csi: DPHY: Datarate 1782 Mbps out of range
+2026-11-22T12:49:15+01:00 apertar kernel: imx585 10-001a: power_on
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: Internal sync leader: XVS/XHS output
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: VBLANK=1482 -> VMAX=3642
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: HBLANK=7 -> HMAX=551 (min_hmax=550, width=3840)
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: ANALOG_GAIN=40 (LCG)
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: HCG=0
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: HCG write reg=0
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: VMAX=0
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: HMAX=0
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: SHR=0
+2026-11-22T12:49:16+01:00 apertar kernel: imx585 10-001a: Streaming started

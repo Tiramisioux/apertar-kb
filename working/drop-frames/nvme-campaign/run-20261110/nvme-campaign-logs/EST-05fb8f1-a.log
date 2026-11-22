@@ -1,154 +1,46 @@
-2026-11-21 18:39:14 write budget 16000 GB, 7033 GB used so far in this run
-2026-11-21 18:39:14 preserving 0 pre-existing clip folder(s); 60 clip folder(s) of this run on the drive
-2026-11-21 18:39:14 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
-2026-11-21 18:39:17 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 112 GB; Core pid 862; drop-in checked; timers-mask rc=0; smart temp 38 C
-2026-11-21 18:39:17 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 55 frames, 0.7 GB written and deleted)
-2026-11-21 18:39:17 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-183917-baseline-EST-05fb8f1-a
-2026-11-21 18:39:17 DECISION EST block P6 starts
-2026-11-21 18:39:17 fill gate: deleting cDNG_26-11-21_14230710_C0025_cam0 (1472 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:18 DECISION deleted cDNG_26-11-21_14230710_C0025_cam0: 1472 frames in 0.4 s (cold, budget 0 s)
-2026-11-21 18:39:18 fill gate: deleting cDNG_26-11-21_14244013_C0026_cam0 (1680 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:21 DECISION deleted cDNG_26-11-21_14244013_C0026_cam0: 1680 frames in 2.7 s (cold, budget 0 s)
-2026-11-21 18:39:21 fill gate: deleting cDNG_26-11-21_14261607_C0027_cam0 (1608 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:23 DECISION deleted cDNG_26-11-21_14261607_C0027_cam0: 1608 frames in 2.7 s (cold, budget 0 s)
-2026-11-21 18:39:23 fill gate: deleting cDNG_26-11-21_14285610_C0028_cam0 (1671 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:26 DECISION deleted cDNG_26-11-21_14285610_C0028_cam0: 1671 frames in 2.8 s (cold, budget 0 s)
-2026-11-21 18:39:26 fill gate: deleting cDNG_26-11-21_14303015_C0029_cam0 (1673 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:27 DECISION deleted cDNG_26-11-21_14303015_C0029_cam0: 1673 frames in 0.5 s (cold, budget 0 s)
-2026-11-21 18:39:27 fill gate: deleting cDNG_26-11-21_14320608_C0030_cam0 (1209 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:27 DECISION deleted cDNG_26-11-21_14320608_C0030_cam0: 1209 frames in 0.3 s (cold, budget 0 s)
-2026-11-21 18:39:27 fill gate: deleting cDNG_26-11-21_14334106_C0031_cam0 (1678 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:27 DECISION deleted cDNG_26-11-21_14334106_C0031_cam0: 1678 frames in 0.5 s (cold, budget 0 s)
-2026-11-21 18:39:27 fill gate: deleting cDNG_26-11-21_14361806_C0032_cam0 (1403 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:28 DECISION deleted cDNG_26-11-21_14361806_C0032_cam0: 1403 frames in 0.4 s (cold, budget 0 s)
-2026-11-21 18:39:28 fill gate: deleting cDNG_26-11-21_14375411_C0033_cam0 (1545 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:28 DECISION deleted cDNG_26-11-21_14375411_C0033_cam0: 1545 frames in 0.4 s (cold, budget 0 s)
-2026-11-21 18:39:28 fill gate: deleting cDNG_26-11-21_14403737_C0034_cam0 (431 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:28 DECISION deleted cDNG_26-11-21_14403737_C0034_cam0: 431 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:28 fill gate: deleting cDNG_26-11-21_14412710_C0035_cam0 (125 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:28 DECISION deleted cDNG_26-11-21_14412710_C0035_cam0: 125 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:28 fill gate: deleting cDNG_26-11-21_14434701_C0036_cam0 (515 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:29 DECISION deleted cDNG_26-11-21_14434701_C0036_cam0: 515 frames in 0.1 s (cold, budget 0 s)
-2026-11-21 18:39:29 fill gate: deleting cDNG_5to1_26-11-21_14543649_C0001_cam0 (457 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:29 DECISION deleted cDNG_5to1_26-11-21_14543649_C0001_cam0: 457 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:29 fill gate: deleting MLV_26-11-21_14564537_C0001_cam0 (0 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:29 DECISION deleted MLV_26-11-21_14564537_C0001_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:29 fill gate: deleting cDNG_3to1_26-11-21_14573859_C0001_cam0 (378 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:29 DECISION deleted cDNG_3to1_26-11-21_14573859_C0001_cam0: 378 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:29 fill gate: deleting cDNG_26-11-21_15011824_C0037_cam0 (1732 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:29 DECISION deleted cDNG_26-11-21_15011824_C0037_cam0: 1732 frames in 0.5 s (cold, budget 0 s)
-2026-11-21 18:39:29 fill gate: deleting cDNG_26-11-21_15042224_C0038_cam0 (1527 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:30 DECISION deleted cDNG_26-11-21_15042224_C0038_cam0: 1527 frames in 0.4 s (cold, budget 0 s)
-2026-11-21 18:39:30 fill gate: deleting cDNG_26-11-21_15055821_C0039_cam0 (1267 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:30 DECISION deleted cDNG_26-11-21_15055821_C0039_cam0: 1267 frames in 0.3 s (cold, budget 0 s)
-2026-11-21 18:39:30 fill gate: deleting MLV_26-11-21_15074126_C0002_cam0 (0 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:30 DECISION deleted MLV_26-11-21_15074126_C0002_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:30 fill gate: deleting cDNG_26-11-21_15083946_C0040_cam0 (440 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:30 DECISION deleted cDNG_26-11-21_15083946_C0040_cam0: 440 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:30 fill gate: deleting cDNG_26-11-21_15105529_C0041_cam0 (451 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:32 DECISION deleted cDNG_26-11-21_15105529_C0041_cam0: 451 frames in 2.0 s (cold, budget 0 s)
-2026-11-21 18:39:32 fill gate: deleting cDNG_3to1_26-11-21_15114354_C0002_cam0 (381 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:32 DECISION deleted cDNG_3to1_26-11-21_15114354_C0002_cam0: 381 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:32 fill gate: deleting MLV_26-11-21_15150455_C0003_cam0 (0 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:32 DECISION deleted MLV_26-11-21_15150455_C0003_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:32 fill gate: deleting cDNG_5to1_26-11-21_15155228_C0002_cam0 (339 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:32 DECISION deleted cDNG_5to1_26-11-21_15155228_C0002_cam0: 339 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:32 fill gate: deleting cDNG_26-11-21_15163426_C0042_cam0 (1563 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:33 DECISION deleted cDNG_26-11-21_15163426_C0042_cam0: 1563 frames in 0.5 s (cold, budget 0 s)
-2026-11-21 18:39:33 fill gate: deleting MLV_26-11-21_15192326_C0004_cam0 (0 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:39:33 DECISION deleted MLV_26-11-21_15192326_C0004_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:39:33 fill gate: deleting cDNG_26-11-21_15202923_C0043_cam0 (10803 frames, 0 parts, cold: written before this boot, budget 16 s) through the media route
-2026-11-21 18:39:52 DECISION deleted cDNG_26-11-21_15202923_C0043_cam0: 10803 frames in 19.5 s (cold, budget 16 s)
-2026-11-21 18:39:52 fill gate: deleting cDNG_26-11-21_15251237_C0001_cam0 (18005 frames, 0 parts, cold: written before this boot, budget 44 s) through the media route
-2026-11-21 18:40:46 DECISION deleted cDNG_26-11-21_15251237_C0001_cam0: 18005 frames in 54.0 s (cold, budget 44 s)
-2026-11-21 18:41:47 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
-2026-11-21 18:49:39 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=27.0 -> drop after 432s dropped=1 kinds=capture-gap:1 pi=58C nvme=69.85
-2026-11-21 18:50:09 DECISION merge of cDNG_26-11-21_18421310_C0001_cam0: 11669 frames, 3 parts, 29 s (2.47 ms per frame), first ETA error -23.4 %, intact; merge off again: True
-2026-11-21 18:50:09 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 27 fps, 900 s: drop (432.3 s, dropped 1, first drop 431.9, gap 0, boundary 0)
-2026-11-21 18:50:09 DECISION EST P6 4kHDR16:cdng:unc at 27 (estimate 27): drop after 432.3 s
-2026-11-21 18:50:09 fill gate: deleting cDNG_26-11-21_15315608_C0002_cam0 (7925 frames, 0 parts, cold: written before this boot, budget 9 s) through the media route
-2026-11-21 18:50:21 DECISION deleted cDNG_26-11-21_15315608_C0002_cam0: 7925 frames in 11.5 s (cold, budget 9 s)
-2026-11-21 18:50:21 fill gate: deleting cDNG_26-11-21_15363401_C0004_cam0 (737 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:50:23 DECISION deleted cDNG_26-11-21_15363401_C0004_cam0: 737 frames in 2.4 s (cold, budget 0 s)
-2026-11-21 18:50:25 fill gate: deleting cDNG_26-11-21_15383221_C0005_cam0 (13208 frames, 0 parts, cold: written before this boot, budget 24 s) through the media route
-2026-11-21 18:50:57 DECISION deleted cDNG_26-11-21_15383221_C0005_cam0: 13208 frames in 32.1 s (cold, budget 24 s)
-2026-11-21 18:50:57 fill gate: deleting cDNG_26-11-21_15451503_C0006_cam0 (42 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:50:57 DECISION deleted cDNG_26-11-21_15451503_C0006_cam0: 42 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:50:57 fill gate: deleting cDNG_26-11-21_15454403_C0007_cam0 (42 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:50:57 DECISION deleted cDNG_26-11-21_15454403_C0007_cam0: 42 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:50:57 fill gate: deleting cDNG_26-11-21_15471804_C0008_cam0 (43 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:50:57 DECISION deleted cDNG_26-11-21_15471804_C0008_cam0: 43 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:50:57 fill gate: deleting cDNG_5to1_26-11-21_15481954_C0003_cam0 (18008 frames, 0 parts, cold: written before this boot, budget 44 s) through the media route
-2026-11-21 18:51:55 DECISION deleted cDNG_5to1_26-11-21_15481954_C0003_cam0: 18008 frames in 57.6 s (cold, budget 44 s)
-2026-11-21 18:51:55 fill gate: deleting MLV_26-11-21_15535909_C0005_cam0 (0 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:51:55 DECISION deleted MLV_26-11-21_15535909_C0005_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:51:55 fill gate: deleting MLV_26-11-21_15542917_C0006_cam0 (0 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 18:51:55 DECISION deleted MLV_26-11-21_15542917_C0006_cam0: 0 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 18:51:55 fill gate: deleting cDNG_26-11-21_16110914_C0009_cam0 (4141 frames, 0 parts, cold: written before this boot, budget 2 s) through the media route
-2026-11-21 18:51:58 DECISION deleted cDNG_26-11-21_16110914_C0009_cam0: 4141 frames in 3.1 s (cold, budget 2 s)
-2026-11-21 18:51:58 fill gate: deleting cDNG_26-11-21_16144203_C0010_cam0 (4321 frames, 0 parts, cold: written before this boot, budget 3 s) through the media route
-2026-11-21 18:52:01 DECISION deleted cDNG_26-11-21_16144203_C0010_cam0: 4321 frames in 3.2 s (cold, budget 3 s)
-2026-11-21 18:52:01 fill gate: deleting cDNG_26-11-21_16181847_C0011_cam0 (10806 frames, 0 parts, cold: written before this boot, budget 16 s) through the media route
-2026-11-21 18:52:22 DECISION deleted cDNG_26-11-21_16181847_C0011_cam0: 10806 frames in 20.9 s (cold, budget 16 s)
-2026-11-21 18:53:23 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
-2026-11-21 19:07:11 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=26.0 -> drop after 789s dropped=1 kinds=capture-gap:1 pi=58C nvme=75.85
-2026-11-21 19:08:52 DECISION merge of cDNG_26-11-21_18534821_C0002_cam0: 20498 frames, 5 parts, 94 s (4.57 ms per frame), first ETA error -28.0 %, intact; merge off again: True
-2026-11-21 19:08:53 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 26 fps, 900 s: drop (788.5 s, dropped 1, first drop 788.0, gap 0, boundary 0)
-2026-11-21 19:08:53 DECISION EST P6 4kHDR16:cdng:unc at 26 (estimate 27): drop after 788.5 s
-2026-11-21 19:08:53 fill gate: deleting cDNG_26-11-21_16253620_C0012_cam0 (107 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:08:53 DECISION deleted cDNG_26-11-21_16253620_C0012_cam0: 107 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 19:08:53 fill gate: deleting cDNG_26-11-21_16261708_C0013_cam0 (87 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:08:56 DECISION deleted cDNG_26-11-21_16261708_C0013_cam0: 87 frames in 3.0 s (cold, budget 0 s)
-2026-11-21 19:08:56 fill gate: deleting cDNG_26-11-21_17475316_C0014_cam0 (13 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:08:56 DECISION deleted cDNG_26-11-21_17475316_C0014_cam0: 13 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 19:08:56 fill gate: deleting cDNG_26-11-21_17503116_C0015_cam0 (1501 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:08:58 DECISION deleted cDNG_26-11-21_17503116_C0015_cam0: 1501 frames in 1.9 s (cold, budget 0 s)
-2026-11-21 19:08:58 fill gate: deleting cDNG_26-11-21_17515720_C0016_cam0 (1560 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:00 DECISION deleted cDNG_26-11-21_17515720_C0016_cam0: 1560 frames in 1.9 s (cold, budget 0 s)
-2026-11-21 19:09:00 fill gate: deleting cDNG_26-11-21_17532406_C0017_cam0 (1562 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:02 DECISION deleted cDNG_26-11-21_17532406_C0017_cam0: 1562 frames in 1.9 s (cold, budget 0 s)
-2026-11-21 19:09:02 fill gate: deleting cDNG_26-11-21_17544911_C0018_cam0 (1681 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:03 DECISION deleted cDNG_26-11-21_17544911_C0018_cam0: 1681 frames in 1.8 s (cold, budget 0 s)
-2026-11-21 19:09:04 fill gate: deleting cDNG_26-11-21_17561606_C0019_cam0 (2100 frames, 0 parts, cold: written before this boot, budget 1 s) through the media route
-2026-11-21 19:09:05 DECISION deleted cDNG_26-11-21_17561606_C0019_cam0: 2100 frames in 1.6 s (cold, budget 1 s)
-2026-11-21 19:09:05 fill gate: deleting cDNG_26-11-21_17574212_C0044_cam0 (1947 frames, 0 parts, cold: written before this boot, budget 1 s) through the media route
-2026-11-21 19:09:07 DECISION deleted cDNG_26-11-21_17574212_C0044_cam0: 1947 frames in 1.8 s (cold, budget 1 s)
-2026-11-21 19:09:07 fill gate: deleting cDNG_26-11-21_17590037_C0045_cam0 (2700 frames, 0 parts, cold: written before this boot, budget 1 s) through the media route
-2026-11-21 19:09:10 DECISION deleted cDNG_26-11-21_17590037_C0045_cam0: 2700 frames in 2.5 s (cold, budget 1 s)
-2026-11-21 19:09:10 fill gate: deleting cDNG_26-11-21_18002716_C0020_cam0 (3000 frames, 0 parts, cold: written before this boot, budget 1 s) through the media route
-2026-11-21 19:09:13 DECISION deleted cDNG_26-11-21_18002716_C0020_cam0: 3000 frames in 2.7 s (cold, budget 1 s)
-2026-11-21 19:09:13 fill gate: deleting cDNG_26-11-21_18032849_C0021_cam0 (375 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:14 DECISION deleted cDNG_26-11-21_18032849_C0021_cam0: 375 frames in 1.0 s (cold, budget 0 s)
-2026-11-21 19:09:14 fill gate: deleting cDNG_26-11-21_18043323_C0022_cam0 (104 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:15 DECISION deleted cDNG_26-11-21_18043323_C0022_cam0: 104 frames in 1.0 s (cold, budget 0 s)
-2026-11-21 19:09:15 fill gate: deleting cDNG_26-11-21_18054003_C0046_cam0 (3600 frames, 0 parts, cold: written before this boot, budget 2 s) through the media route
-2026-11-21 19:09:18 DECISION deleted cDNG_26-11-21_18054003_C0046_cam0: 3600 frames in 3.4 s (cold, budget 2 s)
-2026-11-21 19:09:18 fill gate: deleting cDNG_3to1_26-11-21_18073737_C0003_cam0 (348 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:18 DECISION deleted cDNG_3to1_26-11-21_18073737_C0003_cam0: 348 frames in 0.0 s (cold, budget 0 s)
-2026-11-21 19:09:18 fill gate: deleting cDNG_26-11-21_18115408_C0047_cam0 (1677 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:19 DECISION deleted cDNG_26-11-21_18115408_C0047_cam0: 1677 frames in 0.6 s (cold, budget 0 s)
-2026-11-21 19:09:19 fill gate: deleting cDNG_26-11-21_18135015_C0048_cam0 (1800 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:20 DECISION deleted cDNG_26-11-21_18135015_C0048_cam0: 1800 frames in 0.7 s (cold, budget 0 s)
-2026-11-21 19:09:20 fill gate: deleting cDNG_26-11-21_18154525_C0023_cam0 (1552 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:20 DECISION deleted cDNG_26-11-21_18154525_C0023_cam0: 1552 frames in 0.5 s (cold, budget 0 s)
-2026-11-21 19:09:20 fill gate: deleting cDNG_26-11-21_18172201_C0024_cam0 (1407 frames, 0 parts, cold: written before this boot, budget 0 s) through the media route
-2026-11-21 19:09:21 DECISION deleted cDNG_26-11-21_18172201_C0024_cam0: 1407 frames in 0.4 s (cold, budget 0 s)
-2026-11-21 19:09:21 fill gate: deleting cDNG_26-11-21_18421310_C0001_cam0 (11669 frames, 0 parts, warm, budget 0 s) through the media route
-2026-11-21 19:09:32 DECISION deleted cDNG_26-11-21_18421310_C0001_cam0: 11669 frames in 10.7 s (warm, budget 0 s)
-2026-11-21 19:10:33 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
-2026-11-21 19:23:44 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=39.0 -> buffer_full after 750s dropped=0 kinds= pi=57C nvme=74.85
-2026-11-21 19:27:03 DECISION merge of cDNG_26-11-21_19110216_C0001_cam0: 29045 frames, 6 parts, 195 s (6.71 ms per frame), first ETA error -28.1 %, intact; merge off again: True
-2026-11-21 19:27:03 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: buffer_full (750.2 s, dropped 0, first drop , gap 0, boundary 0)
-2026-11-21 19:27:03 DECISION EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
-2026-11-21 19:27:03 fill gate: deleting cDNG_26-11-21_18534821_C0002_cam0 (20498 frames, 0 parts, warm, budget 0 s) through the media route
-2026-11-21 19:28:13 DECISION deleted cDNG_26-11-21_18534821_C0002_cam0: 20498 frames in 70.1 s (warm, budget 0 s)
-2026-11-21 19:29:14 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
-2026-11-21 19:34:21 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=38.0 -> buffer_full after 269s dropped=0 kinds=buffer_full:1 pi=57C nvme=71.85
-2026-11-21 19:34:51 DECISION merge of cDNG_26-11-21_19294104_C0002_cam0: 10046 frames, 3 parts, 23 s (2.30 ms per frame), first ETA error -43.1 %, intact; merge off again: True
-2026-11-21 19:34:51 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 38 fps, 900 s: buffer_full (268.7 s, dropped 0, first drop , gap 0, boundary 0)
-2026-11-21 19:34:51 DECISION EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
-2026-11-21 19:34:52 gate: waiting (only 415 GiB free, the take needs 427)
-2026-11-21 22:43:21 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 40 fps, 900 s: stopped_by_signal (None s, dropped None, first drop None, gap None, boundary None)
-2026-11-21 22:43:21 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
-2026-11-21 22:43:48 DECISION RESTORE OK
-2026-11-21 22:43:48 night EST-05fb8f1-a over: stopped_by_signal: stopped by SIGTERM while waiting at the gate
+2026-11-22 14:29:08 write budget 16000 GB, 8824 GB used so far in this run
+2026-11-22 14:29:08 preserving 0 pre-existing clip folder(s); 3 clip folder(s) of this run on the drive
+2026-11-22 14:29:08 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-22 14:29:10 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 576 GB; Core pid 17552; drop-in checked; timers-mask rc=0; smart temp 50 C
+2026-11-22 14:29:11 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 58 frames, 0.7 GB written and deleted)
+2026-11-22 14:29:11 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261122-142911-baseline-EST-05fb8f1-a
+2026-11-22 14:29:11 DECISION EST block P6b starts
+2026-11-22 14:44:49 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> pass_15min after 900s dropped=0 kinds= pi=57C nvme=66.85
+2026-11-22 14:46:30 DECISION merge of cDNG_26-11-22_C0001_14293423: 22508 frames, 5 parts, 96 s (4.28 ms per frame), first ETA error -18.2 %, intact; merge off again: True
+2026-11-22 14:46:30 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 900 s: pass_15min (900.4 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 14:46:30 DECISION EST P6b 4kHDR16:cdng:unc:log at 25: pass_15min after 900.4 s
+2026-11-22 14:46:31 fill gate: deleting cDNG_3to1_26-11-22_C0001_13144217 (33309 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 14:50:16 DECISION deleted cDNG_3to1_26-11-22_C0001_13144217: 33309 frames in 225.5 s (warm, budget 0 s)
+2026-11-22 14:51:17 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:06:58 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=24.0 -> pass_15min after 900s dropped=0 kinds= pi=57C nvme=65.85
+2026-11-22 15:08:40 DECISION merge of cDNG_26-11-22_C0002_14514417: 21607 frames, 5 parts, 92 s (4.24 ms per frame), first ETA error -22.1 %, intact; merge off again: True
+2026-11-22 15:08:40 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 24 fps, 900 s: pass_15min (900.3 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 15:08:40 DECISION EST P6b 4kHDR16:cdng:unc:log at 24: pass_15min after 900.3 s
+2026-11-22 15:08:41 fill gate: deleting cDNG_3to1_26-11-22_C0002_13363426 (32408 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 15:11:55 DECISION deleted cDNG_3to1_26-11-22_C0002_13363426: 32408 frames in 194.4 s (warm, budget 0 s)
+2026-11-22 15:12:56 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:28:36 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=14.0 -> pass_15min after 900s dropped=0 kinds= pi=57C nvme=51.85
+2026-11-22 15:29:06 DECISION merge of cDNG_26-11-22_C0003_15132210: 12600 frames, 3 parts, 29 s (2.29 ms per frame), first ETA error -13.9 %, intact; merge off again: True
+2026-11-22 15:29:06 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 14 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 15:29:06 DECISION EST P6b 4kHDR16:cdng:lj:log at 14: pass_15min after 900.1 s
+2026-11-22 15:29:07 fill gate: deleting cDNG_26-11-22_C0001_14293423 (22508 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 15:29:32 DECISION deleted cDNG_26-11-22_C0001_14293423: 22508 frames in 25.1 s (warm, budget 0 s)
+2026-11-22 15:30:33 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:40:38 DECISION cooldown 1: 601 s; NVMe 50.9 -> 40.9 C, Pi 52.9 -> 49.6 C
+2026-11-22 15:56:15 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=13.0 -> pass_15min after 900s dropped=0 kinds= pi=58C nvme=50.85
+2026-11-22 15:56:46 DECISION merge of cDNG_26-11-22_C0001_15410112: 11702 frames, 3 parts, 24 s (2.07 ms per frame), first ETA error -27.1 %, intact; merge off again: True
+2026-11-22 15:56:46 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 13 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 15:56:46 DECISION EST P6b 4kHDR16:cdng:lj:log at 13: pass_15min after 900.1 s
+2026-11-22 15:56:46 fill gate: deleting cDNG_26-11-22_C0002_14514417 (21607 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 15:56:47 DECISION deleted cDNG_26-11-22_C0002_14514417: 21607 frames in 0.9 s (warm, budget 0 s)
+2026-11-22 15:57:48 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:58:19 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 fps=41.0 -> drop after 1s dropped=4 kinds=capture-gap:1 pi=58C nvme=47.85
+2026-11-22 15:58:19 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 41 fps, 900 s: drop (1.0 s, dropped 4, first drop 0.8, gap 0, boundary )
+2026-11-22 15:58:19 DECISION EST P6b 4kP:prores:hq:arri_logc4 at 41: drop after 1.0 s
+2026-11-22 15:58:40 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 fps=40.0 -> drop after 1s dropped=3 kinds=capture-gap:1 pi=58C nvme=44.85
+2026-11-22 15:58:40 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 40 fps, 900 s: drop (1.0 s, dropped 3, first drop 0.8, gap 0, boundary )
+2026-11-22 15:58:40 DECISION EST P6b 4kP:prores:hq:arri_logc4 at 40: drop after 1.0 s
+2026-11-22 15:58:40 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-22 15:58:40 DECISION stage EST-05fb8f1-a done
+2026-11-22 15:59:15 DECISION RESTORE OK
+2026-11-22 15:59:15 night EST-05fb8f1-a over: all stages of the night done

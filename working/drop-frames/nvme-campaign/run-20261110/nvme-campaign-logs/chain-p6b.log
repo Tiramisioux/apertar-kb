@@ -1,0 +1,4 @@
+2026-11-22 12:51:07 following runner 28938; then P6b
+2026-11-22 14:29:08 P6 over and restored: starting P6b
+night EST-05fb8f1-a started: runner pid 105070; the Pi powers off when it is over (if the restore reads back).
+follow:  cat /home/pi/longtakes/nvme-20261110/status.md

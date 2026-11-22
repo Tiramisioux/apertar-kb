@@ -1,6 +1,6 @@
 # Pre-analysis: sustained frame rate per mode, NVMe and SSD (2026-11-21)
 
-Written before the warm-drive block P6 and the ladder block P4 are in; the full analysis replaces this. Labels:
+Updated 2026-11-22 with the warm-drive 15-min takes P6 and P6b (all 18 takes run); the ladder block P4 is not in. The measured limits per cell, longest clean duration first, are in `measured-limits.md`. Labels:
 **measured** (a take shows it), **derived** (computed from measured numbers), **probable** (the best reading of the
 evidence), **unconfirmed**.
 
@@ -23,17 +23,17 @@ Sustained = what a long take holds. The table rounds down for the ~2 fps a warm 
 
 | Mode / format | NVMe 60-s capacity (measured) | NVMe long take (measured) | Limited by | Drops came from | Expected sustained NVMe | Expected sustained T7 SSD | Comment |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 4K HDR16 uncompressed | 28 clean; 30: 51-65 dropped | 27-28 carried 3+5 min; 15 min: 27, 26 dropped at 708/621 s, 25 buffer full at 758 s | back end at 30, warm drive at 25-27 (~420-470 MB/s) | capture gaps at 30; buffer full from warm-drive pauses after ~10 min | 27 up to ~10 min; **no 15-min fps found yet** (<= 24 probable, P6 tests 27/26) | ~6 (derived: 105 MB/s / 16.6 MB) | Heat and drive cache set the limit: fine for 10 min at 27; for 15 min or more use 24 until P6 says otherwise. |
-| 4K HDR16 uncompressed + Log | 25.5-26.3 delivered | 25 carried 3+5 min | back end (Log costs ~40-50 % Core CPU) | capture gaps (95-260/min at 28-30) | 24-25 (derived) | ~6 | Log costs Core CPU, not the drive: at 307 MB/s the drive never paused. |
+| 4K HDR16 uncompressed | 28 clean; 30: 51-65 dropped | 27-28 carried 3+5 min; 15 min: 27, 26 dropped at 708/621 s, 25 buffer full at 758 s | back end at 30, warm drive at 25-27 (~420-470 MB/s) | capture gaps at 30; buffer full from warm-drive pauses after ~10 min | 27 up to ~7 min; **no 15-min fps found** (P6: 27 dropped at 432 s, 26 at 788 s) | ~6 (derived: 105 MB/s / 16.6 MB) | Heat and drive cache set the limit: 27 for short takes; for 15 min use HDR16 + Log 25 (below). |
+| 4K HDR16 uncompressed + Log | 25.5-26.3 delivered | **25 and 24 passed 15 min** (P6b, 280 GB, drive to 69 °C) | back end (Log costs ~40-50 % Core CPU) | capture gaps (95-260/min at 28-30) | **25** (measured, 15 min) | ~6 | The 4K HDR16 for long takes: at ~311 MB/s the drive never paused. |
 | 4K HDR16 lossless | 14.6-15.5 | 25: buffer full at 12-13 s | encoder (CPU ~190 %) | buffer full | **14** (derived) | ~10 (derived, ~10 MB/frame) | Slow encoder: on NVMe uncompressed is better; lossless pays only where storage is the limit (T7). |
-| 4K HDR16 lossless + Log | 30 "fit", but 240-526 dropped | out at 25 | back end + encoder | capture gaps (240-500/min) | ~14 (probable; the 30 reading is wrong, see 4) | ~10 | Avoid: the probe's 30 is a misreading and it dropped heavily. |
+| 4K HDR16 lossless + Log | 30 "fit", but 240-526 dropped | out at 25; **14 and 13 passed 15 min** (P6b) | encoder | capture gaps above the wall | **14** (measured, 15 min) | ~10 | The probe's 30 was a misreading; 14 holds, drive ≤ 54 °C. |
 | 4K HDR16 MLV | 27-28 | - | storage / back end | buffer full, capture gaps | ~26 (derived) | ~6 | Untested long; one file saves the folder cost, but ~430 MB/s heats the drive like uncompressed. |
 | 4K HDR12 uncompressed | 26.0-26.5 delivered | S2: dropped at every fps 25-30 within 2-93 s | back end | capture gaps (200-230/min at 30) | **<= 24** (probable; nothing held 3 min) | ~8 | Weakest 4K mode: the back end dropped even at 25; HDR16 does better at the same fps. |
 | 4K HDR12 lossless | 30 "fit", 121-268 dropped | - | back end | capture gaps | ~24 (probable) | ~12 | The probe's "fit" is wrong (it dropped); treat as ~24 until a long take is run. |
 | 4K HDR12 MLV | 23.4-26.2 | - | back end | capture gaps, buffer full | ~23 | ~8 | Back end limits it like HDR12 uncompressed; no reason to pick it over HDR16. |
 | 4K SDR12 uncompressed | 40.5-49.9 (cold 520-580 MB/s) | 38: buffer full at 95-800 s; **37 passed 15 min** | storage (~460-475 MB/s warm) | buffer full | **37** (measured, 15 min) | ~8 (105 MB/s / 12.4 MB) | Best-proven 4K: 37 held 15 min; 38 and up runs into the drive. |
-| 4K SDR12 lossless | 40.8-42.3 | 43 passed 3+5 min (S2, 7e6e2a3) | encoder (CPU ~200 %) | buffer full | 40 (derived; P6 tests) | ~18 (derived, ~5.7 MB/frame) | Half the write rate (~230 MB/s), the drive stays cool: the safe 4K pick for long takes. |
-| 4K SDR12 lossy 3:1 | 37.9-40.8 | - | encoder (CPU ~230 %) | buffer full | 37 (derived; P6 tests) | ~30 (derived, 3.5 MB/frame) | No gain over lossless on NVMe; on the T7 it buys ~30 against ~18. |
+| 4K SDR12 lossless | 40.8-42.3 | 43 passed 3+5 min (S2, 7e6e2a3); **40 and 39 passed 15 min** (P6) | encoder (CPU ~200 %) | buffer full | **40** (measured, 15 min) | ~18 (derived, ~5.7 MB/frame) | Half the write rate (~230 MB/s), the drive stays cool: the safe 4K pick for long takes. |
+| 4K SDR12 lossy 3:1 | 37.9-40.8 | **37 and 36 passed 15 min** (P6, drive ≤ 57 °C) | encoder (CPU ~230 %) | buffer full | **37** (measured, 15 min) | ~30 (derived, 3.5 MB/frame) | No gain over lossless on NVMe; on the T7 it buys ~30 against ~18. |
 | 4K SDR12 lossy 5:1 | 43 | - | encoder | buffer full | 41 (derived) | ~41 (encoder, 2 MB/frame fits) | Highest 4K SDR12 rate and it fits the T7; the image cost of 5:1 is not assessed. |
 | 4K SDR12 MLV | 25.7-26.0 at 311-316 MB/s | - | MLV writer (one file, CPU 69 %) | buffer full | ~25 (probable) | ~8 | The MLV writer tops out near 25; cDNG beats it on NVMe. |
 | 4K SDR10 uncompressed | 43.8-46.6 | - | back end / storage | buffer full, capture gaps | ~43 | ~10 | Short probes only; 10-bit buys ~4-6 fps over 12-bit. |
@@ -41,10 +41,10 @@ Sustained = what a long take holds. The table rounds down for the ~2 fps a warm 
 | 4K SDR10 lossy 3:1 / 5:1 | 41 / 44 | - | encoder | buffer full | 39 / 43 | ~35 / ~43 | SDR12 lossy plus ~2 fps; untested long. |
 | 4K SDR10 MLV | 10.8-11.1 at 116-120 MB/s | - | MLV writer | buffer full | **unconfirmed** (11 looks wrong: SDR12 MLV does 26) | - | Don't trust the 11: the probe hit the safety stop within seconds; re-measure first. |
 | 2880x2160 crop SDR12 uncompressed / lossless | 53 / 59 | - | storage / encoder | buffer full | 51 / 56 (derived) | ~11 / ~24 | The near-4K route to 48-50 fps; untested long. |
-| 4K ProRes HQ (standard colour) | 28.2-29.3 delivered | - | encoder (CPU ~340 %) | ProRes queue full + capture gaps | **27** | **~22** (derived from the measured 4.5 MB/frame: 130 MB/s at 28.6 fps, over the T7's 105) | The encoder sets 27 on NVMe (25 is the safe setting); on the T7 the drive sets ~22. |
-| 4K ProRes HQ ARRI LogC4 | 42.4-43.8 delivered | P3 at 46: dropped | encoder | capture gaps, ProRes queue | ~40 (unconfirmed why it beats standard HQ) | same | Suspicious: 14 fps above standard HQ; check before relying on it. |
+| 4K ProRes HQ (standard colour) | 28.2-29.3 delivered | 27: 1 dropped at 12 s; **26 passed 15 min** (P6) | encoder (CPU ~340 %) | ProRes queue full + capture gaps | **26** (measured, 15 min) | **~22** (derived from the measured 4.5 MB/frame: 130 MB/s at 28.6 fps, over the T7's 105) | The encoder sets 26 on NVMe; on the T7 the drive sets ~22. |
+| 4K ProRes HQ ARRI LogC4 | 42.4-43.8 delivered (misread) | P3 at 46, **P6b at 41 and 40: dropped within 1 s** | encoder / back end | capture gaps | **not found** (probable near HQ's 26; untested ≤ 39) | ≤ 22 | The 41 was wrong: LogC4 does not beat HQ. Use standard HQ 26 until a lower take runs. |
 | 4K ProRes 422 / LT / Proxy | 41.5 / 43.8-44.9 / 47.2-47.5 | - | encoder (CPU 220-300 %) | capture gaps | 40 / 43 / 45 | same | Encoder limit; 422 is the high-fps 4K ProRes choice. |
-| H.264 2560x1440 | 47.1-47.5 delivered | - | encoder (CPU ~210 %) | capture gaps (~750/min at 60) | 45 | same | The encoder tops out at 45; the Pi 5 has no 4K H.264. |
+| H.264 2560x1440 | 47.1-47.5 delivered (misread) | **P6 at 45 and 44: dropped within 2 s** | back end / encoder | capture gaps | **not found** (untested ≤ 43) | same | The 45 was wrong; lower it before relying on 1440. The Pi 5 has no 4K H.264. |
 | H.264 1920x1080 | 60 clean | P3 with TDN + lock: dropped at 60 | sensor (60) | with TDN on: capture gaps | 60 (TDN off) | 60 | 60 works with TDN off; TDN on drops frames. |
 | 2K HDR16 uncompressed / lossless / Log / MLV | 30 (the mode's top) | - | sensor | none | **30** | uncompressed ~18 (measured meter); lossless 27 passed 30 min (measured) | The sensor sets the limit: any format works on NVMe; on the T7 use lossless. |
 | 2K SDR12 uncompressed | 60 | - | sensor | none | 60 | **32** (measured, split, 4 x 30 min) | On the T7 the 32 needs the split take; lossless goes higher. |
@@ -149,16 +149,25 @@ rate is device sectors written. "First event" = the RAM buffer above 50 %, or th
 | 4K HDR16 unc 28 fps, 3 min (one of six) | 456 MB/s | 50 -> 70 °C | 160 s | 73 GB | 67.9 °C | dropped: a capture gap (back end), not the drive |
 | 4K HDR16 + Log 25 fps, 3 and 5 min | 307 MB/s | 34-52 -> 49-66 °C | 180-300 s | 56-94 GB | - | clean |
 | 4K SDR12 lossless 29-44 fps, 3 and 5 min | 172-239 MB/s | 50-63 -> 60-65 °C | 180-300 s | 32-72 GB | - | clean; the drive stays under 66 °C below ~240 MB/s |
+| P6: 4K HDR16 unc 27 / 26, 15 min | 446 / 430 MB/s | 39 / 52 -> 69-75 °C | 426 / 714 s | 190 / 307 GB | 68.8 / 74.8 °C | dropped at 432 / 788 s |
+| P6: 4K SDR12 unc 39 / 38, 15 min | 484 / 468 MB/s | 58 / 57 -> 73-78 °C | 663 / 231 s | 321 / 108 GB | 77.8 / 72.8 °C | buffer full at 750 / 269 s |
+| P6: 4K SDR12 lossless 40 / 39, 15 min | ~250 MB/s | 37 -> 67-68 °C | 900 s | 222-239 GB | - | **passed** |
+| P6b: 4K HDR16 unc + Log 25 / 24, 15 min | ~300-311 MB/s | 47-51 -> 66-69 °C | 900 s | 269-280 GB | - | **passed** |
+| P6: lossy 3:1 37/36, ProRes HQ 26, P6b: HDR16 lossless + Log 14/13, 15 min | ≤ 120 MB/s | 40-53 -> 46-57 °C | 900 s | ≤ 108 GB | - | **passed** |
 
 What caused the dropped frames in the long takes:
 - **The drive stopped taking writes for about 2 s at a time** (measured). The buffer went from empty to 700-900 MB in
   2-3 s, at an unchanged frame rate and with the 1-min write rate flat. When one pause overflowed the 1.06 GB to
   Core's safety stop, the take ended "buffer full". When it starved the copy path first, capture gaps came and frames
   were dropped.
-- **When the pauses start** (measured): after **10-13 min of sustained writing at 414-472 MB/s**, with
-  **265-375 GB written in the take**, at a drive temperature of **74-79 °C**.
+- **When the pauses start** (measured): after **4-13 min of sustained writing at 414-484 MB/s**, with
+  **108-375 GB written in the take**, at a drive temperature of **69-79 °C**. P6 brought the low end down: a drive
+  already warm from the take before paused after 108 GB (SDR12 38, started at 57 °C).
+- **Under ~320 MB/s no take paused** (measured, P6/P6b): HDR16 + Log at 311 MB/s wrote 280 GB in 15 min to 69 °C
+  and stayed clean; lossless at ~250 MB/s wrote 239 GB to 68 °C. So the write rate decides, more than the GB or the
+  temperature: probable that the drive's cache folding keeps up below ~320 MB/s and falls behind above ~410.
 - **Not temperature alone** (measured). 5-min takes at the same rates reached 74-76 °C with 135-142 GB written and
-  stayed clean. Every failure came only after at least 265 GB in one take.
+  stayed clean. Before P6 every failure came after at least 265 GB; P6 had one at 108 GB, on a drive started warm.
 - **Probable mechanism:** the drive's fast write cache (SLC) running out within the take, made worse by heat. The
   drive then has to fold the cache into slower flash while it keeps writing, and it pauses. Which of the two dominates
   is unconfirmed: no take separated "hot but under 265 GB" from "past 265 GB but cool".
@@ -250,28 +259,30 @@ from 2c and 2c-0.
 | Mode at 25 fps | Flow | NVMe 30 min | T7 30 min | Why |
 | --- | --- | --- | --- | --- |
 | 4K HDR16 uncompressed | 415 MB/s | **no**: 25 failed at 12.6 min (measured) | no | the drive pauses after ~312 GB |
-| 4K HDR16 uncompressed + Log | 312 MB/s | uncertain: 5 min clean (measured); 25 sits 1 fps under the back-end wall (26) | no | back end at the edge; ~560 GB in 30 min |
+| 4K HDR16 uncompressed + Log | 311 MB/s | **probable**: 25 passed 15 min with 280 GB, no pause (measured); 30 min not run | no | under the drive's pause rate; back end 1 fps from its wall |
 | 4K HDR16 MLV | ~415 MB/s | no (as uncompressed) | no | the same flow |
-| 4K HDR16 lossless | ~295 MB/s | **no**: the encoder tops out at ~15 | no | encoder |
+| 4K HDR16 lossless (± Log) | ~295 MB/s | **no**: the encoder tops out at 14 (Log: 14 passed 15 min) | no | encoder |
 | 4K HDR12 uncompressed / lossless / MLV | 310 MB/s | **no**: the back end dropped at 25 (measured) | no | back end |
 | 4K SDR12 uncompressed | 310 MB/s | **probable**: 13 fps under its 15-min proven 37; a 2-s pause drains in ~4 s | no | ~560 GB in 30 min: past 265 GB, but with 155 MB/s to spare |
-| 4K SDR12 lossless | ~125 MB/s | **probable** | no (T7 tops ~18) | the drive stays ~60-65 °C |
-| 4K SDR12 lossy 3:1 | ~85 MB/s | **probable** | **probable** | under the T7's ~105 MB/s |
+| 4K SDR12 lossless | ~155 MB/s | **probable**: 40 passed 15 min at ~250 MB/s (measured) | no (T7 tops ~18) | the drive stays under 68 °C |
+| 4K SDR12 lossy 3:1 | ~85 MB/s | **probable**: 37 passed 15 min (measured) | **probable** | under the T7's ~105 MB/s |
 | 4K SDR12 lossy 5:1 | ~50 MB/s | **probable** | **probable** | |
 | 4K SDR12 MLV | 310 MB/s | uncertain: 25 is the MLV writer's limit (25.7-26) | no | the writer, not the drive |
 | 4K SDR10 uncompressed | ~260 MB/s | **probable** | no | |
 | 4K SDR10 lossless / lossy | ~105 / < 90 MB/s | **probable** | lossless marginal; lossy **probable** | |
 | 2880x2160 crop SDR12 lossless | ~95 MB/s | **probable** | probable at 24, marginal at 25 | |
-| 4K ProRes HQ | ~112 MB/s | **probable** (encoder ~28.7, 3 fps spare) | no (T7 ~22) | 4.5 MB/frame |
+| 4K ProRes HQ | ~112 MB/s | **probable**: 26 passed 15 min (measured), 1 fps spare | no (T7 ~22) | 4.5 MB/frame |
 | 4K ProRes 422 / LT / Proxy | 45 / 22 / 5 MB/s | **probable** | **probable** | encoder far above 25 |
-| H.264 2560x1440 / 1080p | < 1 MB/s | **probable** | **probable** | |
+| H.264 1080p | < 1 MB/s | **probable** | **probable** | |
+| H.264 2560x1440 | < 1 MB/s | uncertain: dropped at 44-45 within 2 s (P6); 25 untested long | uncertain | back end, not storage |
 | 2K HDR16 uncompressed | 105 MB/s | **probable** | no (18 fps measured) | at the T7's own rate |
 | 2K HDR16 lossless | ~55 MB/s | **probable** | **passed** at 27 (measured, older build) | |
 | 2K SDR12 every format | ≤ 78 MB/s | **probable** | **passed**: uncompressed 32 and lossless 48 (measured, older build) | |
 
-**In short:** for 4K HDR at 25 fps for 30 min, nothing is known to work on either drive. 4K HDR16 uncompressed fails at
-~12 min; Log, HDR12 and MLV sit at their CPU limits. For a 30-min 4K take at 25:
-- **NVMe:** SDR12 uncompressed, lossless or lossy; SDR10; ProRes HQ / 422.
+**In short:** for 4K HDR at 25 fps for 30 min on NVMe, **HDR16 uncompressed + Log is the one probable mode**: it held
+15 min at 25 with no drive pause (P6b). Without Log, HDR16 fails at 7-13 min; HDR12 and MLV sit at their CPU limits.
+Nothing 4K HDR works on the T7. For a 30-min 4K take at 25:
+- **NVMe:** HDR16 + Log; SDR12 uncompressed, lossless or lossy; SDR10; ProRes HQ / 422.
 - **T7:** only SDR12 / SDR10 lossy, ProRes 422 / LT / Proxy, or H.264.
 
 ## 2c. Will a 30-min take work? (projection)
@@ -297,17 +308,18 @@ measured the same way.
 | --- | --- | --- | --- | --- | --- |
 | 4K HDR16 uncompressed | 25 | 415 MB/s | 2.6 s, drain margin ~55 MB/s | **unlikely**: 25 already failed at 12.6 min (measured) | no (6 fps max) |
 | 4K HDR16 uncompressed | 22-23 | 365-380 MB/s | 2.8-2.9 s, margin ~90-105 | **uncertain**: a 30-min take writes ~660 GB, far past the 265-375 GB where the pauses began (2c-0); one pause fits, a longer or denser run of them may not | no |
-| 4K HDR16 + Log | 24 | ~400 MB/s | 2.7 s | uncertain: Log's capture gaps start at 28 | no |
-| 4K HDR16 lossless | 14 | ~140 MB/s | 7.6 s | **probable** (encoder-limited; CPU ~190 %) | probable at ≤ 10 |
+| 4K HDR16 + Log | 25 | ~311 MB/s (measured) | 3.4 s, margin ~160 | **probable**: 15 min passed with 280 GB and no pause (P6b) | no |
+| 4K HDR16 lossless (± Log) | 14 | ~110-140 MB/s | 7.6 s | **probable**: + Log passed 15 min (P6b) | probable at ≤ 10 |
 | 4K HDR12 uncompressed | ≤ 24 | ≤ 300 MB/s | 3.5 s | **uncertain**: the back end drops frames at any fps tried (25-30); 22-23 untested | no |
 | 4K SDR12 uncompressed | 37 | 460 MB/s | 2.3 s, margin ~10 MB/s | **unlikely**: passed 15 min with two pauses (58 and 299 MB); the backlog grows as the drive heats | no |
 | 4K SDR12 uncompressed | 33 | 410 MB/s | 2.6 s, margin ~60 | **uncertain**: ~740 GB in 30 min, past the 265-375 GB point; the margin over a 2-s pause is thin | no |
-| 4K SDR12 lossless | 40 | ~230 MB/s | 4.6 s | **probable**; CPU heat over 30 min unmeasured (~200 % Core CPU) | at ≤ 18 probable |
-| 4K SDR12 lossy 3:1 / 5:1 | 37 / 41 | ~130 / ~85 MB/s | 8 / 12 s | **probable** | 3:1 at ≤ 28, 5:1 at ≤ 41: probable (85 MB/s under 100) |
+| 4K SDR12 lossless | 40 | ~250 MB/s (measured) | 4.2 s | **probable**: passed 15 min, drive to 67 °C, no pause (P6) | at ≤ 18 probable |
+| 4K SDR12 lossy 3:1 / 5:1 | 37 / 41 | ~120 (measured) / ~85 MB/s | 8 / 12 s | **probable** (3:1 passed 15 min) | 3:1 at ≤ 28, 5:1 at ≤ 41: probable (85 MB/s under 100) |
 | 2880x2160 crop SDR12 lossless | 56 | ~210 MB/s | 5 s | probable | ≤ 24 |
 | 4K SDR12 MLV | 25 | ~310 MB/s | 3.4 s | uncertain-to-probable: ~560 GB in 30 min; one file, no folder cost | no |
-| 4K ProRes HQ / 422 / LT / Proxy | 25-27 / 40 / 43 / 45 | ~115-122 / ~72 / ~39 / ~10 MB/s (measured 4.5 / 1.8 / 0.9 / 0.2 MB/frame) | > 8 s | **probable**; the limit is CPU (220-340 %), not the drive; CPU heat over 30 min unmeasured | HQ only at ≤ 22 (the T7's ~105 MB/s); 422 / LT / Proxy probable |
-| H.264 2560x1440 / 1080p | 45 / 60 | < 10 MB/s | - | probable (CPU) | probable |
+| 4K ProRes HQ / 422 / LT / Proxy | 26 (15 min passed) / 40 / 43 / 45 | ~115-122 / ~72 / ~39 / ~10 MB/s (measured 4.5 / 1.8 / 0.9 / 0.2 MB/frame) | > 8 s | **probable**; the limit is CPU (220-340 %), not the drive; CPU heat over 30 min unmeasured | HQ only at ≤ 22 (the T7's ~105 MB/s); 422 / LT / Proxy probable |
+| H.264 1080p | 60 | < 10 MB/s | - | probable (CPU) | probable |
+| H.264 2560x1440 | not found (44 drops) | < 10 MB/s | - | uncertain | uncertain |
 | 2K HDR16 uncompressed | 30 | 125 MB/s | 8.5 s | **probable** | no (18 fps meter); lossless 27: **passed 30 min** (measured) |
 | 2K SDR12 uncompressed | 60 | 187 MB/s | 5.7 s | **probable** with the split (flat: t* = 9 min at 60 fps) | 32: **passed 30 min, 4 of 4, split** (measured) |
 | 2K SDR12 lossless | 60 | ~95 MB/s | > 10 s | probable | 48: **passed 30 min** (measured) |
@@ -318,8 +330,8 @@ Two open risks for every 30-min projection:
 - **The drive's pauses past 15 min.** They grew from 58 to 299 MB between 11 and 14 min; nothing says where they go
   after that.
 
-P6 gives 15-min data. 30 min needs its own takes: one per row marked "probable" at its fps, plus the two "unlikely"
-rows one step down. That is about 8 takes, ~4.5 h.
+P6/P6b gave the 15-min data (above). 30 min needs its own takes: SDR12 lossless 40, lossy 3:1 37, ProRes HQ 26, HDR16
++ Log 25, HDR16 lossless + Log 14, plus SDR12 uncompressed 33. That is 6 takes, ~3.5 h.
 
 ## 3. What caused the dropped frames
 
@@ -387,7 +399,11 @@ don't need it.
 - Lossless or lossy at the 4K HDR edge ("4kHDR16 lj:log 30", "4kHDR12 lj 30"): the fit reads 30 while hundreds of frames dropped. Delivered frames should cap it: model bug, probable.
 - TDN combinations are overestimated: 3 of the 6 misses had TDN on (HDR16 unc, HDR12 MLV, H.264 1080 at 60). The model adds levers as main effects, and TDN's real cost on the back end is larger than its capacity term says.
 - The capacity reading with TDN on is wrong (measured): TDN loses frames before the drive, so the buffer fills slower and the fit reads +4.4 fps (encoder anchor) and +15.5 fps (storage anchor), while the delivered fps fell by 1.0 on the storage anchor. The model must use delivered frames whenever capture gaps occur.
-- The MLV SDR10 reading (11 fps) and ProRes LogC4 beating standard HQ: unconfirmed, to check against the raw takes.
+- Delivered frames over a dropping 60-s probe are not a limit (measured, P6): H.264 1440 (estimate 45) and ProRes HQ
+  LogC4 (estimate 41) both dropped within 2 s at the estimate and one below. ProRes LogC4 does not beat standard HQ.
+- The MLV SDR10 reading (11 fps): unconfirmed, to check against the raw takes.
+- Below ~320 MB/s the estimate held 15 min warm at p or p-1 in every cell P6 ran (6 of 6); above ~410 MB/s it failed
+  at both (3 of 3 cells): the warm penalty depends on the write rate.
 
 ## 5. Recommendations (best setup per use)
 
@@ -399,10 +415,11 @@ don't need it.
 
 | Use | NVMe (MP600 Mini) | T7 SSD |
 | --- | --- | --- |
-| 4K, best image, long takes | HDR16 uncompressed at 24-25 for takes under ~10 min; for longer takes wait for P6 | not possible (6 fps) |
-| 4K HDR, longer takes | SDR12 uncompressed at 37 (15 min proven) as the SDR fallback; HDR16 lossless only to 14 | - |
+| 4K, best image, short takes | HDR16 uncompressed 27 for takes under ~7 min | not possible (6 fps) |
+| 4K HDR, long takes | **HDR16 uncompressed + Log 25** (15 min proven); HDR16 lossless (+ Log) 14 | - |
+| 4K SDR, long takes | SDR12 lossless 40, lossy 3:1 37, uncompressed 37 (all 15 min proven) | lossy 5:1 ~41 (derived) |
 | 4K high frame rate | SDR12 lossless 40 / lossy 5:1 41 / crop 2880x2160 lossless 56 | lossy 5:1 ~41 (derived) |
-| 4K delivery codecs | ProRes HQ 27, ProRes 422 40, ProRes LT 43, Proxy 45; H.264 1440 45 | ProRes HQ ~22 (the drive); 422 / LT / Proxy / H.264 the same as NVMe |
+| 4K delivery codecs | ProRes HQ 26 (15 min proven), 422 40, LT 43, Proxy 45; H.264 1440: limit not found (44 drops); ProRes LogC4: use HQ | ProRes HQ ~22 (the drive); 422 / LT / Proxy / H.264 the same as NVMe |
 | 2K | everything at the mode's top (HDR 30, SDR 60) | SDR12 lossless 48, uncompressed 32 (split), HDR16 lossless 27 |
 
 ## 5a. Recipes per mode, and what to expect
@@ -414,24 +431,25 @@ don't need it.
 - Aids on as you like (no cost).
 - Audio on is fine, except within ~1 fps of a wall. There, also close WebUI clients you don't need.
 
-For 4K uncompressed on NVMe, one more rule: a cooler drive at the start did not save the takes. The 15-min failures
-started at 40 °C and at 60 °C alike. Plan for the 265-375 GB point instead: about **10 min** at 420-470 MB/s.
+For 4K on NVMe, one more rule: keep the write rate **under ~320 MB/s** for anything over a few minutes. Every 15-min
+take under it passed (P6/P6b); every one above ~410 MB/s paused, after 4-13 min, whether the drive started at 40 °C
+or 60 °C.
 
 | Mode | Storage | Recipe (format, fps) | Expect | Confidence |
 | --- | --- | --- | --- | --- |
-| **4K HDR16** (best image) | NVMe | cDNG uncompressed **27** for takes up to ~8 min; **24** for longer | 27: clean 3-5 min (11 of 12 takes), first pause at 10-12 min. 24 (~400 MB/s): clean ~10 min; 15 min probable; 30 min uncertain | 27 measured; 24 derived (P6 tests 26/27 warm) |
+| **4K HDR16** (best image) | NVMe | cDNG uncompressed **27** for takes up to ~5 min; for longer use **+ Log 25** (next row) | 27: clean 3-5 min (11 of 12 takes); warm 15 min: 27 dropped at 7 min, 26 at 13 min (P6) | measured |
 | | T7 | HDR16 lossless **~9** (uncompressed only ~6) | not practical for 4K HDR16 | derived |
-| **4K HDR16 + Log** | NVMe | cDNG uncompressed + Log **24** | 307 MB/s at 25: the drive stays ≤ 66 °C; clean 3-5 min at 25 (measured); 30 min uncertain-to-probable. Above 25 the back end drops frames | measured at 25 |
+| **4K HDR16 + Log** | NVMe | cDNG uncompressed + Log **25** | **passed 15 min** at 25 and 24 (P6b): 311 MB/s, 280 GB, drive to 69 °C, no pause; 30 min probable. Above 25 the back end drops frames | measured (15 min) |
 | | T7 | - (~8 fps) | not practical | derived |
-| **4K HDR16 lossless** | NVMe | lossless **14** | encoder-limited (CPU ~190 %); the drive stays cool; 30 min probable | derived |
+| **4K HDR16 lossless** (± Log) | NVMe | lossless **14** | encoder-limited (CPU ~190 %); + Log **passed 15 min** at 14 and 13 (P6b), drive ≤ 54 °C; 30 min probable | measured (+ Log, 15 min) |
 | | T7 | lossless **≤ 9** | ~105 MB/s; fits | derived |
 | **4K HDR12** | NVMe | use **HDR16** at the same fps instead | HDR12 dropped at every fps tried (25-30) in the back end; ≤ 23 untested | measured (25-30) |
 | | T7 | - | not practical | - |
 | **4K SDR12** (most frames, raw) | NVMe | uncompressed **37** up to 15 min; **33** for longer | 37: **passed 15 min** (two pauses absorbed); 33: 30 min uncertain (~740 GB) | 37 measured; 33 derived |
 | | T7 | use lossy 5:1 (below) | uncompressed only ~8 | derived |
-| **4K SDR12 lossless** | NVMe | lossless **40** | ~200 MB/s; drive 60-65 °C; 43 passed 5 min on the older build; **the safe 4K pick for 30 min** (probable) | derived; P6 tests warm |
+| **4K SDR12 lossless** | NVMe | lossless **40** | **passed 15 min** at 40 and 39 (P6): ~250 MB/s, drive to 67 °C, no pause; **the safe 4K pick for 30 min** (probable) | measured (15 min) |
 | | T7 | lossless **≤ 18** | ~100 MB/s | derived |
-| **4K SDR12 lossy** | NVMe | 3:1 at **37**, 5:1 at **41** | encoder-limited; drive cool; 30 min probable | derived |
+| **4K SDR12 lossy** | NVMe | 3:1 at **37**, 5:1 at **41** | 3:1 **passed 15 min** at 37 and 36 (P6), drive ≤ 57 °C; 5:1 not run long; 30 min probable | 3:1 measured (15 min); 5:1 derived |
 | | T7 | **5:1 at 41** (best 4K on the T7); 3:1 at ≤ 28 | 5:1 at ~85 MB/s fits under the T7's ~105 | derived |
 | **4K SDR10** | NVMe | lossless **45**; uncompressed 43 for short takes | uncompressed ~450 MB/s behaves like 4K SDR12 37 (pauses after ~10 min) | derived |
 | | T7 | lossy 5:1 **~43** | | derived |
@@ -439,9 +457,9 @@ started at 40 °C and at 60 °C alike. Plan for the 265-375 GB point instead: ab
 | | T7 | lossless **≤ 24** | | derived |
 | **4K MLV (SDR12)** | NVMe | **25** | the MLV writer caps it; ~310 MB/s, one file per take; 30 min uncertain-to-probable | probable |
 | | T7 | - | not practical | - |
-| **4K ProRes** | NVMe | HQ **25** (27 at the limit), 422 **40**, LT **43**, Proxy **45** | the encoder is the limit (CPU 220-340 %), not the drive; 30 min probable | derived; Pi heat over 30 min unmeasured |
+| **4K ProRes** | NVMe | HQ **26**, 422 **40**, LT **43**, Proxy **45**; LogC4: as HQ until measured | HQ **passed 15 min** at 26, dropped at 27 (P6); LogC4 dropped at 40-41 within 1 s (P6b); the encoder is the limit, not the drive | HQ measured (15 min); the rest derived |
 | | T7 | HQ **22**; 422 **40**, LT **43**, Proxy **45** | HQ writes 4.5 MB/frame (measured), so the T7's ~105 MB/s sets ~22; the others fit; 30 min probable | derived |
-| **H.264** | both | 2560x1440 **45**, 1080p **60** | 1080p 60 only with TDN off | measured (60-s) |
+| **H.264** | both | 1080p **60**; 2560x1440: **limit not found** | 1080p 60 only with TDN off; 1440 dropped at 44 and 45 within 2 s (P6) | 1080p measured (60-s); 1440 open |
 | **2K HDR16** | NVMe | any format at **30** (the sensor's top) | flow ≤ 125 MB/s; the drive stays ≤ 64 °C | measured |
 | | T7 | lossless **27** | **passed 30 min** | measured |
 | **2K SDR12** | NVMe | any format at **60** | 187 MB/s uncompressed; 30 min probable with the split | measured (60-s, 5-min) |
@@ -449,8 +467,9 @@ started at 40 °C and at 60 °C alike. Plan for the 265-375 GB point instead: ab
 
 ## 6. For the full analysis
 
-- P6 (running tonight): 15-min warm takes at the estimate and one below for six modes. This is the warm-drive correction.
-- P4: the Mode Ladder with these thresholds (27 / 40) switching modes on fps changes (running).
+- P6/P6b: done (findings.md). The measured limits per cell: `measured-limits.md`.
+- 30-min takes for the 15-min rows (2c), and the real limits of H.264 1440 and ProRes LogC4.
+- P4: Dynamic resolution switching modes on fps changes (not run).
 - Model fixes: cap the capacity at delivered frames when frames drop; give TDN its back-end term; the warm penalty from P6.
-- Check against the raw takes: MLV SDR10, ProRes LogC4, the aids effect's sign.
+- Check against the raw takes: MLV SDR10, the aids effect's sign.
 - The SSD in 4K: the column above is derived only (the user accepts the older build's SSD data).

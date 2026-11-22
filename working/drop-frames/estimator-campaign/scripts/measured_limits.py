@@ -34,8 +34,14 @@ def lever_state(r):
     return (r.get('tdn') == 'True', r.get('lock') == 'True', r.get('web') == 'True', aud, aids)
 
 
+FMT = re.compile(r'_(lossydng-[^_]+|prores-[a-z0-9]+(?:-arri_logc4|-[a-z0-9_]+?)?|h264-[0-9x]+)_aud')
+
+
 def cell_key(r):
-    return (r['mode'], r['comp'], r['log'] == 'True')
+    # the results' `format` column says cdng for every take; the recording format is in the cfg_id
+    m = FMT.search(r.get('cfg_id', ''))
+    comp = m.group(1) if m else r['comp']
+    return (r['mode'], comp, r['log'] == 'True' or 'logc4' in comp)
 
 
 def main():

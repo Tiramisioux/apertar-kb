@@ -1,0 +1,2 @@
+night EST-05fb8f1-a started: runner pid 24071; the Pi powers off when it is over (if the restore reads back).
+follow:  cat /home/pi/longtakes/nvme-20261110/status.md

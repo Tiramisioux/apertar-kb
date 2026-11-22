@@ -1449,3 +1449,165 @@
 2026-11-21 22:43:21 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
 2026-11-21 22:43:48 DECISION RESTORE OK
 2026-11-21 22:43:48 night EST-05fb8f1-a over: stopped_by_signal: stopped by SIGTERM while waiting at the gate
+2026-11-21 22:45:14 write budget 16000 GB, 8053 GB used so far in this run
+2026-11-21 22:45:14 preserving 0 pre-existing clip folder(s); 3 clip folder(s) of this run on the drive
+2026-11-21 22:45:14 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-21 22:45:17 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 445 GB; Core pid 862; drop-in checked; timers-mask rc=0; smart temp 36 C
+2026-11-21 22:45:17 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 55 frames, 0.7 GB written and deleted)
+2026-11-21 22:45:17 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261121-224517-baseline-EST-05fb8f1-a
+2026-11-21 22:45:17 DECISION EST block P6 starts
+2026-11-21 22:45:17 DECISION EST P6 4kHDR16:cdng:unc at 27 (estimate 27): drop after 432.3 s
+2026-11-21 22:45:17 DECISION EST P6 4kHDR16:cdng:unc at 26 (estimate 27): drop after 788.5 s
+2026-11-21 22:45:17 DECISION EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
+2026-11-21 22:45:17 DECISION EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
+2026-11-21 22:45:17 fill gate: deleting cDNG_26-11-21_19110216_C0001_cam0 (29045 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-21 22:47:40 DECISION deleted cDNG_26-11-21_19110216_C0001_cam0: 29045 frames in 142.3 s (warm, budget 0 s)
+2026-11-21 22:48:40 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-21 23:04:25 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=40.0 -> pass_15min after 900s dropped=0 kinds= pi=65C nvme=64.85
+2026-11-21 23:08:52 DECISION merge of cDNG_26-11-21_22491100_C0001_cam0: 36003 frames, 8 parts, 263 s (7.30 ms per frame), first ETA error -20.9 %, intact; merge off again: True
+2026-11-21 23:08:52 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 40 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 23:08:52 DECISION EST P6 4kSDR12:cdng:lj at 40 (estimate 40): pass_15min after 900.1 s
+2026-11-21 23:16:04 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=39.0 -> stopped_by_signal after 396s dropped=0 kinds= pi=64C nvme=63.85
+2026-11-21 23:16:05 DECISION merge of cDNG_26-11-21_23091614_C0004_cam0: 15437 frames, 4 parts, 0 s (0.00 ms per frame), first ETA error None %, NOT INTACT (15437 frames after, 4 parts left, marker True); merge off again: True
+2026-11-21 23:16:05 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: stopped_by_signal (395.8 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-21 23:16:05 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-21 23:16:32 DECISION RESTORE OK
+2026-11-21 23:16:32 night EST-05fb8f1-a over: merge left cDNG_26-11-21_23091614_C0004_cam0 not intact
+2026-11-22 12:44:07 write budget 16000 GB, 8371 GB used so far in this run
+2026-11-22 12:44:07 preserving 0 pre-existing clip folder(s); 4 clip folder(s) of this run on the drive
+2026-11-22 12:44:07 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-22 12:44:10 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 474 GB; Core pid 17552; drop-in checked; timers-mask rc=0; smart temp 35 C
+2026-11-22 12:44:10 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll False ()
+2026-11-22 12:44:11 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261122-124410-baseline-EST-05fb8f1-a
+2026-11-22 12:44:11 DECISION EST block P6 starts
+2026-11-22 12:44:11 DECISION EST P6 4kHDR16:cdng:unc at 27 (estimate 27): drop after 432.3 s
+2026-11-22 12:44:11 DECISION EST P6 4kHDR16:cdng:unc at 26 (estimate 27): drop after 788.5 s
+2026-11-22 12:44:11 DECISION EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
+2026-11-22 12:44:11 DECISION EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
+2026-11-22 12:44:11 DECISION EST P6 4kSDR12:cdng:lj at 40 (estimate 40): pass_15min after 900.1 s
+2026-11-22 12:44:31 WAITING: a folder on the card the database did not create: cDNG_26-11-21_23371407_C0005_cam0 (Patrik moves it; it is never deleted)
+2026-11-22 12:45:56 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: waiting_timeout (None s, dropped None, first drop None, gap None, boundary None)
+2026-11-22 12:45:56 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-22 12:46:22 DECISION RESTORE OK
+2026-11-22 12:46:22 night EST-05fb8f1-a over: stopped by SIGTERM
+2026-11-22 12:46:40 write budget 16000 GB, 8371 GB used so far in this run
+2026-11-22 12:46:40 preserving 0 pre-existing clip folder(s); 4 clip folder(s) of this run on the drive
+2026-11-22 12:46:40 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-22 12:46:42 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 474 GB; Core pid 17552; drop-in checked; timers-mask rc=0; smart temp 35 C
+2026-11-22 12:46:42 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll False ()
+2026-11-22 12:46:43 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261122-124642-baseline-EST-05fb8f1-a
+2026-11-22 12:46:43 DECISION EST block P6 starts
+2026-11-22 12:46:43 DECISION EST P6 4kHDR16:cdng:unc at 27 (estimate 27): drop after 432.3 s
+2026-11-22 12:46:43 DECISION EST P6 4kHDR16:cdng:unc at 26 (estimate 27): drop after 788.5 s
+2026-11-22 12:46:43 DECISION EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
+2026-11-22 12:46:43 DECISION EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
+2026-11-22 12:46:43 DECISION EST P6 4kSDR12:cdng:lj at 40 (estimate 40): pass_15min after 900.1 s
+2026-11-22 12:47:07 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: void (None s, dropped None, first drop None, gap None, boundary None) void: storage_preroll_auto=False
+2026-11-22 12:47:28 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: void (None s, dropped None, first drop None, gap None, boundary None) void: storage_preroll_auto=False
+2026-11-22 12:47:28 DECISION EST P6 4kSDR12:cdng:lj at 39 (estimate 40): void after None s
+2026-11-22 12:47:28 fill gate: deleting cDNG_26-11-21_19294104_C0002_cam0 (10046 frames, 0 parts, cold: written before this boot, budget 14 s) through the media route
+2026-11-22 12:47:45 DECISION deleted cDNG_26-11-21_19294104_C0002_cam0: 10046 frames in 16.9 s (cold, budget 14 s)
+2026-11-22 12:48:45 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 12:49:10 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 37 fps, 900 s: void (None s, dropped None, first drop None, gap None, boundary None) void: storage_preroll_auto=False
+2026-11-22 12:49:31 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 37 fps, 900 s: void (None s, dropped None, first drop None, gap None, boundary None) void: storage_preroll_auto=False
+2026-11-22 12:49:31 DECISION EST P6 4kSDR12:lossydng:3to1 at 37 (estimate 37): void after None s
+2026-11-22 12:49:31 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-22 12:50:00 DECISION RESTORE OK
+2026-11-22 12:50:00 night EST-05fb8f1-a over: a second void this night (storage_preroll_auto=False)
+2026-11-22 12:50:08 write budget 16000 GB, 8371 GB used so far in this run
+2026-11-22 12:50:08 preserving 0 pre-existing clip folder(s); 3 clip folder(s) of this run on the drive
+2026-11-22 12:50:08 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-22 12:50:11 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 599 GB; Core pid 17552; drop-in checked; timers-mask rc=0; smart temp 36 C
+2026-11-22 12:50:15 DECISION storage pre-roll was off (Core default since 0977dd6): switched on for the night (True), one pre-roll run (True): ok: 2.0 s at 30 fps (measured 30.0), 58 frames, 0.7 GB written and deleted
+2026-11-22 12:50:15 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 58 frames, 0.7 GB written and deleted)
+2026-11-22 12:50:15 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261122-125015-baseline-EST-05fb8f1-a
+2026-11-22 12:50:15 DECISION EST block P6 starts
+2026-11-22 12:50:15 DECISION EST P6 4kHDR16:cdng:unc at 27 (estimate 27): drop after 432.3 s
+2026-11-22 12:50:15 DECISION EST P6 4kHDR16:cdng:unc at 26 (estimate 27): drop after 788.5 s
+2026-11-22 12:50:15 DECISION EST P6 4kSDR12:cdng:unc at 39 (estimate 39): buffer_full after 750.2 s
+2026-11-22 12:50:15 DECISION EST P6 4kSDR12:cdng:unc at 38 (estimate 39): buffer_full after 268.7 s
+2026-11-22 12:50:15 DECISION EST P6 4kSDR12:cdng:lj at 40 (estimate 40): pass_15min after 900.1 s
+2026-11-22 13:05:57 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=39.0 -> pass_15min after 900s dropped=0 kinds= pi=64C nvme=64.85
+2026-11-22 13:09:37 DECISION merge of cDNG_26-11-22_C0001_12504315: 35100 frames, 8 parts, 210 s (5.99 ms per frame), first ETA error -9.1 %, intact; merge off again: True
+2026-11-22 13:09:37 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_lossless_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 39 fps, 900 s: pass_15min (900.0 s, dropped 0, first drop , gap 1, boundary 0)
+2026-11-22 13:09:37 DECISION EST P6 4kSDR12:cdng:lj at 39 (estimate 40): pass_15min after 900.0 s
+2026-11-22 13:09:38 fill gate: deleting cDNG_26-11-21_22491100_C0001_cam0 (36003 frames, 0 parts, cold: written before this boot, budget 176 s) through the media route
+2026-11-22 13:13:11 DECISION deleted cDNG_26-11-21_22491100_C0001_cam0: 36003 frames in 213.0 s (cold, budget 176 s)
+2026-11-22 13:14:11 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 13:29:56 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=37.0 -> pass_15min after 900s dropped=0 kinds= pi=63C nvme=54.85
+2026-11-22 13:34:25 DECISION merge of cDNG_3to1_26-11-22_C0001_13144217: 33309 frames, 7 parts, 260 s (7.81 ms per frame), first ETA error -29.4 %, intact; merge off again: True
+2026-11-22 13:34:25 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 37 fps, 900 s: pass_15min (900.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 13:34:25 DECISION EST P6 4kSDR12:lossydng:3to1 at 37 (estimate 37): pass_15min after 900.2 s
+2026-11-22 13:34:25 fill gate: deleting cDNG_26-11-21_23091614_C0004_cam0 (15437 frames, 0 parts, cold: written before this boot, budget 32 s) through the media route
+2026-11-22 13:35:07 DECISION deleted cDNG_26-11-21_23091614_C0004_cam0: 15437 frames in 41.3 s (cold, budget 32 s)
+2026-11-22 13:36:07 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 13:51:48 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 fps=36.0 -> pass_15min after 900s dropped=0 kinds= pi=62C nvme=53.85
+2026-11-22 13:56:11 DECISION merge of cDNG_3to1_26-11-22_C0002_13363426: 32408 frames, 7 parts, 252 s (7.77 ms per frame), first ETA error -31.5 %, intact; merge off again: True
+2026-11-22 13:56:11 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kSDR12_unc_log0_tdn0_lock0_trim1_web1_fpf5000_lossydng-3to1_aud1_aids1 at 36 fps, 900 s: pass_15min (900.2 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 13:56:11 DECISION EST P6 4kSDR12:lossydng:3to1 at 36 (estimate 37): pass_15min after 900.2 s
+2026-11-22 14:06:11 DECISION cooldown 1: 601 s; NVMe 64.8 -> 39.9 C, Pi 54.0 -> 50.1 C
+2026-11-22 14:06:49 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=27.0 -> drop after 12s dropped=1 kinds=capture-gap:1 pi=58C nvme=40.85
+2026-11-22 14:06:49 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 27 fps, 900 s: drop (12.0 s, dropped 1, first drop 11.7, gap 0, boundary )
+2026-11-22 14:06:49 DECISION EST P6 4kP:prores:hq at 27 (estimate 27): drop after 12.0 s
+2026-11-22 14:22:12 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 fps=26.0 -> pass_15min after 900s dropped=0 kinds= pi=60C nvme=44.85
+2026-11-22 14:22:12 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq_aud1_aids1 at 26 fps, 900 s: pass_15min (900.3 s, dropped 0, first drop , gap 0, boundary )
+2026-11-22 14:22:12 DECISION EST P6 4kP:prores:hq at 26 (estimate 27): pass_15min after 900.3 s
+2026-11-22 14:22:12 fill gate: deleting cDNG_26-11-22_C0001_12504315 (35100 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 14:25:03 DECISION deleted cDNG_26-11-22_C0001_12504315: 35100 frames in 170.5 s (warm, budget 0 s)
+2026-11-22 14:26:03 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 14:26:32 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 fps=45.0 -> drop after 2s dropped=7 kinds=capture-gap:1 pi=55C nvme=46.85
+2026-11-22 14:26:32 DECISION EST-05fb8f1-a P6-warm0-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 at 45 fps, 900 s: drop (1.5 s, dropped 7, first drop 1.3, gap 0, boundary )
+2026-11-22 14:26:32 DECISION EST P6 4kP:h264:2560x1440 at 45 (estimate 45): drop after 1.5 s
+2026-11-22 14:26:53 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 fps=44.0 -> drop after 1s dropped=2 kinds=capture-gap:1 pi=57C nvme=44.85
+2026-11-22 14:26:53 DECISION EST-05fb8f1-a P6-warm-1-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_h264-2560x1440_aud1_aids1 at 44 fps, 900 s: drop (1.0 s, dropped 2, first drop 0.8, gap 0, boundary )
+2026-11-22 14:26:53 DECISION EST P6 4kP:h264:2560x1440 at 44 (estimate 45): drop after 1.0 s
+2026-11-22 14:26:53 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-22 14:26:53 DECISION stage EST-05fb8f1-a done
+2026-11-22 14:27:38 DECISION RESTORE OK
+2026-11-22 14:27:38 night EST-05fb8f1-a over: all stages of the night done
+2026-11-22 14:29:08 write budget 16000 GB, 8824 GB used so far in this run
+2026-11-22 14:29:08 preserving 0 pre-existing clip folder(s); 3 clip folder(s) of this run on the drive
+2026-11-22 14:29:08 campaign start: modes ['4kSDR12', '4kHDR12', '4kHDR16']; excluded (storage too slow at 25 fps): ['4kSDR10', '2kSDR12', '2kSDR10', '2kHDR16', '2kHDR12']; 192 configs; drive 354 MB/s; out=/home/pi/longtakes/nvme-20261110
+2026-11-22 14:29:10 DECISION night EST-05fb8f1-a start: card Corsair MP600 MINI A936B442006AC2 fw ERFM11.1, free 576 GB; Core pid 17552; drop-in checked; timers-mask rc=0; smart temp 50 C
+2026-11-22 14:29:11 DECISION fixed state: ladder False, merge False, frames_per_folder 5000, speed ramp False, pre-roll True (ok: 2.0 s at 30 fps (measured 30.0), 58 frames, 0.7 GB written and deleted)
+2026-11-22 14:29:11 DECISION audio baseline: record_audio_enabled=True audio_input_device='hw:2,0' input_devices=['hw:2,0'] -> /home/pi/longtakes/nvme-20261110/audio-forensics/20261122-142911-baseline-EST-05fb8f1-a
+2026-11-22 14:29:11 DECISION EST block P6b starts
+2026-11-22 14:44:49 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=25.0 -> pass_15min after 900s dropped=0 kinds= pi=57C nvme=66.85
+2026-11-22 14:46:30 DECISION merge of cDNG_26-11-22_C0001_14293423: 22508 frames, 5 parts, 96 s (4.28 ms per frame), first ETA error -18.2 %, intact; merge off again: True
+2026-11-22 14:46:30 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 25 fps, 900 s: pass_15min (900.4 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 14:46:30 DECISION EST P6b 4kHDR16:cdng:unc:log at 25: pass_15min after 900.4 s
+2026-11-22 14:46:31 fill gate: deleting cDNG_3to1_26-11-22_C0001_13144217 (33309 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 14:50:16 DECISION deleted cDNG_3to1_26-11-22_C0001_13144217: 33309 frames in 225.5 s (warm, budget 0 s)
+2026-11-22 14:51:17 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:06:58 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=24.0 -> pass_15min after 900s dropped=0 kinds= pi=57C nvme=65.85
+2026-11-22 15:08:40 DECISION merge of cDNG_26-11-22_C0002_14514417: 21607 frames, 5 parts, 92 s (4.24 ms per frame), first ETA error -22.1 %, intact; merge off again: True
+2026-11-22 15:08:40 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_unc_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 24 fps, 900 s: pass_15min (900.3 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 15:08:40 DECISION EST P6b 4kHDR16:cdng:unc:log at 24: pass_15min after 900.3 s
+2026-11-22 15:08:41 fill gate: deleting cDNG_3to1_26-11-22_C0002_13363426 (32408 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 15:11:55 DECISION deleted cDNG_3to1_26-11-22_C0002_13363426: 32408 frames in 194.4 s (warm, budget 0 s)
+2026-11-22 15:12:56 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:28:36 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=14.0 -> pass_15min after 900s dropped=0 kinds= pi=57C nvme=51.85
+2026-11-22 15:29:06 DECISION merge of cDNG_26-11-22_C0003_15132210: 12600 frames, 3 parts, 29 s (2.29 ms per frame), first ETA error -13.9 %, intact; merge off again: True
+2026-11-22 15:29:06 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 14 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 15:29:06 DECISION EST P6b 4kHDR16:cdng:lj:log at 14: pass_15min after 900.1 s
+2026-11-22 15:29:07 fill gate: deleting cDNG_26-11-22_C0001_14293423 (22508 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 15:29:32 DECISION deleted cDNG_26-11-22_C0001_14293423: 22508 frames in 25.1 s (warm, budget 0 s)
+2026-11-22 15:30:33 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:40:38 DECISION cooldown 1: 601 s; NVMe 50.9 -> 40.9 C, Pi 52.9 -> 49.6 C
+2026-11-22 15:56:15 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 fps=13.0 -> pass_15min after 900s dropped=0 kinds= pi=58C nvme=50.85
+2026-11-22 15:56:46 DECISION merge of cDNG_26-11-22_C0001_15410112: 11702 frames, 3 parts, 24 s (2.07 ms per frame), first ETA error -27.1 %, intact; merge off again: True
+2026-11-22 15:56:46 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 13 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
+2026-11-22 15:56:46 DECISION EST P6b 4kHDR16:cdng:lj:log at 13: pass_15min after 900.1 s
+2026-11-22 15:56:46 fill gate: deleting cDNG_26-11-22_C0002_14514417 (21607 frames, 0 parts, warm, budget 0 s) through the media route
+2026-11-22 15:56:47 DECISION deleted cDNG_26-11-22_C0002_14514417: 21607 frames in 0.9 s (warm, budget 0 s)
+2026-11-22 15:57:48 fill gate: Core's trim did not report within 60 s of the deletes; asking the helper for fstrim
+2026-11-22 15:58:19 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 fps=41.0 -> drop after 1s dropped=4 kinds=capture-gap:1 pi=58C nvme=47.85
+2026-11-22 15:58:19 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 41 fps, 900 s: drop (1.0 s, dropped 4, first drop 0.8, gap 0, boundary )
+2026-11-22 15:58:19 DECISION EST P6b 4kP:prores:hq:arri_logc4 at 41: drop after 1.0 s
+2026-11-22 15:58:40 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 fps=40.0 -> drop after 1s dropped=3 kinds=capture-gap:1 pi=58C nvme=44.85
+2026-11-22 15:58:40 DECISION EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 40 fps, 900 s: drop (1.0 s, dropped 3, first drop 0.8, gap 0, boundary )
+2026-11-22 15:58:40 DECISION EST P6b 4kP:prores:hq:arri_logc4 at 40: drop after 1.0 s
+2026-11-22 15:58:40 DECISION EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+2026-11-22 15:58:40 DECISION stage EST-05fb8f1-a done
+2026-11-22 15:59:15 DECISION RESTORE OK
+2026-11-22 15:59:15 night EST-05fb8f1-a over: all stages of the night done

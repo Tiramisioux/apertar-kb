@@ -1,0 +1,18 @@
+1795352794.111249 apertar start-apertar-core.sh[17552]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795352794.121823 apertar start-apertar-core.sh[17552]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795352794.121823 apertar start-apertar-core.sh[17552]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795352794.137791 apertar start-apertar-core.sh[17552]: ApertarCore ProRes lazy-loaded: "/home/pi/ApertarCore-build/apertar-prores-libav.so"
+1795352794.148826 apertar start-apertar-core.sh[17552]: ApertarCore ProRes: direct avio refused (this libavformat's file protocol has no pkt_size option); using buffered writes
+1795352794.148920 apertar start-apertar-core.sh[17552]: ApertarCore ProRes: disk arm=buffered APERTAR_PRORES_ODIRECT=1 pkt_size=262144 writeback=off write arm=WRITER THREAD (av_interleaved_write_frame off the encode worker) writer_queue=48pkt/96MiB clip=/media/RAW/ProRes_26-11-22_C0001_14063402/ProRes_26-11-22_C0001_14063402.mov
+1795352794.152797 apertar start-apertar-core.sh[17552]: ApertarCore ProRes recording clip: /media/RAW/ProRes_26-11-22_C0001_14063402/ProRes_26-11-22_C0001_14063402.mov profile=hq source=RGB48 output=yuv422p10le threads=4 queue=4
+1795352794.196991 apertar start-apertar-core.sh[17552]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=6487091696
+1795352794.197667 apertar start-apertar-core.sh[17552]: [mov @ 0x7ffed4000af0] Using non-standard frame rate 27000/1000
+1795352794.197751 apertar start-apertar-core.sh[17552]: [mov @ 0x7ffed4000af0] Using non-standard frame rate 27000/1000
+1795352804.926219 apertar start-apertar-core.sh[17552]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=74072 nominal_us=37037 total_estimate=1
+1795352806.162955 apertar start-apertar-core.sh[17552]: ApertarCore capture stats: dropped_gap_estimate=1 requeue_failures=0
+1795352806.251305 apertar start-apertar-core.sh[17552]: no ICC profile found, will write nclx/nclc colour info instead
+1795352806.252119 apertar start-apertar-core.sh[17552]: ApertarCore ProRes recording stats: queued=320 submitted=320 dropped_queue_full=0 failures=0 peak_queue=1/4
+1795352806.272226 apertar start-apertar-core.sh[17552]: ApertarCore audio writer: peak_backlog_kb=2
+1795352806.272226 apertar start-apertar-core.sh[17552]: ApertarCore audio clock: measured_drift_ppm=1215.06 points=1135 endpoint_ppm=1217.35 correction=resample
+1795352806.272226 apertar start-apertar-core.sh[17552]: ApertarCore audio sync: video_boot_us=6487091696 audio_boot_us=6487060440 trim_samples=1502 pad_samples=0 output_samples=570667 sample_rate=48000
+1795352806.558543 apertar start-apertar-core.sh[17552]: ApertarCore recording stop: synced to the medium in 229 ms
