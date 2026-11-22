@@ -183,3 +183,4 @@ His camera runs cinemate-port, not the review branch. Lanes started:
 - `lane/web2` (/home/user/wt/lane-web2), notes `notes/web2`: P1 pill names (Clear HDR in full, 1.6.0 names and order), P2 dropdown in hierarchical order, P3 white Active / grey Activate, P4 Clip timecode cannot be selected, P5 Custom clip name cannot be clicked.
 - `lane/ui3` (/home/user/wt/lane-ui3), notes `notes/ui3`: T1 HDMI shows Clip timecode although UI timecode is Time of Day.
 - `lane/dr-core` resumed: D3 (Activate blocked by the old validator is fixed by the enabled list), D7.
+- KB follow-up: llm/ui-map.md (applySplitMode, new bridge properties, applyFramesPerFolder gone); auto-ladder.md U2 row (full width, line under the status chip, Compression suffix dropped).

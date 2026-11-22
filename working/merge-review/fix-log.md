@@ -4893,3 +4893,49 @@ grep -c over 33 names (ladderArranged, commitLadderDraft, ladderDraft, ladder_ra
 
 **Rule.** Delete a replaced feature in its own commit and prove with grep that nothing still names it.
 
+
+---
+
+## U19. ui: Dynamic resolution switch and limit line
+
+Apertar-UI `620b01d`. Finding: U2. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+qml/SettingsPage.qml@cinemate-port: label: apertarControlBridge && apertarControlBridge.ladderActive ? "Compression (set by Mode Ladder)" : "Compression"
+The bridge read only ladder_active (src/ApertarControlBridge.cpp:1783@cinemate-port). No switch, no limit text.
+Split Long Takes was a dropdown of frame counts:
+  value: String(apertarControlBridge.framesPerFolder)
+  options: Off, 1000, 2000, 5000, 10000 frames per folder
+  onValueSelected: executeApplyFramesPerFolder(parseInt(v, 10))  -> set_frames_per_folder value=N
+
+**Why it is a problem.** Core changed under the UI: Dynamic resolution replaces the user ladder and is on by default, the clip split is a mode (off/on/auto) and the part size is Core's own key. The touch UI would still say 'Mode Ladder', give the operator no way to turn the new switch off, show no reason for a mode change, and send value=N, which no longer decides the split. Original Apertar shows what the camera decided beside the control (green values for ISO/WB set by the camera, the FPS picker cut at fps_max, ApertarControlBridge.cpp:1811@upstream-1.6.0) and keeps camera truth in Core (UIC-17); commands are apply<Thing> invokables on ApertarControlBridge (UIC-10, QML-8), state is read in applyCoreState (UIC-4, recipe R4).
+
+**How to spot it.** grep -rn -i 'mode ladder' qml src (user-visible words from a renamed feature); grep the bridge for every Core state key the Core README lists and check each has a Q_PROPERTY or is deliberately unused; for a label that grows ('Compression (set by ...)') look at it in a half-width field: InlineDropdownField has no elide, so a long label spills into its neighbour.
+
+**Options.**
+
+- A: add the properties and invokables to ApertarControlBridge, rows in SettingsPage, one Text on CameraPage (chosen). Cost: touches four files, about 130 lines.
+- B: a new DynamicResolutionBridge with its own socket reads. Breaks UIC-2 and UIC-3 (a new concern class for three fields) and duplicates sendCoreCommand.
+- C: keep the frame-count dropdown and add an Off/On/Auto row beside it. Two controls for one Core setting; the count is no longer a choice Core offers through mode=.
+- D: keep the 'Compression (set by Dynamic Resolution)' label. Matches the old wording but the 39-character label overflows the half-width field on every camera, because the switch is on by default.
+
+**Chosen, and why.** A. The bridge keeps Core's value for the split (off, on, auto), like applyBufferMode keeps frames/ram, and QML maps it to Off/On/Automatic. The Dynamic resolution value is a display string (On/Off, empty until Core sends it) like the other camera settings (UIC-11), so the row stays hidden on a Core that does not publish ladder_enabled. The row is full width (like Write Buffer) because the label 'Dynamic Resolution' overflows a half-width field. Given up: the 1000/2000/10000 part-size choice on the touch screen (the size is still frames_per_folder in [storage] and set_frames_per_folder value=); and the '(set by ...)' suffix on Compression, replaced by the description under the new row.
+
+**After.**
+
+```
+ApertarControlBridge.cpp:
+  m_dynamicResolution = state.value("ladder_enabled").toBool(false) ? "On" : "Off";
+  m_limitFps = state.value("limit_fps").toDouble(m_limitFps);  m_limitWhy = state.value("limit_why").toString();
+  bool applyDynamicResolution(const QString &displayValue)  // set_mode_ladder enabled=true|false
+  bool applySplitMode(const QString &value)                 // set_frames_per_folder mode=off|on|auto
+SettingsPage.qml: InlineDropdownField { label: "Dynamic Resolution"; options: ["Off", "On"] ... }
+  Split Long Takes options: Off / On / Automatic; info: "... Automatic turns it on above 32 fps. ..."
+CameraPage.qml: Text { anchors.top: captureStatusChip.bottom; text: controlBridge.limitWhy; style: Text.Outline }
+```
+
+**Checked.** Here: check_ui.sh, 0 warnings. A scratch copy of the tree (Qt 6.4 here lacks retainWhileLoading in ClipPlayerPage.qml, removed in the copy only) was built and run under Xvfb against a simulated Core with its own APERTAR_HARDWARE_CONFIG, driven with XTest clicks and screenshots: Settings > Record shows Dynamic Resolution On with its description; choosing Off made Core's ladder_enabled false; Settings > Media shows Split Long Takes On with 'Start a new folder every 5000 frames', the popup lists Off/On/Automatic, choosing Automatic wrote split=auto and Core's split_mode auto; the camera page shows limit_why under the NO MEDIA chip at the 720x720 layout. Core was not changed, so smoke_core/shape_subset were not run. Only the Pi shows: the line in the landscape layouts and on the HDMI window with a mouse (run ApertarUI on HDMI; Settings > Record > Dynamic Resolution, Settings > Media > Split Long Takes, Camera page line); a real take: set_fps 33 with the switch on and read the line; set_fps above limit_fps with the switch off and see the amber line.
+
+**Rule.** When Core renames or reshapes a feature, grep the UI for the old user-visible word, read the new state keys in applyCoreState, and check long labels in the narrowest field before keeping a suffix.
+
