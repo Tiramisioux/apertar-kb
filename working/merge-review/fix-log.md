@@ -4187,3 +4187,226 @@ Column {
 
 **Rule.** A card's description line is one elided line; a longer hint goes in a wrapped grey Text under the control, in the existing style.
 
+
+---
+
+## C78. camera: the fps ceiling is the lower of Core's table and the probe again
+
+Apertar-Core `0101a6c`. Finding: CM6. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/CameraController.cpp:3509-3534@cinemate-port (same code at the lane tip fa1dc5c):
+ bool fpsLimitTableOnly() { static const bool tableOnly = [] { value = getenv("APERTAR_FPS_LIMIT"); table = value && string(value)=="table"; ... }(); }
+ double maximumSupportedFpsForResolution(...) {
+   const bool minWithTable = sensorFamily == Imx283 ? !imx283ProbeFpsOnly() : fpsLimitTableOnly();
+   return fpsceiling::resolveSensorMaxFps(probed, table, minWithTable);   // probe alone unless =table
+ }
+ Dead: backendMaximumFps() returned nullopt; applyBackendCap wrapped it at three call sites.
+
+**Why it is a problem.** The port made the probe the whole ceiling by default, so a stock camera with the original driver offered 60 fps at 4K 12-bit where 1.6.0 offered 30 (table alone, CameraController.cpp:2629-2681@upstream-1.6.0, 4K = 30). Fork main, the merge target, lets the probe only lower the table: probed ? std::min(table, *probed) : table (CameraController.cpp:2763-2769@f60e301). Conventions CAM-24 and R8: a bench knob is an env var APERTAR_<AREA>_<KNOB> read at the point of use, default in code, echoed on the take-start line. The port read it once into a static and printed its own log line. Rule 2 of the campaign: the owner's decision (probe alone) stays, as a setting whose default is the 1.6.0 value.
+
+**How to spot it.** grep -n 'getenv("APERTAR_' src/camera/CameraController.cpp and ask of each knob: what does a camera without the variable do, and is that what 1.6.0 did? Also grep for functions that return a constant (nullopt, 0) and have callers: dead code that hides a decision (backendMaximumFps).
+
+**Options.**
+
+- Keep the probe-alone default and document the knob: leaves every stock camera with 60 fps at 4K, a change from 1.6.0 (cost: breaks the stock rule)
+- min(table, probe) by default, APERTAR_FPS_LIMIT=probe for the probe alone (cost: the owner adds one drop-in line, and a saved fps above the table is clamped if he forgets)
+- A [camera] max_fps key in apertar-hardware.conf (cost: the owner rejected a file key for this, and the camera side never reads that file, CAM-19)
+- A socket command or WebUI switch (cost: the original developer sees a new setting for an internal limit, CAM-24)
+
+**Chosen, and why.** Option 2, as the camera-modes page and the owner's recorded decision say. The switch is an env var read at use, so no state is cached and a restart picks it up. 'table' is still accepted as a spelling of the default, so an existing drop-in line keeps its meaning. The IMX283 keeps min(probe, floor) whatever the variable says, because its probe can report more than the sensor delivers; its own knob APERTAR_IMX283_PROBE_FPS is gone. Given up: the host test for the pure rule (resolveSensorMaxFps) is gone, the rule is now three lines in CameraController.cpp that only the probe (libcamera, a camera) reaches. boolEnvValue moved back inside the libcamera guard, because its last unguarded user was deleted and the no-libcamera build would warn.
+
+**After.**
+
+```
+bool fpsLimitProbeOnly()
+{
+    const char *value = std::getenv("APERTAR_FPS_LIMIT");
+    return value && std::string(value) == "probe";
+}
+...
+    if (!probed)
+        return table;
+    // The IMX283 stays at min(probe, the driver's floor): the probe can report more than it delivers.
+    return fpsLimitProbeOnly() && sensorFamily != SensorFamily::Imx283 ? *probed : std::min(table, *probed);
+// recording clip line: if (fpsLimitProbeOnly()) std::cerr << " fps_limit=probe";
+```
+
+**Checked.** Run here: check_core.sh both builds and 21 host tests pass, lc 0 warnings, nolc 3 (the old mediumGone, basePathOverride, allocatePhotoBasePath). The first gate run showed a new nolc warning (boolEnvValue unused); fixed by moving the #endif. Not run here: the probe needs libcamera and a sensor, and --simulate has sensor Unknown, so nothing reaches the changed rule and no reply field changed. Needs the Pi: no env knob, get_state at 3840x2160 12-bit has fps_max 30; with Environment=APERTAR_FPS_LIMIT=probe in the unit it is 60, and journalctl -u apertar-core -b | grep 'recording clip:' shows fps_limit=probe on a take.
+
+**Rule.** A bench knob defaults to the original behaviour and the operator who needs the port's behaviour sets it; read it where it is used and echo it on the take-start line.
+
+
+---
+
+## C79. camera: camera_settings.conf holds the mode ladder
+
+Apertar-Core `fc78555`. Finding: CM10. Reviewed by a second agent: not reviewed.
+
+**What was there.** src/camera/CameraController.cpp:404-430@cinemate-port: modeLadderPath() copied persistedSettingsPath() with another file name; saveModeLadderLocked() called settingsFile::atomicWrite(modeLadderPath(), ladder::fileText(modeLadder_)) under mutex_; saveModeLadderAspectsLocked() read the file back and replaced one line (withAspectsLine) so a filter click never erased a resolutions line it could not read; the constructor read the file with ifstream. fileText's header line carried 'T34'.
+
+**Why it is a problem.** Original Apertar keeps camera-wide settings in camera_settings.conf: one field in CaptureSettings, one loader key, one writer line, copied across format profiles, written only by Core's debounced persister (tuning_file, CameraController.cpp:7939-7955 and :742-889@upstream-1.6.0; conventions CAM-25, CAM-29, CAM-40). A second file has its own writer, its own failure path and its own read-back check. The take-over of an old value follows the UI's presets folder and DefaultTuningSelection.hpp:74@upstream-1.6.0: the loader reads the retired form while the new place is empty.
+
+**How to spot it.** grep -n 'atomicWrite\|Path()' src/camera/CameraController.cpp and ask: is there a second settings file beside camera_settings.conf? A function that copies persistedSettingsPath() with another name is the smell.
+
+**Options.**
+
+- Keep mode_ladder.conf and only tidy it: no change for the owner, but a second persistence path stays for the original developer to learn
+- Three keys as the plan says, without the aspect filter: loses the filter, which the port added after the plan
+- Four keys in CaptureSettings, loaded and written in every block like tuning_file: one shape, the filter rides along (chosen)
+- Write the ladder keys only in the active block: shorter file, but a profile block then misses the keys the format carry expects
+
+**Chosen, and why.** Four keys in every block, the tuning_file shape. The plan named three keys; the aspect filter (mode_ladder.conf had an aspects= line by the time of this commit) needs a fourth, so I added mode_ladder_aspects and said so in the commit. modeLadder_ stays the parsed form so ladderActiveForLocked, which holds the DB-45 block, is untouched; it is set only in the constructor, setModeLadder and the start() rung step. A preset keeps the camera's ladder (applyCapturePreset copies the four fields from settings_), because App keeps old settings snapshots for timelapse and preset rollbacks and a stale snapshot would otherwise bring an old ladder back. Given up: a ladder edit is now debounced about 25 ms by the persister instead of written synchronously; the 'Could not write mode_ladder.conf' warning is gone (the WebUI still looks for it in showLadderWriteWarning, which never fires now; W3 deletes it). The resolutions text is kept as the file had it when it cannot be parsed, so an unreadable line is never erased by a later save.
+
+**After.**
+
+```
+output << prefix << "mode_ladder_enabled=" << s.modeLadderEnabled << '\n';   // + _ramp_ready, _resolutions, _aspects
+...
+else if (key == "mode_ladder_resolutions")
+    settings.modeLadderResolutions = value;
+...
+modeLadder_ = ladder::fromText(settings_.modeLadderEnabled, settings_.modeLadderRampReady,
+                               settings_.modeLadderResolutions, settings_.modeLadderAspects);
+// loader: if (!modeLadderKeys) takeOverModeLadderFile(current, formats, still);
+```
+
+**Checked.** Run here: check_core.sh both builds and 21 host tests pass; the only warnings in CameraController.cpp are the three old nolc ones. In --simulate with fresh HOME folders under /home/user/build/sim/drcore/: an old mode_ladder.conf is taken over at the first start (also when camera_settings.conf did not exist); the first persist writes the four keys with the same resolutions text; a restart without the old file shows the same ladder; set_mode_ladder with resolutions, enabled and aspects persists across a restart; a record format switch cdng, h264, cdng keeps it; set_mode_ladder enabled=false works after enter_standby; set_resolution is still refused while the ladder is on; smoke shapes match 1.6.0. Needs the camera: get_mode_ladder before and after the update on the owner's rig, diffed, and one blocked set_resolution with the ladder on.
+
+**Rule.** A camera-wide setting is one more key in camera_settings.conf, carried across the format profiles; an old file is read once while the new place is empty and then left alone.
+
+
+---
+
+## C80. camera: known-limits table
+
+Apertar-Core `980a05b`. Finding: D1. Reviewed by a second agent: not reviewed.
+
+**What was there.** Nothing in Core knew what the recording path holds for a long take: grep -rli sustained src found no file. The only ceilings were the sensor's (probe, table, FpsCeiling.hpp) and the lossless cap. The numbers lived in the owner's test notes (estimator-campaign pre-analysis and findings).
+
+**Why it is a problem.** A screen or a rule that needs a limit has nothing to ask, so each would copy numbers from a note and drift from it. Original Apertar keeps pure logic in one small header named after the concept, std only, host-tested (CAM-4, StillBracketing.hpp:8-19@upstream-1.6.0); this tree does the same for FpsCeiling.hpp and ModeLadder.hpp.
+
+**How to spot it.** Ask where a number that a user will see comes from. If the answer is a KB page or a comment, it needs a row in a table with a label and a source, and a test that pins it.
+
+**Options.**
+
+- One header with a constexpr table and pure functions, test pins the rows (chosen)
+- Numbers inside CameraController.cpp next to the sanitiser: no new file, but not host-testable without libcamera
+- A data file Core reads at start: the operator could edit limits, but a typo changes what the camera records and the original developer has no such file
+
+**Chosen, and why.** Option 1, the new file the plan names. Data and rules sit together so an update to the analysis edits rows only. The header stays std only: no MediaProfile and no libcamera types, the caller maps its own enums onto Kind, Board and Mode. Choices made while writing it: (1) a Cell carries width and height, not only the long side, so the nearest-larger rule can compare pixels and 2880x2160 has its own cell; (2) the USB SSD pixel rate (149 Mpx/s) is mine, derived from the same 4K 18 fps and 2880x2160 24 fps cells as the NVMe one, the page gives only the NVMe 330; (3) fpsShort is 27 for NVMe 4K Clear HDR 16-bit only: the page also lists 37 and 38 fps for 4K SDR 12-bit, but those takes were uncompressed and the cell is lossless, so I left that cell's short number at 0 rather than print a number for the wrong format; (4) the lever info lines are not in this header: W1 already put them in the WebUI as static text, so a second copy would drift. Given up: the info strings as one source (see kb_changes).
+
+**After.**
+
+```
+inline constexpr Cell kCells[] = {
+  { Kind::Nvme, Board::Pi5, 3840, 2160, true, 16, false, "none", 20, 27, Label::Unconfirmed, Group::BackEnd, "..." }, ...
+inline Limit limitFor(const Context &context, const Mode &mode);   // own cell, nearest larger, pixel rate, none
+inline Cap capFor(const Context &context, const Mode &mode, double sensorCeiling);   // levers, then stepDown
+inline double stepDown(double fps);   // 25, 30, 33, 50, 60, 70, 80 ...
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass; sustained_fps_test pins the 18 cells and caps, the steps, the lookup order, the levers and the flat-folder formula (32 fps for 30 minutes). Nothing calls the header, so there is nothing to run on the camera. The numbers themselves need the three hot 30-minute takes of 4K Clear HDR 16-bit (24, 22, 20 fps) before the 20 is more than a placeholder.
+
+**Rule.** A number the camera shows to the operator lives in one table with its label and source, in a pure header, and a host test pins it so a change is deliberate.
+
+
+---
+
+## C81. camera: Core reads the storage and lever context and publishes the known limit
+
+Apertar-Core `52a37e7`. Finding: D2. Reviewed by a second agent: not reviewed.
+
+**What was there.** CameraController.cpp@cinemate-port: fps_max and fps_take_max were the only limits in the state, from the sensor probe, the table and the lossless cap (maximumFpsForSettings). Nothing in Core knew the storage type or how full the card was for the camera; App had the media profile (mediaProfile_, ApertarCoreApp.cpp:11662) and UI.conf values but never gave them to the camera.
+
+**Why it is a problem.** Original Apertar fills camera-derived values as runtime fields of CaptureSettings (a 'Runtime' comment, set in settings() and emitSettingsEventLocked; exposureCompensationAvailable, Types.hpp:132, CameraController.cpp:8570 and :8779@upstream-1.6.0, conventions CAM-18). The state stays flat scalars. The camera never reads App's files or threads; App pushes (CAM-10, the camera takes mutex_ first).
+
+**How to spot it.** Ask: which of this value's inputs does the owning class not have? If App has them, add one setter on the camera that App calls where the input changes (a push), and let the camera fill the derived field where it fills the others.
+
+**Options.**
+
+- App pushes one Context struct when a fact changes; the camera fills the fields on read and on event (chosen)
+- The camera pulls through a std::function that App supplies: no push sites, but it calls into App (file reads, locks) while the camera holds mutex_
+- App computes the limit and the camera only stores it: the table logic would sit in the big App file and the camera could not use it to choose a mode in D3
+
+**Chosen, and why.** Option 1, as the plan says. The push sites are the media change hook, the media watcher poll (only when the card crosses 94 percent, so a fuller card is not an event), the UI switches through handleUiToggle (hardware button toggles go through the same command), a preset, and set_frames_per_folder. Not covered yet: other writers of the hardware file that refreshBufferRequest() serves (a whole-file save, set_buffer_mode); D5 changes the split and should push there. A simulated camera counts as a Pi 5 so the table can be tried without a Pi; any other board without BCM2712 gets no limits and says so. The Log lever is read from the setting (cdng_log), not cdng_log_applied, so it also works in simulation. Given up: audio is carried but the table does not use it yet (the page says audio changes nothing).
+
+**After.**
+
+```
+void ApertarCoreApp::refreshLadderContext() { ... context.fatLike = profile.filesystem == MediaFilesystem::Exfat || ...; camera_.setLadderContext(context); }
+void CameraController::fillLimitFieldsLocked(CaptureSettings &out) const { ... const sustained::Cap cap = sustained::capFor(context, mode, ceiling); out.limitFps = cap.fps; ... out.limitWhy = sustained::whyText(context, mode, cap, ceiling); }
+// state: "limit_fps":0.000,"limit_short_fps":0.000,"limit_basis":"unconfirmed","limit_by":"TDN","limit_why":"..."
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass; only the old ApertarCoreApp.cpp unused-function warning shows. In --simulate with fresh HOME folders: get_state and the socket settings event carry the five fields as valid JSON; limit_why reads like the page's examples; set_preview_tdn false, set_clear_hdr, set_raw_bit_depth 16 and set_fps_phase_lock change limit_fps and limit_why; H.264 gives 'Limits are not measured for H.264, ProRes and stills.'; smoke shapes match 1.6.0's. Needs the Pi: on the NVMe get_state at 4K Clear HDR 16-bit has limit_fps 20 and limit_basis unconfirmed; pull the card and mount the T7 and the fields change while fps, mode and fps_max stay.
+
+**Rule.** A value the camera derives from facts that live in App is pushed by one setter where the facts change; the camera fills the derived field where it fills the others.
+
+
+---
+
+## C82. camera: Dynamic resolution picks the mode from the table
+
+Apertar-Core `f66f27e`. Finding: D3. Reviewed by a second agent: not reviewed.
+
+**What was there.** ModeLadder.hpp@cinemate-port: Rung carried threshold, compression, cdngLog; chooseRung took the first rung whose min(threshold, sanitiser ceiling) reached F; validate() refused rising-threshold and repeat errors and 'No FPS left for it' when saving.
+
+**Why it is a problem.** The owner replaced the user ladder by a table of known limits (design auto-ladder.md, owner answers). The validator also blocked enabling a tile with the ladder off, which the owner reported. Original Apertar has no ladder (grep -rli ladder src@upstream-1.6.0 finds only ProresEncoder), so this is new ground kept in the port's own pure header plus the sanitiser as the arbiter (CAM-4, CAM-21).
+
+**How to spot it.** A save path that runs a whole-list validator for a one-item edit. Ask: can the operator add one item at any time, or must the whole list be consistent first?
+
+**Options.**
+
+- New Candidate/tryOrder/chooseMode beside the old code, old code removed in D4 (chosen)
+- Rewrite ModeLadder.hpp in one go: bigger diff, harder to review
+- Keep thresholds as optional overrides: contradicts the owner's answer
+
+**Chosen, and why.** First option. Size note: the commit is about 430 lines added, over the 300 guide, because the CM10 fields were renamed (about 60 lines of mechanical change), the pool extraction and the tests count too; splitting would have left a build that cannot take enable_mode. Compression comes from the table cell for cDNG only; boards without RAW compression get uncompressed. The default list is every pool mode whose window (size x binning) equals the largest; crops are opt-in. enable_mode starts from the default list when the list is empty. Check validateModes: only repeats and modes the sensor lacks are errors, a mode that cannot run in this format is a warning.
+
+**After.**
+
+```
+inline int chooseMode(const std::vector<Candidate> &c, double targetFps);  // first usable in tryOrder with cap >= F, else highest cap
+if (enableMode || disableMode) { list = enabledModesLocked(draft); add or erase one mode; if (list.empty()) *error = "Enable at least one resolution."; }
+```
+
+**Checked.** Run here: gate passes, 22 host tests; table C reproduced for NVMe and USB SSD in mode_ladder_test; simulate: modes/enable_mode/disable_mode work with ladder on and off, set_fps 20/25/33/50 pick and clamp, set_resolution still refused when active (D7 changes that). Simulated camera uses the USB column (storage unmeasured). Needs the Pi: set_fps 25/30/33/50 on NVMe lands on table C; tile enable/disable rebuilds the list at once; nothing changes in a take.
+
+**Rule.** An edit of one list item must not depend on the rest of the list being valid; let the arbiter (the sanitiser) judge each mode alone.
+
+
+---
+
+## C83. camera: a manual mode pick pins until the next fps change
+
+Apertar-Core `e2658d4`. Finding: D7. Reviewed by a second agent: not reviewed.
+
+**What was there.** CameraController.cpp setResolution/setRawBitDepth@lane tip: if (ladderActiveForLocked(settings_)) { setErrorLocked(kLadderOwnsMode); return false; }
+
+**Why it is a problem.** A block on manual picks plus on-by-default makes a stock camera unable to choose 4K Clear HDR 16-bit by hand; 1.6.0 accepts every pick. The port already had the softer ladderOverride_ for set_clear_hdr.
+
+**How to spot it.** grep -n 'LadderOwns' src/camera/CameraController.cpp: each setter that refuses instead of pinning.
+
+**Options.**
+
+- Pin via ladderOverride_ (chosen): reuses an existing flag, no new state
+- Keep the block: contradicts owner answer 1
+- A new pinned-mode field persisted: survives restart, but adds saved state nobody asked for
+
+**Chosen, and why.** Reuse ladderOverride_. Not saved, so a restart returns control to the table. A second manual pick while pinned keeps the pin (ladderWasActive || overrideBefore). No host test: the logic is in CameraController (libcamera-free but not host-testable); checked by simulate run.
+
+**After.**
+
+```
+const bool ladderWasActive = ladderActiveForLocked(settings_);
+...
+ladderOverride_ = ladderWasActive || overrideBefore;
+if (!applySettingsLocked(next, true)) { ladderOverride_ = overrideBefore; return false; }
+```
+
+**Checked.** Simulate: set_fps 25 picks 2K HDR16; set_resolution 4K and set_raw_bit_depth 12 accepted with ladder_override true; set_fps 33 hands back to the table. Pi: same at the camera, get_state shows the picked mode's limit.
+
+**Rule.** When a feature is on by default, an explicit operator choice pins instead of being refused.
+

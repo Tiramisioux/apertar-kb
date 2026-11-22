@@ -13,7 +13,7 @@ Set them in the drop-in from [services.md](services.md). Unset means the default
 
 | Switch | Default | Effect |
 | --- | --- | --- |
-| `APERTAR_FPS_LIMIT=table` or `probe` | see note | `table`: the lower of Core's table and the sensor probe. `probe`: the probe alone. Today the default is `probe`. Dynamic resolution makes `table` the default, as in fork main. |
+| `APERTAR_FPS_LIMIT=table` or `probe` | see note | `table`: the lower of Core's table and the sensor probe. `probe`: the probe alone. The default is `table`, as in fork main. The owner's rig needs `APERTAR_FPS_LIMIT=probe` in its drop-in, or a saved 4K fps above 30 comes back as 30. |
 | `APERTAR_STORAGE_PREROLL=1` or `0` | off | storage pre-roll at start and on card insert. Wins over `[media] preroll`. |
 | `APERTAR_MEDIA_TRIM=0` | on | no trim of the recording drive |
 | `APERTAR_CLIP_MERGE=0` | on | split clips stay split |
