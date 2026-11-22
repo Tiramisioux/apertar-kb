@@ -4410,3 +4410,163 @@ if (!applySettingsLocked(next, true)) { ladderOverride_ = overrideBefore; return
 
 **Rule.** When a feature is on by default, an explicit operator choice pins instead of being refused.
 
+
+---
+
+## C84. web: IMX585 resolution pills are named Full HD, 4K and Clear HDR
+
+Apertar-Core `ffb3cac`. Finding: P1. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp:10280@cinemate-port (label built in imx585BaseResolutionOptions)
+  options.push({ value: family.key + (clearHdr ? "-hdr" : ""), label: family.label + (clearHdr ? " HDR" : ""),
+    enabled: offered && (!clearHdr || hdrAllowed) });
+
+**Why it is a problem.** The page and Core call the feature 'Clear HDR' everywhere else (Mode Ladder groups, Recording format card, the running line). 'HDR' alone is the word of the sensor's other HDR modes and misleads. 1.6.0 names the sizes 'Full HD' and '4K' (imx585BaseResolutionOptions, src/web/WebControlPage.cpp:5280@upstream-1.6.0). Conventions: a name is written in full the same way on every screen.
+
+**How to spot it.** grep -n '" HDR"' src/web/WebControlPage.cpp: any label that says HDR without 'Clear' in front. Question: does the same thing have one name on every screen?
+
+**Options.**
+
+- Change the one string in imx585BaseResolutionOptions (chosen): one line, no new code.
+- Add a label table for the pills: more code for four names, and a second place to keep in step.
+- Shorten to 'CHDR': short, but the operator did not ask for it and no other label uses it.
+
+**Chosen, and why.** First option. The pill labels are built in one function, so one string fixes the pills, the Settings dropdown and the favourites field together. Given up: nothing; the longer label (for example '2K crop Clear HDR') wraps in the pill, which the pill grid already handles.
+
+**After.**
+
+```
+options.push({ value: family.key + (clearHdr ? "-hdr" : ""), label: family.label + (clearHdr ? " Clear HDR" : ""),
+  enabled: offered && (!clearHdr || hdrAllowed) });
+```
+
+**Checked.** Ran here: the gate; a --simulate Core with the sensor name patched to IMX585 in a Playwright route (the simulated sensor is not an IMX585): pills read Full HD, 4K, 2K crop, HD crop, Full HD Clear HDR, 4K Clear HDR, 2K crop Clear HDR, HD crop Clear HDR; no page errors. Needs the Pi: open the WebUI Camera pane on an IMX585 and read the pills.
+
+**Rule.** One thing, one name, written in full, on every screen.
+
+
+---
+
+## C85. web: IMX585 resolution dropdowns list the sizes best first
+
+Apertar-Core `7c45450`. Finding: P2. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp:17460@cinemate-port
+  ensureSelectEntries("settingsRecordResolutionSelect", resolutionBaseOptions);
+  (and createFavoriteSelectEntryField(..., "Resolution", resolutionBaseOptions, ...) near :12421)
+
+**Why it is a problem.** One list served two controls, so the pills and the dropdown had the same order. The operator wants the pills in 1.6.0 order (the front page) and the dropdowns best first. Both lists come from sensorBaseResolutionOptionsForSnapshot; 1.6.0 has one two-entry list (imx585BaseResolutionOptions, src/web/WebControlPage.cpp:5280@upstream-1.6.0).
+
+**How to spot it.** Question: does one array feed two controls that should be ordered differently? grep -n 'resolutionBaseOptions' src/web/WebControlPage.cpp lists every consumer.
+
+**Options.**
+
+- A small sort function used by the two dropdowns only (chosen): about 10 lines, pills untouched.
+- Reorder imx585BaseResolutionOptions itself: the pills would change too, which the operator did not want.
+- Return two lists from the sensor function: touches every sensor's branch for one sensor's wish.
+
+**Chosen, and why.** First option. resolutionSelectOptions(snapshot, options) sorts by the index of the value in imx585LadderGroups, which already holds the best-first order for the Mode Ladder, so there is no second copy of the order. Array.prototype.sort is stable and returns a copy via slice(), so other sensors and H.264 lists (not IMX585, or values not in the groups) keep their order. Given up: the favourites field was not opened in the browser here.
+
+**After.**
+
+```
+function resolutionSelectOptions(snapshot, options) {
+  if (!imx585Selected(snapshot))
+    return options;
+  const rank = (option) => { const index = imx585LadderGroups.findIndex((group) => group[0] === option.value);
+    return index < 0 ? imx585LadderGroups.length : index; };
+  return options.slice().sort((a, b) => rank(a) - rank(b));
+}
+```
+
+**Checked.** Ran here: the gate; --simulate Core with the sensor patched to IMX585 in a Playwright route: the Settings select lists the eight entries best first, the pills stay Full HD, 4K, 2K crop, HD crop, then Clear HDR; no page errors. Needs the Pi: Settings > Record on an IMX585, and Settings > Favorites with the Resolution field turned on.
+
+**Rule.** When one list feeds two controls that want different orders, sort a copy at the control that differs; reuse the order list that already exists.
+
+
+---
+
+## C86. web: Activated sensor modes show a white Active or a grey Activate button
+
+Apertar-Core `44cf30d`. Finding: P3. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp:9524@cinemate-port
+  const remove = createDomElement("button", "ladder-add remove", "Deactivate");
+  ...
+  const add = createDomElement("button", "ladder-add", "Activate");   // .ladder-add was white, .remove was red
+
+**Why it is a problem.** Red is the page's warning colour and the white fill is the selected look of .pill-button.active (WebControlPage.cpp:1581). The two buttons said the opposite of the state: the white button was the one that was not active. The red/white pair has no precedent in 1.6.0, whose option buttons are grey, selected white.
+
+**How to spot it.** Question: does the selected look (white) mean 'on' everywhere on the page? grep -n 'ladder-add' and compare with .pill-button.active.
+
+**Options.**
+
+- Make .ladder-add grey and add .ladder-add.active white, relabel Deactivate to Active (chosen): CSS in the pill-button palette, one string.
+- Reuse the class pill-button on the buttons: reuses the CSS, but .ladder-add has its own size (min 72 x 44) that the list needs.
+- Leave the CSS and only change the texts: the colours would stay wrong.
+
+**Chosen, and why.** First option. The base rule now has the grey pill-button colours, .active has the white ones, and the unused .ladder-add.remove rule is deleted. The aria-label of the Active button stays 'Deactivate <mode>' so a screen reader says what the click does; the visible text says the state. Given up: the click action is no longer named on screen (the button shows the state, as the operator asked).
+
+**After.**
+
+```
+const remove = createDomElement("button", "ladder-add active", "Active");
+remove.setAttribute("aria-label", "Deactivate " + name);
+/* css */ .ladder-add { background: #202024; color: #e4e4e7; ... }
+/* css */ .ladder-add.active { border-color: rgba(255,255,255,0.9); background: #ffffff; color: #09090b; }
+```
+
+**Checked.** Ran here: the gate; --simulate Core with get_mode_ladder and set_mode_ladder mocked in a Playwright route (the simulated sensor has no pool): Activate is grey (rgb 32 32 36), a click makes it Active white (rgb 255 255 255), the next click makes it Activate again; no page errors. Needs the Pi: Settings > Modes on an IMX585, press Activate and Active on a few modes.
+
+**Rule.** A button that shows a state wears the page's selected look when on and the plain look when off.
+
+
+---
+
+## C87. web: the Custom pill of the Clip names card can be chosen
+
+Apertar-Core `fa8ec19`. Finding: P5. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp:16757@cinemate-port
+  options.push({ value: "", label: "Custom", enabled: false });
+  ...
+  customButton.disabled = true;
+  customButton.classList.remove("disabled");
+  customButton.classList.toggle("active", activeIndex < 0);
+
+**Why it is a problem.** A pill that is a button looks and acts like a button. Custom was only an indicator lit when the name matched no preset, and the grey :disabled look told the operator it could not be used. The other pills of the card are ordinary option buttons built by buildOptionButtons; the card has no 1.6.0 precedent.
+
+**How to spot it.** grep -n 'disabled = true' next to buildOptionButtons: a pill forced off after the shared builder made it. Question: can the operator press every pill that looks like a button?
+
+**Options.**
+
+- A flag clipUi.custom set by the click, cleared by a preset (chosen): about 10 lines, the composer is already open under the pills.
+- Hide the composer until Custom is pressed: bigger layout change, and the presets would no longer show the pills they stand for.
+- Leave it an indicator and style it so it does not look disabled: does not answer 'I cannot click Custom'.
+
+**Chosen, and why.** First option. buildOptionButtons already marks a pill active when its value equals the current value; the Custom option has value '' and the current value is '' while custom is on, so the old fix-up block (disabled, class toggles) is deleted rather than patched. clipUi.custom is a plain boolean property on the existing clipUi object; it is also cleared when the camera's template changes under an unedited page. Given up: the choice is not saved; after a reload a name equal to a preset shows that preset.
+
+**After.**
+
+```
+if (clipUi.custom)
+  activeIndex = -1;
+options.push({ value: "", label: "Custom", enabled: !clipUi.recording });
+buildOptionButtons("clipNamePresets", options, ..., (value) => {
+  clipUi.custom = value === "";
+  if (clipUi.custom) { clipRenderComposer(); return; }
+  ...
+```
+
+**Checked.** Ran here: the gate; --simulate Core, Playwright on Settings > Record: Custom turns active, Original grey, no command sent; Time of day, dashes sends set_clip_name_template and is active; Custom again then adding the Resolution pill saves {format}_{date_}_{tc-}_{clip}{res} and Custom stays active after two polls; Original brings Original back; no page errors. smoke_core + shape_subset: every base field present with the same type. Needs the Pi: press Custom on the camera's WebUI while a take is not running, and while one runs (it must be greyed).
+
+**Rule.** Do not force off a control that the shared builder made; give it a state instead.
+
