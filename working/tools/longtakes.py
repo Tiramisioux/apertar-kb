@@ -3972,7 +3972,7 @@ def campaign_main(a, out):
     CS['audio_expected'] = aud.get('record_audio_enabled') is not False
     found = {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log', 'preview_tdn', 'fps_phase_lock',
                                      'fps_speed_ramp', 'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled',
-                                     'frames_per_folder', 'split_mode', 'clip_merge_enabled', 'tuning_file')}
+                                     'frames_per_folder', 'split_mode', 'clip_merge_enabled', 'storage_preroll_auto', 'tuning_file')}
     if any(is_est(n) for n in a.night.split(',')):
         # the estimator touches every format: its settings, the UI levers, the ladder's rungs and each format's saved
         # resolution profile (Core keeps resolution and Clear HDR per format, profile.<format>.* in camera_settings.conf)
@@ -4020,6 +4020,19 @@ def campaign_main(a, out):
     core('set_clip_merge', enabled=False)
     core('set_fps_speed_ramp', enabled=False)
     st1 = state()
+    if st1.get('storage_preroll_auto') is False:
+        # Core 0977dd6 made the automatic storage pre-roll off by default; every measurement so far had it on (the old Core ran
+        # it at each start) and verify() asks for it. On for the night, one pre-roll now (Core runs it only at start or on a
+        # card change), and the restore puts the switch back as found.
+        r = core('set_storage_preroll', value='on')
+        r2 = core('storage_preroll', seconds=2) if r.get('ok') else {}
+        for _ in range(60):
+            time.sleep(2)
+            if not state().get('storage_preroll_active'):
+                break
+        st1 = state()
+        decide(out, 'storage pre-roll was off (Core default since 0977dd6): switched on for the night (%s), one pre-roll run (%s): %s' % (
+            r.get('ok') or r.get('error'), r2.get('ok') or r2.get('error'), st1.get('storage_preroll_last')))
     decide(out, 'fixed state: ladder %s, merge %s, frames_per_folder %s, speed ramp %s, pre-roll %s (%s)' % (
         st1.get('ladder_enabled'), st1.get('clip_merge_enabled'), st1.get('frames_per_folder'), st1.get('fps_speed_ramp'),
         st1.get('storage_preroll_auto'), st1.get('storage_preroll_last')))
@@ -4169,7 +4182,10 @@ def restore_night(out, found, nights, why):
                     ('set_fps', {'value': float(found.get('fps') or 25)}),
                     ('set_frames_per_folder', {'value': SPLIT_DEFAULT, 'mode': found.get('split_mode') or 'on'}),
                     ('set_clip_merge', {'enabled': True}),
+                    ('set_storage_preroll', {'value': 'on' if found.get('storage_preroll_auto') else 'off'}),
                     ('set_mode_ladder', {'enabled': bool(found.get('ladder_enabled'))})):
+        if cmd == 'set_storage_preroll' and found.get('storage_preroll_auto') is None:
+            continue                    # not found (the settings check, an older Core): leave the switch as it is
         core(cmd, **kw)
         time.sleep(4 if cmd in ('set_clear_hdr', 'set_resolution', 'set_raw_bit_depth') else 0.3)
     settle()
