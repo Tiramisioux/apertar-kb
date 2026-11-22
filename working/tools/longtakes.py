@@ -3897,6 +3897,77 @@ def est_warm_fixed(out, cells):
             decide(out, 'EST P6b %s at %d: %s after %s s' % (spec, f, r.get('outcome'), r.get('seconds')))
 
 
+# P7 (User 2026-11-22: "make the next test the last we need with the nvme"): the 30-min takes. Every row that held 15 min on the
+# warm drive (P6/P6b) at the fps it held, in the order of the questions that matter most; 4K SDR12 uncompressed at 33 is the
+# derived fallback for 4K raw (37 held 15 min, 38 did not). Stopped at the first drop, like every EST take.
+EST_LONG_S = 1800
+EST_LONG = (('4kHDR16:cdng:unc:log', 25), ('4kSDR12:cdng:lj', 40), ('4kSDR12:lossydng:3to1', 37), ('4kP:prores:hq', 26),
+            ('4kHDR16:cdng:lj:log', 14), ('4kSDR12:cdng:unc', 33))
+# P8: the limits still open, from the top: 60-s steps down until one is clean, then 15 min at that fps. SDR Log (cDNG from the
+# PiSP stream, new on Core f1e344a) is asked the same way; a Core without it ends such a cell as skipped_unavailable.
+EST_SEARCH = (('4kP:h264:2560x1440', (40, 35, 30, 25)),
+              ('4kP:prores:hq:arri_logc4', (36, 32, 28, 26)),
+              ('4kHDR12:cdng:unc', (30, 28, 26, 24, 22)),
+              ('4kSDR10:cdng:lj', (45, 42, 40)),
+              ('4kSDR12:cdng:lj:log', (40, 36, 30)),
+              ('4kSDR12:cdng:unc:log', (37, 33, 30)),
+              ('4kHDR16:cdng:unc', (24, 22)))
+
+
+def est_long(out, cells):
+    """P7: one 30-min take per (spec, fps), stopped at the first drop."""
+    for spec, f in cells:
+        if CS['stop'] or STOP['sig'] or HALT['why']:
+            return
+        r = est_cell(out, 'P7', spec, {}, f, EST_LONG_S, 'long30')
+        if r.get('verdict') == 'stop':
+            return
+        est_append(out, 'warm', {'spec': spec, 'estimate': None, 'fps': f, 'secs': EST_LONG_S, 'verdict': r.get('verdict'),
+                                 'outcome': r.get('outcome'), 'seconds': r.get('seconds'), 'first_drop_s': r.get('first_drop_s'),
+                                 'dropped': r.get('dropped'), 'nvme_c_max': r.get('nvme_c_max'), 'take_id': r.get('take_id'),
+                                 'ckey': r.get('ckey'), 'limited_by': 'fixed fps (P7, 30 min)'})
+        decide(out, 'EST P7 %s at %d: %s after %s s' % (spec, f, r.get('outcome'), r.get('seconds')))
+
+
+def est_search(out, cells):
+    """P8: for each (spec, fps list high to low): 60-s takes until one is clean (a mode that is unavailable ends its cell),
+    then one 15-min take at that fps (and one below it when it drops)."""
+    clean = lambda r: str(r.get('outcome') or '').startswith(('pass_', 'ab_clean'))        # noqa: E731
+    for spec, fpss in cells:
+        found = None
+        for f in fpss:
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                return
+            r = est_cell(out, 'P8', spec, {}, f, EST_PROBE_S, 'step')
+            if r.get('verdict') == 'stop':
+                return
+            est_append(out, 'warm', {'spec': spec, 'estimate': None, 'fps': f, 'secs': EST_PROBE_S, 'verdict': r.get('verdict'),
+                                     'outcome': r.get('outcome'), 'seconds': r.get('seconds'), 'first_drop_s': r.get('first_drop_s'),
+                                     'dropped': r.get('dropped'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey'),
+                                     'limited_by': 'step-down (P8, 60 s)'})
+            decide(out, 'EST P8 %s at %d, 60 s: %s' % (spec, f, r.get('outcome')))
+            if str(r.get('outcome')) in ('skipped_unavailable', 'setup_mismatch'):
+                break               # the mode or its Log is not available on this Core: the next fps would say the same
+            if clean(r):
+                found = f
+                break
+        if found is None:
+            continue
+        for f in (found, found - 1):
+            if CS['stop'] or STOP['sig'] or HALT['why']:
+                return
+            r = est_cell(out, 'P8', spec, {}, f, EST_WARM_S, 'long15')
+            if r.get('verdict') == 'stop':
+                return
+            est_append(out, 'warm', {'spec': spec, 'estimate': None, 'fps': f, 'secs': EST_WARM_S, 'verdict': r.get('verdict'),
+                                     'outcome': r.get('outcome'), 'seconds': r.get('seconds'), 'first_drop_s': r.get('first_drop_s'),
+                                     'dropped': r.get('dropped'), 'nvme_c_max': r.get('nvme_c_max'), 'take_id': r.get('take_id'),
+                                     'ckey': r.get('ckey'), 'limited_by': 'step-down (P8, 15 min)'})
+            decide(out, 'EST P8 %s at %d, 15 min: %s after %s s' % (spec, f, r.get('outcome'), r.get('seconds')))
+            if clean(r):
+                break
+
+
 EST_BLOCKS_DEFAULT = 'P0,P1,P2,P1b,P3,P4,P5'
 
 
@@ -3943,6 +4014,10 @@ def est_night(out):
             est_warm(out)
         elif b == 'P6b':
             est_warm_fixed(out, EST_WARM_LOG)
+        elif b == 'P7':
+            est_long(out, EST_LONG)
+        elif b == 'P8':
+            est_search(out, EST_SEARCH)
         else:
             decide(out, 'EST: unknown block %s: skipped' % b)
     if smoke:
