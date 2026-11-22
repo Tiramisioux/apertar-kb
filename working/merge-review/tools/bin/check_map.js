@@ -59,6 +59,7 @@ function has(files, code) {
   for (const [id, it] of items) {
     if (!it.path) continue;
     for (const mode of ['fork', 'official']) {
+      if (mode === 'official' && it.forkOnly) continue;   // fork-only box or arrow: not on the official page
       const code = mode === 'official' && it.up && ('code' in it.up) ? it.up.code : it.code;
       const p = mode === 'official' && it.up && it.up.path ? it.up.path : it.path;
       if (!code || /^https?:|^curl |^\$ /.test(code)) continue;
@@ -76,6 +77,7 @@ function has(files, code) {
     r.steps.forEach((st, i) => {
       const node = data.N[st.node] || {};
       for (const mode of ['fork', 'official']) {
+        if (mode === 'official' && r.forkOnly) continue;
         const diff = mode === 'official' && st.up && ('diff' in st.up) ? st.up.diff : st.diff;
         const file = mode === 'official' && st.up && st.up.file ? st.up.file : st.file;
         if (!diff || !file) continue;
