@@ -4939,3 +4939,47 @@ CameraPage.qml: Text { anchors.top: captureStatusChip.bottom; text: controlBridg
 
 **Rule.** When Core renames or reshapes a feature, grep the UI for the old user-visible word, read the new state keys in applyCoreState, and check long labels in the narrowest field before keeping a suffix.
 
+
+---
+
+## C97. web: a manual pick is allowed while Dynamic resolution is on
+
+Apertar-Core `17fc6f7`. Finding: W4. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/web/WebControlPage.cpp@cinemate-port (ladder_active reads, several places):
+const ladderActive = snapshot.ladder_active === true;
+setElementDisabled("settingsRecordResolutionSelect", ladderActive);
+buildOptionButtons("resolutionOptions", ladderLockedOptions(resolutionBaseOptions, ladderActive), ...);
+enabled: rawBitDepthOptionEnabled(...) && !ladderActive, locked: ladderActive,
+field.dataset.ladderLock = kind;   // click -> showLadderLockWarning()
+<span class="subtle-note">... Resolution, Bit Depth and Clear HDR are greyed in Recording format ...</span>
+
+**Why it is a problem.** With Dynamic resolution on by default, a stock camera could not pick its own resolution or bit depth. Core already allows the pick and pins it until the next fps change (D7, owner answer 1). Apertar 1.6.0 has no such lock: every pick goes to Core, and Core's sentence is shown (CMD-27, WEB-20: busy and mode rules live in Core, the page only shows Core's refusal; WEB-14: Core's text verbatim).
+
+**How to spot it.** grep -n 'ladderActive\|ladder_active\|ladder-locked\|ladderLock' src/web/WebControlPage.cpp: any control disabled by a Core-side mode that Core itself no longer refuses. Ask: does Core still refuse this? (grep setErrorLocked in the setter).
+
+**Options.**
+
+- Only unlock the pills, keep the warning for compression (small, but leaves dead lock styles)
+- Remove the whole lock machinery, keep one disabled select for compression (chosen; matches 1.6.0, about 80 lines fewer)
+- Disable nothing, let Core refuse compression with its sentence (the select then shows an error toast on every try; Core's text still says Mode Ladder)
+
+**Chosen, and why.** Option 2. The lock came in as one idea (ladderLock data attribute, ladder-locked class, locked option flag, warning toast), so all of it goes together. Compression keeps its normal disabled select because Core still refuses it while ladder_active is true; a title on the select says why. Given up: the click-for-explanation toast on compression, now a hover title.
+
+**After.**
+
+```
+const ladderActive = snapshot.ladder_active === true;
+setElementDisabled("settingsCdngCompressionSelect", isRecording || !rawCompressionSupported || ladderActive);
+document.getElementById("settingsCdngCompressionSelect").title = ladderActive
+  ? "Dynamic resolution sets the compression. Pick a resolution by hand or turn it off to choose it." : "";
+buildOptionButtons("resolutionOptions", resolutionBaseOptions, resolutionBaseValue, ...);
+enabled: rawBitDepthOptionEnabled(snapshot, value, rawBitDepthFixedForH264),
+```
+
+**Checked.** node --check of the page script. Chromium against a --simulate Core with the IMX585 and ladder fields mocked (/home/user/build/sim/drweb3/w4_manual_pick_test.js, 15 checks): pills and selects usable with ladder_active true, set_raw_bit_depth and set_resolution sent, no toast, compression greyed then unlocked when ladder_active is false (a pin), limit_why shown; the 28 checks of dynres_page_test.js still pass; smoke shapes match 1.6.0. Needs the camera: with Dynamic resolution on, tap 4K Clear HDR at 25 fps in the page, then curl -s http://<pi>:8000/api/state and check ladder_override true and limit_why names the pick.
+
+**Rule.** Disable a control in the page only where Core still refuses it; when Core stops refusing, delete the lock, do not restyle it.
+

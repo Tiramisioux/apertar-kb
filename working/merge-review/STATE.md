@@ -184,3 +184,13 @@ His camera runs cinemate-port, not the review branch. Lanes started:
 - `lane/ui3` (/home/user/wt/lane-ui3), notes `notes/ui3`: T1 HDMI shows Clip timecode although UI timecode is Time of Day.
 - `lane/dr-core` resumed: D3 (Activate blocked by the old validator is fixed by the enabled list), D7.
 - KB follow-up: llm/ui-map.md (applySplitMode, new bridge properties, applyFramesPerFolder gone); auto-ladder.md U2 row (full width, line under the status chip, Compression suffix dropped).
+
+## 2026-11-22: Dynamic resolution built
+
+All of it is on the review branches (Core C78-C98 incl. the wording fix, UI U18-U19), gated and pushed.
+Pi checks: see the notes of each commit (drcore, drcore2, drweb2, drweb3, drui2). Rig needs APERTAR_FPS_LIMIT=probe.
+Open:
+- KB tool longtakes.py: its P4 "Mode Ladder take" sets ladder thresholds, which no longer exist (set_mode_ladder now takes enabled/modes/enable_mode/disable_mode). Update before the next campaign.
+- T7 speed test: if run_media_speed_test lowers the T7 caps, kSpeedTestWarmFactor (0.75) in SustainedFps.hpp is too strict.
+- 4K Clear HDR 16-bit 30-minute hot takes at 24, 22, 20 fps to replace the placeholder cell (20).
+- Core still publishes ladder_tops / ladder_resolution (the FPS pills read them).
