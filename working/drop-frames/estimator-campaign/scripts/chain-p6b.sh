@@ -11,7 +11,7 @@ F=$R/restore-$TAG.txt
 if [ -f "$F" ] && [ "$(stat -c %Y "$F")" -gt "$T0" ] && tail -1 "$F" | grep -q '^RESTORE OK' \
    && tail -3 "$R/runner.log" | grep -q "night $TAG over: all stages"; then
   say "P6 over and restored: starting P6b"
-  CAMPAIGN_ENV=$NC/campaign-est.env LT_BIN=$HOME/longtakes/bin-est bash "$NC/start-est.sh" "$TAG" --est-blocks P6b --max-voids 4
+  CAMPAIGN_ENV=$NC/campaign-est.env LT_BIN=$HOME/longtakes/bin-est bash "$NC/start-est.sh" "$TAG" --est-blocks P6b --max-voids 4 --preserve cDNG_26-11-21_23371407_C0005_cam0
 else
   say "no clean end of P6 ($(tail -1 "$F" 2>/dev/null); $(tail -1 "$R/runner.log" | cut -c1-150)): power-off follower instead"
   exec bash "$NC/poweroff-after-night.sh" "$P" "$R" "$TAG"
