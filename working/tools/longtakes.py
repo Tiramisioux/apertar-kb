@@ -4266,7 +4266,7 @@ def main():
     ap.add_argument('--no-go', action='store_true', help='N: do not wait for GO-<stage> sentinels (smoke tests only)')
     ap.add_argument('--no-dropin-check', action='store_true', help='N: do not require FE depth 4 in Core\'s environment (smoke tests only)')
     ap.add_argument('--expect-serial', default='A936B442006AC2', help='N: the campaign card (any other medium = stop)')
-    ap.add_argument('--preserve', default='', help='N, SMOKE only: comma list of clip folders on the card that are Patrik\'s (never touched)')
+    ap.add_argument('--preserve', default='', help='N, SMOKE and EST nights: comma list of clip folders on the card that are Patrik\'s (never touched, never deleted)')
     ap.add_argument('--smoke-split', type=int, default=200, help='N, SMOKE: frames_per_folder of the smoke take (so a 20 s take has parts to merge)')
     ap.add_argument('--smoke-delete', action='store_true', help='N, SMOKE: delete the smoke clip through the media route at the end')
     ap.add_argument('--idle-between', type=int, default=600, help='N: idle seconds between the stages of a night (drive recovery)')
@@ -4289,8 +4289,8 @@ def main():
         MODES.append((k, int(w_), int(h_), int(bits), v.endswith(':hdr')))
         CROPS.add(k)
     if 'N' in a.stages:
-        if a.preserve and 'SMOKE' not in a.night.split(','):
-            sys.exit('--preserve is for the SMOKE night only: Patrik offloads his footage before S0 (plan section 6)')
+        if a.preserve and 'SMOKE' not in a.night.split(',') and not any(is_est(n) for n in a.night.split(',')):
+            sys.exit('--preserve is for the SMOKE and EST nights only: Patrik offloads his footage before S0 (plan section 6)')
         bad = [n for n in a.night.split(',') if n and n not in NIGHT_STAGES and not is_est(n)]
         if not a.night or bad:
             sys.exit('--stages N needs --night with stages from %s (got %r)' % (','.join(NIGHT_STAGES), a.night))
