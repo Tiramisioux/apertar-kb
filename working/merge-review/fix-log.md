@@ -4829,3 +4829,67 @@ Apertar-Core `c12ee24`. Finding: D9. Reviewed by a second agent: not reviewed.
 
 **Rule.** Document a default-on feature where the original developer reads, with the recipe for the one place its numbers live.
 
+
+---
+
+## C95. web: clip split Off / On / Automatic and the TDN option in the page
+
+Apertar-Core `0378d80`. Finding: W2. Reviewed by a second agent: not reviewed.
+
+**What was there.** WebControlPage.cpp@cinemate-port: split was only frames_per_folder (0 = off); the Media card Off pill meant value 0; no TDN option.
+
+**Why it is a problem.** Core's split=off|on|auto keeps frames_per_folder as the part size, so 0 no longer means off; the page must read split_mode (Core notes drcore2/04, 05).
+
+**How to spot it.** Page code that tests a number as a switch: grep -n 'frames_per_folder' WebControlPage.cpp.
+
+**Options.**
+
+- Split control inside the pane: greyed with it though split is independent
+- Control in the existing block (chosen): where the info line already is
+- New card: more layers
+
+**Chosen, and why.** Option 2. split_mode is forwarded from the system group and merged from replies; the optimistic patch handles mode=. An older Core without split_mode still reads 0 as Off. Given up: split inside the pane.
+
+**After.**
+
+```
+await sendCommand({ cmd: 'set_frames_per_folder', mode: value });  // off|on|auto
+const splitMode = typeof systemState.split_mode === 'string' ? systemState.split_mode : (framesPerFolder > 0 ? 'on' : 'off');
+setModeLadder({ tdn: value });  // keep|off_in_4k
+```
+
+**Checked.** Chromium on a real --simulate Core: Automatic sends mode=auto and Core keeps it, Off sends mode=off, Media row follows, TDN sends tdn=off_in_4k; smoke shapes match 1.6.0. Needs the Pi: 33 fps cDNG take on exFAT with Automatic: curl -s localhost:8000/api/state | grep -o '"split_effective":[a-z]*'.
+
+**Rule.** When a number becomes a part size and a mode appears, move the page's switch to the mode and keep the number a number.
+
+
+---
+
+## C96. web: remove the ladder editor's script and styles
+
+Apertar-Core `44d957f`. Finding: W3. Reviewed by a second agent: not reviewed.
+
+**What was there.** WebControlPage.cpp:8615-9728 and 1629-2137@cinemate-port: ~1100 lines of JS and ~500 of CSS for the editor (ladderArranged, ladderDraftProblem, createLadderRow, 'No FPS left for it').
+
+**Why it is a problem.** Core has no thresholds, per-resolution compression, Log or Ramp-ready; the validator texts describe rules that no longer exist. 1.6.0 has no such code.
+
+**How to spot it.** After a replacement: list every function name of the old part and grep -c each; zero outside its own body means dead.
+
+**Options.**
+
+- Remove inside the pane commit: one big diff
+- Own commit (chosen): reviewable
+- Leave dead code: the next reader trusts it
+
+**Chosen, and why.** Option 2. Kept what the new pane uses: crop frames, ladderQualityCompare, mode names, groups, aspect filter.
+
+**After.**
+
+```
+grep -c over 33 names (ladderArranged, commitLadderDraft, ladderDraft, ladder_ramp_ready, 'No FPS left', ...) is 0.
+```
+
+**Checked.** node --check; the 28 Chromium checks still pass; smoke shapes match.
+
+**Rule.** Delete a replaced feature in its own commit and prove with grep that nothing still names it.
+
