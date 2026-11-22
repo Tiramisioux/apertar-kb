@@ -4570,3 +4570,262 @@ buildOptionButtons("clipNamePresets", options, ..., (value) => {
 
 **Rule.** Do not force off a control that the shared builder made; give it a state instead.
 
+
+---
+
+## C88. camera: remove the user ladder's thresholds, Log, Ramp-ready, validator
+
+Apertar-Core `04a6ca0`. Finding: D4. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/ModeLadder.hpp:17-27@cinemate-port
+struct Rung { ...; double threshold = 0.0; std::string compression; CdngLog cdngLog = CdngLog::Off; };
+struct Ladder { bool enabled; bool rampReady; std::vector<Rung> rungs; ... };
+inline int chooseRung(const Ladder&, const std::vector<RungState>&, double fps);  // min(threshold, ceiling)
+inline bool parseRungs(...);  // WxH:BITS:hdr|sdr[:FPS[:COMPRESSION[:log]]]
+inline void validate(...);    // rising thresholds, repeats, never used
+CC:13128@cinemate-port: ladderOverride_ = false; // Ramp-ready changes the rung with Speed Ramp
+
+**Why it is a problem.** The owner replaced the user ladder by the table of known limits (auto-ladder.md, R1 and the owner answers). After D3 nothing chooses by threshold, per-mode compression or per-mode Log any more, and Ramp-ready was dropped by DB-46 but still sat in the type, the reply, three state serialisers and the cam1 resync. Dead fields cost readers time: a new developer asks what a threshold does and finds nothing. Original Apertar has no ladder (grep -rli ladder src@upstream-1.6.0 finds only ProresEncoder); its pure headers stay small and carry only what a caller reads (StillBracketing.hpp:8-19@upstream-1.6.0, conventions CAM-4).
+
+**How to spot it.** After a feature is replaced, grep for the old names: grep -rn 'threshold\|rampReady\|ramp_ready\|rungsText\|chooseRung' src tools. Any hit that only writes or prints the value, and no code that decides by it, is dead. Ask for each public field: who reads it?
+
+**Options.**
+
+- Delete every old field and parse only the new text: smallest code, but an old mode_ladder.conf and the old WebUI editor (still sending fields) would be refused
+- Delete the fields, keep one parser that reads and drops the old extra fields (chosen): no old file breaks, one function instead of two
+- Keep the fields and ignore them: no diff to review, but the dead code stays and the next reader cannot tell what is live
+- Also remove ladder_tops, ladder_resolution and ladder_count now: matches the plan, but the WebUI still reads them until the Dynamic resolution pane reads steps
+
+**Chosen, and why.** Option 2. parseModes is the only parser: it checks the first three fields and accepts up to three more without looking at them. Rung::compression stays as a field because the camera puts the table cell's compression there before one apply; its comment now says it is never parsed or saved. The WebUI lane still reads ladder_tops, ladder_resolution and ladder_count, so they stay; remove them after the pane reads steps. Given up: the old error texts for a bad threshold, compression or Log word. Also removed on the way: the vestigial Ramp-ready lines in setFpsSpeedRamp (an override reset and a ladder rewrite), the unused Types.hpp include in ModeLadder.hpp, and the ladder checks in log_curve_test.cpp.
+
+**After.**
+
+```
+struct Rung { width, height, bits, clearHdr; std::string compression; /* the table cell's, never saved */ };
+struct Ladder { bool enabled; std::vector<Rung> rungs; std::vector<std::string> aspects; };
+inline bool parseModes(const std::string &text, std::vector<Rung> &out, std::string &error);  // 3 fields, up to 3 more dropped
+setFpsSpeedRamp: return applySettingsLocked(next, false);
+reply member per mode: width, height, bits, clear_hdr, label, class, compression, usable, mode_ceiling, ceiling, from, ...
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass; the compiler flagged two new missing-initializer warnings from the shorter Rung brace lists, fixed before the commit. mode_ladder_test has new parseModes cases, log_curve_test no longer tests the ladder text. In --simulate with a fresh HOME: set_mode_ladder with a five-field old text keeps the modes and drops the fields, set_fps 20, 25, 33 picks 2K Clear HDR 16-bit then 2K SDR 12-bit, get_mode_ladder and state carry no ramp_ready, the aspects-only set_mode_ladder with a stray ramp_ready is accepted, set_fps_speed_ramp works, smoke shapes match 1.6.0. Needs the Pi: nothing the sensor decides changed; get_mode_ladder before and after the update on the owner's rig, diffed (threshold, compression_set, log_bits and ramp_ready gone).
+
+**Rule.** When a feature is replaced, delete the old fields, their parse, print and reply code in one commit, and keep one reader for old saved text.
+
+
+---
+
+## C89. camera: get_mode_ladder lists the steps, and the limit line says why
+
+Apertar-Core `38cfb63`. Finding: D4b. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+src/camera/ModeLadder.hpp:toJson@cinemate-port: per mode only ceiling and from, never a reason.
+CC fillLimitFieldsLocked@lane tip: out.limitWhy = sustained::whyText(context, mode, cap, ceiling);   // the running mode alone
+The old validator warned 'is never used: an earlier resolution already reaches N fps' only while saving.
+
+**Why it is a problem.** The owner wants the pane to show the current limits and why (requirements R1, R8). Without a reason per step and per choice the screens would have to rebuild the sentences, and the WebUI and the touch UI would drift. Original Apertar sends operator sentences from Core as written (CMD-28, CMD-9: replies are built by hand in Core, the UI shows them), so the wording is built once in Core.
+
+**How to spot it.** Ask where a sentence the operator reads is built. If two screens each build it, or it is built from numbers in JavaScript, it belongs in Core next to the numbers. grep -n 'holds' src/web/WebControlPage.cpp for sentences the page invents.
+
+**Options.**
+
+- Build the sentences in the pure header and send them in the reply (chosen): one source, host-tested, the screens print them
+- Send only numbers and let each screen word them: no Core text, but three copies of the wording
+- Add a ladderAsked_ member to remember the fps the operator asked for, so the clamp can say 'FPS set to 60': exact wording of the plan, but a new state with its own life cycle
+
+**Chosen, and why.** Option 1. The sentences are steppedDownText, highestText and neverUsedText next to whyText; whyText and the new ones share contextNotes and wholeFps. The camera only picks which mode is the blocker: among the modes ranked before the running one, the highest cap (the first of equals). That gives the page's examples: 25 fps names 4K Clear HDR 16-bit; 33 fps names 2K Clear HDR 16-bit, the last Clear HDR mode. Plan claim the code contradicted: the page wants 'No enabled resolution holds 60 fps here ... FPS set to 60', but after a clamp the asked fps is gone (settings hold the clamped value), so the sentence says '60 fps is the most the enabled resolutions hold here (2K SDR 12-bit)' instead and shows whenever the fps equals the highest cap. Given up: the asked fps in the sentence.
+
+**After.**
+
+```
+struct StepInfo { double fps30, fpsShort; std::string basis, wall, why; bool neverUsed; };
+std::string steppedDownText(const Context &, double fps, const Mode &chosen, const Mode &best, const Cap &bestCap);
+// "At 25 fps the camera records 2K Clear HDR 16-bit: 4K Clear HDR 16-bit holds 20 fps for 30 minutes on this NVMe card (unconfirmed)."
+std::string highestText(...); std::string neverUsedText(const Mode &earlier, const Cap &earlierCap);
+reply: "steps":[{"label":..,"cap":20,"from":0,"fps30":20,"fps_short":27,"basis":"unconfirmed","wall":"back end","never_used":false,"why":"..."}]
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass; no new warning. sustained_fps_test pins every sentence of the page; mode_ladder_test pins the steps member and the escaping. In --simulate (the simulated sensor has no 4K, so 2K modes only, USB column): steps from 0, 25, 33 with the third never_used and 'Never used here: 2K SDR 12-bit already holds 33 fps'; set_fps 20 and 25 give the holds sentence, 30 gives the drive-limited sentence, 33 and 50 give '33 fps is the most ...'; smoke shapes match 1.6.0. Needs the Pi: on the NVMe get_mode_ladder with the default list shows 4K HDR 12-bit never_used; set_fps 25 gives 'At 25 fps the camera records 2K Clear HDR 16-bit: 4K Clear HDR 16-bit holds 20 fps ...'; set_fps 33 gives 'At 33 fps the camera records 4K SDR 12-bit: 2K Clear HDR 16-bit holds 30 fps (probable).'
+
+**Rule.** A sentence the operator reads is built once in Core, in the pure header beside the numbers it quotes, and pinned by a host test.
+
+
+---
+
+## C90. camera: the mode follows a lever or storage change between takes
+
+Apertar-Core `b1928ec`. Finding: D4c. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+CC@lane tip before: setPreviewTdn / setFpsPhaseLock / setCdngLog: next.x = value; return applySettingsLocked(next, ...);  // the pick never re-ran
+setLadderContext stored the context and sent an event; the mode stayed.
+
+**Why it is a problem.** The caps depend on the levers, so a lever turned after the pick can leave the camera in a mode the table does not allow; the operator would have to touch the fps. Original Apertar applies a setting through one setter and one apply (CAM-10, recipe row 6 of the conventions), and nothing that shapes the stream changes in a take (CAM-31), so the follow-up waits for the stop.
+
+**How to spot it.** For every setter that changes an input of a derived choice, ask: does the choice run again? grep -n 'ladderRewriteLocked' and list the setters that change previewTdn, fpsPhaseLock, cdngLog, or the pushed context.
+
+**Options.**
+
+- Rewrite in each lever setter before its one apply, plus one reapply function for the pushed context and the take stop (chosen): uses the existing pattern, one apply per change
+- A stale flag set in a take and read at the stop (the page's ladderStale_): one more member with its own life cycle, and the stop path would still need the same reapply
+- Poll in the 1 Hz loop and apply when the pick differs: no hooks, but a reconfigure with no operator action at a time nobody can predict
+
+**Chosen, and why.** Option 1. The page's ladderStale_ flag is not needed: the steps are a pure function of the settings and the context, so the stop path can simply run the same rewrite and apply only if the answer differs; the pending sentence is computed on read, when the running mode's cap is below the fps in a take. ladderReapplyLocked runs only when the camera is Ready, not recording and not in a pre-roll. A change in a take applies once, at the stop; errors from the later apply are logged, and the take's own error is kept. Given up: the page's 'Storage changed' wording, because Core cannot tell which fact changed; the sentence says 'The limits changed'.
+
+**After.**
+
+```
+bool CameraController::ladderReapplyLocked() { if (recording_ || prerollTake_ || state_ != Ready) return false; next = settings_; modeChanged = ladderRewriteLocked(next); if (nothing differs) return false; ... return applySettingsLocked(next, modeChanged); }
+setLadderContext: if (changed && ladderReapplyLocked()) return;  // the apply sent the event
+setFpsPhaseLock: const bool ladderChange = ladderRewriteLocked(next); return applySettingsLocked(next, ladderChange);
+stopRecording: ... emitRecordingEventLocked(); const std::string takeError = lastError_; ladderReapplyLocked(); lastError_ = takeError;
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass, no new warning. The simulated sensor has no 4K and no NVMe column, so a lever never changes a cap there; I built a scratch copy outside the worktree with two test-only hacks (2K Clear HDR counts as unbinned, the filesystem counts as exFAT) and ran it with fresh HOME folders: TDN on moved 2K Clear HDR 16-bit to 2K SDR 12-bit at once and TDN off moved it back; set_frames_per_folder 0 at idle clamped 33 to 30 fps; the same in a take left 33 fps, limit_why said '2K SDR 12-bit holds 30 fps now. The camera sets that rate after this take.', and record_stop applied 30 with one 'mode ladder ... the limits changed' log line and no 'not applied' line. On the committed build: TDN, phase lock, Log, a take and the smoke shapes still work. Needs the Pi: 4K Clear HDR 16-bit at 20 fps on the NVMe, turn TDN on in the WebUI, get_state shows 2K (journalctl -u apertar-core -b | grep 'mode ladder'); pull the card, mount the T7: the camera follows at once when idle. Not tested anywhere: a mode switch (not a clamp) pending in a take; only the Pi has a lever that changes a cap in a take (phase lock at the 4K Clear HDR + Log edge).
+
+**Rule.** When a choice depends on settings, every setter that changes one of them runs the choice again before its one apply, and a take waits for its stop.
+
+
+---
+
+## C91. storage: clip split off / on / automatic
+
+Apertar-Core `2628040`. Finding: D5. Reviewed by a second agent: not reviewed.
+
+**What was there.**
+
+BufferBudget.hpp:requestedFramesPerFolder@lane tip: return conf.framesPerFolder.value_or(0);   // 0 = one folder, the only way to say 'off'
+CC startAtFolder: framesPerFolder_ = bufferbudget::requestedFramesPerFolder(env, loadBufferConf());
+App: set_frames_per_folder needs value=0 or 100..100000; context.splitOn = framesPerFolderRequest() > 0;
+
+**Why it is a problem.** The owner wants off, on and automatic, on by default (R11, answer 10). A number that doubles as the switch cannot say 'automatic', and the rule for automatic (flat exFAT folder lasts 1.9e6 / fps^2 s, so above 32 fps for 30 minutes) needs the fps, the format and the filesystem at the start of the take. Original Apertar has no frames_per_folder at all (grep -rn frames_per_folder src@upstream-1.6.0: none), so this is a port feature; it follows the storage pattern of the hardware file: a [storage] key read by a pure parser, the command writing the key through the store, the take reading it again (BufferBudget.hpp pattern, CMD-14).
+
+**How to spot it.** A numeric setting where 0 means 'off' and a new third state is needed: look for value.value_or(0) and for UI that sends 0. Check whether an old file's number keeps its old meaning.
+
+**Options.**
+
+- A new key split= beside the number, an old file keeps its meaning (chosen): no migration, the owner's file works unchanged
+- Encode automatic as a special number (for example -1 or 1): no new key, but 100..100000 validation, the WebUI and the old tools all learn a magic value
+- Replace frames_per_folder by split=on|auto|off plus part size in one string: one key, but a new text format and the old key breaks
+
+**Chosen, and why.** Option 1. Default on is the owner's decision and changes a stock 1.6.0 camera (1.6.0 has no split and no merge after the take); it is documented in README now and APERTAR.md in D9. Take-time rule: auto splits when the filesystem is exFAT or FAT and fps > 32.49 (flatFolderMaxFps, the same number the limit table uses), and a take with FPS ramping counts as above because the ramp may go over; the plan said only 'above 32 fps'. set_frames_per_folder: value 0 writes split=off and keeps the part size; a size writes frames_per_folder and split=on unless the mode is auto; mode writes split. split_effective lives in CaptureSettings like limit_why because the camera knows fps and format; it is in the settings body, the settings event and the web state. Given up: a separate state for the last take's actual split (the clip line in the journal carries it).
+
+**After.**
+
+```
+enum class SplitMode { Off, On, Auto };  // BufferBudget.hpp
+inline SplitMode requestedSplitMode(const char *env, const BufferConf &conf);  // env, split=, old frames_per_folder, else on
+inline unsigned framesPerFolderForTake(SplitMode mode, unsigned partSize, bool perFrameFormat, bool fatLike, double fps, bool fpsRamps);
+CC: framesPerFolder_ = framesPerFolderForTake(splitMode_, requestedFramesPerFolder(env, conf), true, fatLike, settings.fps, settings.fpsSpeedRamp);
+state: "split_mode":"auto", "split_effective":false
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass, no new warning. storage_buffer_conf_test pins the parse, validator text, defaults, the old-file rules, the environment and framesPerFolderForTake (auto on at 33 fps on exFAT cDNG, off at 32 and 25, off on ext4, never MLV, on for a ramping take). In --simulate with a hardware file in the case folder: default on 5000; value 0 gives off; mode auto gives auto and split_effective false at 24 fps; value 2000 under auto stays auto; the file ends in split=on and frames_per_folder=3000; old file with frames_per_folder=0 starts off, with 1500 starts on 1500; split=maybe starts on; environment 2500 beats split=off; smoke shapes match 1.6.0. The simulator writes no frames and its media is not exFAT, so the take-start decision and split_effective=true under auto are covered by the host test only. Needs the Pi: split=auto in the file, a take at 33 fps on the exFAT card: journalctl -u apertar-core -b | grep 'recording clip:' shows split=auto frames_per_folder=5000 and the clip has part_000; at 25 fps frames_per_folder=0; an MLV take never has parts.
+
+**Rule.** When a number also serves as a switch and a third state is needed, add a key for the state, keep the number's meaning in old files, and decide once, in one pure function, at the start of the take.
+
+
+---
+
+## C92. camera: optional TDN control
+
+Apertar-Core `a6bdd2e`. Finding: D6. Reviewed by a second agent: not reviewed.
+
+**What was there.** The port had no such control. With TDN on, capFor gave every unbinned mode cap 0 (SustainedFps.hpp), so 4K was never chosen; the operator turned TDN off by hand, and on again for 2K.
+
+**Why it is a problem.** The owner wants an optional switch (R9, answer 12: default keep). Original Apertar applies a setting through one setter and one apply (CAM-10) and does not hide a second state change in a read; here the TDN change rides inside the apply the fps or option change already makes, and the pipeline restart is the one setPreviewTdn already uses.
+
+**How to spot it.** A feature that changes another feature's switch for the operator: ask who owns the switch afterwards, and what happens when the operator touches it. grep -n 'previewTdn' src/camera/CameraController.cpp.
+
+**Options.**
+
+- tdn option in the ladder, decision in a pure function, memory flag dynres_tdn_restore persisted (chosen): host-tested, survives a restart
+- A separate tdn_user flag as the plan names it, not persisted: smaller, but after a restart TDN would stay off at 2K
+- Let the operator's TDN on win and fall back to 2K as in keep: no refusal, but then off_in_4k means nothing when the operator touches TDN
+
+**Chosen, and why.** Option 1. The plan called the memory tdn_user; I named it dynres_tdn_restore because 'tdn_user' reads like the operator's own setting. It is saved in camera_settings.conf with the other dynres keys and carried across record formats and presets. Two behaviours the plan did not spell out: the operator's TDN off or on clears the memory, and the operator's TDN on is refused (a sentence) when the table would pick an unbinned mode, because the other choice would undo it at once. Order matters: the rewrite carries previewTdn and the memory in the fps path (applyFpsStepLocked copies them from the rewritten request); the first version lost them there and the simulation showed TDN not coming back. Given up: a TDN button that stays on in 4K under the option.
+
+**After.**
+
+```
+struct TdnChoice { bool tdn; bool restore; };
+inline TdnChoice tdnForMode(bool optionOn, bool unbinned, bool tdn, bool restore);  // ModeLadder.hpp
+CC ladderRewriteLocked: const TdnChoice tdn = tdnForMode(modeLadder_.tdnOff, !limitModeLocked(rung).binned, next.previewTdn, next.dynresTdnRestore); changed = changed || tdn.tdn != next.previewTdn;
+limitContextLocked: context.tdn = settings.previewTdn && !(modeLadder_.tdnOff && !recording_);
+reply: "tdn":"off_in_4k"; file: dynres_tdn=off_in_4k, dynres_tdn_restore=1
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass, no new warning; mode_ladder_test pins tdnForMode for each case and the tdn member. The simulated sensor has no unbinned mode that can run, so I ran a scratch build outside the worktree whose only change makes 2K Clear HDR count as unbinned: off_in_4k with TDN on at 20 fps turned TDN off at 2K Clear HDR 16-bit; 33 fps (2K SDR 12-bit) turned it back on; 20 fps off again; the operator's TDN on at that mode was refused; the operator's TDN off stuck across 33 and 20 fps; the file held dynres_tdn and dynres_tdn_restore; a bad value and a change in a take were refused. On the committed build: set_mode_ladder tdn works and smoke shapes match 1.6.0. Needs the Pi: 4K with TDN on at 20 fps, set_mode_ladder tdn=off_in_4k: get_state shows preview_tdn false and the 4K mode; set_fps 33 gives 2K and preview_tdn true; journalctl -u apertar-core -b | grep 'mode ladder'.
+
+**Rule.** When a feature changes another switch for the operator, keep a flag that says it did, put the change in the same apply, and let the operator's own touch end the flag.
+
+
+---
+
+## C93. camera: drive-speed guard on drive-limited cells
+
+Apertar-Core `ef2d304`. Finding: D8. Reviewed by a second agent: not reviewed.
+
+**What was there.** App@lane tip: run_media_speed_test stored mediaSpeedLastWriteSpeedMBps_ for the WebUI Media card only; nothing used it. The USB SSD column and every unmeasured storage used the T7's numbers whatever the card did.
+
+**Why it is a problem.** A slow SD card or stick would get the T7's limits and the camera would record a mode it cannot hold. The owner asked for the guard (answer 8). Original Apertar runs the speed test for display and has no consumer of the number; the push pattern is the one D2 set: App owns the fact, the camera gets one Context via setLadderContext (CAM-10, the camera takes mutex_ first).
+
+**How to spot it.** A measurement the camera already has but nothing reads: grep -n 'mediaSpeedLastWriteSpeedMBps_' src. Ask what a number shown to the operator could also protect.
+
+**Options.**
+
+- Guard inside capFor from a number in the Context, only for drive-limited cells (chosen): pure, host-tested, only lowers
+- Compute MB per frame from width x height x bits x a compression factor: first-principles, but the table's own derived numbers imply different ratios per mode, so it disagrees with the cells
+- Apply the guard to every cell including the NVMe column: simpler rule, but the NVMe cells are back-end or encoder limited and a cold test says little about them
+
+**Chosen, and why.** Option 1. The cell's frame size is not stored; it is implied: a Drive cell's fps30 is the T7's speed (105 MB/s) over its frame, so the guard is 0.75 x measured x fps30 / 105, which agrees with every Drive cell by construction. 0.75 is the plan's warm/cold factor from the NVMe (465 over 620 MB/s); it was not measured on the T7, whose cold test number is not in the KB. If the T7's cold test reads below 140 MB/s the guard would lower the T7's own cells, so the first Pi check is a run_media_speed_test on the T7 (see log_checked). The test's result is kept in its own member (ladderSpeedMBps_) so get_media_test_state is unchanged for the old WebUI; it is cleared at a media change because a test belongs to the card it ran on. Given up: a guard for the NVMe column.
+
+**After.**
+
+```
+inline constexpr double kSpeedTestWarmFactor = 0.75;
+inline double driveGuardFps(const Context &context, const Limit &row) { ... return kSpeedTestWarmFactor * context.speedMBps * row.fps30 / kUsbSsdMegabytesPerSecond; }
+capFor: if (guard > 0.0 && guard < limit) { limit = guard; cap.lever = "speed test"; }
+App: context.speedMBps = ladderSpeedMBps_;  // under mediaSpeedMutex_; refreshLadderContext() when a test ends and when the card changes
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass, no new warning. sustained_fps_test pins the guard (80 MB/s lowers 4K SDR 12-bit on the USB SSD column from 18 to 10; 140 and 900 MB/s change nothing; the NVMe column is untouched; an unmeasured SD card at 40 MB/s gets 13 fps in 2K SDR 12-bit) and the sentences. The simulator has no mounted card, so run_media_speed_test answers 'No media is currently mounted.' and the App path cannot run here; a scratch build outside the worktree forced the speed from an environment variable (not committed): limit_fps 25 without it, 13 at 40 MB/s with the fps clamped, and at 80 MB/s 2K SDR 12-bit at 20 fps while 2K Clear HDR 16-bit holds 15. Smoke shapes match 1.6.0 on the committed build. Needs the Pi: (1) run_media_speed_test on the T7, then get_state: the T7's caps must not drop (a cold test above 140 MB/s keeps them); if they drop, 0.75 is too strict for it; (2) on an SD card, run the test and watch limit_fps fall and limit_why name the measured speed: curl -s -X POST localhost:8000/api/command -d '{"cmd":"run_media_speed_test"}', then get_state.
+
+**Rule.** A measurement the camera already takes should protect the operator: feed it in as a pure input that can only lower a limit.
+
+
+---
+
+## C94. docs: Dynamic resolution and how to update the known limits
+
+Apertar-Core `c12ee24`. Finding: D9. Reviewed by a second agent: not reviewed.
+
+**What was there.** README@lane tip: no mention of Dynamic resolution, the known-limits table, steps or the new keys; the Split clips section still said frames_per_folder 0 was the default (fixed in D5).
+
+**Why it is a problem.** Original Apertar documents each feature in the README by what the operator sees and the command that sets it (README.md sections such as 'Stop on Dropped Frame', 'Preview temporal denoise'), and keeps numbers in one place. A table of measured limits needs a recipe for changing a row, or the next edit forgets the pinned test.
+
+**How to spot it.** For any feature that is on by default or changes the stock behaviour, ask: where would the original developer read this? grep -n 'default' README.md near the feature, and check each claim against the code (key names, command fields, state fields).
+
+**Options.**
+
+- README section in the existing style, update recipe in the same place (chosen)
+- A docs/ folder: Core has none; a new layer of files for one feature
+- The knowledge base only: it is not shipped with the code the original developer reads
+
+**Chosen, and why.** Option 1. The plan says 'APERTAR.md or README'; the Core repository has no APERTAR.md (grep finds no reference), so the README holds both the Dynamic Resolution section and the split default note. Every claim was checked against the code: key names, command fields, steps members, state fields, APERTAR_FPS_LIMIT. The README does not repeat the table's numbers (they would drift); it points at SustainedFps.hpp. Given up: a figure of table C in the README.
+
+**After.**
+
+```
+## Dynamic Resolution\nOn by default. Between takes, the frame rate picks the sensor mode ...\n### Updating the known limits\n1. Edit its row in kCells ... 2. Run sustained_fps_test ... 3. Run mode_ladder_test ... 4. Cells that still wait for data ...\nSplit clips: 'The split is on by default in this version; Apertar 1.6.0 has no split ...'
+```
+
+**Checked.** Run here: check_core.sh both builds and 22 host tests pass; no code changed. The README claims were read against the code (keys dynres_enabled, dynres_modes, dynres_aspects, dynres_tdn; commands; steps members; state fields; APERTAR_FPS_LIMIT=probe). Nothing needs the camera.
+
+**Rule.** Document a default-on feature where the original developer reads, with the recipe for the one place its numbers live.
+

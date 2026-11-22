@@ -15,14 +15,15 @@ Old files keep working. A missing section means the feature is off. Core writes 
 | `[camera]` | highest ISO in Clear HDR, per bit depth | no cap |
 | `[media]` | storage pre-roll (`preroll=on`, `preroll_seconds`) | off |
 | `[network]` | hotspot fallback delay | 60 s |
-| `[storage]` | new keys: `buffer`, `frames_per_folder`, `clip_merge` | see below |
+| `[storage]` | new keys: `buffer`, `split`, `frames_per_folder`, `clip_merge` | see below |
 
 Buttons that are normally closed: set `invert_on_start=true` in `[gpio_buttons]` or `[pcf8574]`.
 
 ### [storage] keys
 
 - `buffer=frames` (default) is the 1.6.0 queue. `buffer=ram` is a large RAM queue.
-- `frames_per_folder=N` splits a take into `part_NNN` folders every N frames. 0 = one folder (the default today). Dynamic resolution adds off / on / automatic, with on as the default.
+- `split=on` (default), `off` or `auto` splits a take into `part_NNN` folders. `auto` splits only above 32 fps for cDNG and lossy DNG on exFAT. On by default changes a stock 1.6.0 camera; the owner chose it.
+- `frames_per_folder=N` is the part size (default 5000). An old file with `frames_per_folder=0` means split off.
 - `clip_merge=on` (default) flattens split clips while the camera is idle, so Resolve sees one folder per clip.
 
 ## apertar-hardware-cam1.conf
@@ -44,4 +45,4 @@ An environment variable wins over the file. `scripts/apertar-tune` writes a temp
 You install none of these.
 
 - `~/.config/apertar-core/camera_settings.conf` gains keys such as `preview_tdn` and `stop_on_dropped_frame`. A 1.6.0 file loads. Missing keys take the 1.6.0 behaviour.
-- `mode_ladder.conf` sits beside it. Dynamic resolution moves it into `camera_settings.conf` and still reads the old file.
+- Dynamic resolution keeps its keys in `camera_settings.conf` (`dynres_enabled`, `dynres_modes`, `dynres_aspects`, `dynres_tdn`). An old `mode_ladder.conf` is read once and taken over.
