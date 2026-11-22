@@ -194,3 +194,4 @@ Open:
 - T7 speed test: if run_media_speed_test lowers the T7 caps, kSpeedTestWarmFactor (0.75) in SustainedFps.hpp is too strict.
 - 4K Clear HDR 16-bit 30-minute hot takes at 24, 22, 20 fps to replace the placeholder cell (20).
 - Core still publishes ladder_tops / ladder_resolution (the FPS pills read them).
+- 2026-11-22: Files timecode offers Time of Day and Clip only (ce05759), PR Tiramisioux/Apertar-Core#8 into cinemate-port.
