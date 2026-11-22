@@ -134,7 +134,8 @@ def main():
         r = L.core('set_mode_ladder', modes=L.DYN_MODES, enabled='true', tdn='keep', dry_run='true')
         check('P4', 'Dynamic resolution modes accepted (dry_run) %s' % L.DYN_MODES, bool(r.get('ok')), r.get('error') or '')
         r = L.core('set_mode_ladder', modes=L.DYN_MODES, enabled='true', tdn='keep')
-        ml = r.get('mode_ladder') or {}
+        time.sleep(3)
+        ml = L.core('get_mode_ladder').get('mode_ladder') or r.get('mode_ladder') or {}
         check('P4', 'Dynamic resolution on, TDN keep', bool(r.get('ok')) and bool(L.state().get('ladder_enabled')) and ml.get('tdn') == 'keep',
               r.get('error') or 'tdn=%s' % ml.get('tdn'))
         table = {(e.get('height'), e.get('bits'), bool(e.get('clear_hdr'))): e.get('ceiling') for e in ml.get('resolutions') or []}

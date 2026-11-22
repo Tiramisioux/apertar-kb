@@ -3812,7 +3812,8 @@ def est_ladder(out):
         decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (DYN_MODES, r.get('error')))
         return
     CS['ladder_owned'] = True       # the quiet gate lets Dynamic resolution be on during P4 (it ended the night on 2026-11-21)
-    ml = r.get('mode_ladder') or core('get_mode_ladder').get('mode_ladder') or {}
+    time.sleep(3)
+    ml = core('get_mode_ladder').get('mode_ladder') or r.get('mode_ladder') or {}      # after the apply: the reply's ceilings are from before it
     table = {(e.get('height'), e.get('bits'), bool(e.get('clear_hdr'))): e.get('ceiling') for e in ml.get('resolutions') or []}
     order = list(DYN_SPEC)
     decide(out, 'EST P4: Dynamic resolution %s; Core\'s ceilings by mode %s' % (DYN_MODES, {'%dp %d-bit hdr=%s' % k: v for k, v in table.items()}))
