@@ -3789,6 +3789,11 @@ def est_ladder(out):
     mode (the first enabled mode whose ceiling holds it), the compression is the mode's own (HDR16 uncompressed, SDR lossless).
     So P4 asks what Core picks at each fps, takes 60 s in that mode, and records Core's ceiling for it next to the result:
     a take that drops below the table's ceiling says the table is too high (the docs' "update the known limits")."""
+    ml0 = core('get_mode_ladder').get('mode_ladder') or {}
+    if ml0.get('errors'):
+        decide(out, 'EST P4 skipped: the saved Dynamic resolution list has errors (%s); Core would not take it back, so P4 '
+                    'would leave the list changed' % '; '.join(ml0['errors'][:2]))
+        return
     E = est_model()
     model = E.fit(E.load(out))
     th = []
@@ -4131,6 +4136,10 @@ def restore_formats(found):
         if found.get('ladder_tdn'):
             kw['tdn'] = found['ladder_tdn']
         r = core('set_mode_ladder', **kw)
+        if not r.get('ok') and 'modes' in kw:
+            # Core 4f1621a refuses a list with a mode this sensor lacks (an old Mode Ladder list may hold one): keep the list
+            # as it is and restore the switch and the TDN option, which is what a night can change without a list edit
+            r = core('set_mode_ladder', **{k: v for k, v in kw.items() if k != 'modes'})
         if not r.get('ok'):
             bad.append('Dynamic resolution not restored: %s' % r.get('error'))
     return bad

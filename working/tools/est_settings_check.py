@@ -127,6 +127,10 @@ def main():
     if 'P4' in blocks:
         # Dynamic resolution (Core 4f1621a): modes without thresholds; the fps picks the mode from Core's limits table
         L.set_format('cdng')
+        if ml0.get('errors'):
+            check('P4', 'skipped: the saved Dynamic resolution list has errors, P4 would leave it changed', True, '; '.join(ml0['errors'][:2]))
+            blocks = [b for b in blocks if b != 'P4']
+    if 'P4' in blocks:
         r = L.core('set_mode_ladder', modes=L.DYN_MODES, enabled='true', tdn='keep', dry_run='true')
         check('P4', 'Dynamic resolution modes accepted (dry_run) %s' % L.DYN_MODES, bool(r.get('ok')), r.get('error') or '')
         r = L.core('set_mode_ladder', modes=L.DYN_MODES, enabled='true', tdn='keep')
