@@ -377,7 +377,8 @@ def write_outputs(run):
     L += ['', '## Validation (P3)', '', '- %s' % vs, '- success (pre-registered): clean at p in >= 10 of 12, out at p+1 in >= 8 of 12']
     if data['ladder']:
         L += ['', '## Ladder check (P4)', '']
-        L += ['- %s fps: rung %s expected, %s %s %s' % (x['fps'], x['expected_rung'], x['verdict'], x['outcome'], x.get('mismatch') or '')
+        L += ['- %s fps: %s%s, %s %s %s' % (x['fps'], ('Dynamic resolution chose %s (Core\'s ceiling %s fps)' % (x.get('chosen'), x.get('table_ceiling')))
+                                        if x.get('dynres') else 'rung %s expected' % x['expected_rung'], '', x['verdict'], x['outcome'], x.get('mismatch') or '')
               for x in data['ladder']]
     mp = os.path.join(d, 'estimate.md')
     open(mp, 'w').write('\n'.join(L) + '\n')

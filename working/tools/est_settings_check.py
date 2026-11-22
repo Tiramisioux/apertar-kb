@@ -10,7 +10,7 @@ the way the runner checks it before a take (longtakes.verify). Blocks:
   P2   the 16 lever rows of the lever design on each of the three anchors (48)
   LEV  one spec per format family with every lever away from the reference (TDN on, lock on, audio off, aids off), so the
        random lever combinations of P3 are covered for every format
-  P4   the Mode Ladder: the three rungs with example thresholds, and the fps that should land on each rung
+  P4   Dynamic resolution: the three modes (no thresholds), and the mode Core picks at three fps
 Plus the night's fixed state (speed ramp off, merge off, ladder off, frames_per_folder 5000) and, with --dual-off, the Dual
 sensor switch off (read back in the web state). The WebUI lever is the runner's own client, not a setting: not checked.
 At the end everything found at the start is put back and read back (the runner's restore, including every format's
@@ -27,14 +27,12 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))     # python3 -I 
 import longtakes as L                                              # noqa: E402
 
 FOUND_KEYS = ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log', 'preview_tdn', 'fps_phase_lock', 'fps_speed_ramp',
-              'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled', 'frames_per_folder', 'clip_merge_enabled',
-              'tuning_file')
+              'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled', 'frames_per_folder', 'split_mode',
+              'clip_merge_enabled', 'tuning_file')
 LEV_AWAY = {'tdn': True, 'lock': True, 'audio': False, 'aids': False}
 LEV_SPECS = ('4kHDR16:cdng:unc', '4kSDR12:cdng:lj', '4kHDR16:cdng:unc:log', '4kSDR12:lossydng:3to1', '4kSDR12:mlv',
              '4kP:prores:hq', '4kP:h264:1920x1080')
-LADDER = [('4kHDR16:cdng:unc', '3840x2160:16:hdr:%s:none', 25), ('4kSDR12:cdng:lj', '3840x2160:12:sdr:%s:lossless_jpeg', 35),
-          ('2kSDR12:cdng:lj', '1920x1080:12:sdr:%s:lossless_jpeg', 50)]
-LADDER_TH = (27, 41)       # example thresholds (the day fills them from the estimate): <= 27 HDR16, <= 41 SDR12 lj, above 2K
+LADDER_FPS = (25, 35, 50)  # Dynamic resolution: what Core picks at these fps (no thresholds any more)
 
 
 def main():
@@ -64,7 +62,9 @@ def main():
     found.update({k: st0.get(k) for k in ('lossy_dng_ratio', 'prores_profile', 'prores_color_profile', 'h264_resolution')})
     u0 = (L.web_state(3.0) or {}).get('ui') or {}
     found['ui'] = {k: u0.get(k) for k in ('record_audio_enabled', 'focus_peaking_enabled', 'zebra_enabled') if k in u0}
-    found['ladder_text'] = (L.core('get_mode_ladder').get('mode_ladder') or {}).get('resolutions_text')
+    ml0 = L.core('get_mode_ladder').get('mode_ladder') or {}
+    found['ladder_text'] = ml0.get('resolutions_text')
+    found['ladder_tdn'] = ml0.get('tdn')
     found['profiles'] = L.est_profiles()
     dual0 = u0.get('dual_sensor_enabled')
     json.dump({'found': found, 'dual_sensor_enabled': dual0, 'started': time.strftime('%F %T')}, open(out + '/found.json', 'w'), indent=1)
@@ -87,7 +87,7 @@ def main():
     for cmd, kw, key, want in (('set_fps_speed_ramp', {'enabled': False}, 'fps_speed_ramp', False),
                                ('set_clip_merge', {'enabled': False}, 'clip_merge_enabled', False),
                                ('set_mode_ladder', {'enabled': 'false'}, 'ladder_enabled', False),
-                               ('set_frames_per_folder', {'value': L.SPLIT_DEFAULT}, 'frames_per_folder', L.SPLIT_DEFAULT)):
+                               ('set_frames_per_folder', {'value': L.SPLIT_DEFAULT, 'mode': 'on'}, 'frames_per_folder', L.SPLIT_DEFAULT)):
         r = L.core(cmd, **kw)
         v = L.state().get(key)
         check('fixed', '%s=%s' % (key, want), bool(r.get('ok')) and str(v) == str(want),
@@ -125,18 +125,28 @@ def main():
         for spec in LEV_SPECS:
             one('LEV', spec, None, LEV_AWAY)
     if 'P4' in blocks:
+        # Dynamic resolution (Core 4f1621a): modes without thresholds; the fps picks the mode from Core's limits table
         L.set_format('cdng')
-        text = ','.join(t % (str(LADDER_TH[i]) if i < len(LADDER_TH) else '') for i, (_s, t, _f) in enumerate(LADDER))
-        r = L.core('set_mode_ladder', resolutions=text, enabled='true', dry_run='true')
-        check('P4', 'ladder rungs accepted (dry_run) %s' % text, bool(r.get('ok')), r.get('error') or '')
-        r = L.core('set_mode_ladder', resolutions=text, enabled='true')
-        check('P4', 'ladder on', bool(r.get('ok')) and bool(L.state().get('ladder_enabled')), r.get('error') or '')
-        for spec, _t, f in LADDER:
-            c = L.est_cfg(spec)
-            c.ladder = text
-            st = L.apply_ladder_take(c, f)
-            bad = L.verify(c, f, st)
-            check('P4', 'at %d fps the ladder picks %s' % (f, spec), not bad,
+        r = L.core('set_mode_ladder', modes=L.DYN_MODES, enabled='true', tdn='keep', dry_run='true')
+        check('P4', 'Dynamic resolution modes accepted (dry_run) %s' % L.DYN_MODES, bool(r.get('ok')), r.get('error') or '')
+        r = L.core('set_mode_ladder', modes=L.DYN_MODES, enabled='true', tdn='keep')
+        ml = r.get('mode_ladder') or {}
+        check('P4', 'Dynamic resolution on, TDN keep', bool(r.get('ok')) and bool(L.state().get('ladder_enabled')) and ml.get('tdn') == 'keep',
+              r.get('error') or 'tdn=%s' % ml.get('tdn'))
+        table = {(e.get('height'), e.get('bits'), bool(e.get('clear_hdr'))): e.get('ceiling') for e in ml.get('resolutions') or []}
+        for f in LADDER_FPS:
+            c = L.est_cfg('4kSDR12:cdng:lj')
+            c.ladder = L.DYN_MODES
+            L.apply_ladder_take(c, f)
+            st = L.settle()
+            key = L.dyn_mode_key(st)
+            spec = L.DYN_SPEC.get(key)
+            bad = ''
+            if spec:
+                c2 = L.est_cfg(spec)
+                c2.ladder = L.DYN_MODES
+                bad = L.verify(c2, f, st)
+            check('P4', 'at %d fps Dynamic resolution picks %s (Core ceiling %s)' % (f, spec or key, table.get(key)), bool(spec) and not bad,
                   bad or '%s %s-bit clear_hdr=%s %s' % (st.get('resolution'), st.get('raw_bit_depth'), st.get('clear_hdr'),
                                                        st.get('cdng_compression')))
         L.core('set_mode_ladder', enabled='false')

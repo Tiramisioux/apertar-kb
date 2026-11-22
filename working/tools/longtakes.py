@@ -1128,7 +1128,7 @@ def apply_cfg(c, fps, fmt='cdng'):
     core('set_fps_phase_lock', enabled=c.lock)
     core('set_media_trim', enabled=c.trim)
     if getattr(c, 'split', None) is not None:
-        core('set_frames_per_folder', value=int(c.split))
+        core('set_frames_per_folder', value=int(c.split), mode='on' if int(c.split) > 0 else 'off')   # Core 4f1621a: off|on|auto
     core('set_fps', value=float(fps))
     time.sleep(4)
     return settle()
@@ -3771,40 +3771,65 @@ def apply_ladder_take(c, fps):
     return settle()
 
 
+DYN_MODES = '3840x2160:16:hdr,3840x2160:12:sdr,1920x1080:12:sdr'    # Dynamic resolution (Core 4f1621a): modes only, no thresholds
+DYN_SPEC = {(2160, 16, True): '4kHDR16:cdng:unc', (2160, 12, False): '4kSDR12:cdng:lj', (1080, 12, False): '2kSDR12:cdng:lj'}
+
+
+def dyn_mode_key(st):
+    """(height, bit depth, Clear HDR) of the mode the camera is in."""
+    try:
+        h = int(str(st.get('resolution') or 'x0').split('x')[1])
+    except (IndexError, ValueError):
+        h = 0
+    return (h, int(st.get('raw_bit_depth') or 0), bool(st.get('clear_hdr')))
+
+
 def est_ladder(out):
-    """P4: the existing Mode Ladder with thresholds from the estimates; 60-s takes at fps steps; the right rung, and clean."""
+    """P4, Dynamic resolution. Core 4f1621a replaced the Mode Ladder's thresholds with its own limits table: the fps picks the
+    mode (the first enabled mode whose ceiling holds it), the compression is the mode's own (HDR16 uncompressed, SDR lossless).
+    So P4 asks what Core picks at each fps, takes 60 s in that mode, and records Core's ceiling for it next to the result:
+    a take that drops below the table's ceiling says the table is too high (the docs' "update the known limits")."""
     E = est_model()
     model = E.fit(E.load(out))
-    rungs = [('4kHDR16:cdng:unc', '3840x2160:16:hdr:%s:none'), ('4kSDR12:cdng:lj', '3840x2160:12:sdr:%s:lossless_jpeg'),
-             ('2kSDR12:cdng:lj', '1920x1080:12:sdr:%s:lossless_jpeg')]
     th = []
-    for spec, _t in rungs:
+    for spec in ('4kHDR16:cdng:unc', '4kSDR12:cdng:lj'):
         p = E.predict(model, spec, {})
         th.append(int(p['fps']) if p and p.get('fps') else None)
     if not th[0] or not th[1]:
-        decide(out, 'EST P4: no estimate for the first two rungs (%s): skipped' % th)
+        decide(out, 'EST P4: no estimate for the first two modes (%s): skipped' % th)
         return
-    text = ','.join(t % (str(th[i]) if i < len(rungs) - 1 and th[i] else '') for i, (_s, t) in enumerate(rungs))
     st = state()
     if st.get('recording_format') != 'cdng':
         set_format('cdng')
-    r = core('set_mode_ladder', resolutions=text, enabled='true')
+    # tdn=keep: Dynamic resolution's own TDN option (off_in_4k) stays out of the lever the estimator controls
+    r = core('set_mode_ladder', modes=DYN_MODES, enabled='true', tdn='keep')
     if not r.get('ok'):
-        decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (text, r.get('error')))
+        decide(out, 'EST P4: set_mode_ladder %s refused: %s' % (DYN_MODES, r.get('error')))
         return
-    CS['ladder_owned'] = True       # the quiet gate lets the ladder be on during P4 (it ended the night on 2026-11-21)
-    decide(out, 'EST P4: ladder %s' % text)
-    steps = sorted(set(x for x in (25, th[0] - 1, th[0], th[0] + 1, 35, 40, 45, 50) if x >= 1))
+    CS['ladder_owned'] = True       # the quiet gate lets Dynamic resolution be on during P4 (it ended the night on 2026-11-21)
+    ml = r.get('mode_ladder') or core('get_mode_ladder').get('mode_ladder') or {}
+    table = {(e.get('height'), e.get('bits'), bool(e.get('clear_hdr'))): e.get('ceiling') for e in ml.get('resolutions') or []}
+    order = list(DYN_SPEC)
+    decide(out, 'EST P4: Dynamic resolution %s; Core\'s ceilings by mode %s' % (DYN_MODES, {'%dp %d-bit hdr=%s' % k: v for k, v in table.items()}))
+    steps = sorted(set(x for x in (25, th[0] - 1, th[0], th[0] + 1, 35, th[1] - 1, th[1], th[1] + 1, 50) if 1 <= x <= 60))
     try:
         for f in steps:
             if CS['stop'] or STOP['sig'] or HALT['why']:
                 break
-            want = next((i for i, t in enumerate(th[:-1]) if t and f <= t), len(rungs) - 1)
-            c = est_cfg(rungs[want][0])
-            c.ladder = text
-            r = est_ctake(out, c, f, 60, 'P4r2-%s-rung%d' % (f, want + 1), stop_on_drop=True)
-            rec = {'fps': f, 'expected_rung': want + 1, 'spec': rungs[want][0], 'verdict': r.get('verdict'),
-                   'outcome': r.get('outcome'), 'mismatch': r.get('mismatch'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey')}
+            c0 = est_cfg('4kSDR12:cdng:lj')
+            c0.ladder = DYN_MODES
+            apply_ladder_take(c0, f)                      # the levers and the fps; Dynamic resolution picks the mode
+            key = dyn_mode_key(settle())
+            spec = DYN_SPEC.get(key)
+            if not spec:
+                decide(out, 'EST P4: at %s fps Core is in an unexpected mode %s: skipped' % (f, key))
+                continue
+            c = est_cfg(spec)
+            c.ladder = DYN_MODES
+            r = est_ctake(out, c, f, 60, 'P4r3-%s-%s' % (f, spec.split(':')[0]), stop_on_drop=True)
+            rec = {'fps': f, 'dynres': True, 'chosen': spec, 'expected_rung': order.index(key) + 1, 'spec': spec,
+                   'table_ceiling': table.get(key), 'verdict': r.get('verdict'), 'outcome': r.get('outcome'),
+                   'mismatch': r.get('mismatch'), 'take_id': r.get('take_id'), 'ckey': r.get('ckey')}
             if r.get('verdict') != 'stop':
                 est_append(out, 'ladder', rec)
     finally:
@@ -3941,14 +3966,16 @@ def campaign_main(a, out):
     CS['audio_expected'] = aud.get('record_audio_enabled') is not False
     found = {k: st0.get(k) for k in ('fps', 'raw_bit_depth', 'cdng_compression', 'cdng_log', 'preview_tdn', 'fps_phase_lock',
                                      'fps_speed_ramp', 'clear_hdr', 'resolution', 'recording_format', 'ladder_enabled',
-                                     'frames_per_folder', 'clip_merge_enabled', 'tuning_file')}
+                                     'frames_per_folder', 'split_mode', 'clip_merge_enabled', 'tuning_file')}
     if any(is_est(n) for n in a.night.split(',')):
         # the estimator touches every format: its settings, the UI levers, the ladder's rungs and each format's saved
         # resolution profile (Core keeps resolution and Clear HDR per format, profile.<format>.* in camera_settings.conf)
         found.update({k: st0.get(k) for k in ('lossy_dng_ratio', 'prores_profile', 'prores_color_profile', 'h264_resolution')})
         u0 = (web_state(3.0) or {}).get('ui') or {}
         found['ui'] = {k: u0.get(k) for k in ('record_audio_enabled', 'focus_peaking_enabled', 'zebra_enabled') if k in u0}
-        found['ladder_text'] = (core('get_mode_ladder').get('mode_ladder') or {}).get('resolutions_text')
+        ml0 = core('get_mode_ladder').get('mode_ladder') or {}
+        found['ladder_text'] = ml0.get('resolutions_text')
+        found['ladder_tdn'] = ml0.get('tdn')          # Dynamic resolution: keep | off_in_4k
         found['profiles'] = est_profiles()
     np_ = out + '/night-%s.json' % '-'.join(nights)
     if not os.path.exists(np_):
@@ -4097,10 +4124,15 @@ def restore_formats(found):
                    ('zebra_enabled', 'set_zebra_enabled')):
         if k in (found.get('ui') or {}):
             core(cmd, enabled=bool(found['ui'][k]))
-    if found.get('ladder_text'):
-        r = core('set_mode_ladder', resolutions=found['ladder_text'], enabled='true' if found.get('ladder_enabled') else 'false')
+    if found.get('ladder_text') or found.get('ladder_tdn'):
+        kw = {'enabled': 'true' if found.get('ladder_enabled') else 'false'}
+        if found.get('ladder_text'):
+            kw['modes'] = found['ladder_text']
+        if found.get('ladder_tdn'):
+            kw['tdn'] = found['ladder_tdn']
+        r = core('set_mode_ladder', **kw)
         if not r.get('ok'):
-            bad.append('ladder rungs not restored: %s' % r.get('error'))
+            bad.append('Dynamic resolution not restored: %s' % r.get('error'))
     return bad
 
 
@@ -4125,14 +4157,14 @@ def restore_night(out, found, nights, why):
                     ('set_media_trim', {'enabled': True}),
                     ('set_fps_speed_ramp', {'enabled': bool(found.get('fps_speed_ramp'))}),
                     ('set_fps', {'value': float(found.get('fps') or 25)}),
-                    ('set_frames_per_folder', {'value': SPLIT_DEFAULT}),
+                    ('set_frames_per_folder', {'value': SPLIT_DEFAULT, 'mode': found.get('split_mode') or 'on'}),
                     ('set_clip_merge', {'enabled': True}),
                     ('set_mode_ladder', {'enabled': bool(found.get('ladder_enabled'))})):
         core(cmd, **kw)
         time.sleep(4 if cmd in ('set_clear_hdr', 'set_resolution', 'set_raw_bit_depth') else 0.3)
     settle()
     st = state()
-    want = {k: v for k, v in found.items() if k not in ('ui', 'ladder_text', 'profiles')}
+    want = {k: v for k, v in found.items() if k not in ('ui', 'ladder_text', 'ladder_tdn', 'profiles')}
     want.update({'frames_per_folder': SPLIT_DEFAULT, 'clip_merge_enabled': True})
     bad = bad0 + ['%s=%s (want %s)' % (k, st.get(k), v) for k, v in want.items() if k != 'tuning_file' and str(st.get(k)) != str(v)]
     u1 = (web_state(3.0) or {}).get('ui') or {}
