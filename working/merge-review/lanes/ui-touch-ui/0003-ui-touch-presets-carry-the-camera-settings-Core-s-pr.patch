@@ -1,0 +1,116 @@
+From 968ff25f2a83e13698dc3f999350dda8e6129f1d Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 18:57:57 +0000
+Subject: [PATCH] ui: touch presets carry the camera settings Core's presets
+ carry
+
+Why: Core's preset writer (buildCurrentPresetPayload) saves speed ramp,
+clip-name template, phase lock, file timecode, Clear HDR and its four
+knobs, and Log. The touch writer cameraPresetSettings still wrote only
+the 1.6.0 key set, so a touch preset lost all of these on load. In
+original Apertar both writers carry the same camera* set and one reader,
+apply_preset, takes it; a value kept only for the preset is a plain
+member (m_lossyDngRatio), not a property.
+
+What: applyCoreState keeps the state keys not kept yet
+(fps_speed_ramp_stretch_audio, fps_speed_ramp_after, fps_phase_lock,
+hdr_threshold_high/low, hdr_blend, hdr_gain_adder) as plain members with
+Core's defaults. cameraPresetSettings writes Core's keys in Core's order
+and value words: cameraFpsSpeedRamp, cameraFpsSpeedRampShutter,
+cameraFpsSpeedRampAudio, cameraFpsSpeedRampAfter, cameraClipNameTemplate
+(only once Core has sent one: Core refuses an empty template),
+cameraFpsPhaseLock, cameraTimecodeMode, cameraClearHdr, the four
+cameraHdr* knobs, cameraCdngLog. cameraConformFps is left out:
+conform_fps is to be removed from Core. Loading is unchanged:
+applyCameraPreset already forwards every camera* key.
+
+Tested: check_ui.sh build, 0 warnings. Core --simulate (core-work build,
+fresh HOME): apply_preset with exactly these keys at non-default values,
+then get_state: all 13 values match. Not run on a screen. Pi: save a
+touch preset with Clear HDR 16-bit and Log On, change both, load it;
+apertar-cmd '{"cmd":"get_state","id":1}' | grep -o '"cdng_log":"[a-z]*"'
+shows auto and clear_hdr is true again.
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/ApertarControlBridge.cpp | 29 +++++++++++++++++++++++++++++
+ src/ApertarControlBridge.hpp |  8 ++++++++
+ 2 files changed, 37 insertions(+)
+
+diff --git a/src/ApertarControlBridge.cpp b/src/ApertarControlBridge.cpp
+index 0e0f311..f85be73 100644
+--- a/src/ApertarControlBridge.cpp
++++ b/src/ApertarControlBridge.cpp
+@@ -1243,6 +1243,20 @@ QJsonObject ApertarControlBridge::cameraPresetSettings() const
+     QJsonObject result;
+     result.insert("cameraFps", m_fps);
+     result.insert("cameraIso", m_iso);
++    // Same keys and value words as Core's buildCurrentPresetPayload, so both preset writers carry the same set.
++    result.insert("cameraFpsSpeedRamp", m_fpsSpeedRamp);
++    result.insert("cameraFpsSpeedRampShutter", m_fpsSpeedRampKeepExposure ? QStringLiteral("exposure") : QStringLiteral("angle"));
++    result.insert("cameraFpsSpeedRampAudio", m_fpsSpeedRampStretchAudio ? QStringLiteral("stretch") : QStringLiteral("real"));
++    result.insert("cameraFpsSpeedRampAfter", m_fpsSpeedRampReturn ? QStringLiteral("return") : QStringLiteral("stay"));
++    if (!m_clipNameTemplate.isEmpty())
++        result.insert("cameraClipNameTemplate", m_clipNameTemplate);
++    result.insert("cameraFpsPhaseLock", m_fpsPhaseLock);
++    result.insert("cameraTimecodeMode", parseTimecodeModeValue(m_fileTimecodeMode));
++    result.insert("cameraClearHdr", m_clearHdr);
++    result.insert("cameraHdrThresholdHigh", m_hdrThresholdHigh);
++    result.insert("cameraHdrThresholdLow", m_hdrThresholdLow);
++    result.insert("cameraHdrBlend", m_hdrBlend);
++    result.insert("cameraHdrGainAdder", m_hdrGainAdder);
+     result.insert("cameraExposureCompensation", m_exposureCompensation);
+     result.insert("cameraExposureMetering", m_exposureMetering);
+     result.insert("cameraShutterAngle", m_shutterAngle);
+@@ -1257,6 +1271,7 @@ QJsonObject ApertarControlBridge::cameraPresetSettings() const
+     const bool lossy = isLossyCdngCompressionValue(m_cdngCompression) && m_recordingFormat == "cDNG";
+     result.insert("cameraRecordingFormat", lossy ? QStringLiteral("lossydng") : parseRecordingFormatValue(m_recordingFormat));
+     result.insert("cameraCdngCompression", lossy ? QStringLiteral("none") : m_cdngCompression);
++    result.insert("cameraCdngLog", m_cdngLogOn ? QStringLiteral("auto") : QStringLiteral("off"));
+     result.insert("cameraLossyDngRatio", m_lossyDngRatio);
+     result.insert("cameraProresProfile", m_proresProfile);
+     result.insert("cameraProresColorProfile", m_proresColorProfile);
+@@ -1576,6 +1591,20 @@ void ApertarControlBridge::applyCoreState(const QJsonObject &state)
+         m_whiteBalanceAutoAfterClearHdr = state.value(QStringLiteral("wb_auto_after_clear_hdr")).toBool(m_whiteBalanceAutoAfterClearHdr);
+     if (state.contains(QStringLiteral("fps_speed_ramp_keep_exposure")))
+         m_fpsSpeedRampKeepExposure = state.value(QStringLiteral("fps_speed_ramp_keep_exposure")).toBool(m_fpsSpeedRampKeepExposure);
++    if (state.contains(QStringLiteral("fps_speed_ramp_stretch_audio")))
++        m_fpsSpeedRampStretchAudio = state.value(QStringLiteral("fps_speed_ramp_stretch_audio")).toBool(m_fpsSpeedRampStretchAudio);
++    if (state.contains(QStringLiteral("fps_speed_ramp_after")))
++        m_fpsSpeedRampReturn = state.value(QStringLiteral("fps_speed_ramp_after")).toString() == QStringLiteral("return");
++    if (state.contains(QStringLiteral("fps_phase_lock")))
++        m_fpsPhaseLock = state.value(QStringLiteral("fps_phase_lock")).toBool(m_fpsPhaseLock);
++    if (state.contains(QStringLiteral("hdr_threshold_high")))
++        m_hdrThresholdHigh = state.value(QStringLiteral("hdr_threshold_high")).toInt(m_hdrThresholdHigh);
++    if (state.contains(QStringLiteral("hdr_threshold_low")))
++        m_hdrThresholdLow = state.value(QStringLiteral("hdr_threshold_low")).toInt(m_hdrThresholdLow);
++    if (state.contains(QStringLiteral("hdr_blend")))
++        m_hdrBlend = state.value(QStringLiteral("hdr_blend")).toInt(m_hdrBlend);
++    if (state.contains(QStringLiteral("hdr_gain_adder")))
++        m_hdrGainAdder = state.value(QStringLiteral("hdr_gain_adder")).toInt(m_hdrGainAdder);
+     {
+         const int isoActual = state.value(QStringLiteral("iso_actual")).toInt(0);
+         const QString isoInUse = !m_isoAuto ? QString() : (isoActual > 0 ? QString::number(isoActual) : m_isoInUse);
+diff --git a/src/ApertarControlBridge.hpp b/src/ApertarControlBridge.hpp
+index 741e5f1..76235d7 100644
+--- a/src/ApertarControlBridge.hpp
++++ b/src/ApertarControlBridge.hpp
+@@ -435,6 +435,14 @@ private:
+     bool m_fpsSpeedRamp = false; // Core's fps_speed_ramp (T31): FPS may change during a raw take
+     bool m_soundRecording = false; // a sound-only take: recording, but not the camera
+     bool m_fpsSpeedRampKeepExposure = false;
++    // Kept only for the touch preset (cameraPresetSettings), as m_lossyDngRatio; defaults are Core's.
++    bool m_fpsSpeedRampStretchAudio = true;
++    bool m_fpsSpeedRampReturn = false;
++    bool m_fpsPhaseLock = false;
++    int m_hdrThresholdHigh = 4095;
++    int m_hdrThresholdLow = 0;
++    int m_hdrBlend = 5;
++    int m_hdrGainAdder = 1;
+     bool m_isoAutoAfterClearHdr = false;
+     bool m_whiteBalanceAutoAfterClearHdr = false;
+     int m_isoMax = 0;
+-- 
+2.43.0
+

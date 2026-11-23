@@ -1,0 +1,261 @@
+From bd99a8b84cc62fb1d9527a5ff271bf29875e2ab2 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 22:05:26 +0000
+Subject: [PATCH 1/5] camera: the fps ceiling is the lower of Core's table and
+ the probe again
+
+Why: The port made the startup probe the whole fps ceiling for a sensor
+mode and kept the old rule behind APERTAR_FPS_LIMIT=table. 1.6.0 had the
+table alone (CameraController.cpp:2669-2671@upstream-1.6.0) and fork main
+lets the probe only lower it: min(table, probe)
+(CameraController.cpp:2763-2769@f60e301). With the port's default a stock
+camera offers 60 fps at 4K 12-bit where 1.6.0 offered 30. The owner's rig
+needs the probe alone, so that becomes the switch and the 1.6.0 value the
+default. The port also left dead code around the ceiling: backendMaximumFps
+always returned nothing and three wrappers called it, and
+APERTAR_IMX283_PROBE_FPS was a second knob for one sensor.
+
+What: maximumSupportedFpsForResolution returns the table when the probe
+has no value, else min(table, probe). APERTAR_FPS_LIMIT=probe, read at
+use, returns the probe alone; unset or "table" means the default. The
+IMX283 keeps min(probe, its crop_vmax=0 floor) under every value, because
+its probe can report more than the sensor delivers. The effective knob is
+echoed as fps_limit=probe on the "ApertarCore recording clip:" line.
+Deleted: fpsLimitTableOnly, imx283ProbeFpsOnly and
+APERTAR_IMX283_PROBE_FPS, backendMaximumFps and its three wrappers,
+resolveSensorMaxFps and applyBackendCap in FpsCeiling.hpp with their test
+lines, and the comment that named the old knob. boolEnvValue moves back
+inside the libcamera guard next to unsignedEnvValue, its last unguarded
+user is gone. FpsCeiling.hpp keeps the lossless fps helpers.
+
+Tested: check_core.sh both builds and the host tests pass with no new
+warning (fps_ceiling_test lost the cases of the deleted functions). In
+--simulate the sensor is Unknown and there is no probe, so the changed
+rule is not reached there; no reply field changed. Needs the camera, no
+env knob: get_state at 3840x2160 12-bit shows fps_max 30. With
+APERTAR_FPS_LIMIT=probe in the unit environment: fps_max 60, and the
+take's line has fps_limit=probe
+(journalctl -u apertar-core -b | grep 'recording clip:'). Deploy note:
+the owner's systemd drop-in must carry APERTAR_FPS_LIMIT=probe before this reaches
+his camera, because the sanitised fps is saved.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/camera/CameraController.cpp | 75 ++++++++++-----------------------
+ src/camera/FpsCeiling.hpp       | 18 +-------
+ tools/fps_ceiling_test.cpp      | 15 +------
+ 3 files changed, 24 insertions(+), 84 deletions(-)
+
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 4ae6e21..937d57b 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -1466,8 +1466,6 @@ unsigned int unsignedEnvValue(const char *name,
+     return defaultValue;
+ }
+ 
+-#endif // APERTARCORE_HAS_LIBCAMERA
+-
+ bool boolEnvValue(const char *name, bool defaultValue)
+ {
+     if (const char *value = std::getenv(name); value && *value) {
+@@ -1490,6 +1488,8 @@ bool boolEnvValue(const char *name, bool defaultValue)
+     return defaultValue;
+ }
+ 
++#endif // APERTARCORE_HAS_LIBCAMERA
++
+ // Pure helpers shared with the build without libcamera (--simulate): the tuning file checks and,
+ // further down in the other unguarded spans, the sensor model (families, modes, fps and ISO limits and the
+ // settings sanitiser) that the CameraController methods outside the libcamera half call.
+@@ -3487,7 +3487,6 @@ double tableMaximumFpsForResolution(SensorFamily sensorFamily, Resolution reques
+     case SensorFamily::Imx585:
+         // The sensor rows are 2160 tall in every full-height mode (all the 4K-height windows, 4K itself):
+         // Clear HDR doubles VMAX, 30 fps at link 891 MHz, 25 at the driver's default 720 MHz.
+-        // This is the fallback / APERTAR_FPS_LIMIT=table value; the 16-bit 25 is backendMaximumFps().
+         if (normalized.height == 2160)
+             return clearHdr && !sensorLimitKnown ? 25.0 : 30.0;
+         return 60.0;
+@@ -3498,51 +3497,25 @@ double tableMaximumFpsForResolution(SensorFamily sensorFamily, Resolution reques
+     return 120.0;
+ }
+ 
+-// APERTAR_IMX283_PROBE_FPS=1: the IMX283 fps ceiling is the probe alone; unset, it is min(probe, the driver's
+-// crop_vmax=0 floor), because the probe can report more than the sensor delivers.
+-bool imx283ProbeFpsOnly()
++// APERTAR_FPS_LIMIT=probe: the fps ceiling is the probe alone. Unset (or "table"), it is min(table, probe).
++bool fpsLimitProbeOnly()
+ {
+-    static const bool probeOnly = boolEnvValue("APERTAR_IMX283_PROBE_FPS", false);
+-    return probeOnly;
++    const char *value = std::getenv("APERTAR_FPS_LIMIT");
++    return value && std::string(value) == "probe";
+ }
+ 
+-// APERTAR_FPS_LIMIT=table: the old behaviour, min(table, probed). Default: the probe is the limit.
+-bool fpsLimitTableOnly()
+-{
+-    static const bool tableOnly = [] {
+-        const char *value = std::getenv("APERTAR_FPS_LIMIT");
+-        const bool table = value && std::string(value) == "table";
+-        if (table)
+-            std::cerr << "ApertarCore fps limit: APERTAR_FPS_LIMIT=table, using min(table, probed)\n";
+-        return table;
+-    }();
+-    return tableOnly;
+-}
+-
+-// The sensor's maximum fps for the mode: the startup probe when it has a value, else the table.
++// The sensor's maximum fps for the mode: the lower of Core's table and the startup probe, the table alone
++// when the probe has no value.
+ double maximumSupportedFpsForResolution(SensorFamily sensorFamily, Resolution requested, uint32_t rawBitDepth = 12,
+                                         bool clearHdr = false)
+ {
+     const SensorModeSelection mode = sensorModeForRequestedResolution(sensorFamily, requested, rawBitDepth);
+     const auto probed = probedMaximumFps(mode.rawResolution, mode.bitDepth, clearHdr);
+     const double table = tableMaximumFpsForResolution(sensorFamily, requested, rawBitDepth, clearHdr, probed.has_value());
+-    // IMX283: min(probe, the driver's floor) unless APERTAR_IMX283_PROBE_FPS=1, which is the probe alone and wins
+-    // over APERTAR_FPS_LIMIT=table.
+-    const bool minWithTable = sensorFamily == SensorFamily::Imx283
+-        ? !imx283ProbeFpsOnly()
+-        : fpsLimitTableOnly();
+-    return fpsceiling::resolveSensorMaxFps(probed, table, minWithTable);
+-}
+-
+-// Back-end limits that are not the sensor's, applied after the sensor value; nullopt = none.
+-std::optional<double> backendMaximumFps(const CaptureSettings &settings, SensorFamily sensorFamily)
+-{
+-    // IMX585 Clear HDR 16-bit had a 25 fps cap here in every mode. Removed (User, 2026-11-03): the driver's
+-    // maximum applies (4K 30, the height crops up to 42). At 30 in 4K the ISP back end is the limit and frames
+-    // are lost under load (KB working/research-30fps-answer.md, working/drop-frames/tests-2026-11/findings-2026-11-03.md).
+-    (void)settings;
+-    (void)sensorFamily;
+-    return std::nullopt;
++    if (!probed)
++        return table;
++    // The IMX283 stays at min(probe, the driver's floor): the probe can report more than it delivers.
++    return fpsLimitProbeOnly() && sensorFamily != SensorFamily::Imx283 ? *probed : std::min(table, *probed);
+ }
+ 
+ uint32_t supportedRawBitDepthForSensor(SensorFamily sensorFamily, uint32_t requestedBitDepth, bool clearHdr)
+@@ -3579,7 +3552,6 @@ double modeMaximumFps(const CaptureSettings &settings, SensorFamily sensorFamily
+ {
+     double maxFps = maximumSupportedFpsForResolution(sensorFamily, settings.resolution, settings.rawBitDepth,
+                                                      settings.clearHdr);
+-    maxFps = fpsceiling::applyBackendCap(maxFps, backendMaximumFps(settings, sensorFamily));
+     if (!settings.photoModeEnabled && sensorFamily == SensorFamily::Imx477 &&
+         settings.recordingFormat == RecordingFormat::Cdng &&
+         settings.cdngCompression == CdngCompression::Uncompressed) {
+@@ -3591,15 +3563,12 @@ double modeMaximumFps(const CaptureSettings &settings, SensorFamily sensorFamily
+ }
+ 
+ // The storage pre-roll's target: the highest fps the SENSOR delivers for the running mode (resolution, bit depth, Clear
+-// HDR: the startup probe, else the table), with only the named back-end cap kept (IMX585 Clear HDR 16-bit at 4K: the
+-// back end delivers ~28 at 30 and drops frames, so the pipeline, not a policy, is the limit). Not applied: the
+-// lossless-JPEG cap, the mode ladder's rung ceilings and user thresholds, the speed-ramp limits and the IMX477
+-// uncompressed-cDNG table (modeMaximumFps has the last one).
++// HDR: the lower of the table and the startup probe). Not applied: the lossless-JPEG cap, the mode ladder's rung
++// ceilings and user thresholds, the speed-ramp limits and the IMX477 uncompressed-cDNG table (modeMaximumFps has the
++// last one).
+ double prerollMaximumFps(const CaptureSettings &settings, SensorFamily sensorFamily)
+ {
+-    return fpsceiling::applyBackendCap(
+-        maximumSupportedFpsForResolution(sensorFamily, settings.resolution, settings.rawBitDepth, settings.clearHdr),
+-        backendMaximumFps(settings, sensorFamily));
++    return maximumSupportedFpsForResolution(sensorFamily, settings.resolution, settings.rawBitDepth, settings.clearHdr);
+ }
+ 
+ // The highest FPS the current mode takes; published as fps_max so the UIs cut their FPS
+@@ -4526,6 +4495,8 @@ public:
+                   << " sync_ms=" << syncMs
+                   << " tune_override=" << (mediaTune.overrideFound ? "yes" : "no")
+                   << " frames_per_folder=" << framesPerFolder_;
++        if (fpsLimitProbeOnly())
++            std::cerr << " fps_limit=probe";
+         if (recordingFormat_ == RecordingFormat::Cdng && settings_.cdngCompression == CdngCompression::LosslessJpeg) {
+             std::cerr << " worker_nice=" << unsignedEnvValue("APERTAR_CDNG_WORKER_NICE", 0, 0, 19);
+             std::cerr << " workers=" << workerCount_;
+@@ -9219,12 +9190,10 @@ private:
+                     activeRawWidth,
+                     activeRawHeight,
+                 };
+-                const double maxFps = fpsceiling::applyBackendCap(
+-                    maximumSupportedFpsForResolution(sensorFamily_,
+-                                                     effectiveSettings.resolution,
+-                                                     effectiveSettings.rawBitDepth,
+-                                                     effectiveSettings.clearHdr),
+-                    backendMaximumFps(effectiveSettings, sensorFamily_));
++                const double maxFps = maximumSupportedFpsForResolution(sensorFamily_,
++                                                                       effectiveSettings.resolution,
++                                                                       effectiveSettings.rawBitDepth,
++                                                                       effectiveSettings.clearHdr);
+                 if (effectiveSettings.fps > maxFps)
+                     effectiveSettings.fps = maxFps;
+                 settings_ = effectiveSettings;
+diff --git a/src/camera/FpsCeiling.hpp b/src/camera/FpsCeiling.hpp
+index c187781..8b26ebc 100644
+--- a/src/camera/FpsCeiling.hpp
++++ b/src/camera/FpsCeiling.hpp
+@@ -1,5 +1,4 @@
+-// The maximum fps of a mode: the sensor's own answer (the startup probe) when there is one,
+-// Core's hard-coded table only as the fallback. Pure, std only; host-tested by
++// The IMX585 lossless cDNG fps ceiling and its APERTAR_LOSSLESS_FPS_LIMIT knob. Pure, std only; host-tested by
+ // tools/fps_ceiling_test.cpp.
+ #pragma once
+ 
+@@ -9,21 +8,6 @@
+ 
+ namespace apertar::fpsceiling {
+ 
+-// probed: the fps the sensor probe reports for the mode (absent, or <= 0, when it has none).
+-// table: Core's hard-coded ceiling. tableOnly: APERTAR_FPS_LIMIT=table, the old min(table, probed).
+-inline double resolveSensorMaxFps(std::optional<double> probed, double table, bool tableOnly)
+-{
+-    if (!probed || !(*probed > 0.0))
+-        return table;
+-    return tableOnly ? std::min(table, *probed) : *probed;
+-}
+-
+-// A back-end limit that is not the sensor's (e.g. 16-bit Clear HDR at 4K), applied after the sensor value.
+-inline double applyBackendCap(double sensorMax, std::optional<double> cap)
+-{
+-    return cap && *cap > 0.0 ? std::min(sensorMax, *cap) : sensorMax;
+-}
+-
+ // APERTAR_LOSSLESS_FPS_LIMIT=<n>: a number > 0 caps the IMX585 lossless-JPEG cDNG fps at n (still within the
+ // sensor mode's maximum). Anything else (unset, empty, 0, negative, text, trailing junk) is no override.
+ inline std::optional<double> parseLosslessFpsLimit(const char *value)
+diff --git a/tools/fps_ceiling_test.cpp b/tools/fps_ceiling_test.cpp
+index a8139b5..225fbdf 100644
+--- a/tools/fps_ceiling_test.cpp
++++ b/tools/fps_ceiling_test.cpp
+@@ -1,4 +1,4 @@
+-// Host test for src/camera/FpsCeiling.hpp (the sensor probe is the maximum fps; the table is the fallback).
++// Host test for src/camera/FpsCeiling.hpp (the IMX585 lossless cDNG fps limit).
+ //   g++ -std=c++20 -O2 -Wall -Wextra -I src -I include tools/fps_ceiling_test.cpp -o /tmp/fct && /tmp/fct
+ #include "camera/FpsCeiling.hpp"
+ 
+@@ -18,19 +18,6 @@ static bool same(double a, double b) { return std::fabs(a - b) < 1e-9; }
+ 
+ int main()
+ {
+-    check(same(resolveSensorMaxFps(60.0, 30.0, false), 60.0), "4K SDR: probed 60, table 30 -> 60");
+-    check(same(applyBackendCap(resolveSensorMaxFps(30.0, 30.0, false), 25.0), 25.0),
+-          "4K Clear HDR 16-bit: probed 30, backend cap 25 -> 25");
+-    check(same(applyBackendCap(resolveSensorMaxFps(30.0, 30.0, false), std::nullopt), 30.0),
+-          "Clear HDR 12-bit: probed 30, no cap -> 30");
+-    check(same(resolveSensorMaxFps(std::nullopt, 30.0, false), 30.0), "no probe: table 30 -> 30");
+-    check(same(resolveSensorMaxFps(60.0, 30.0, true), 30.0), "table-only switch: probed 60, table 30 -> 30");
+-    check(same(resolveSensorMaxFps(20.0, 30.0, true), 20.0), "table-only switch: probed 20, table 30 -> 20");
+-    check(same(resolveSensorMaxFps(85.66, 60.0, false), 85.66), "crop: probed 85.66, table 60 -> 85.66");
+-    check(same(resolveSensorMaxFps(0.0, 30.0, false), 30.0), "probed 0 is absent -> table");
+-    check(same(resolveSensorMaxFps(-1.0, 30.0, true), 30.0), "probed negative is absent -> table");
+-    check(same(applyBackendCap(60.0, 25.0), 25.0) && same(applyBackendCap(20.0, 25.0), 20.0),
+-          "backend cap only lowers");
+     check(same(losslessImx585Fps(60.0, std::nullopt), 60.0), "lossless IMX585 4K SDR 12-bit: no override -> mode max 60");
+     check(same(losslessImx585Fps(25.0, std::nullopt), 25.0), "lossless IMX585 Clear HDR 16-bit: mode max 25 -> 25");
+     check(same(losslessImx585Fps(60.0, 30.0), 30.0), "override 30 restores the old cap");
+-- 
+2.43.0
+

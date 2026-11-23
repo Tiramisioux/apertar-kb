@@ -1,0 +1,567 @@
+From 7588d822242698aacfef31aa60cb5e8f5830960e Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 22:15:13 +0000
+Subject: [PATCH 3/5] camera: known-limits table
+
+Why: Core knows the fps a sensor mode can deliver (probe and table) but
+nothing about what the recording path holds for a long take. That knowledge
+exists only in the owner's test notes, so no screen and no rule can use it.
+Dynamic resolution (the next commits) needs one place for these numbers.
+Original Apertar keeps pure logic in a small header named after the concept,
+std only, with one includer (StillBracketing.hpp:8-19@upstream-1.6.0), and
+this repository host-tests such headers (FpsCeiling.hpp).
+
+What: new src/camera/SustainedFps.hpp, with no caller yet. kCells holds one
+row per measured or derived number: the fps a mode holds for a 30-minute take
+on a hot drive, for the NVMe card and the USB SSD on a Pi 5 or CM5, per
+picture size, Clear HDR or SDR, bit depth and compression, with its label
+(measured, derived, probable, unconfirmed), the wall that limits it (back
+end, encoder, drive, sensor), the short-take number where one was measured
+and a source line. kPixelRates gives SDR 12-bit lossless crops a number.
+limitFor finds a mode's row: its own cell, else the nearest larger cell of
+its class, else the pixel rate, else none. capFor applies the levers (TDN
+on stops an unbinned mode, phase lock and aids off cost a back-end mode one
+fps each, split off on exFAT or FAT caps the fps at the flat-folder limit
+of 32) to the number before stepDown rounds it down to a step: 25, 30, 33,
+50, 60, 70, 80 and so on, 10 apart above 60. tools/sustained_fps_test.cpp
+pins every number of the table, the step rounding, the lookup order, the
+lever shifts and the flat-folder formula, so a change of the analysis has
+to change the test too.
+
+Tested: check_core.sh both builds and the host tests pass, with the new
+test among them. Nothing calls the header yet, so no run on the camera is
+needed.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ src/camera/SustainedFps.hpp  | 282 +++++++++++++++++++++++++++++++++++
+ tools/sustained_fps_test.cpp | 227 ++++++++++++++++++++++++++++
+ 2 files changed, 509 insertions(+)
+ create mode 100644 src/camera/SustainedFps.hpp
+ create mode 100644 tools/sustained_fps_test.cpp
+
+diff --git a/src/camera/SustainedFps.hpp b/src/camera/SustainedFps.hpp
+new file mode 100644
+index 0000000..8e50caa
+--- /dev/null
++++ b/src/camera/SustainedFps.hpp
+@@ -0,0 +1,282 @@
++// The known fps limits: the fps a mode holds for a 30-minute take on a hot drive, per storage type, Pi board,
++// resolution, bit depth and Clear HDR, with the label and the source of every number. Pure, std only (no
++// libcamera, no MediaProfile); host-tested by tools/sustained_fps_test.cpp. To update the analysis, edit the
++// rows in kCells and kPixelRates and nothing else; the test pins the numbers, so a change is deliberate.
++#pragma once
++
++#include <algorithm>
++#include <cmath>
++
++namespace apertar::sustained {
++
++enum class Kind { Nvme, UsbSsd };
++enum class Board { Pi5, Other };                                      // Pi 5 and CM5 share the SoC; a CM5 Lite is measured
++enum class Label { Measured, Derived, Probable, Unconfirmed };       // strongest first
++enum class Group { BackEnd, Encoder, Drive, Sensor };                // which wall limits the mode
++
++// One measured or derived number. A mode that has no cell of its own takes the nearest larger one (limitFor).
++struct Cell {
++    Kind storage;
++    Board board;
++    unsigned width;             // the picture's size as the mode pool names it
++    unsigned height;
++    bool hdr;
++    unsigned bits;
++    bool log;                   // the row that replaces the Clear HDR 16-bit one while CineMate Log is on
++    const char *compression;    // "none" or "lossless_jpeg"
++    double fps30;               // held for a 30-minute take, split on, reference levers
++    double fpsShort;            // held for takes up to about 8 minutes, measured; 0 = none known (information only)
++    Label label;                // of fps30
++    Group group;
++    const char *source;
++};
++
++// IMX585, 16:9, cDNG, Raspberry Pi 5 / CM5. Reference levers: TDN off, phase lock off, audio on, WebUI client
++// connected, aids on, split on, exFAT, drive hot. The numbers are from the owner's take campaigns on a CM5 Lite
++// (November 2026); each row says what was run.
++inline constexpr Cell kCells[] = {
++    // Corsair MP600 Mini on the CFexpress hat: Clear HDR uncompressed, SDR lossless JPEG.
++    { Kind::Nvme, Board::Pi5, 3840, 2160, true, 16, false, "none", 20, 27, Label::Unconfirmed, Group::BackEnd,
++      "25, 26 and 27 fps failed 15-minute takes after 190-316 GB (warm drive, 2026-11-21); 20 is a placeholder" },
++    { Kind::Nvme, Board::Pi5, 1920, 1080, true, 16, false, "none", 30, 0, Label::Probable, Group::Sensor,
++      "60 s clean at 30 fps, 125 MB/s, drive up to 64 C; 30 minutes not run" },
++    { Kind::Nvme, Board::Pi5, 3840, 2160, true, 12, false, "none", 20, 0, Label::Unconfirmed, Group::BackEnd,
++      "gaps at every fps from 25 to 30; 22 and 23 not run" },
++    { Kind::Nvme, Board::Pi5, 3840, 2160, false, 12, false, "lossless_jpeg", 40, 0, Label::Derived, Group::Encoder,
++      "40-42 fps at 60 s; uncompressed takes held 37 fps for 15 minutes and failed at 38; lossless takes not run" },
++    { Kind::Nvme, Board::Pi5, 1920, 1080, false, 12, false, "lossless_jpeg", 60, 0, Label::Probable, Group::Sensor,
++      "60 s and 5 minutes clean at 60 fps" },
++    { Kind::Nvme, Board::Pi5, 3840, 2160, false, 10, false, "lossless_jpeg", 45, 0, Label::Derived, Group::Encoder,
++      "45-47 fps at 60 s" },
++    { Kind::Nvme, Board::Pi5, 1920, 1080, false, 10, false, "lossless_jpeg", 60, 0, Label::Probable, Group::Sensor,
++      "follows the 2K 12-bit row" },
++    { Kind::Nvme, Board::Pi5, 3840, 2160, true, 16, true, "none", 24, 0, Label::Derived, Group::BackEnd,
++      "25 fps held 3 and 5 minutes at 307 MB/s, drive up to 66 C; Log costs the back end 2-3 fps" },
++    { Kind::Nvme, Board::Pi5, 2880, 2160, false, 12, false, "lossless_jpeg", 56, 0, Label::Derived, Group::Encoder,
++      "59 fps at 60 s" },
++    // Samsung T7 over USB, about 100-105 MB/s in takes: Clear HDR lossless, where it holds more.
++    { Kind::UsbSsd, Board::Pi5, 3840, 2160, true, 16, false, "lossless_jpeg", 9, 0, Label::Derived, Group::Drive,
++      "about 10 MB per frame at 105 MB/s" },
++    { Kind::UsbSsd, Board::Pi5, 1920, 1080, true, 16, false, "lossless_jpeg", 27, 0, Label::Measured, Group::Drive,
++      "lossless 27 fps passed 30 minutes (older build)" },
++    { Kind::UsbSsd, Board::Pi5, 3840, 2160, true, 12, false, "lossless_jpeg", 12, 0, Label::Derived, Group::Drive,
++      "frame size over the drive's speed" },
++    { Kind::UsbSsd, Board::Pi5, 3840, 2160, false, 12, false, "lossless_jpeg", 18, 0, Label::Derived, Group::Drive,
++      "frame size over the drive's speed; 4K never run on this drive" },
++    { Kind::UsbSsd, Board::Pi5, 1920, 1080, false, 12, false, "lossless_jpeg", 48, 0, Label::Measured, Group::Drive,
++      "lossless 48 fps passed 30 minutes" },
++    { Kind::UsbSsd, Board::Pi5, 3840, 2160, false, 10, false, "lossless_jpeg", 20, 0, Label::Derived, Group::Drive,
++      "frame size over the drive's speed" },
++    { Kind::UsbSsd, Board::Pi5, 1920, 1080, false, 10, false, "lossless_jpeg", 48, 0, Label::Probable, Group::Drive,
++      "follows the 2K 12-bit row" },
++    { Kind::UsbSsd, Board::Pi5, 3840, 2160, true, 16, true, "lossless_jpeg", 8, 0, Label::Derived, Group::Drive,
++      "the Clear HDR 16-bit row less the Log gain" },
++    { Kind::UsbSsd, Board::Pi5, 2880, 2160, false, 12, false, "lossless_jpeg", 24, 0, Label::Derived, Group::Drive,
++      "frame size over the drive's speed" },
++};
++
++// SDR 12-bit lossless also has a pixel rate, so a crop without a cell gets a number: the rate over its pixels.
++struct PixelRate {
++    Kind storage;
++    Board board;
++    bool hdr;
++    unsigned bits;
++    double mpxPerSecond;
++    Label label;
++    Group group;
++    const char *source;
++};
++
++inline constexpr PixelRate kPixelRates[] = {
++    { Kind::Nvme, Board::Pi5, false, 12, 330.0, Label::Derived, Group::Encoder,
++      "4K at 40-42 fps and 2880x2160 at 56 fps" },
++    { Kind::UsbSsd, Board::Pi5, false, 12, 149.0, Label::Derived, Group::Drive,
++      "4K at 18 fps and 2880x2160 at 24 fps" },
++};
++
++// A mode as the pool names it. binned: a 2x2 binned readout (the picture is not cut from the full sensor).
++struct Mode {
++    unsigned width = 0;
++    unsigned height = 0;
++    bool hdr = false;
++    unsigned bits = 12;
++    bool binned = false;
++};
++
++// What the table needs to know besides the mode. The camera owns tdn, lock and log; the application owns the rest
++// and pushes it. The defaults are the reference levers of the table, so a default Context shifts nothing.
++struct Context {
++    Kind storage = Kind::Nvme;
++    bool storageMeasured = true;    // false: the type has no column, the USB SSD's stands in, labelled unconfirmed
++    Board board = Board::Pi5;
++    bool tdn = false;               // preview temporal denoise
++    bool lock = false;              // frame-rate phase lock
++    bool log = false;               // CineMate Log
++    bool aidsOn = true;             // focus peaking or zebra
++    bool audioOn = true;
++    bool splitOn = true;            // the clip folder is split into parts
++    bool fatLike = false;           // exFAT or FAT: a flat folder slows file creation
++    double fillFraction = 0.0;      // how full the medium is, 0 to 1
++};
++
++inline const char *labelName(Label label)
++{
++    switch (label) {
++    case Label::Measured: return "measured";
++    case Label::Derived: return "derived";
++    case Label::Probable: return "probable";
++    case Label::Unconfirmed: return "unconfirmed";
++    }
++    return "unconfirmed";
++}
++
++inline const char *groupName(Group group)
++{
++    switch (group) {
++    case Group::BackEnd: return "back end";
++    case Group::Encoder: return "encoder";
++    case Group::Drive: return "drive";
++    case Group::Sensor: return "sensor";
++    }
++    return "sensor";
++}
++
++inline Label weaker(Label a, Label b) { return static_cast<int>(a) > static_cast<int>(b) ? a : b; }
++
++// The steps a requested fps can take: 25, 30, 33, 50, 60, 70, 80 ... (10 apart above 60). A limit rounds down to
++// one; below 25 it is the number itself, floored (24 is a cinema rate and must stay usable).
++inline double stepDown(double fps)
++{
++    const double f = fps + 1e-9;
++    if (f < 25.0) return f > 0.0 ? std::floor(f) : 0.0;
++    if (f < 30.0) return 25.0;
++    if (f < 33.0) return 30.0;
++    if (f < 50.0) return 33.0;
++    if (f < 60.0) return 50.0;
++    return std::floor(f / 10.0) * 10.0;
++}
++
++// A folder that holds all the files of a take slows file creation by 0.32 us per file, so it holds while
++// t < 1.9e6 / fps^2 seconds (derived, measured on a T7 and an NVMe probe: 50 minutes at 25 fps, 35 at 30, 14 at 48).
++// The highest fps whose flat folder lasts a take of that many seconds.
++inline double flatFolderMaxFps(double takeSeconds = 1800.0) { return std::sqrt(1.9e6 / takeSeconds); }
++
++// The row for a mode: its own cell, else the nearest larger cell of the same class (fewer pixels never hold fewer
++// fps), else a pixel rate where the class has one; none when the class has no row at all. With Log on, a Clear HDR
++// 16-bit mode takes the Log cell of its own size. The compression is the cell's: Dynamic resolution owns it.
++struct Limit {
++    bool found = false;             // false: no row for this class, only the sensor's ceiling applies
++    double fps30 = 0.0;             // before the lever shifts
++    double fpsShort = 0.0;
++    Label label = Label::Unconfirmed;
++    Group group = Group::Sensor;
++    const char *compression = "none";
++    const char *source = "";
++    const Cell *cell = nullptr;     // the cell the number comes from; null for a pixel rate
++    bool exact = false;             // the cell is the mode's own
++    bool pixelRate = false;
++};
++
++inline Limit limitFor(const Context &context, const Mode &mode)
++{
++    Limit out;
++    if (context.board != Board::Pi5)
++        return out;
++    const double pixels = double(mode.width) * double(mode.height);
++    const auto sameClass = [&](const Cell &c) {
++        return c.storage == context.storage && c.board == context.board && c.hdr == mode.hdr && c.bits == mode.bits;
++    };
++    const Cell *exact = nullptr, *larger = nullptr;
++    if (context.log && mode.hdr && mode.bits == 16)
++        for (const Cell &c : kCells)
++            if (sameClass(c) && c.log && c.width == mode.width && c.height == mode.height)
++                exact = &c;
++    if (!exact)
++        for (const Cell &c : kCells) {
++            if (!sameClass(c) || c.log)
++                continue;
++            if (c.width == mode.width && c.height == mode.height)
++                exact = &c;
++            else if (double(c.width) * double(c.height) >= pixels &&
++                     (!larger || double(c.width) * double(c.height) < double(larger->width) * double(larger->height)))
++                larger = &c;
++        }
++    if (exact) {
++        out = { true, exact->fps30, exact->fpsShort, exact->label, exact->group, exact->compression, exact->source,
++                exact, true, false };
++    } else {
++        for (const PixelRate &rate : kPixelRates) {
++            if (rate.storage != context.storage || rate.board != context.board || rate.hdr != mode.hdr ||
++                rate.bits != mode.bits || pixels <= 0.0)
++                continue;
++            const double fps = std::max(rate.mpxPerSecond * 1e6 / pixels, larger ? larger->fps30 : 0.0);
++            out = { true, fps, 0.0, weaker(rate.label, larger ? larger->label : rate.label), rate.group,
++                    "lossless_jpeg", rate.source, larger, false, true };
++            break;
++        }
++        if (!out.found && larger)
++            out = { true, larger->fps30, larger->fpsShort, weaker(larger->label, Label::Derived), larger->group,
++                    larger->compression, larger->source, larger, false, false };
++    }
++    if (out.found && !context.storageMeasured)
++        out.label = Label::Unconfirmed;
++    return out;
++}
++
++// What a mode serves after the levers: cap is the step its limit rounds down to (0 = the mode is not used).
++// limit is the number before rounding, 0 when the table has no row. by names the wall: back end, encoder, drive,
++// sensor (the sensor's own ceiling is the lower one, or there is no row) or TDN.
++struct Cap {
++    double fps = 0.0;
++    double limit = 0.0;
++    Limit row;
++    const char *by = "sensor";
++    const char *lever = "";         // the lever that moved the number: TDN, phase lock, aids or split
++};
++
++// The levers (table B). TDN on with an unbinned mode: not used (0 of 24 4K takes were clean). Phase lock and aids
++// off cost a back-end mode 1 fps each. Split off on exFAT or FAT caps a per-frame format at the flat-folder limit.
++// Audio and the WebUI client change nothing here: the table is for audio on and a client connected.
++inline Cap capFor(const Context &context, const Mode &mode, double sensorCeiling)
++{
++    Cap cap;
++    cap.row = limitFor(context, mode);
++    double fps = sensorCeiling;
++    if (cap.row.found) {
++        double limit = cap.row.fps30;
++        if (cap.row.group == Group::BackEnd) {
++            if (context.lock) {
++                limit -= 1.0;
++                cap.lever = "phase lock";
++            }
++            if (!context.aidsOn) {
++                limit -= 1.0;
++                cap.lever = "aids";
++            }
++        }
++        cap.limit = std::max(limit, 0.0);
++        if (cap.limit < fps) {
++            fps = cap.limit;
++            cap.by = groupName(cap.row.group);
++        }
++    }
++    if (!context.splitOn && context.fatLike && fps > flatFolderMaxFps()) {
++        fps = flatFolderMaxFps();
++        cap.lever = "split";
++    }
++    if (context.tdn && !mode.binned) {
++        fps = 0.0;
++        cap.by = "TDN";
++        cap.lever = "TDN";
++    }
++    cap.fps = stepDown(fps);
++    return cap;
++}
++
++// A card above 94 % full stalled at 96-97 % in 4K Clear HDR 16-bit on the NVMe: a warning, never a limit.
++inline bool cardNearlyFull(const Context &context)
++{
++    return context.storage == Kind::Nvme && context.fillFraction > 0.94;
++}
++
++} // namespace apertar::sustained
+diff --git a/tools/sustained_fps_test.cpp b/tools/sustained_fps_test.cpp
+new file mode 100644
+index 0000000..0b3ef43
+--- /dev/null
++++ b/tools/sustained_fps_test.cpp
+@@ -0,0 +1,227 @@
++// Host test for src/camera/SustainedFps.hpp (the known fps limits for 30-minute takes). The numbers of table A are
++// pinned on purpose: a change of an analysis result must change this file too.
++//   g++ -std=c++20 -O2 -Wall -Wextra -I src -I include tools/sustained_fps_test.cpp -o /tmp/sft && /tmp/sft
++#include "camera/SustainedFps.hpp"
++
++#include <cmath>
++#include <cstdio>
++#include <cstring>
++#include <string>
++
++using namespace apertar::sustained;
++
++static int g_failed = 0;
++static void check(bool ok, const char *what)
++{
++    std::printf("[%s] %s\n", ok ? "ok" : "FAIL", what);
++    if (!ok)
++        ++g_failed;
++}
++static bool same(double a, double b) { return std::fabs(a - b) < 1e-6; }
++
++static Context nvme() { return Context{}; }
++static Context t7()
++{
++    Context c;
++    c.storage = Kind::UsbSsd;
++    return c;
++}
++static const Mode k4kHdr16{ 3840, 2160, true, 16, false };
++static const Mode k2kHdr16{ 1920, 1080, true, 16, true };
++static const Mode k4kHdr12{ 3840, 2160, true, 12, false };
++static const Mode k4kSdr12{ 3840, 2160, false, 12, false };
++static const Mode k2kSdr12{ 1920, 1080, false, 12, true };
++static const Mode k4kSdr10{ 3840, 2160, false, 10, false };
++static const Mode k2kSdr10{ 1920, 1080, false, 10, true };
++static const Mode kCrop2880{ 2880, 2160, false, 12, false };
++
++int main()
++{
++    // ---- the steps ----
++    check(same(stepDown(0.0), 0.0) && same(stepDown(-3.0), 0.0), "stepDown: nothing stays nothing");
++    check(same(stepDown(20.9), 20.0) && same(stepDown(24.0), 24.0) && same(stepDown(24.99), 24.0),
++          "stepDown: below 25 the number itself, floored (24 stays usable)");
++    check(same(stepDown(25.0), 25.0) && same(stepDown(29.99), 25.0), "stepDown: 25 to 30 is 25");
++    check(same(stepDown(30.0), 30.0) && same(stepDown(32.5), 30.0), "stepDown: 30 to 33 is 30");
++    check(same(stepDown(33.0), 33.0) && same(stepDown(49.9), 33.0), "stepDown: 33 to 50 is 33");
++    check(same(stepDown(50.0), 50.0) && same(stepDown(59.9), 50.0), "stepDown: 50 to 60 is 50");
++    check(same(stepDown(60.0), 60.0) && same(stepDown(69.9), 60.0), "stepDown: 60 to 70 is 60");
++    check(same(stepDown(70.0), 70.0) && same(stepDown(85.66), 80.0) && same(stepDown(280.0), 280.0),
++          "stepDown: above 60 ten apart");
++    check(same(stepDown(33.0 - 1e-12), 33.0), "stepDown: a rounding error under a step still lands on it");
++
++    // ---- table A, pinned: fps30 and its step, NVMe then USB SSD ----
++    struct Row { const char *name; Mode mode; bool log; double nvme, nvmeCap, t7, t7Cap; };
++    const Row rows[] = {
++        { "4K Clear HDR 16-bit", k4kHdr16, false, 20, 20, 9, 9 },
++        { "2K Clear HDR 16-bit", k2kHdr16, false, 30, 30, 27, 25 },
++        { "4K Clear HDR 12-bit", k4kHdr12, false, 20, 20, 12, 12 },
++        { "4K SDR 12-bit", k4kSdr12, false, 40, 33, 18, 18 },
++        { "2K SDR 12-bit", k2kSdr12, false, 60, 60, 48, 33 },
++        { "4K SDR 10-bit", k4kSdr10, false, 45, 33, 20, 20 },
++        { "2K SDR 10-bit", k2kSdr10, false, 60, 60, 48, 33 },
++        { "4K Clear HDR 16-bit + Log", k4kHdr16, true, 24, 24, 8, 8 },
++        { "2880x2160 SDR 12-bit", kCrop2880, false, 56, 50, 24, 24 },
++    };
++    for (const Row &row : rows) {
++        Context a = nvme(), b = t7();
++        a.log = b.log = row.log;
++        const Limit la = limitFor(a, row.mode), lb = limitFor(b, row.mode);
++        const std::string name = row.name;
++        check(la.found && la.exact && same(la.fps30, row.nvme) && same(capFor(a, row.mode, 280.0).fps, row.nvmeCap),
++              ("table A NVMe: " + name + " " + std::to_string(int(row.nvme)) + " fps, step " +
++               std::to_string(int(row.nvmeCap))).c_str());
++        check(lb.found && lb.exact && same(lb.fps30, row.t7) && same(capFor(b, row.mode, 280.0).fps, row.t7Cap),
++              ("table A USB SSD: " + name + " " + std::to_string(int(row.t7)) + " fps, step " +
++               std::to_string(int(row.t7Cap))).c_str());
++    }
++
++    // ---- labels, groups, compression, short takes ----
++    {
++        const Limit hdr = limitFor(nvme(), k4kHdr16);
++        check(hdr.label == Label::Unconfirmed && hdr.group == Group::BackEnd && !std::strcmp(hdr.compression, "none") &&
++                  same(hdr.fpsShort, 27.0),
++              "NVMe 4K Clear HDR 16-bit: unconfirmed, back end, uncompressed, 27 fps for short takes");
++        const Limit sdr = limitFor(nvme(), k4kSdr12);
++        check(sdr.label == Label::Derived && sdr.group == Group::Encoder && !std::strcmp(sdr.compression, "lossless_jpeg"),
++              "NVMe 4K SDR 12-bit: derived, encoder, lossless");
++        check(limitFor(nvme(), k2kSdr12).label == Label::Probable && limitFor(nvme(), k2kSdr12).group == Group::Sensor,
++              "NVMe 2K SDR 12-bit: probable, sensor wall");
++        const Limit t7hdr = limitFor(t7(), k2kHdr16);
++        check(t7hdr.label == Label::Measured && t7hdr.group == Group::Drive && !std::strcmp(t7hdr.compression, "lossless_jpeg"),
++              "USB SSD 2K Clear HDR 16-bit: measured, drive, lossless");
++        bool everyCellHasSource = true, everyFpsPositive = true;
++        for (const Cell &cell : kCells) {
++            everyCellHasSource = everyCellHasSource && cell.source && *cell.source;
++            everyFpsPositive = everyFpsPositive && cell.fps30 > 0.0 && cell.fpsShort >= 0.0;
++        }
++        check(everyCellHasSource && everyFpsPositive, "every cell has a source and a positive limit");
++        check(!std::strcmp(labelName(Label::Measured), "measured") && !std::strcmp(labelName(Label::Derived), "derived") &&
++                  !std::strcmp(labelName(Label::Probable), "probable") && !std::strcmp(labelName(Label::Unconfirmed), "unconfirmed"),
++              "labelName: measured, derived, probable, unconfirmed");
++        check(!std::strcmp(groupName(Group::BackEnd), "back end") && !std::strcmp(groupName(Group::Encoder), "encoder") &&
++                  !std::strcmp(groupName(Group::Drive), "drive") && !std::strcmp(groupName(Group::Sensor), "sensor"),
++              "groupName: back end, encoder, drive, sensor");
++        check(weaker(Label::Measured, Label::Probable) == Label::Probable && weaker(Label::Unconfirmed, Label::Derived) == Label::Unconfirmed,
++              "weaker: the less sure label wins");
++    }
++
++    // ---- a mode without a cell: the nearest larger one of its class, else the pixel rate, else nothing ----
++    {
++        const Limit crop = limitFor(nvme(), Mode{ 3840, 1744, true, 16, false });
++        check(crop.found && !crop.exact && same(crop.fps30, 20.0) && crop.cell && crop.cell->width == 3840 &&
++                  crop.label == Label::Unconfirmed,
++              "3840x1744 Clear HDR 16-bit takes the 4K cell (20 fps), label as weak as the cell");
++        const Limit small = limitFor(nvme(), Mode{ 1920, 1016, true, 16, false });
++        check(small.found && !small.exact && same(small.fps30, 30.0) && small.cell && small.cell->width == 1920 &&
++                  small.label == Label::Probable,
++              "1920x1016 Clear HDR 16-bit takes the 2K cell, not the 4K one: nearest larger, derived at best");
++        const Limit hdr12 = limitFor(nvme(), Mode{ 1920, 1080, true, 12, false });
++        check(hdr12.found && same(hdr12.fps30, 20.0), "Clear HDR 12-bit 2K has no cell: the 4K one (20 fps) stands in");
++        const Limit rate = limitFor(nvme(), Mode{ 3840, 1744, false, 12, false });
++        check(rate.found && rate.pixelRate && !rate.exact && same(rate.fps30, 330.0e6 / (3840.0 * 1744.0)) &&
++                  rate.label == Label::Derived && rate.group == Group::Encoder && !std::strcmp(rate.compression, "lossless_jpeg"),
++              "3840x1744 SDR 12-bit: the pixel rate gives 49.3 fps, derived");
++        const Limit rateT7 = limitFor(t7(), Mode{ 3840, 1744, false, 12, false });
++        check(rateT7.pixelRate && same(rateT7.fps30, 149.0e6 / (3840.0 * 1744.0)) && rateT7.group == Group::Drive,
++              "3840x1744 SDR 12-bit on the USB SSD: the drive's pixel rate, 22.3 fps");
++        const Limit between = limitFor(nvme(), Mode{ 3840, 2076, false, 12, false });
++        check(between.pixelRate && between.fps30 > 40.0 && between.fps30 < 42.0,
++              "3840x2076 SDR 12-bit: the pixel rate, never below the 4K cell's 40");
++        check(!limitFor(nvme(), Mode{ 4096, 2304, true, 16, false }).found,
++              "a Clear HDR 16-bit mode larger than every cell has no row");
++        check(!limitFor(nvme(), Mode{ 3840, 2160, false, 16, false }).found &&
++                  !limitFor(nvme(), Mode{ 1920, 1080, false, 8, false }).found,
++              "a class with no cell at all has no row");
++        Context other = nvme();
++        other.board = Board::Other;
++        const Cap none = capFor(other, k4kHdr16, 30.0);
++        check(!limitFor(other, k4kHdr16).found && same(none.fps, 30.0) && !std::strcmp(none.by, "sensor") && same(none.limit, 0.0),
++              "another board: no row, the sensor's ceiling alone (30 fps)");
++        Context unknown = nvme();
++        unknown.storageMeasured = false;
++        unknown.storage = Kind::UsbSsd;
++        const Limit stand = limitFor(unknown, k2kSdr12);
++        check(stand.found && same(stand.fps30, 48.0) && stand.label == Label::Unconfirmed,
++              "storage not measured: the USB SSD column, labelled unconfirmed");
++    }
++
++    // ---- the sensor's ceiling and the wall that wins ----
++    {
++        const Cap held = capFor(nvme(), k2kHdr16, 25.0);
++        check(same(held.fps, 25.0) && !std::strcmp(held.by, "sensor") && same(held.limit, 30.0),
++              "sensor ceiling 25 under a limit of 30: 25, by the sensor");
++        const Cap lower = capFor(nvme(), k4kSdr12, 30.0);
++        check(same(lower.fps, 30.0) && !std::strcmp(lower.by, "sensor"), "4K SDR 12-bit with a sensor ceiling of 30: step 30");
++        const Cap table = capFor(nvme(), k4kHdr16, 30.0);
++        check(same(table.fps, 20.0) && !std::strcmp(table.by, "back end") && !*table.lever,
++              "4K Clear HDR 16-bit: 20 fps, by the back end, no lever");
++        check(same(capFor(t7(), k4kSdr12, 60.0).fps, 18.0) && !std::strcmp(capFor(t7(), k4kSdr12, 60.0).by, "drive"),
++              "4K SDR 12-bit on the USB SSD: 18 fps, by the drive");
++    }
++
++    // ---- levers (table B) ----
++    {
++        Context c = nvme();
++        c.log = true;
++        check(same(limitFor(c, k4kHdr16).fps30, 24.0) && limitFor(c, k4kHdr16).cell->log, "Log on: 4K Clear HDR 16-bit takes the Log row");
++        check(same(limitFor(c, k2kHdr16).fps30, 30.0) && same(limitFor(c, k4kSdr12).fps30, 40.0),
++              "Log on: no effect at 2K or in SDR");
++        c.lock = true;
++        const Cap lock = capFor(c, k4kHdr16, 30.0);
++        check(same(lock.limit, 23.0) && same(lock.fps, 23.0) && !std::strcmp(lock.lever, "phase lock"),
++              "phase lock costs a back-end mode 1 fps: 24 becomes 23");
++        check(same(capFor(c, k4kSdr12, 60.0).limit, 40.0) && same(capFor(c, k2kHdr16, 30.0).limit, 30.0),
++              "phase lock costs nothing in an encoder or sensor mode");
++        c.aidsOn = false;
++        check(same(capFor(c, k4kHdr16, 30.0).limit, 22.0) && !std::strcmp(capFor(c, k4kHdr16, 30.0).lever, "aids"),
++              "aids off costs a back-end mode another fps");
++        Context a = nvme();
++        a.audioOn = false;
++        check(same(capFor(a, k4kHdr16, 30.0).fps, 20.0), "audio off changes nothing: the table is for audio on");
++        Context t = nvme();
++        t.tdn = true;
++        const Cap tdn = capFor(t, k4kSdr12, 60.0);
++        check(same(tdn.fps, 0.0) && !std::strcmp(tdn.by, "TDN") && !std::strcmp(tdn.lever, "TDN"),
++              "TDN on: an unbinned 4K mode is not used (step 0, by TDN)");
++        check(same(capFor(t, Mode{ 3840, 1744, false, 12, false }, 60.0).fps, 0.0), "TDN on: a crop is not used either");
++        check(same(capFor(t, k2kSdr12, 60.0).fps, 60.0) && same(capFor(t, k2kHdr16, 30.0).fps, 30.0),
++              "TDN on: a binned 2K mode is not affected");
++    }
++
++    // ---- the flat folder (split off) ----
++    {
++        check(same(std::floor(flatFolderMaxFps()), 32.0), "flat folder: a 30-minute take is flat up to 32 fps");
++        check(same(std::round(flatFolderMaxFps(3040.0)), 25.0), "flat folder: 50 minutes at 25 fps");
++        check(same(std::round(1.9e6 / (30.0 * 30.0) / 60.0), 35.0) && same(std::round(1.9e6 / (48.0 * 48.0) / 60.0), 14.0),
++              "flat folder: 35 minutes at 30 fps and 14 at 48");
++        Context c = nvme();
++        c.splitOn = false;
++        c.fatLike = true;
++        const Cap flat = capFor(c, k2kSdr12, 60.0);
++        check(same(flat.fps, 30.0) && !std::strcmp(flat.lever, "split"),
++              "split off on exFAT: 2K SDR 12-bit (60) is held at the flat-folder limit, step 30");
++        check(same(capFor(c, k4kHdr16, 30.0).fps, 20.0) && !*capFor(c, k4kHdr16, 30.0).lever,
++              "split off: a mode already under 32 fps is left alone");
++        c.fatLike = false;
++        check(same(capFor(c, k2kSdr12, 60.0).fps, 60.0), "split off on ext4: no flat-folder limit");
++        c.fatLike = true;
++        c.splitOn = true;
++        check(same(capFor(c, k2kSdr12, 60.0).fps, 60.0), "split on: no flat-folder limit");
++    }
++
++    // ---- the card ----
++    {
++        Context c = nvme();
++        c.fillFraction = 0.95;
++        check(cardNearlyFull(c), "NVMe card at 95 percent: the warning");
++        c.fillFraction = 0.90;
++        check(!cardNearlyFull(c), "NVMe card at 90 percent: no warning");
++        c.storage = Kind::UsbSsd;
++        c.fillFraction = 0.99;
++        check(!cardNearlyFull(c), "the warning is the NVMe card's");
++    }
++
++    std::printf("%s (%d failed)\n", g_failed ? "FAILED" : "PASSED", g_failed);
++    return g_failed ? 1 : 0;
++}
+-- 
+2.43.0
+

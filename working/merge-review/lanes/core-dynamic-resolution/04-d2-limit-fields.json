@@ -1,0 +1,29 @@
+{
+ "id": "D2",
+ "status": "done",
+ "sha": "0817904",
+ "subject": "camera: Core reads the storage and lever context and publishes the known limit",
+ "summary": "The application now hands the camera the storage type, filesystem, fill, aids, audio and clip split (refreshLadderContext -> setLadderContext), and the camera fills five new state fields from the known-limits table: limit_fps, limit_short_fps, limit_basis, limit_by and limit_why. It changes no behaviour: fps_max, the ladder and every old field are as before. The sentence for the limit line is built by whyText in SustainedFps.hpp and pinned by the host test.",
+ "reason": "",
+ "gate": [
+  "PASS build lc (1 warnings; log /home/user/build/lane-dr-core-lc.build.log)",
+  "PASS build nolc (1 warnings; log /home/user/build/lane-dr-core-nolc.build.log)",
+  "PASS host tests (22)"
+ ],
+ "log_was": "CameraController.cpp@cinemate-port: fps_max and fps_take_max were the only limits in the state, from the sensor probe, the table and the lossless cap (maximumFpsForSettings). Nothing in Core knew the storage type or how full the card was for the camera; App had the media profile (mediaProfile_, ApertarCoreApp.cpp:11662) and UI.conf values but never gave them to the camera.",
+ "log_why": "Original Apertar fills camera-derived values as runtime fields of CaptureSettings (a 'Runtime' comment, set in settings() and emitSettingsEventLocked; exposureCompensationAvailable, Types.hpp:132, CameraController.cpp:8570 and :8779@upstream-1.6.0, conventions CAM-18). The state stays flat scalars. The camera never reads App's files or threads; App pushes (CAM-10, the camera takes mutex_ first).",
+ "log_spot": "Ask: which of this value's inputs does the owning class not have? If App has them, add one setter on the camera that App calls where the input changes (a push), and let the camera fill the derived field where it fills the others.",
+ "log_options": [
+  "App pushes one Context struct when a fact changes; the camera fills the fields on read and on event (chosen)",
+  "The camera pulls through a std::function that App supplies: no push sites, but it calls into App (file reads, locks) while the camera holds mutex_",
+  "App computes the limit and the camera only stores it: the table logic would sit in the big App file and the camera could not use it to choose a mode in D3"
+ ],
+ "log_chosen": "Option 1, as the plan says. The push sites are the media change hook, the media watcher poll (only when the card crosses 94 percent, so a fuller card is not an event), the UI switches through handleUiToggle (hardware button toggles go through the same command), a preset, and set_frames_per_folder. Not covered yet: other writers of the hardware file that refreshBufferRequest() serves (a whole-file save, set_buffer_mode); D5 changes the split and should push there. A simulated camera counts as a Pi 5 so the table can be tried without a Pi; any other board without BCM2712 gets no limits and says so. The Log lever is read from the setting (cdng_log), not cdng_log_applied, so it also works in simulation. Given up: audio is carried but the table does not use it yet (the page says audio changes nothing).",
+ "log_after": "void ApertarCoreApp::refreshLadderContext() { ... context.fatLike = profile.filesystem == MediaFilesystem::Exfat || ...; camera_.setLadderContext(context); }\nvoid CameraController::fillLimitFieldsLocked(CaptureSettings &out) const { ... const sustained::Cap cap = sustained::capFor(context, mode, ceiling); out.limitFps = cap.fps; ... out.limitWhy = sustained::whyText(context, mode, cap, ceiling); }\n// state: \"limit_fps\":0.000,\"limit_short_fps\":0.000,\"limit_basis\":\"unconfirmed\",\"limit_by\":\"TDN\",\"limit_why\":\"...\"",
+ "log_checked": "Run here: check_core.sh both builds and 22 host tests pass; only the old ApertarCoreApp.cpp unused-function warning shows. In --simulate with fresh HOME folders: get_state and the socket settings event carry the five fields as valid JSON; limit_why reads like the page's examples; set_preview_tdn false, set_clear_hdr, set_raw_bit_depth 16 and set_fps_phase_lock change limit_fps and limit_why; H.264 gives 'Limits are not measured for H.264, ProRes and stills.'; smoke shapes match 1.6.0's. Needs the Pi: on the NVMe get_state at 4K Clear HDR 16-bit has limit_fps 20 and limit_basis unconfirmed; pull the card and mount the T7 and the fields change while fps, mode and fps_max stay.",
+ "log_rule": "A value the camera derives from facts that live in App is pushed by one setter where the facts change; the camera fills the derived field where it fills the others.",
+ "kb_changes": [
+  "design/auto-ladder.md 'State fields': limit_fps is the step (cap), not the raw table number; limit_basis is the basis of the running mode's row.",
+  "design/auto-ladder.md D2: the context's split comes from App (framesPerFolderRequest at refresh), not read by the camera; refreshBufferRequest callers other than set_frames_per_folder do not push yet (D5)."
+ ]
+}

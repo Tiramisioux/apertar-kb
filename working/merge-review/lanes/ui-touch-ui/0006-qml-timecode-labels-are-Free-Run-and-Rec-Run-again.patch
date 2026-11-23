@@ -1,0 +1,94 @@
+From 10fb9e3ee2d3be9cfff7b4085ae56e1c00661280 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Tue, 17 Nov 2026 19:16:31 +0000
+Subject: [PATCH] qml: timecode labels are Free Run and Rec Run again
+
+Why:
+The port renamed the two timecode modes on the Settings card to "Time
+of Day" and "Clip" (08cefcf). It did this with a label table
+(timecodeChoices) and a display-name function (timecodeDisplayName) on
+top of the stored values, which stayed "Free Run" and "Rec Run". So the
+screen showed one name and UI.conf, the WebUI, CameraPage and the HDMI
+monitor used another. Original Apertar has one plain list of strings
+for this dropdown, options: ["Free Run", "Rec Run"], and the
+description "Timecode behavior" (SettingsPage.qml@upstream-1.6.0,
+recordTimecodeComponent; QML-23). The rename can be offered upstream
+on its own.
+
+What:
+The Mode row is 1.6.0's again: options ["Free Run", "Rec Run"], no
+displayValue, card description "Timecode behavior". The Files row lists
+"Same as Mode", "Free Run", "Rec Run" as plain strings. timecodeChoices,
+its comment and timecodeDisplayName are deleted. No behaviour change:
+the values sent and stored were already Free Run / Rec Run.
+
+Tested:
+check_ui.sh lane-ui1: PASS, 0 warnings (QML compiled ahead of time).
+Not seen on a screen here. On the camera: Settings > Record > Timecode
+shows "Timecode behavior", Mode offers Free Run / Rec Run, Files offers
+Same as Mode / Free Run / Rec Run; pick Rec Run and
+grep timecodeMode ~/.config/CinePi/UI.conf shows "Rec Run".
+
+Co-Authored-By: Claude Fable 5.2 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ qml/SettingsPage.qml | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
+
+diff --git a/qml/SettingsPage.qml b/qml/SettingsPage.qml
+index f3ddbb2..325ff46 100644
+--- a/qml/SettingsPage.qml
++++ b/qml/SettingsPage.qml
+@@ -16,9 +16,6 @@ Item {
+     property string selectedSection: "Monitoring"
+     property var settingsState
+     readonly property var bracketEvLabels: ["1/3 EV", "2/3 EV", "1 EV", "1 1/3 EV", "1 2/3 EV", "2 EV", "2 1/3 EV", "2 2/3 EV", "3 EV"]
+-    // The timecode modes as shown. The stored values stay "Free Run" and "Rec Run" (CameraPage and the bridge compare
+-    // them); the names say what the camera does: the clock's time of day, or each clip from 00:00:00:00.
+-    readonly property var timecodeChoices: [{ value: "Free Run", label: "Time of Day" }, { value: "Rec Run", label: "Clip" }]
+     property string displayLayout: "square"
+     property bool pageOpen: false
+     readonly property bool landscapeCompactLayout: displayLayout === "landscape_compact"
+@@ -1216,10 +1213,6 @@ Item {
+         return out
+     }
+ 
+-    function timecodeDisplayName(mode) {
+-        return mode === "Rec Run" ? "Clip" : "Time of Day"
+-    }
+-
+     function itemIsFavorited(itemId) {
+         return root.favoriteItems().indexOf(itemId) >= 0
+     }
+@@ -3973,7 +3966,7 @@ Item {
+             property string reorderSectionName: "Record"
+             title: "Timecode"
+             titleIconSource: "qrc:/qml/icons/timecode.png"
+-            description: "Time of Day is the camera's clock; Clip counts each clip from 00:00:00:00"
++            description: "Timecode behavior"
+             favoriteEnabled: root.favoriteControlsEnabled
+             favorited: root.itemIsFavorited("timecode")
+             onPressAndHoldRequested: root.openReorderPopup(reorderSectionName)
+@@ -3983,8 +3976,7 @@ Item {
+                 width: parent.width
+                 label: "Mode"
+                 value: root.settingsState ? root.settingsState.timecodeMode : "Free Run"
+-                displayValue: root.timecodeDisplayName(value)
+-                options: root.timecodeChoices
++                options: ["Free Run", "Rec Run"]
+                 openUpwards: true
+                 popupParent: dropdownOverlay
+                 dropdownController: sharedDropdownController
+@@ -4004,8 +3996,7 @@ Item {
+                 value: root.settingsState && root.settingsState.fileTimecodeSeparate
+                        && typeof apertarControlBridge !== "undefined" && apertarControlBridge
+                        ? apertarControlBridge.fileTimecodeMode : "Same as Mode"
+-                displayValue: value === "Same as Mode" ? value : root.timecodeDisplayName(value)
+-                options: ["Same as Mode"].concat(root.timecodeChoices)
++                options: ["Same as Mode", "Free Run", "Rec Run"]
+                 openUpwards: true
+                 popupParent: dropdownOverlay
+                 dropdownController: sharedDropdownController
+-- 
+2.43.0
+

@@ -1,0 +1,31 @@
+{
+ "id": "CM6",
+ "status": "done",
+ "sha": "bd99a8b",
+ "subject": "camera: the fps ceiling is the lower of Core's table and the probe again",
+ "summary": "maximumSupportedFpsForResolution is min(table, probe) again, as on fork main, and APERTAR_FPS_LIMIT=probe (read at use) gives the owner's rig the probe alone. The IMX283 keeps min(probe, floor) under every value, and the knob is echoed as fps_limit=probe on the recording clip line. The dead backendMaximumFps, its three wrappers, APERTAR_IMX283_PROBE_FPS and two helpers in FpsCeiling.hpp are deleted.",
+ "reason": "",
+ "gate": [
+  "PASS build lc (0 warnings; log /home/user/build/lane-dr-core-lc.build.log)",
+  "PASS build nolc (3 warnings; log /home/user/build/lane-dr-core-nolc.build.log)",
+  "PASS host tests (21)"
+ ],
+ "log_was": "src/camera/CameraController.cpp:3509-3534@cinemate-port (same code at the lane tip fa1dc5c):\n bool fpsLimitTableOnly() { static const bool tableOnly = [] { value = getenv(\"APERTAR_FPS_LIMIT\"); table = value && string(value)==\"table\"; ... }(); }\n double maximumSupportedFpsForResolution(...) {\n   const bool minWithTable = sensorFamily == Imx283 ? !imx283ProbeFpsOnly() : fpsLimitTableOnly();\n   return fpsceiling::resolveSensorMaxFps(probed, table, minWithTable);   // probe alone unless =table\n }\n Dead: backendMaximumFps() returned nullopt; applyBackendCap wrapped it at three call sites.",
+ "log_why": "The port made the probe the whole ceiling by default, so a stock camera with the original driver offered 60 fps at 4K 12-bit where 1.6.0 offered 30 (table alone, CameraController.cpp:2629-2681@upstream-1.6.0, 4K = 30). Fork main, the merge target, lets the probe only lower the table: probed ? std::min(table, *probed) : table (CameraController.cpp:2763-2769@f60e301). Conventions CAM-24 and R8: a bench knob is an env var APERTAR_<AREA>_<KNOB> read at the point of use, default in code, echoed on the take-start line. The port read it once into a static and printed its own log line. Rule 2 of the campaign: the owner's decision (probe alone) stays, as a setting whose default is the 1.6.0 value.",
+ "log_spot": "grep -n 'getenv(\"APERTAR_' src/camera/CameraController.cpp and ask of each knob: what does a camera without the variable do, and is that what 1.6.0 did? Also grep for functions that return a constant (nullopt, 0) and have callers: dead code that hides a decision (backendMaximumFps).",
+ "log_options": [
+  "Keep the probe-alone default and document the knob: leaves every stock camera with 60 fps at 4K, a change from 1.6.0 (cost: breaks the stock rule)",
+  "min(table, probe) by default, APERTAR_FPS_LIMIT=probe for the probe alone (cost: the owner adds one drop-in line, and a saved fps above the table is clamped if he forgets)",
+  "A [camera] max_fps key in apertar-hardware.conf (cost: the owner rejected a file key for this, and the camera side never reads that file, CAM-19)",
+  "A socket command or WebUI switch (cost: the original developer sees a new setting for an internal limit, CAM-24)"
+ ],
+ "log_chosen": "Option 2, as the camera-modes page and the owner's recorded decision say. The switch is an env var read at use, so no state is cached and a restart picks it up. 'table' is still accepted as a spelling of the default, so an existing drop-in line keeps its meaning. The IMX283 keeps min(probe, floor) whatever the variable says, because its probe can report more than the sensor delivers; its own knob APERTAR_IMX283_PROBE_FPS is gone. Given up: the host test for the pure rule (resolveSensorMaxFps) is gone, the rule is now three lines in CameraController.cpp that only the probe (libcamera, a camera) reaches. boolEnvValue moved back inside the libcamera guard, because its last unguarded user was deleted and the no-libcamera build would warn.",
+ "log_after": "bool fpsLimitProbeOnly()\n{\n    const char *value = std::getenv(\"APERTAR_FPS_LIMIT\");\n    return value && std::string(value) == \"probe\";\n}\n...\n    if (!probed)\n        return table;\n    // The IMX283 stays at min(probe, the driver's floor): the probe can report more than it delivers.\n    return fpsLimitProbeOnly() && sensorFamily != SensorFamily::Imx283 ? *probed : std::min(table, *probed);\n// recording clip line: if (fpsLimitProbeOnly()) std::cerr << \" fps_limit=probe\";",
+ "log_checked": "Run here: check_core.sh both builds and 21 host tests pass, lc 0 warnings, nolc 3 (the old mediumGone, basePathOverride, allocatePhotoBasePath). The first gate run showed a new nolc warning (boolEnvValue unused); fixed by moving the #endif. Not run here: the probe needs libcamera and a sensor, and --simulate has sensor Unknown, so nothing reaches the changed rule and no reply field changed. Needs the Pi: no env knob, get_state at 3840x2160 12-bit has fps_max 30; with Environment=APERTAR_FPS_LIMIT=probe in the unit it is 60, and journalctl -u apertar-core -b | grep 'recording clip:' shows fps_limit=probe on a take.",
+ "log_rule": "A bench knob defaults to the original behaviour and the operator who needs the port's behaviour sets it; read it where it is used and echo it on the take-start line.",
+ "kb_changes": [
+  "architecture/config.md:450, working/drop-frames/README.md:61 and :75: say the default is min(table, probe) and APERTAR_FPS_LIMIT=probe gives the probe alone (table is still accepted).",
+  "The owner's systemd drop-in (apertar-core.service.d/owner-limits.conf) must hold Environment=APERTAR_FPS_LIMIT=probe before this commit reaches his camera; working/tools/longtakes.py walks from fps_max and starts every 4K walk at 30 without it.",
+  "Any KB or script that sets APERTAR_IMX283_PROBE_FPS: the variable is gone (no KB use was found by the camera-modes page)."
+ ]
+}

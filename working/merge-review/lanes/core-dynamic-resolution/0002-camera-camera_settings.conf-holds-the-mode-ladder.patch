@@ -1,0 +1,599 @@
+From c74016da7b93889d2f00adaff44ba78842c1dca6 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sat, 21 Nov 2026 22:11:51 +0000
+Subject: [PATCH 2/5] camera: camera_settings.conf holds the mode ladder
+
+Why: The port kept the mode ladder in a second settings file,
+mode_ladder.conf, with its own path function, its own atomicWrite call
+under the command lock, its own read-back check and a file text with a
+ticket number in its header (CameraController.cpp:404-430 and
+11858-11892@cinemate-port). Original Apertar has one place for camera-wide
+settings: camera_settings.conf, written by Core only through the debounced
+persister, one key per setting, carried across the format profiles like
+tuning_file (CameraController.cpp:7939-7955 and :742-889@upstream-1.6.0).
+A second file means a second writer and a second failure path.
+
+What: CaptureSettings holds the ladder as four persisted fields:
+modeLadderEnabled, modeLadderRampReady, modeLadderResolutions and
+modeLadderAspects (the aspect filter was added to the port after the plan
+was written, so it needs its key too). The loader reads mode_ladder_enabled,
+mode_ladder_ramp_ready, mode_ladder_resolutions and mode_ladder_aspects in
+every block, the writer writes them in every block, and the format switch
+carries them over. modeLadder_ stays the parsed form; the constructor
+builds it from the settings with the new ladder::fromText, and
+setModeLadder sets it together with the fields. A ladder edit saves
+through persistSettingsLocked, a rung or format change through
+applySettingsLocked, as the tuning file does, and the filter alone
+persists with no apply and no settings event, as before. While none of the
+four keys is in camera_settings.conf, an existing mode_ladder.conf is read
+once at start and taken over (also when camera_settings.conf is missing);
+the old file is never written or deleted. A preset keeps the camera's
+ladder. Deleted: saveModeLadderLocked, saveModeLadderAspectsLocked,
+ladder::fileText, ladder::withAspectsLine and the "could not write
+mode_ladder.conf" warning, which the persister's own log line replaces.
+parseFile now builds on fromText. The active ladder still blocks
+set_resolution, set_raw_bit_depth and set_clear_hdr and ladderOverride_
+stays unsaved.
+
+Tested: check_core.sh both builds and the host tests pass with no new
+warning (mode_ladder_test covers fromText and the take-over parse). In
+--simulate with a fresh HOME: a mode_ladder.conf is taken over at the first
+start, the first settings change writes the four keys with the same
+resolutions text, and a restart without the old file shows the same ladder;
+set_mode_ladder (resolutions, enabled, aspects) persists across a restart;
+a record format switch cdng, h264, cdng keeps the ladder; set_mode_ladder
+enabled=false is accepted in Standby; set_resolution is still refused while
+the ladder is on. The smoke shapes match 1.6.0's. Needs the camera: the
+ladder on the owner's rig is unchanged after the update. Run
+get_mode_ladder before and after and diff the two replies, then one
+set_resolution with the ladder on (expect the refusal, not a ladder
+switch-off).
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_01NEFc1w7Y8dcyiV489BiwMr
+---
+ include/apertar/core/Types.hpp  |   6 ++
+ src/camera/CameraController.cpp | 167 +++++++++++++++++---------------
+ src/camera/CameraController.hpp |  12 +--
+ src/camera/ModeLadder.hpp       |  59 +++++------
+ tools/mode_ladder_test.cpp      |  69 ++++++-------
+ 5 files changed, 152 insertions(+), 161 deletions(-)
+
+diff --git a/include/apertar/core/Types.hpp b/include/apertar/core/Types.hpp
+index f80f1ab..1366168 100644
+--- a/include/apertar/core/Types.hpp
++++ b/include/apertar/core/Types.hpp
+@@ -199,6 +199,12 @@ struct CaptureSettings {
+     ProresColorProfile cdngPreviewColorProfile = ProresColorProfile::Standard;
+     std::shared_ptr<const PreviewExposureReference> previewExposureReference; // Active ISP, not saved settings.
+     std::string tuningFile;
++    // The mode ladder, one for the camera as a whole like the tuning file, as text. CameraController keeps
++    // modeLadder_ parsed from it and is the only one that writes these.
++    bool modeLadderEnabled = false;
++    bool modeLadderRampReady = false;
++    std::string modeLadderResolutions;
++    std::string modeLadderAspects;
+     uint32_t rawBitDepth = 12;
+     bool clearHdr = false;
+     // Clear HDR merge knobs (IMX585). Blend 5 and gain adder 1 are Cinemate's measured operating point;
+diff --git a/src/camera/CameraController.cpp b/src/camera/CameraController.cpp
+index 937d57b..e6b4758 100644
+--- a/src/camera/CameraController.cpp
++++ b/src/camera/CameraController.cpp
+@@ -406,20 +406,6 @@ AutofocusSpeed autofocusSpeedFromString(const std::string &value)
+     return AutofocusSpeed::Normal;
+ }
+ 
+-// T34: the mode ladder lives beside camera_settings.conf (same XDG rule), one ladder per camera.
+-std::filesystem::path modeLadderPath()
+-{
+-    const char *xdgConfig = std::getenv("XDG_CONFIG_HOME");
+-    if (xdgConfig && *xdgConfig)
+-        return std::filesystem::path(xdgConfig) / "apertar-core" / "mode_ladder.conf";
+-
+-    const char *home = std::getenv("HOME");
+-    if (home && *home)
+-        return std::filesystem::path(home) / ".config" / "apertar-core" / "mode_ladder.conf";
+-
+-    return std::filesystem::temp_directory_path() / "apertar-core-mode_ladder.conf";
+-}
+-
+ // mode_ladder.conf as text, true only when the whole file was read. A read can fail after the open (an I/O
+ // error; a directory opens but cannot be read) and leave a short or empty text while the ifstream still reads as
+ // good (libstdc++ catches the error inside operator<<), so the text's size is compared with file_size, which
+@@ -450,6 +436,12 @@ std::filesystem::path persistedSettingsPath()
+     return std::filesystem::temp_directory_path() / "apertar-core-camera_settings.conf";
+ }
+ 
++// The mode ladder lived in this file beside camera_settings.conf; it is read only to take it over.
++std::filesystem::path modeLadderPath()
++{
++    return persistedSettingsPath().parent_path() / "mode_ladder.conf";
++}
++
+ bool resolutionMatches(const Resolution &resolution, uint32_t width, uint32_t height)
+ {
+     return resolution.width == width && resolution.height == height;
+@@ -809,16 +801,41 @@ struct PersistedCaptureSettings {
+     std::optional<CaptureSettings> still;
+ };
+ 
++// A mode_ladder.conf from before the ladder moved here is taken over while none of its keys is saved yet.
++// The file is never written or deleted; a file that cannot be read whole is tried again at the next start.
++void takeOverModeLadderFile(CaptureSettings &current, std::map<RecordingFormat, CaptureSettings> &formats,
++                            std::optional<CaptureSettings> &still)
++{
++    std::string text;
++    if (!readModeLadderFile(modeLadderPath(), text))
++        return;
++    const ladder::Ladder old = ladder::parseFile(text);
++    const auto takeOver = [&old](CaptureSettings &settings) {
++        settings.modeLadderEnabled = old.enabled;
++        settings.modeLadderRampReady = old.rampReady;
++        settings.modeLadderResolutions = ladder::rungsText(old.rungs);
++        settings.modeLadderAspects = ladder::aspectsText(old.aspects);
++    };
++    takeOver(current);
++    for (auto &entry : formats)
++        takeOver(entry.second);
++    if (still)
++        takeOver(*still);
++}
++
+ CaptureSettings loadPersistedCaptureSettings(std::map<RecordingFormat, CaptureSettings> &formats,
+                                            std::optional<CaptureSettings> &still)
+ {
+     CaptureSettings current = CaptureSettings{};
+     const std::filesystem::path path = persistedSettingsPath();
+     std::ifstream input(path);
+-    if (!input.is_open())
++    if (!input.is_open()) {
++        takeOverModeLadderFile(current, formats, still);
+         return current;
++    }
+ 
+     bool legacyWhiteBalanceLock = false;
++    bool modeLadderKeys = false;
+     std::string line;
+     while (std::getline(input, line)) {
+         const std::size_t eq = line.find('=');
+@@ -843,6 +860,8 @@ CaptureSettings loadPersistedCaptureSettings(std::map<RecordingFormat, CaptureSe
+             key = key.substr(separator + 1);
+         }
+         CaptureSettings &settings = *target;
++        if (key.starts_with("mode_ladder_"))
++            modeLadderKeys = true;
+         try {
+             if (key == "resolution_width")
+                 settings.resolution.width = static_cast<uint32_t>(std::stoul(value));
+@@ -900,6 +919,14 @@ CaptureSettings loadPersistedCaptureSettings(std::map<RecordingFormat, CaptureSe
+                     : value == "proxy" ? ProresProfile::Proxy : ProresProfile::Standard;
+             else if (key == "tuning_file")
+                 settings.tuningFile = normalizeTuningFilePath(value);
++            else if (key == "mode_ladder_enabled")
++                settings.modeLadderEnabled = (value == "true" || value == "1");
++            else if (key == "mode_ladder_ramp_ready")
++                settings.modeLadderRampReady = (value == "true" || value == "1");
++            else if (key == "mode_ladder_resolutions")
++                settings.modeLadderResolutions = value;
++            else if (key == "mode_ladder_aspects")
++                settings.modeLadderAspects = value;
+             else if (key == "raw_bit_depth")
+                 settings.rawBitDepth = normalizeRawBitDepth(static_cast<uint32_t>(std::stoul(value)));
+             else if (key == "clear_hdr")
+@@ -958,6 +985,8 @@ CaptureSettings loadPersistedCaptureSettings(std::map<RecordingFormat, CaptureSe
+     // Retired locked gains must not survive as an invisible manual mode.
+     if (legacyWhiteBalanceLock)
+         current.whiteBalanceAuto = true;
++    if (!modeLadderKeys)
++        takeOverModeLadderFile(current, formats, still);
+     for (auto &[format, profile] : formats) {
+         profile.photoModeEnabled = false;
+         profile = clampCaptureSettings(profile);
+@@ -1008,6 +1037,10 @@ void writeCaptureSettings(std::ostream &output, const CaptureSettings &settings,
+     output << prefix << "h264_width=" << s.h264Resolution.width << '\n';
+     output << prefix << "h264_height=" << s.h264Resolution.height << '\n';
+     output << prefix << "tuning_file=" << s.tuningFile << '\n';
++    output << prefix << "mode_ladder_enabled=" << s.modeLadderEnabled << '\n';
++    output << prefix << "mode_ladder_ramp_ready=" << s.modeLadderRampReady << '\n';
++    output << prefix << "mode_ladder_resolutions=" << s.modeLadderResolutions << '\n';
++    output << prefix << "mode_ladder_aspects=" << s.modeLadderAspects << '\n';
+     output << prefix << "timecode_mode=" << toString(s.timecodeMode) << '\n';
+     output << prefix << "fps_phase_lock=" << s.fpsPhaseLock << '\n';
+     output << prefix << "preview_tdn=" << s.previewTdn << '\n';
+@@ -11394,12 +11427,8 @@ CameraController::CameraController(EventCallback eventCallback, PreviewCallback
+           }, recordingDropWarning_, eventCallback_))
+ {
+     settings_ = loadPersistedCaptureSettings(formatSettings_, stillSettings_);
+-    {
+-        std::ifstream ladderFile(modeLadderPath());
+-        std::stringstream ladderText;
+-        ladderText << ladderFile.rdbuf();
+-        modeLadder_ = ladder::parseFile(ladderText.str());   // a missing or broken file: ladder off
+-    }
++    modeLadder_ = ladder::fromText(settings_.modeLadderEnabled, settings_.modeLadderRampReady,
++                                   settings_.modeLadderResolutions, settings_.modeLadderAspects);
+     if (unsupportedRecordingSettings(settings_))
+         std::cerr << "ApertarCore: saved recording settings are unavailable on this board; selecting supported recording settings.\n";
+     settings_ = supportedRecordingSettings(settings_);
+@@ -11451,6 +11480,8 @@ bool CameraController::start(const std::string &mediaRoot, bool simulateCamera)
+     else if (simulateCamera_)
+         settings_ = sanitizeSettingsForSensor(settings_, SensorFamily::Unknown);
+     followDriverCropSizes(modeLadder_.rungs);   // after the startup probe, which the session start ran
++    if (!modeLadder_.rungs.empty())
++        settings_.modeLadderResolutions = ladder::rungsText(modeLadder_.rungs);
+ 
+     if (simulateCamera_)
+         constrainExposureMetering(settings_, std::getenv("LIBCAMERA_RPI_TUNING_FILE")
+@@ -11832,45 +11863,6 @@ void CameraController::fillLadderFieldsLocked(CaptureSettings &out) const
+     }
+ }
+ 
+-bool CameraController::saveModeLadderLocked() const
+-{
+-    std::error_code ec;
+-    std::filesystem::create_directories(modeLadderPath().parent_path(), ec);
+-    if (settingsFile::atomicWrite(modeLadderPath(), ladder::fileText(modeLadder_)))
+-        return true;
+-    std::cerr << "ApertarCore mode ladder: could not write " << modeLadderPath() << "\n";
+-    return false;
+-}
+-
+-// A filter save keeps the rest of mode_ladder.conf as it is on disk: memory can hold less than the file (a
+-// resolutions line this Core could not read loads as no ladder), and a filter click must not erase it.
+-bool CameraController::saveModeLadderAspectsLocked(const std::vector<std::string> &aspects, std::string *error) const
+-{
+-    const std::filesystem::path path = modeLadderPath();
+-    std::error_code ec;
+-    std::string text;
+-    // Never write over a file that could not be read whole. When exists ends in an error rather than "no such
+-    // file", the path is read too, so a lookup error is refused as a read error is.
+-    if ((std::filesystem::exists(path, ec) || ec) && !readModeLadderFile(path, text)) {
+-        std::cerr << "ApertarCore mode ladder: could not read " << path << "\n";
+-        *error = "Could not read mode_ladder.conf: the aspect filter is not saved.";
+-        return false;
+-    }
+-    ladder::Ladder fresh = modeLadder_;
+-    fresh.aspects = aspects;
+-    std::filesystem::create_directories(path.parent_path(), ec);
+-    if (settingsFile::atomicWrite(path, text.empty() ? ladder::fileText(fresh) : ladder::withAspectsLine(text, aspects)))
+-        return true;
+-    // atomicWrite also fails after its rename, when the directory cannot be synced: the file then holds the
+-    // new filter, and the reply must say so. Only a file read back whole is trusted.
+-    std::cerr << "ApertarCore mode ladder: could not write " << path << "\n";
+-    std::string after;
+-    if (readModeLadderFile(path, after) && ladder::parseFile(after).aspects == aspects)
+-        return true;
+-    *error = "Could not write mode_ladder.conf: the aspect filter is not saved.";
+-    return false;
+-}
+-
+ // The editor's extras for one mode: the sensor window the probe reports, the binning, and the FPS
+ // ceiling in each compression (0 where the compression cannot run the mode).
+ void CameraController::fillRungExtrasLocked(ladder::RungState &state, const ladder::Rung &rung) const
+@@ -11983,16 +11975,14 @@ bool CameraController::setModeLadder(const std::optional<std::string> &rungs, st
+         }
+     }
+     // The aspect filter alone changes only what the WebUI lists, never the mode: no take refusal, no check
+-    // that could refuse it, no apply, no settings event. Only the file's aspects= line is replaced (a missing
+-    // or empty file is written whole), and a filter unchanged from Core's copy writes nothing. The reply shows
+-    // the errors as get_mode_ladder does.
++    // that could refuse it, no apply, no settings event. The reply shows the errors as get_mode_ladder does.
+     if (aspects && !rungs && !enabled && !rampReady) {
+         ladder::Ladder shown = modeLadder_;
+         shown.aspects = aspectList;
+         if (!dryRun && aspectList != modeLadder_.aspects) {
+-            if (!saveModeLadderAspectsLocked(aspectList, error))
+-                return false;
+             modeLadder_.aspects = aspectList;
++            settings_.modeLadderAspects = ladder::aspectsText(aspectList);
++            persistSettingsLocked();
+         }
+         std::vector<std::string> shownErrors, shownWarnings;
+         ladder::validate(shown, ladderStatesLocked(shown, settings_), shownErrors, shownWarnings);
+@@ -12037,29 +12027,33 @@ bool CameraController::setModeLadder(const std::optional<std::string> &rungs, st
+     const bool previousOverride = ladderOverride_;
+     modeLadder_ = draft;
+     ladderOverride_ = false;      // a changed ladder ends a Clear HDR override
++    const auto store = [&](CaptureSettings &target) {
++        target.modeLadderEnabled = draft.enabled;
++        target.modeLadderRampReady = draft.rampReady;
++        if (rungs)
++            target.modeLadderResolutions = ladder::rungsText(draft.rungs);
++        target.modeLadderAspects = ladder::aspectsText(draft.aspects);
++    };
+     // Switching the ladder on (or changing it) may put the camera in another rung: one apply.
+     CaptureSettings next = settings_;
++    store(next);
+     const bool modeChanged = ladderRewriteLocked(next);
+     const bool formatChanged = next.recordingFormat != settings_.recordingFormat ||
+         next.cdngCompression != settings_.cdngCompression || next.lossyDngRatio != settings_.lossyDngRatio;
+-    if ((modeChanged || formatChanged) && !applySettingsLocked(next, modeChanged)) {
+-        modeLadder_ = previous;
+-        ladderOverride_ = previousOverride;
+-        *error = lastError_;
+-        return false;
++    if (modeChanged || formatChanged) {
++        if (!applySettingsLocked(next, modeChanged)) {
++            modeLadder_ = previous;
++            ladderOverride_ = previousOverride;
++            *error = lastError_;
++            return false;
++        }
++    } else {
++        store(settings_);
++        persistSettingsLocked();
++        emitSettingsEventLocked();
+     }
+-    const bool saved = saveModeLadderLocked();
+-    emitSettingsEventLocked();
+     std::vector<std::string> shownErrors, shownWarnings;
+     ladder::validate(modeLadder_, ladderStatesLocked(modeLadder_, settings_), shownErrors, shownWarnings);
+-    // The apply already ran. A failed write warns that the ladder is lost when Core restarts, unless the file
+-    // reads back whole as this ladder: atomicWrite also fails after its rename, when the directory cannot be synced.
+-    // The WebUI shows this warning as an error toast by its start (showLadderWriteWarning).
+-    if (!saved) {
+-        std::string written;
+-        if (!readModeLadderFile(modeLadderPath(), written) || written != ladder::fileText(modeLadder_))
+-            shownWarnings.push_back("Could not write mode_ladder.conf: this ladder is lost when Core restarts.");
+-    }
+     *json = modeLadderJsonLocked(modeLadder_, shownErrors, shownWarnings);
+     return true;
+ }
+@@ -12317,6 +12311,10 @@ bool CameraController::setRecordingFormat(RecordingFormat format)
+             const bool fpsSpeedRampReturn = next.fpsSpeedRampReturn;
+             const double conformFps = next.conformFps;
+             const std::string clipNameTemplate = next.clipNameTemplate;   // one naming scheme for the camera
++            const bool modeLadderEnabled = next.modeLadderEnabled;   // one mode ladder for the camera
++            const bool modeLadderRampReady = next.modeLadderRampReady;
++            const std::string modeLadderResolutions = next.modeLadderResolutions;
++            const std::string modeLadderAspects = next.modeLadderAspects;
+             next = saved->second;
+             next.tuningFile = tuningFile;
+             next.timecodeMode = timecodeMode;
+@@ -12332,6 +12330,10 @@ bool CameraController::setRecordingFormat(RecordingFormat format)
+             next.mediaTrimEnabled = mediaTrimEnabled;
+             next.stopOnDroppedFrame = stopOnDroppedFrame;
+             next.cdngLog = cdngLog;
++            next.modeLadderEnabled = modeLadderEnabled;
++            next.modeLadderRampReady = modeLadderRampReady;
++            next.modeLadderResolutions = modeLadderResolutions;
++            next.modeLadderAspects = modeLadderAspects;
+             if (format == RecordingFormat::Cdng)
+                 format = next.recordingFormat;
+         }
+@@ -13725,6 +13727,11 @@ bool CameraController::applyCapturePreset(const CaptureSettings &requested, cons
+     next.resolution = presetResolution;
+     next.tuningFile = normalizeTuningFilePath(next.tuningFile);
+     if (!validateTuningFilePath(next.tuningFile, &lastError_)) return false;
++    // A preset never carries the mode ladder; a snapshot taken before a ladder edit must not bring the old one back.
++    next.modeLadderEnabled = settings_.modeLadderEnabled;
++    next.modeLadderRampReady = settings_.modeLadderRampReady;
++    next.modeLadderResolutions = settings_.modeLadderResolutions;
++    next.modeLadderAspects = settings_.modeLadderAspects;
+     const CaptureSettings previous = settings_;
+     const bool tuningChanged = next.tuningFile != previous.tuningFile;
+     const bool reconfigure = tuningChanged || next.photoModeEnabled != previous.photoModeEnabled || next.recordingFormat != previous.recordingFormat ||
+diff --git a/src/camera/CameraController.hpp b/src/camera/CameraController.hpp
+index be267f1..810a007 100644
+--- a/src/camera/CameraController.hpp
++++ b/src/camera/CameraController.hpp
+@@ -157,9 +157,8 @@ public:
+     // T34: the mode ladder. Any of rungs / enabled / rampReady / aspects; dryRun only validates. Fills the
+     // get_mode_ladder JSON in *json; false with *error when refused (in a take, or errors). aspects is the
+     // WebUI's aspect filter ("16:9,2.39:1", "" = All), kept unless given. Alone it changes only that filter:
+-    // saved in a take too, with no check or apply, by replacing the file's aspects= line and putting it last, or
+-    // writing the whole file when it is missing or empty (a filter unchanged from Core's copy writes nothing);
+-    // refused for a bad label, a file that cannot be read whole, or a failed write.
++    // saved in a take too, with no check or apply (a filter unchanged from Core's copy saves nothing);
++    // refused for a bad label. The ladder is saved in camera_settings.conf with the other settings.
+     bool setModeLadder(const std::optional<std::string> &rungs, std::optional<bool> enabled,
+                        std::optional<bool> rampReady, const std::optional<std::string> &aspects, bool dryRun,
+                        std::string *json, std::string *error);
+@@ -252,11 +251,6 @@ private:
+     void fillLadderFieldsLocked(CaptureSettings &out) const;
+     void fillClipNameExampleLocked(CaptureSettings &out) const;
+     std::string clipNameSensorLocked() const;
+-    bool saveModeLadderLocked() const;   // false (and logged) when atomicWrite failed, also after its rename
+-    // The aspect filter's own save: the aspects= line of mode_ladder.conf replaced and put last (a missing or
+-    // empty file is written whole). True when the file holds aspects; false with *error when the file could not
+-    // be read whole or the write did not reach it.
+-    bool saveModeLadderAspectsLocked(const std::vector<std::string> &aspects, std::string *error) const;
+     void fillRungExtrasLocked(ladder::RungState &state, const ladder::Rung &rung) const;
+     std::string modeLadderJsonLocked(const ladder::Ladder &ladder, const std::vector<std::string> &errors,
+                                      const std::vector<std::string> &warnings) const;
+@@ -319,7 +313,7 @@ private:
+     uint32_t rampNominalShutterUs_ = 0;
+     double rampTakeBaseFps_ = 0.0;
+     bool rampTakeChanged_ = false;
+-    ladder::Ladder modeLadder_;   // T34, from mode_ladder.conf
++    ladder::Ladder modeLadder_;   // T34, parsed from the settings_.modeLadder* text; set only where those are written
+     bool ladderOverride_ = false; // an explicit set_clear_hdr over an active ladder; ends on fps/resolution/format/bit depth/ramp/ladder change; not persisted (mutex_)
+     TakeInfo takeInfo_;
+     std::unique_ptr<CameraSession> session_;
+diff --git a/src/camera/ModeLadder.hpp b/src/camera/ModeLadder.hpp
+index 84d3796..a199ba2 100644
+--- a/src/camera/ModeLadder.hpp
++++ b/src/camera/ModeLadder.hpp
+@@ -358,53 +358,42 @@ inline std::string toJson(const Ladder &l, const std::vector<RungState> &s, int
+     return out + "],\"errors\":" + list(errors) + ",\"warnings\":" + list(warnings) + "}";
+ }
+ 
+-// mode_ladder.conf: one key per line, so a person can read it. A ladder save rewrites it whole, with this
+-// header. A filter save writes a missing or empty file whole; in any other it replaces the aspects= line and
+-// puts it last (withAspectsLine), so the header stays as it is.
+-inline std::string fileText(const Ladder &l)
++// The ladder from the text of its four settings (camera_settings.conf keys). A resolutions text that does not
++// parse is no ladder, and a bad filter is All; neither switches the camera.
++inline Ladder fromText(bool enabled, bool rampReady, const std::string &resolutions, const std::string &aspects)
+ {
+-    return "# Apertar mode ladder (T34). Core writes this file; edit it in the WebUI (Settings > Modes: Activated sensor modes and Mode Ladder).\n"
+-           "enabled=" + std::string(l.enabled ? "true" : "false") + "\n"
+-           "ramp_ready=" + std::string(l.rampReady ? "true" : "false") + "\n"
+-           "resolutions=" + rungsText(l.rungs) + "\n"
+-           "aspects=" + aspectsText(l.aspects) + "\n";
+-}
+-
+-// The file with its aspects= line replaced by one at the end (as fileText puts it; several become one). Every
+-// other line stays byte for byte, so a filter save never rewrites what this Core could not read: a resolutions
+-// line from another build, a CRLF hand edit, an unknown key. A last line without its newline gets one.
+-inline std::string withAspectsLine(const std::string &text, const std::vector<std::string> &aspects)
+-{
+-    std::string out;
+-    std::stringstream in(text);
+-    std::string line;
+-    while (std::getline(in, line)) {
+-        const auto eq = line.find('=');
+-        if (eq != std::string::npos && line.compare(0, eq, "aspects") == 0)
+-            continue;
+-        out += line + "\n";
+-    }
+-    return out + "aspects=" + aspectsText(aspects) + "\n";
++    Ladder l;
++    std::string error;
++    l.enabled = enabled;
++    l.rampReady = rampReady;
++    if (!resolutions.empty() && !parseRungs(resolutions, l.rungs, error))
++        l.rungs.clear();
++    if (!parseAspects(aspects, l.aspects, error))
++        l.aspects.clear();
++    if (l.rungs.empty())
++        l.enabled = false;  // a broken ladder never switches the camera
++    return l;
+ }
+ 
++// mode_ladder.conf, the file the ladder lived in before camera_settings.conf held it: one key per line.
++// Read only to take an old file over.
+ inline Ladder parseFile(const std::string &text)
+ {
+-    Ladder l;
++    bool enabled = false, rampReady = false;
++    std::string resolutions, aspects;
+     std::stringstream in(text);
+-    std::string line, error;
++    std::string line;
+     while (std::getline(in, line)) {
+         const auto eq = line.find('=');
+         if (line.empty() || line[0] == '#' || eq == std::string::npos)
+             continue;
+         const std::string key = line.substr(0, eq), value = line.substr(eq + 1);
+-        if (key == "enabled") l.enabled = value == "true";
+-        else if (key == "ramp_ready") l.rampReady = value == "true";
+-        else if ((key == "resolutions" || key == "rungs") && !parseRungs(value, l.rungs, error)) l.rungs.clear();   // "rungs": the first name
+-        else if (key == "aspects" && !parseAspects(value, l.aspects, error)) l.aspects.clear();   // a bad filter is All; the rungs stay
++        if (key == "enabled") enabled = value == "true";
++        else if (key == "ramp_ready") rampReady = value == "true";
++        else if (key == "resolutions" || key == "rungs") resolutions = value;   // "rungs": the first name
++        else if (key == "aspects") aspects = value;
+     }
+-    if (l.rungs.empty())
+-        l.enabled = false;  // a broken file never switches the camera
+-    return l;
++    return fromText(enabled, rampReady, resolutions, aspects);
+ }
+ 
+ } // namespace apertar::ladder
+diff --git a/tools/mode_ladder_test.cpp b/tools/mode_ladder_test.cpp
+index 0fc84e8..89bf0ba 100644
+--- a/tools/mode_ladder_test.cpp
++++ b/tools/mode_ladder_test.cpp
+@@ -1,4 +1,5 @@
+-// Host test for src/camera/ModeLadder.hpp (mode_ladder.conf and the get/set_mode_ladder JSON): the aspect filter.
++// Host test for src/camera/ModeLadder.hpp (the ladder from its saved text, an old mode_ladder.conf and the
++// get/set_mode_ladder JSON): the aspect filter.
+ //   g++ -std=c++20 -O2 -Wall -Wextra -I src -I include tools/mode_ladder_test.cpp -o /tmp/mlt && /tmp/mlt
+ #include "camera/ModeLadder.hpp"
+ 
+@@ -21,7 +22,7 @@ static bool contains(const std::string &text, const std::string &part)
+     return text.find(part) != std::string::npos;
+ }
+ 
+-// A file as Core wrote it before the aspect filter: no aspects= line.
++// A mode_ladder.conf as Core wrote it before the aspect filter: no aspects= line.
+ static const std::string kRungs = "3840x2160:16:hdr:25:none:log,3840x2160:12:sdr::lossless_jpeg,1920x1080:12:sdr";
+ static const std::string kOldFile =
+     "# Apertar mode ladder (T34). Core writes this file; edit it in the WebUI (Settings > Record > Mode Ladder).\n"
+@@ -31,25 +32,18 @@ static const std::string kOldFile =
+ 
+ int main()
+ {
+-    // ---- round trip through fileText and parseFile ----
++    // ---- the ladder from the text of its settings ----
+     {
+-        Ladder l = parseFile(kOldFile);
+-        l.rampReady = true;
+-        l.aspects = { "16:9", "2.39:1" };
+-        const std::string text = fileText(l);
+-        check(contains(text, "\naspects=16:9,2.39:1\n"), "fileText: its own aspects= line, the card's labels joined by commas");
+-        check(contains(text, "\nresolutions=" + kRungs + "\n"), "fileText: the resolutions line as before");
+-        const Ladder back = parseFile(text);
+-        check(back.aspects == l.aspects, "round trip: the aspects, in their order");
+-        check(back.enabled && back.rampReady && rungsText(back.rungs) == kRungs, "round trip: enabled, ramp_ready and the rungs");
+-        Ladder all = back;
+-        all.aspects.clear();
+-        const std::string allText = fileText(all);
+-        check(contains(allText, "\naspects=\n") && parseFile(allText).aspects.empty() && rungsText(parseFile(allText).rungs) == kRungs,
+-              "round trip: All is an empty aspects= line");
+-        Ladder other = back;   // IMX585 decimals and the Record pane's IMX283 names
+-        other.aspects = { "1:1", "1.33:1", "1.85:1", "2.55:1", "4:3", "3:2", "1.37:1" };
+-        check(parseFile(fileText(other)).aspects == other.aspects, "round trip: 1:1, 1.33:1, 1.85:1, 2.55:1, 4:3, 3:2, 1.37:1");
++        const Ladder l = fromText(true, true, kRungs, "16:9,2.39:1");
++        check(l.aspects == std::vector<std::string>{ "16:9", "2.39:1" }, "fromText: the aspects, in their order");
++        check(l.enabled && l.rampReady && rungsText(l.rungs) == kRungs, "fromText: enabled, ramp_ready and the rungs");
++        const Ladder all = fromText(true, false, kRungs, "");
++        check(all.aspects.empty() && all.enabled && !all.rampReady && rungsText(all.rungs) == kRungs,
++              "fromText: an empty filter is All");
++        const std::vector<std::string> other = { "1:1", "1.33:1", "1.85:1", "2.55:1", "4:3", "3:2", "1.37:1" };   // IMX585 decimals and the Record pane's IMX283 names
++        check(fromText(true, false, kRungs, aspectsText(other)).aspects == other, "round trip: 1:1, 1.33:1, 1.85:1, 2.55:1, 4:3, 3:2, 1.37:1");
++        const Ladder none = fromText(true, true, "", "");
++        check(none.rungs.empty() && !none.enabled, "fromText: no resolutions text, the ladder is off");
+     }
+ 
+     // ---- a file without the line ----
+@@ -98,25 +92,26 @@ int main()
+               "a broken resolutions line (ladder off) keeps the aspects");
+     }
+ 
+-    // ---- withAspectsLine: a filter save replaces only the aspects= line ----
++    // ---- fromText: a text this Core cannot read leaves the rest alone ----
++    {
++        const Ladder broken = fromText(true, true, "3840x2160:99:sdr", "2.39:1");
++        check(broken.rungs.empty() && !broken.enabled && broken.rampReady && broken.aspects == std::vector<std::string>{ "2.39:1" },
++              "fromText: a broken resolutions text (ladder off) keeps ramp_ready and the aspects");
++        const Ladder badFilter = fromText(true, false, kRungs, "16:9,<script>");
++        check(badFilter.aspects.empty() && badFilter.enabled && rungsText(badFilter.rungs) == kRungs,
++              "fromText: a bad filter is All, the ladder stays on");
++    }
++
++    // ---- an old mode_ladder.conf, taken over by parseFile and the text functions ----
+     {
+-        const std::string damaged = "enabled=true\nresolutions=3840x2160:99:sdr\naspects=16:9\nramp_ready=true\n";
+-        const std::string saved = withAspectsLine(damaged, { "2.39:1" });
+-        check(saved == "enabled=true\nresolutions=3840x2160:99:sdr\nramp_ready=true\naspects=2.39:1\n",
+-              "withAspectsLine: a resolutions line this Core cannot read and enabled=true stay byte for byte");
+-        check(withAspectsLine(kOldFile, { "16:9" }) == kOldFile + "aspects=16:9\n", "withAspectsLine: an old file gets the line at the end");
+-        check(withAspectsLine("enabled=true\naspects=1:1\naspects=4:3\n", {}) == "enabled=true\naspects=\n",
+-              "withAspectsLine: two aspects= lines become one, All");
+-        check(withAspectsLine("enabled=true\r\naspects=1:1\r\n", { "4:3" }) == "enabled=true\r\naspects=4:3\n",
+-              "withAspectsLine: CRLF lines are kept as they are");
+-        check(withAspectsLine("# mine\naspects_old=1\nfuture=2", { "4:3" }) == "# mine\naspects_old=1\nfuture=2\naspects=4:3\n",
+-              "withAspectsLine: comments, other keys and a last line without its newline are kept");
+         Ladder l = parseFile(kOldFile);
+-        const Ladder back = parseFile(withAspectsLine(fileText(l), { "16:9", "2.39:1" }));
+-        check(back.aspects == std::vector<std::string>{ "16:9", "2.39:1" } && back.enabled && rungsText(back.rungs) == kRungs,
+-              "withAspectsLine: fileText's file reads back with the new filter and the same ladder");
+-        check(contains(fileText(l), "(Settings > Modes: Activated sensor modes and Mode Ladder)"),
+-              "fileText: the header names where the card is now");
++        l.aspects = { "16:9" };
++        const Ladder back = fromText(l.enabled, l.rampReady, rungsText(l.rungs), aspectsText(l.aspects));
++        check(back.enabled && !back.rampReady && rungsText(back.rungs) == kRungs && back.aspects == l.aspects,
++              "take-over: the old file's values come back from their text");
++        check(rungsText(parseFile("rungs=" + kRungs + "\n").rungs) == kRungs, "parseFile: \"rungs\", the first name of resolutions");
++        check(parseFile("enabled=true\nresolutions=1920x1080:12:sdr\nresolutions=3840x2160:99:sdr\n").rungs.empty(),
++              "parseFile: the last resolutions line counts");
+     }
+ 
+     // ---- parseAspects, as set_mode_ladder aspects uses it ----
+-- 
+2.43.0
+

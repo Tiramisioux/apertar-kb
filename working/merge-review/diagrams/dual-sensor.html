@@ -1,0 +1,244 @@
+<title>Dual Sensor Startup</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
+<style>
+/* Layout: one reading column; two wide diagrams that scroll sideways on a phone; the colours of the coding map's repos. */
+:root{
+  --bg:#f5f6f4; --panel:#ffffff; --fg:#1c2024; --muted:#5d6670; --line:#c9ced3;
+  --core:#2f6fb2; --core-soft:#e3edf8; --cam1:#7a4cb0; --cam1-soft:#efe7f8;
+  --sys:#3d7d5a; --sys-soft:#e2f1e8; --stop:#b4553a; --stop-soft:#f8e6df; --wire:#8a939c;
+  --f-display:"Space Grotesk",system-ui,sans-serif; --f-body:"IBM Plex Sans",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#14171a; --panel:#1c2024; --fg:#e8ebee; --muted:#9aa3ac; --line:#343a41;
+  --core:#79aee6; --core-soft:#1d2e42; --cam1:#b996e6; --cam1-soft:#2c2140;
+  --sys:#7cc39b; --sys-soft:#1b3326; --stop:#e48c6f; --stop-soft:#3d241b; --wire:#6d767f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#14171a; --panel:#1c2024; --fg:#e8ebee; --muted:#9aa3ac; --line:#343a41;
+  --core:#79aee6; --core-soft:#1d2e42; --cam1:#b996e6; --cam1-soft:#2c2140;
+  --sys:#7cc39b; --sys-soft:#1b3326; --stop:#e48c6f; --stop-soft:#3d241b; --wire:#6d767f; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font:16px/1.55 var(--f-body)}
+main{max-width:980px;margin:0 auto;padding-block:32px 56px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  display:grid;gap:40px}
+h1,h2{font-family:var(--f-display);text-wrap:balance;margin:0;line-height:1.15}
+h1{font-size:2rem} h2{font-size:1.35rem}
+p{margin:0;max-width:65ch}
+.lead{color:var(--muted);font-size:1.05rem}
+section{display:grid;gap:14px;min-width:0}
+code,kbd{font-family:var(--f-mono);font-size:.88em}
+.diagram{overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+.diagram svg{display:block;min-width:860px;width:100%;height:auto}
+svg text{font-family:var(--f-body);fill:var(--fg)}
+svg .mono{font-family:var(--f-mono);font-size:12px}
+svg .small{font-size:12px;fill:var(--muted)}
+svg .title{font-weight:600;font-size:14px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.88rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.steps{display:grid;gap:10px;margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;counter-increment:s}
+.steps li::before{content:counter(s);font:600 .85rem var(--f-display);color:var(--core);
+  border:1px solid var(--core);border-radius:50%;width:24px;height:24px;display:grid;place-items:center;margin-top:1px}
+.steps li>div{min-width:0}
+pre{margin:0;overflow-x:auto;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;
+  font:13px/1.6 var(--f-mono)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+.tablewrap{overflow-x:auto}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:.8rem;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.word{font-family:var(--f-mono);font-size:.85rem;padding:1px 7px;border-radius:999px;background:var(--core-soft);color:var(--core);white-space:nowrap}
+.word.bad{background:var(--stop-soft);color:var(--stop)}
+.note{color:var(--muted);font-size:.9rem}
+</style>
+
+<main>
+  <header style="display:grid;gap:10px">
+    <h1>Dual Sensor Startup</h1>
+    <p class="lead">How cinemate-port runs a second sensor: a second Apertar Core for <code>cam1</code>, started by systemd only when two sensors are found, and driven by the main Core through a relay.</p>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--core)"></i>main Core (cam0)</span>
+      <span><i class="sw" style="background:var(--cam1)"></i>second Core (cam1)</span>
+      <span><i class="sw" style="background:var(--sys)"></i>systemd and the Pi</span>
+      <span><i class="sw" style="background:var(--stop)"></i>not started</span>
+    </div>
+  </header>
+
+  <section>
+    <h2>1. At boot: does the second Core start?</h2>
+    <p>The cam1 unit is pulled in by the main unit (<code>WantedBy=apertar-core.service</code>). Before it starts, systemd runs a check. The check reads <code>config.txt</code> and sysfs only. It never opens libcamera, so it cannot disturb the sensor the main Core is running.</p>
+    <div class="diagram" role="img" aria-label="Boot flow: apertar-core.service starts the main Core on cam0. apertar-core-cam1.service runs apertar-core --camera cam1 --check-dual. If a sensor is on cam0 and on cam1 it exits 0 and the second Core starts; otherwise it exits 1 and systemd skips the unit.">
+      <svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--wire)"/></marker>
+        </defs>
+        <!-- boot -->
+        <rect x="20" y="20" width="160" height="56" rx="8" fill="var(--sys-soft)" stroke="var(--sys)"/>
+        <text x="100" y="45" text-anchor="middle" class="title">Pi boots</text>
+        <text x="100" y="63" text-anchor="middle" class="small">config.txt loads overlays</text>
+        <!-- main unit -->
+        <rect x="250" y="20" width="250" height="56" rx="8" fill="var(--core-soft)" stroke="var(--core)"/>
+        <text x="375" y="43" text-anchor="middle" class="mono" style="font-weight:500">apertar-core.service</text>
+        <text x="375" y="62" text-anchor="middle" class="small">main Core, cam0, always</text>
+        <line x1="180" y1="48" x2="248" y2="48" stroke="var(--wire)" stroke-width="2" marker-end="url(#a)"/>
+        <!-- cam1 unit -->
+        <rect x="250" y="120" width="250" height="56" rx="8" fill="var(--panel)" stroke="var(--cam1)" stroke-dasharray="5 4"/>
+        <text x="375" y="143" text-anchor="middle" class="mono" style="font-weight:500">apertar-core-cam1.service</text>
+        <text x="375" y="162" text-anchor="middle" class="small">WantedBy=apertar-core.service</text>
+        <line x1="375" y1="78" x2="375" y2="118" stroke="var(--wire)" stroke-width="2" marker-end="url(#a)"/>
+        <text x="385" y="102" class="small">pulls in</text>
+        <!-- check -->
+        <rect x="230" y="215" width="290" height="86" rx="8" fill="var(--sys-soft)" stroke="var(--sys)"/>
+        <text x="375" y="238" text-anchor="middle" class="title">ExecCondition</text>
+        <text x="375" y="258" text-anchor="middle" class="mono">apertar-core --camera cam1</text>
+        <text x="375" y="274" text-anchor="middle" class="mono">--check-dual</text>
+        <text x="375" y="292" text-anchor="middle" class="small">sensor on cam0 AND on cam1?</text>
+        <line x1="375" y1="178" x2="375" y2="213" stroke="var(--wire)" stroke-width="2" marker-end="url(#a)"/>
+        <!-- sources -->
+        <rect x="20" y="200" width="160" height="50" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="100" y="221" text-anchor="middle" class="mono">config.txt</text>
+        <text x="100" y="239" text-anchor="middle" class="small">names a sensor per port?</text>
+        <rect x="20" y="262" width="160" height="50" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="100" y="283" text-anchor="middle" class="mono">sysfs</text>
+        <text x="100" y="301" text-anchor="middle" class="small">sensor probed on the port?</text>
+        <line x1="182" y1="225" x2="228" y2="245" stroke="var(--wire)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a)"/>
+        <line x1="182" y1="287" x2="228" y2="270" stroke="var(--wire)" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#a)"/>
+        <!-- yes -->
+        <rect x="590" y="160" width="290" height="118" rx="8" fill="var(--cam1-soft)" stroke="var(--cam1)"/>
+        <text x="735" y="183" text-anchor="middle" class="title">exit 0: second Core starts</text>
+        <text x="606" y="205" class="mono">start-apertar-core.sh</text>
+        <text x="606" y="223" class="mono">APERTAR_CAMERA=cam1</text>
+        <text x="606" y="241" class="mono">/tmp/apertar-core-cam1.sock</text>
+        <text x="606" y="259" class="mono">WebUI port 8001</text>
+        <line x1="522" y1="245" x2="588" y2="225" stroke="var(--cam1)" stroke-width="2" marker-end="url(#a)"/>
+        <text x="540" y="226" class="small">yes</text>
+        <!-- no -->
+        <rect x="590" y="300" width="290" height="70" rx="8" fill="var(--stop-soft)" stroke="var(--stop)"/>
+        <text x="735" y="324" text-anchor="middle" class="title">exit 1: systemd skips the unit</text>
+        <text x="735" y="344" text-anchor="middle" class="small">"condition failed": no error, no restart</text>
+        <text x="735" y="360" text-anchor="middle" class="small">one sensor or none: one Core</text>
+        <line x1="522" y1="280" x2="588" y2="325" stroke="var(--stop)" stroke-width="2" marker-end="url(#a)"/>
+        <text x="540" y="318" class="small">no</text>
+        <!-- wait note -->
+        <text x="230" y="325" class="small">A port that config.txt names is checked again every 0.5 s,</text>
+        <text x="230" y="341" class="small">for up to 20 s, because the kernel may not have probed it yet.</text>
+        <text x="230" y="357" class="small">A port that config.txt does not name is checked once.</text>
+        <text x="230" y="390" class="small">After a start: exit 2 (a launch error, such as a missing hardware file) stops the</text>
+        <text x="230" y="406" class="small">restart loop: RestartPreventExitStatus=2.</text>
+      </svg>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. While running: how the two Cores work together</h2>
+    <p>The touch UI and the WebUI only talk to the main Core. Inside it, a relay thread holds the link to the second Core. The relay does nothing until you turn on <b>Dual sensor</b> in the WebUI's Dual Sensor card.</p>
+    <div class="diagram" role="img" aria-label="Runtime: the touch UI and WebUI talk to the main Core on cam0. The main Core's relay thread connects to the second Core's socket, sends tied settings and record start and stop, and polls its state every second. Both Cores write to the same card.">
+      <svg viewBox="0 0 900 390" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--wire)"/></marker>
+        </defs>
+        <!-- UIs -->
+        <rect x="20" y="30" width="170" height="56" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="105" y="54" text-anchor="middle" class="title">Touch UI and HDMI</text>
+        <text x="105" y="72" text-anchor="middle" class="small">UI.conf: dualSensorEnabled</text>
+        <rect x="20" y="110" width="170" height="56" rx="8" fill="var(--panel)" stroke="var(--line)"/>
+        <text x="105" y="134" text-anchor="middle" class="title">WebUI, port 8000</text>
+        <text x="105" y="152" text-anchor="middle" class="small">Dual Sensor card</text>
+        <!-- main core -->
+        <rect x="250" y="20" width="280" height="250" rx="10" fill="var(--core-soft)" stroke="var(--core)"/>
+        <text x="390" y="44" text-anchor="middle" class="title">Main Core (cam0)</text>
+        <text x="390" y="62" text-anchor="middle" class="mono">/tmp/apertar-core.sock</text>
+        <rect x="270" y="80" width="240" height="56" rx="6" fill="var(--panel)" stroke="var(--core)"/>
+        <text x="390" y="103" text-anchor="middle" class="title">Commands and state</text>
+        <text x="390" y="121" text-anchor="middle" class="small">record_cameras, preview_source</text>
+        <rect x="270" y="152" width="240" height="100" rx="6" fill="var(--panel)" stroke="var(--cam1)"/>
+        <text x="390" y="175" text-anchor="middle" class="title">Relay thread</text>
+        <text x="390" y="193" text-anchor="middle" class="mono">ControlClient</text>
+        <text x="390" y="213" text-anchor="middle" class="small">sends one command at a time,</text>
+        <text x="390" y="229" text-anchor="middle" class="small">polls cam1's get_state each second,</text>
+        <text x="390" y="245" text-anchor="middle" class="small">never takes the main command lock</text>
+        <line x1="390" y1="137" x2="390" y2="150" stroke="var(--wire)" stroke-width="2" marker-end="url(#b)"/>
+        <line x1="192" y1="58" x2="268" y2="100" stroke="var(--wire)" stroke-width="2" marker-end="url(#b)"/>
+        <line x1="192" y1="138" x2="268" y2="115" stroke="var(--wire)" stroke-width="2" marker-end="url(#b)"/>
+        <!-- cam1 core -->
+        <rect x="620" y="20" width="260" height="250" rx="10" fill="var(--cam1-soft)" stroke="var(--cam1)"/>
+        <text x="750" y="44" text-anchor="middle" class="title">Second Core (cam1)</text>
+        <text x="750" y="62" text-anchor="middle" class="mono">/tmp/apertar-core-cam1.sock</text>
+        <text x="636" y="92" class="small">settings: ~/.config-cam1</text>
+        <text x="636" y="110" class="small">hardware file: every input off</text>
+        <text x="636" y="128" class="small">(only the main Core reads buttons)</text>
+        <text x="636" y="152" class="small">off here: pre-roll, trim,</text>
+        <text x="636" y="170" class="small">media tuning, clip merge</text>
+        <text x="636" y="194" class="small">its own WebUI on port 8001</text>
+        <text x="636" y="218" class="small">no link back: it never</text>
+        <text x="636" y="236" class="small">talks to the main Core</text>
+        <line x1="512" y1="185" x2="618" y2="185" stroke="var(--cam1)" stroke-width="3" marker-end="url(#b)"/>
+        <text x="565" y="176" text-anchor="middle" class="small">commands</text>
+        <line x1="618" y1="225" x2="512" y2="225" stroke="var(--cam1)" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#b)"/>
+        <text x="565" y="245" text-anchor="middle" class="small">state, 1 s</text>
+        <!-- card -->
+        <rect x="380" y="320" width="380" height="50" rx="8" fill="var(--sys-soft)" stroke="var(--sys)"/>
+        <text x="570" y="342" text-anchor="middle" class="title">One recording card: /media/RAW</text>
+        <text x="570" y="360" text-anchor="middle" class="small">trim and clip merge wait while cam1 records or writes</text>
+        <line x1="390" y1="272" x2="470" y2="318" stroke="var(--wire)" stroke-width="2" marker-end="url(#b)"/>
+        <line x1="750" y1="272" x2="680" y2="318" stroke="var(--wire)" stroke-width="2" marker-end="url(#b)"/>
+      </svg>
+    </div>
+    <ol class="steps">
+      <li><div><b>The relay links when</b> Dual sensor is on <i>and</i> sysfs shows a sensor on both ports (or cam1's socket has answered once since the switch went on). With the switch off it reads <code>UI.conf</code> once a second and nothing else.</div></li>
+      <li><div><b>Tied settings.</b> Resolution, ISO, shutter, fps and white balance follow cam0 by default. Each can be set apart for cam1 (<code>set_cam1_settings</code>). Dynamic resolution runs on cam0 only.</div></li>
+      <li><div><b>Record.</b> <code>record_cameras</code> picks <code>cam0</code>, <code>cam1</code>, <code>both</code> or <code>none</code>. On record start the main Core waits up to 1 s for cam1's reply. If cam1 has been busy for 10 s, the take rolls without it.</div></li>
+      <li><div><b>Preview.</b> <code>preview_source</code> and <code>hdmi1_source</code> pick what the screens show, so HDMI and the WebUI follow the same choice.</div></li>
+      <li><div><b>Restarts.</b> The cam1 unit has no <code>PartOf=</code>: restarting the main Core leaves cam1 and its take alone. A restarted main Core learns about a running cam1 take before it touches the card.</div></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>What the screens say about cam1</h2>
+    <p>The main Core reduces the link to one word in its state, the first that applies, in this order:</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Word</th><th>Means</th></tr></thead>
+      <tbody>
+        <tr><td><span class="word bad">lost</span></td><td>cam1 left a running take unasked, or the link dropped during one.</td></tr>
+        <tr><td><span class="word bad">not_found</span></td><td>No link, <code>config.txt</code> names a sensor on cam1, but sysfs has none.</td></tr>
+        <tr><td><span class="word bad">offline</span></td><td>No link.</td></tr>
+        <tr><td><span class="word">recording</span></td><td>cam1 is recording.</td></tr>
+        <tr><td><span class="word">writing</span></td><td>cam1 still writes frames to the card.</td></tr>
+        <tr><td><span class="word bad">refused</span></td><td>cam1 refused the last command.</td></tr>
+        <tr><td><span class="word">standby</span></td><td>cam1 is in standby.</td></tr>
+        <tr><td><span class="word">busy</span></td><td>Commands are queued or in flight.</td></tr>
+        <tr><td><span class="word">ready</span></td><td>Linked, idle, nothing pending.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>Install once</h2>
+    <p>From the Core repository folder on the Pi. A camera with one sensor can install it too; the check then skips it at every boot.</p>
+<pre>install -m 0755 scripts/start-apertar-core.sh /home/pi/start-apertar-core.sh
+[[ -f /home/pi/apertar-hardware-cam1.conf ]] || install -m 0644 config/apertar-hardware-cam1.conf /home/pi/apertar-hardware-cam1.conf
+mkdir -p /home/pi/.config-cam1
+sudo install -m 0644 config/apertar-core-cam1.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable apertar-core-cam1</pre>
+    <p class="note">Then put a second sensor overlay in <code>config.txt</code> (the Boot Config card does it) and reboot. Check with <code>systemctl status apertar-core-cam1</code>: either "active (running)", or "condition failed" with one sensor. The journal line <code>ApertarCore dual check:</code> says what it found.</p>
+  </section>
+
+  <section>
+    <h2>Where it lives in the code</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>What</th><th>File</th></tr></thead>
+      <tbody>
+        <tr><td>The check, <code>dualSensorsPresent</code></td><td><code>src/camera/CameraPort.hpp</code></td></tr>
+        <tr><td><code>--check-dual</code> and <code>--camera</code></td><td><code>src/main.cpp</code></td></tr>
+        <tr><td>The unit</td><td><code>config/apertar-core-cam1.service</code></td></tr>
+        <tr><td>The relay thread</td><td><code>src/ipc/ControlClient.hpp</code>, started in <code>ApertarCoreApp::startCam1Client</code></td></tr>
+        <tr><td>The state word and the busy window</td><td><code>src/ipc/Cam1State.hpp</code></td></tr>
+        <tr><td>Tied settings</td><td><code>src/ipc/CommandClasses.hpp</code> (<code>Ties</code>)</td></tr>
+      </tbody>
+    </table></div>
+    <p class="note">Apertar-Core, branch <code>cinemate-port</code> at <code>4f1621a</code>.</p>
+  </section>
+</main>
