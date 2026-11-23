@@ -13,6 +13,21 @@ Data used:
 
 Raw: `../nvme-campaign/run-20261110/est-05fb8f1-a/` (probes.jsonl, validation.jsonl, estimate.md / estimate-table.csv).
 
+## 0. The two storage solutions at a glance
+
+![The limits Core uses, NVMe card and USB SSD](figures/fig8-storage-limits.png)
+
+This is the Core limits table as of Apertar-Core 13efadb (`src/camera/SustainedFps.hpp`; `scripts/storage_limits.py` draws it from that file). The
+fps axis starts at 25, the lowest rate shot here; a limit under 25 is written in the margin. The NVMe column is for a **hot drive**
+(a take that starts warm from the one before). A bar ends at the measured limit and its label gives the take length it held. The
+white line marks the step Core rounds down to (25, 30, 33, 50, 60), the fps Dynamic resolution actually offers.
+
+- **NVMe, hot:** 4K Clear HDR holds 25 only with Log (30 min). Without Log it holds 23 (16-bit) or 24 (12-bit) for 15 min.
+  4K SDR lossless holds 40 for only 5 min on a hot drive, so Core offers 33. 4K SDR + Log is not used: the decode on the copy
+  path drops frames at every fps tried, 30 to 40. 2K and 2880x2160 reach 60 (1-min takes).
+- **T7, about 105 MB/s:** every 4K and 2880x2160 mode is under 25 (8-24 fps, derived from frame size over drive speed; 4K was
+  never run on it). 2K Clear HDR holds 27 (step 25), and 2K SDR holds 48 (step 33), both for 30 min.
+
 ## 1. The table
 
 Capacity = what the 60-s probe sustained at the reference levers (TDN off, lock off, WebUI on, audio on, aids on):
