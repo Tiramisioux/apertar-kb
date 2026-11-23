@@ -1,9 +1,9 @@
 NIGHT OVER (all stages of the night done): safe to read; report report-EST-05fb8f1-a.md
 RESTORE OK
-liveness: heartbeat 5 s old; runner pid 105070; night EST-05fb8f1-a started 14:29
+liveness: heartbeat 3 s old; runner pid 21896; night EST-05fb8f1-a started 19:50
 take: -
-progress: 214 takes this night (354 in the campaign), 4581 GB this night, 9568 GB in all of a 16000 GB budget
-card: A936B442006AC2 ; free 637 GB; smart temp 47 C, written 80327876 units, critical_warning 0
+progress: 243 takes this night (383 in the campaign), 7419 GB this night, 12406 GB in all of a 16000 GB budget
+card: A936B442006AC2 ; free 195 GB; smart temp 57 C, written 85392612 units, critical_warning 0
 voids 0, audio faults 0 this night
 
 ## Arms
@@ -23,28 +23,28 @@ voids 0, audio faults 0 this night
 
 | take | stage | fps | tier | outcome | s | dropped | first drop | gap | boundary | merge s | verdict |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| _aids1_fps27_20261122-140612 | EST-05fb8f1-a | 27.0 | 900 | drop | 12.0 | 1 | 11.7 | 0 |  |  | drop |
-| _aids1_fps26_20261122-140649 | EST-05fb8f1-a | 26.0 | 900 | pass_15min | 900.3 | 0 |  | 0 |  |  | clean |
-| _aids1_fps45_20261122-142605 | EST-05fb8f1-a | 45.0 | 900 | drop | 1.5 | 7 | 1.3 | 0 |  |  | drop |
-| _aids1_fps44_20261122-142632 | EST-05fb8f1-a | 44.0 | 900 | drop | 1.0 | 2 | 0.8 | 0 |  |  | drop |
-| _aids1_fps25_20261122-142911 | EST-05fb8f1-a | 25.0 | 900 | pass_15min | 900.4 | 0 |  | 0 | 0 | 96.4 | clean |
-| _aids1_fps24_20261122-145120 | EST-05fb8f1-a | 24.0 | 900 | pass_15min | 900.3 | 0 |  | 0 | 0 | 91.7 | clean |
-| _aids1_fps14_20261122-151258 | EST-05fb8f1-a | 14.0 | 900 | pass_15min | 900.1 | 0 |  | 0 | 0 | 28.8 | clean |
-| _aids1_fps13_20261122-154038 | EST-05fb8f1-a | 13.0 | 900 | pass_15min | 900.1 | 0 |  | 0 | 0 | 24.2 | clean |
-| _aids1_fps41_20261122-155753 | EST-05fb8f1-a | 41.0 | 900 | drop | 1.0 | 4 | 0.8 | 0 |  |  | drop |
-| _aids1_fps40_20261122-155819 | EST-05fb8f1-a | 40.0 | 900 | drop | 1.0 | 3 | 0.8 | 0 |  |  | drop |
+| _aids1_fps44_20261123-000455 | EST-05fb8f1-a | 44.0 | 900 | buffer_full | 178.6 | 0 |  | 0 | 0 | 10.0 | drop |
+| _aids1_fps40_20261123-001840 | EST-05fb8f1-a | 40.0 | 60 | drop | 1.0 | 7 | 0.7 | 0 | 0 |  | drop |
+| _aids1_fps36_20261123-001909 | EST-05fb8f1-a | 36.0 | 60 | drop | 1.0 | 2 | 0.7 | 0 | 0 |  | drop |
+| _aids1_fps30_20261123-001937 | EST-05fb8f1-a | 30.0 | 60 | drop | 5.0 | 2 | 4.7 | 0 | 0 |  | drop |
+| _aids1_fps37_20261123-002017 | EST-05fb8f1-a | 37.0 | 60 | drop | 2.0 | 7 | 1.7 | 0 | 0 |  | drop |
+| _aids1_fps33_20261123-002047 | EST-05fb8f1-a | 33.0 | 60 | drop | 3.0 | 3 | 2.7 | 0 | 0 |  | drop |
+| _aids1_fps30_20261123-002117 | EST-05fb8f1-a | 30.0 | 60 | drop | 8.0 | 1 | 7.7 | 0 | 0 |  | drop |
+| _aids1_fps24_20261123-002200 | EST-05fb8f1-a | 24.0 | 60 | pass_capped_60s | 60.0 | 0 |  | 0 | 0 |  | clean |
+| _aids1_fps24_20261123-002340 | EST-05fb8f1-a | 24.0 | 900 | drop | 711.6 | 3 | 711.2 | 0 | 0 | 63.5 | drop |
+| _aids1_fps23_20261123-003936 | EST-05fb8f1-a | 23.0 | 900 | pass_15min | 900.2 | 0 |  | 0 | 0 | 90.8 | clean |
 
 ## Decisions (tail)
 
-    2026-11-22 15:40:38 [EST-05fb8f1-a] cooldown 1: 601 s; NVMe 50.9 -> 40.9 C, Pi 52.9 -> 49.6 C
-    2026-11-22 15:56:46 [EST-05fb8f1-a] merge of cDNG_26-11-22_C0001_15410112: 11702 frames, 3 parts, 24 s (2.07 ms per frame), first ETA error -27.1 %, intact; merge off again: True
-    2026-11-22 15:56:46 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kHDR16_lossless_log1_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 13 fps, 900 s: pass_15min (900.1 s, dropped 0, first drop , gap 0, boundary 0)
-    2026-11-22 15:56:46 [EST-05fb8f1-a] EST P6b 4kHDR16:cdng:lj:log at 13: pass_15min after 900.1 s
-    2026-11-22 15:56:47 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0002_14514417: 21607 frames in 0.9 s (warm, budget 0 s)
-    2026-11-22 15:58:19 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 41 fps, 900 s: drop (1.0 s, dropped 4, first drop 0.8, gap 0, boundary )
-    2026-11-22 15:58:19 [EST-05fb8f1-a] EST P6b 4kP:prores:hq:arri_logc4 at 41: drop after 1.0 s
-    2026-11-22 15:58:40 [EST-05fb8f1-a] EST-05fb8f1-a P6-warmfix-t0l0w1a1a1 4kP_unc_log0_tdn0_lock0_trim1_web1_prores-hq-arri_logc4_aud1_aids1 at 40 fps, 900 s: drop (1.0 s, dropped 3, first drop 0.8, gap 0, boundary )
-    2026-11-22 15:58:40 [EST-05fb8f1-a] EST P6b 4kP:prores:hq:arri_logc4 at 40: drop after 1.0 s
-    2026-11-22 15:58:40 [EST-05fb8f1-a] EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
-    2026-11-22 15:58:40 [EST-05fb8f1-a] stage EST-05fb8f1-a done
-    2026-11-22 15:59:15 [EST-05fb8f1-a] RESTORE OK
+    2026-11-23 00:37:22 [EST-05fb8f1-a] EST P8 4kHDR16:cdng:unc at 24, 15 min: drop after 711.6 s
+    2026-11-23 00:37:22 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0007_23412420: 47 frames in 0.0 s (warm, budget 0 s)
+    2026-11-23 00:37:22 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0008_23415322: 74 frames in 0.0 s (warm, budget 0 s)
+    2026-11-23 00:37:22 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0009_23422408: 122 frames in 0.0 s (warm, budget 0 s)
+    2026-11-23 00:37:26 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0010_23430410: 1440 frames in 4.0 s (warm, budget 0 s)
+    2026-11-23 00:38:31 [EST-05fb8f1-a] deleted cDNG_26-11-22_C0011_23443920: 21607 frames in 63.6 s (warm, budget 0 s)
+    2026-11-23 00:56:56 [EST-05fb8f1-a] merge of cDNG_26-11-23_C0012_00400002: 20703 frames, 5 parts, 91 s (4.39 ms per frame), first ETA error -27.1 %, intact; merge off again: True
+    2026-11-23 00:56:56 [EST-05fb8f1-a] EST-05fb8f1-a P8-long15-t0l0w1a1a1 4kHDR16_unc_log0_tdn0_lock0_trim1_web1_fpf5000_aud1_aids1 at 23 fps, 900 s: pass_15min (900.2 s, dropped 0, first drop , gap 0, boundary 0)
+    2026-11-23 00:56:56 [EST-05fb8f1-a] EST P8 4kHDR16:cdng:unc at 23, 15 min: pass_15min after 900.2 s
+    2026-11-23 00:56:56 [EST-05fb8f1-a] EST outputs: /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate-table.csv, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/estimate.md, /home/pi/longtakes/nvme-20261110/est-05fb8f1-a/selftest.md
+    2026-11-23 00:56:56 [EST-05fb8f1-a] stage EST-05fb8f1-a done
+    2026-11-23 00:57:39 [EST-05fb8f1-a] RESTORE OK

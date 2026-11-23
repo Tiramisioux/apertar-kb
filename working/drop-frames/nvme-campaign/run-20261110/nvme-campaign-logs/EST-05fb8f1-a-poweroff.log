@@ -1,5 +1,4 @@
-2026-11-22 14:29:10 following runner pid 105070 (night EST-05fb8f1-a, run /home/pi/longtakes/nvme-20261110)
-2026-11-22 16:00:10 runner ended; waiting for a quiet camera
-2026-11-22 16:01:10 restore read back: frames_per_folder=5000 merge=true; RESTORE OK
-2026-11-22 16:01:10 night EST-05fb8f1-a over; powering off through Core (power_off_system)
-{"ok":true,"powering_off":true}
+2026-11-22 19:50:32 following runner pid 21896 (night EST-05fb8f1-a, run /home/pi/longtakes/nvme-20261110)
+2026-11-23 00:58:33 runner ended; waiting for a quiet camera
+2026-11-23 00:59:33 restore read back: frames_per_folder=5000 merge=true; RESTORE OK
+2026-11-23 00:59:33 night EST-05fb8f1-a over; powering off through Core (power_off_system)

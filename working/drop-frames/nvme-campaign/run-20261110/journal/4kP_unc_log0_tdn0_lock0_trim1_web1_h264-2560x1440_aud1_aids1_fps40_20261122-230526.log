@@ -1,0 +1,25 @@
+1795385148.277524 apertar start-apertar-core.sh[20677]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795385148.289168 apertar start-apertar-core.sh[20677]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795385148.289168 apertar start-apertar-core.sh[20677]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795385148.740505 apertar start-apertar-core.sh[20677]: ApertarCore H.264 lazy-loaded libav plugin: /home/pi/ApertarCore-build/apertar-h264-libav.so
+1795385148.808309 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] using cpu capabilities: ARMv8 NEON
+1795385148.810038 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] profile Constrained Baseline, level 5.0, 4:2:0, 8-bit
+1795385148.811208 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] 264 - core 164 r3108 31e19f9 - H.264/MPEG-4 AVC codec - Copyleft 2003-2023 - http://www.videolan.org/x264.html - options: cabac=0 ref=1 deblock=0:0:0 analyse=0:0 me=dia subme=0 psy=1 psy_rd=1.00:0.00 mixed_ref=0 me_range=16 chroma_me=1 trellis=0 8x8dct=0 cqm=0 deadzone=21,11 fast_pskip=1 chroma_qp_offset=0 threads=3 lookahead_threads=3 sliced_threads=1 slices=3 nr=0 decimate=1 interlaced=0 bluray_compat=0 constrained_intra=0 bframes=0 weightp=0 keyint=40 keyint_min=4 scenecut=0 intra_refresh=0 rc=crf mbtree=0 crf=18.0 qcomp=0.60 qpmin=0 qpmax=69 qpstep=4 ip_ratio=1.40 aq=0
+1795385148.811478 apertar start-apertar-core.sh[20677]: ApertarCore H.264 recording clip: /media/RAW/H264_26-11-22_C0001_23054810/H264_26-11-22_C0001_23054810.mp4 preview=2560x1440 fps=40.000 backend=libav encoder=libx264 input=staged-yuv copy_threads=1 tune=zerolatency threads=3 queue=6 crf=18
+1795385148.849338 apertar start-apertar-core.sh[20677]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=14009624450
+1795385148.879618 apertar start-apertar-core.sh[20677]: [mp4 @ 0x7ffe8804b7e0] Using non-standard frame rate 40000/1000
+1795385148.882533 apertar start-apertar-core.sh[20677]: [mp4 @ 0x7ffe8804b7e0] Using non-standard frame rate 40000/1000
+1795385149.852691 apertar start-apertar-core.sh[20677]: ApertarCore drop[capture-gap]: +1 frame(s) estimate dt_us=49998 nominal_us=25002 total_estimate=1
+1795385150.313433 apertar start-apertar-core.sh[20677]: ApertarCore capture stats: dropped_gap_estimate=2 requeue_failures=0
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] frame I:2     Avg QP:12.50  size:198728
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] frame P:53    Avg QP:13.25  size: 11118
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] mb I  I16..4: 100.0%  0.0%  0.0%
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] mb P  I16..4:  2.7%  0.0%  0.0%  P16..4: 20.2%  0.0%  0.0%  0.0%  0.0%    skip:77.0%
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] coded y,uvDC,uvAC intra: 41.3% 49.6% 31.9% inter: 3.9% 6.2% 0.5%
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] i16 v,h,dc,p: 45% 18% 11% 27%
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] i8c dc,h,v,p: 44% 19% 22% 15%
+1795385150.326189 apertar start-apertar-core.sh[20677]: [libx264 @ 0x7ffe88013200] kb/s:5740.88
+1795385150.330575 apertar start-apertar-core.sh[20677]: ApertarCore H.264 recording stats: queued=55 written=55 dropped_queue_full=0 skipped_stopping=0 write_failures=0 peak_queue=1/6 max_copy_ms=11 slow_copies=0 max_write_ms=28 slow_writes=2
+1795385150.353139 apertar start-apertar-core.sh[20677]: ApertarCore audio writer: peak_backlog_kb=1
+1795385150.353327 apertar start-apertar-core.sh[20677]: ApertarCore audio sync: video_boot_us=14009624450 audio_boot_us=14009097246 trim_samples=25306 pad_samples=0 output_samples=68400 sample_rate=48000
+1795385150.355494 apertar start-apertar-core.sh[20677]: ApertarCore recording stop: synced to the medium in 1 ms

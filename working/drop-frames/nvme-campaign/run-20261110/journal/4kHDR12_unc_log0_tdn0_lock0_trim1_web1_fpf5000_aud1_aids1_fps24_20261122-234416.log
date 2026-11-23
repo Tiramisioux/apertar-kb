@@ -1,0 +1,11 @@
+1795387479.877456 apertar start-apertar-core.sh[20677]: ApertarCore gyro recording disabled for this clip: MPU6050 not found. Configured i2c-10 address=0x68 returned chip_id=0x47, and auto-probe did not find it at 0x68/0x69.
+1795387479.888144 apertar start-apertar-core.sh[20677]: ApertarCore audio capture: buffer_frames=4800 period_frames=480 requested_ms=100/10
+1795387479.888144 apertar start-apertar-core.sh[20677]: ApertarCore audio capture: format=s16 rate=48000 channels=1 first_channel=1
+1795387479.888882 apertar start-apertar-core.sh[20677]: ApertarCore buffer: ram budget 1038 MiB (MemAvailable 2584 MiB, fraction 0.60, floor 512 MiB, cap 2022 MiB, frame 15.8 MiB = 65 frames) source=conf
+1795387479.913441 apertar start-apertar-core.sh[20677]: ApertarCore recording clip: /media/RAW/cDNG_26-11-22_C0011_23443920 format=cdng compression=none media_class=pi-nvme media_fs=exfat dontneed=sync writeback=on sync_ms=1000 tune_override=no split=on frames_per_folder=5000 fps_limit=probe
+1795387479.979245 apertar start-apertar-core.sh[20677]: ApertarCore gyro timeline anchored: frame=0 sensor_timestamp_us=16340725928
+1795388380.500873 apertar start-apertar-core.sh[20677]: ApertarCore recording stats: enqueued=21607 written=21607 dropped_queue_full=0 discarded_on_stop=0 write_failures=0 discarded_on_failure=0 skipped_after_failure=0 dropped_copy_slot=0 index_jumps=0 fault= peak_queue=2/12 queue_bytes_peak=33177600 queue_budget=1088910131
+1795388380.513226 apertar start-apertar-core.sh[20677]: ApertarCore audio writer: peak_backlog_kb=7
+1795388380.513370 apertar start-apertar-core.sh[20677]: ApertarCore audio clock: measured_drift_ppm=940.591 points=83624 endpoint_ppm=940.787 correction=resample
+1795388380.513370 apertar start-apertar-core.sh[20677]: ApertarCore audio sync: video_boot_us=16340725928 audio_boot_us=16340696545 trim_samples=1412 pad_samples=0 output_samples=43214000 sample_rate=48000
+1795388382.833798 apertar start-apertar-core.sh[20677]: ApertarCore recording stop: synced to the medium in 104 ms

@@ -1,0 +1,13 @@
+[  5%] Built target apertar-h264-libav
+[ 17%] Built target apertar-prores-libav
+[ 25%] Building CXX object CMakeFiles/apertar-core.dir/src/camera/CameraController.cpp.o
+[ 25%] Building CXX object CMakeFiles/apertar-core.dir/src/hardware/HardwareConfigStore.cpp.o
+[ 25%] Building CXX object CMakeFiles/apertar-core.dir/src/ApertarCoreApp.cpp.o
+/home/pi/ApertarCore/src/ApertarCoreApp.cpp:4875:6: warning: ‘bool apertar::{anonymous}::convertPlanarYuv420ToRgb(const uint8_t*, uint32_t, const uint8_t*, uint32_t, const uint8_t*, uint32_t, uint32_t, uint32_t, std::vector<unsigned char>*)’ defined but not used [-Wunused-function]
+ 4875 | bool convertPlanarYuv420ToRgb(const uint8_t *yPlane,
+      |      ^~~~~~~~~~~~~~~~~~~~~~~~
+[ 27%] Building CXX object CMakeFiles/apertar-core.dir/src/hardware/Mpu6050RecordingSession.cpp.o
+[ 30%] Building CXX object CMakeFiles/apertar-core.dir/src/main.cpp.o
+[ 32%] Linking CXX executable apertar-core
+[100%] Built target apertar-core
+CORE_RC=0

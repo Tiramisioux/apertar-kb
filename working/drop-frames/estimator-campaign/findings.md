@@ -120,6 +120,51 @@ check found the interrupted clip not intact. 12:46-12:50 on 22 November four tak
 was off on the new build (`storage_preroll_auto=False`); the runner now turns it on for the night and back at the end.
 Patrik's own clip `cDNG_26-11-21_23371407_C0005_cam0` was kept with `--preserve`. RESTORE OK at 15:59, Pi powered off.
 
+### P7 (30-min takes) and P8 (the open limits), 2026-11-22 19:50 - 2026-11-23 00:57 - measured
+
+The last NVMe night (User 2026-11-22). Reference levers, split 5000, Core 25f6f01 (Log in SDR cDNG, speed ramp on by default,
+switched off for the night by the runner), 7 foreign clips on the card kept with `--preserve`. RESTORE OK, Pi powered off.
+
+**P7, 30 minutes, stopped at the first drop:**
+
+| Take | fps | Drive start -> max | Written | Outcome |
+| --- | --- | --- | --- | --- |
+| 4K HDR16 unc + Log | 25 | 37 -> 71 C | 560 GB | **passed 30 min** |
+| 4K SDR12 lossless | 40 | 49 -> 63 C | 87 GB | **buffer full at 300 s** |
+| 4K SDR12 lossy 3:1 | 37 | 60 -> 58 C | 239 GB | **passed 30 min** |
+| 4K ProRes HQ | 26 | 38 -> 39 C | - | 1 dropped at 20 s (capture gap) |
+| 4K HDR16 lossless + Log | 14 | 38 -> 54 C | 211 GB | **passed 30 min** |
+| 4K SDR12 unc | 33 | 47 -> 77 C | 727 GB | buffer full at 1791 s of 1800 |
+
+**P8, 60-s steps down, then 15 min at the first clean fps (and one below if it dropped):**
+
+| Cell | 60-s steps | 15 min | Outcome |
+| --- | --- | --- | --- |
+| H.264 2560x1440 | 40 drop; 35 clean | 35 | **passed 15 min** |
+| ProRes HQ ARRI LogC4 | 36 drop; 32 clean | 32 | **passed 15 min** |
+| 4K HDR12 uncompressed | 30, 28, 26 drop; 24 clean | 24 | **passed 15 min** (269 GB) |
+| 4K SDR10 lossless | 45 clean | 45 and 44 | **buffer full at 66 s and 179 s** |
+| 4K SDR12 lossless + Log | 40, 36, 30 drop | - | **dropped at every fps** |
+| 4K SDR12 unc + Log | 37, 33, 30 drop | - | **dropped at every fps** |
+| 4K HDR16 unc (no Log) | 24 clean | 24 and 23 | 24: dropped at 712 s; **23 passed 15 min** (343 GB) |
+
+- **Three modes held 30 min:** 4K HDR16 + Log at 25 (560 GB, drive 71 C), 4K SDR12 lossy 3:1 at 37, 4K HDR16 lossless + Log at 14.
+- **"Under ~320 MB/s the drive never pauses" does not hold.** 4K SDR12 lossless at 40 (~250 MB/s) passed 15 min twice (P6,
+  drive started at 37 C) and then filled the buffer at 300 s, 87 GB into the take, 63 C, when it followed a 560 GB take (drive
+  started at 49 C). The lossless 40 is marginal: measured clean 15 min, not 30; probable that a warm drive costs it.
+- **4K SDR12 uncompressed 33 came within 9 s of 30 min** (727 GB, 77 C). 33 is the nearest to a 30-min fps for 4K uncompressed SDR.
+- **SDR Log works but is too slow at 4K.** The journal shows "CineMate Log 12->10 ... (decoded from the PiSP-compressed
+  stream)" and every take dropped frames: `drop[copy-slot] held=6/6` after 0.7-7.7 s at 30-40 fps. The decode and lookup on the
+  copy workers cannot keep up with 4K SDR; Core CPU was only 3-4 % average, so the limit is the copy path, not total CPU. Its
+  fps limit is below 30 and was not found (nothing lower than 30 was tried).
+- **4K HDR12 holds 24, not more:** 26, 28 and 30 dropped in the first 5 s (capture gaps).
+- **4K HDR16 without Log holds 23 for 15 min**; 24 dropped one frame at 712 s.
+- **ProRes LogC4 holds 32; standard HQ does not hold 26 for 30 min** (a capture gap at 20 s, after it held 26 for 15 min in P6).
+  The LogC4 colour path runs faster than standard HQ here; the cause is unconfirmed.
+- **4K SDR10 lossless**: the 60-s probe at 45 was clean but both 15-min takes (45, 44) filled the buffer within 3 min; its
+  limit is below 44 and not found.
+- **H.264 2560x1440 holds 35** (15 min).
+
 ### Stops and fixes
 
 - 11:18 the runner waited on its own folder: the mic's audio format was refused after Core had made the clip folder, the
